@@ -115,9 +115,7 @@ export function timeLeftToWatch(
     .filter((season) => season.number !== 0)
     .flatMap((season) => season.episodes)
     .filter(
-      (e) =>
-        e.watchCount === 0 &&
-        (e.airDate === null || new Date(e.airDate) <= now),
+      (e) => !e.seen && (e.airDate === null || new Date(e.airDate) <= now),
     );
   if (left.length === 0) return null;
 

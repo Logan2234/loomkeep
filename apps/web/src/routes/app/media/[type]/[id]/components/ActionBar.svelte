@@ -37,6 +37,7 @@
     onDrop,
     onResume,
     onToggleEpisodeAlerts,
+    onToggleRewatch = () => {},
     onRemove,
     onShare,
     socialActions,
@@ -57,6 +58,8 @@
     onDrop: () => void;
     onResume: () => void;
     onToggleEpisodeAlerts: () => void;
+    /** Starts a movie's rewatch, or stops a movie's or a series' one. */
+    onToggleRewatch?: () => void;
     onRemove: () => void;
     socialActions?: Snippet;
     onShare: () => void;
@@ -65,6 +68,14 @@
   const reduced = prefersReducedMotion();
   const isDropped = $derived(entry?.status === "DROPPED");
   const isWatched = $derived(entry?.status === "COMPLETED");
+  // A finished title has nothing left to drop; a rewatch is stopped instead.
+  const canDrop = $derived(!isWatched && !entry?.rewatching);
+  // Nothing seen yet: dropping it never interrupted anything to resume.
+  const neverStarted = $derived(
+    isMovie || (entry?.progress?.watchedEpisodes ?? 0) === 0,
+  );
+  // The first viewing plus every logged rewatch.
+  const movieViewings = $derived(1 + (entry?.replays.length ?? 0));
   // With no release summary on, a reminder or a mute would change nothing.
   const digestOff = $derived(releaseDigestOff());
 
@@ -118,9 +129,16 @@
     <span class="truncate">
       {#if isWatched}
         {m.home_mark_seen()}
+        {#if movieViewings > 1}<span class="timecode text-dim"
+            >×{movieViewings}</span
+          >{/if}
         {#if entry.finishedAt}<span class="timecode text-dim"
             >{formatDate(entry.finishedAt, shortDate(entry.finishedAt))}</span
           >{/if}
+      {:else if entry.rewatching}
+        {m.media_movie_rewatching()}
+        <span class="timecode text-dim"
+          >{m.media_movie_seen_times({ count: movieViewings })}</span>
       {:else}
         {m.media_not_watched()}
       {/if}
@@ -268,9 +286,9 @@
                   onResume();
                 }}>
                 <Icon name="refresh" class="h-4 w-4" />
-                {m.media_resume()}
+                {neverStarted ? m.media_back_to_watch() : m.media_resume()}
               </button>
-            {:else}
+            {:else if canDrop}
               <button
                 role="menuitem"
                 type="button"
@@ -283,8 +301,38 @@
                 {m.media_drop_tracking()}
               </button>
             {/if}
+            {#if entry.rewatching}
+              <button
+                role="menuitem"
+                type="button"
+                class="menu-item"
+                onclick={() => {
+                  close();
+                  onToggleRewatch();
+                }}>
+                <Icon name="x" class="h-4 w-4" />
+                {isMovie
+                  ? m.media_rewatch_movie_stop()
+                  : m.media_rewatch_stop()}
+              </button>
+            {:else if isMovie && isWatched}
+              <button
+                role="menuitem"
+                type="button"
+                class="menu-item"
+                onclick={() => {
+                  close();
+                  onToggleRewatch();
+                }}>
+                <Icon name="refresh" class="h-4 w-4" />
+                {m.media_rewatch_movie_start()}
+                {#if isFeatureNew("rewatch")}
+                  <span class="ml-auto"><NewBadge /></span>
+                {/if}
+              </button>
+            {/if}
             <ShareWorkMenuItem
-              separated
+              separated={isDropped || canDrop || entry.rewatching || isMovie}
               onclick={() => {
                 close();
                 onShare();

@@ -24,6 +24,24 @@ describe("deriveStatus", () => {
     });
   });
 
+  describe("rewatching", () => {
+    it("puts a completed series back to WATCHING", () => {
+      expect(
+        deriveStatus("SERIES", progress(10, 10), true, "COMPLETED", true),
+      ).toBe("WATCHING");
+    });
+    it("puts a seen movie back to PLANNED", () => {
+      expect(deriveStatus("MOVIE", null, false, "COMPLETED", true)).toBe(
+        "PLANNED",
+      );
+    });
+    it("still lets DROPPED win", () => {
+      expect(
+        deriveStatus("ANIME", progress(2, 12), true, "DROPPED", true),
+      ).toBe("DROPPED");
+    });
+  });
+
   describe("movies", () => {
     it("is COMPLETED when stored status is COMPLETED (seen)", () => {
       expect(deriveStatus("MOVIE", null, false, "COMPLETED")).toBe("COMPLETED");

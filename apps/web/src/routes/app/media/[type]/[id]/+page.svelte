@@ -294,9 +294,18 @@
   function toggleWatched() {
     if (!entry) return;
     if (entry.status !== "COMPLETED") tapFeedback();
+    if (entry.rewatching) {
+      addReplayMut.mutate();
+      return;
+    }
     patchMut.mutate({
       status: entry.status === "COMPLETED" ? "PLANNED" : "COMPLETED",
     });
+  }
+
+  function toggleRewatch() {
+    if (!entry) return;
+    patchMut.mutate({ rewatching: !entry.rewatching });
   }
 
   function dropEntry() {
@@ -467,6 +476,7 @@
     onResume={resumeEntry}
     onToggleEpisodeAlerts={() =>
       episodeAlertsMut.mutate(!entry?.episodeAlertsMuted)}
+    onToggleRewatch={toggleRewatch}
     onRemove={() => (confirmRemove = true)}
     onShare={() => (sharing = true)}>
     {#snippet socialActions()}

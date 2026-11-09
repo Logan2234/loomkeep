@@ -16,15 +16,22 @@ export { isAiringFinished as normalizeAiringFinished };
  *   (COMPLETED = seen, anything else = À voir). No WATCHING/UP_TO_DATE.
  * - Series/anime: 0 watched → PLANNED, partial → WATCHING, all released watched
  *   → COMPLETED if the show finished airing, else UP_TO_DATE (caught up).
+ * - A rewatch puts a seen title back in the queue: WATCHING for a series,
+ *   PLANNED for a movie.
  */
 export function deriveStatus(
   type: MediaType,
   progress: ProgressDto | null,
   airingFinished: boolean,
   storedStatus: EntryStatus,
+  rewatching = false,
 ): EntryStatus {
   if (storedStatus === "DROPPED") {
     return storedStatus;
+  }
+
+  if (rewatching) {
+    return type === "MOVIE" ? "PLANNED" : "WATCHING";
   }
 
   if (type === "MOVIE") {

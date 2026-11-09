@@ -45,6 +45,10 @@ export class UpdateEntryDto {
   movieReleaseAlertsEnabled?: boolean;
 
   @IsOptional()
+  @IsBoolean()
+  rewatching?: boolean;
+
+  @IsOptional()
   @IsDateString()
   startedAt?: string | null;
 

@@ -87,6 +87,7 @@ describe("timeLeftToWatch", () => {
     reviewAverage: null,
     myRating: null,
     watchCount,
+    seen: watchCount > 0,
     commentCount: 0,
     watches: [],
   });

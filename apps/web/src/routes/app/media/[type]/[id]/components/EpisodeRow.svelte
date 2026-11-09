@@ -27,6 +27,7 @@
     isNext = false,
     selecting = false,
     checked = false,
+    rewatching = false,
     onOpen,
     onMark,
     onRewatch,
@@ -56,6 +57,8 @@
     selecting?: boolean;
     /** Part of the selection. */
     checked?: boolean;
+    /** The show is being rewatched: earlier viewings are kept out of reach. */
+    rewatching?: boolean;
     onOpen: () => void;
     onMark: () => void;
     onRewatch: () => void;
@@ -67,7 +70,7 @@
   const title = $derived(
     episode.title ?? `${m.common_episode()} ${episode.number}`,
   );
-  const watched = $derived(episode.watchCount > 0);
+  const watched = $derived(episode.seen);
   const upcoming = $derived(
     watched ? null : upcomingLabel(episode.airDate, now, exactTime),
   );
@@ -279,7 +282,7 @@
                 <Icon name="x" class="h-4 w-4" />
                 {m.media_undo_watch()}
               </button>
-              {#if episode.watchCount > 1}
+              {#if episode.watchCount > 1 && !rewatching}
                 <button
                   type="button"
                   role="menuitem"

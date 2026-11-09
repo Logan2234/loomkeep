@@ -21,6 +21,7 @@ export class MediaDetailEpisodeResponseDto implements MediaDetailEpisodeDto {
   myRating!: number | null;
   commentCount!: number;
   watchCount!: number;
+  seen!: boolean;
   watches!: EpisodeWatchResponseDto[];
 }
 

@@ -2,6 +2,7 @@ import type { MediaDetailSeasonDto } from "@loomkeep/shared";
 import { describe, expect, it } from "vitest";
 import {
   arrivalTabKey,
+  asksRewatch,
   episodeTabs,
   largeTmdbImage,
   nextUpEpisode,
@@ -12,20 +13,27 @@ import {
   selectionSpan,
   tabKeyOf,
   unwatchedGapCount,
+  upNextEpisode,
 } from "./episodes";
 
 const NOW = new Date("2026-10-14T12:00:00Z");
 
 function season(
   number: number,
-  episodes: { watched?: boolean; airDate?: string | null }[],
+  episodes: {
+    watched?: boolean;
+    /** Watched before the rewatch began, not since. */
+    before?: boolean;
+    airDate?: string | null;
+  }[],
 ): MediaDetailSeasonDto {
   return {
     number,
     episodes: episodes.map((e, i) => ({
       id: `s${number}e${i + 1}`,
       number: i + 1,
-      watchCount: e.watched ? 1 : 0,
+      watchCount: e.watched || e.before ? 1 : 0,
+      seen: !!e.watched,
       airDate: e.airDate === undefined ? "2026-01-01T00:00:00Z" : e.airDate,
     })),
   } as MediaDetailSeasonDto;
@@ -156,6 +164,15 @@ describe("selection", () => {
     });
   });
 
+  it("during a rewatch, watches again what was only seen before it", () => {
+    const rewatched = season(1, [{ watched: true }, { before: true }]).episodes;
+    expect(selectionActions(rewatched, NOW)).toEqual({
+      watch: [rewatched[1].id],
+      rewatch: [rewatched[0].id, rewatched[1].id],
+      unwatch: [rewatched[0].id],
+    });
+  });
+
   it("gives a selection's ends in one tab, or how many tabs", () => {
     const tabs = episodeTabs([season(1, [{}, {}, {}]), season(2, [{}])]);
     const one = new Set([tabs[0].episodes[0].id!, tabs[0].episodes[2].id!]);
@@ -196,6 +213,11 @@ describe("unwatchedGapCount", () => {
     expect(unwatchedGapCount(seasons, 2, 2)).toBe(2);
     expect(unwatchedGapCount(seasons, 0, 1)).toBe(0);
   });
+
+  it("counts what wasn't seen again yet during a rewatch", () => {
+    const seasons = [season(1, [{ watched: true }, { before: true }, {}])];
+    expect(unwatchedGapCount(seasons, 1, 3)).toBe(1);
+  });
 });
 
 describe("largeTmdbImage", () => {
@@ -218,5 +240,46 @@ describe("playlist", () => {
       { season: 2, episode: 1 },
     ]);
     expect(playlist(seasons, 0)).toEqual([{ season: 0, episode: 1 }]);
+  });
+});
+
+describe("rewatch", () => {
+  const seen = [season(1, [{ watched: true }, { watched: true }])];
+
+  it("asks on a finished or caught-up show seen again", () => {
+    expect(asksRewatch({ status: "COMPLETED", rewatching: false }, true)).toBe(
+      true,
+    );
+    expect(asksRewatch({ status: "UP_TO_DATE", rewatching: false }, true)).toBe(
+      true,
+    );
+  });
+
+  it("doesn't ask for a first viewing, a show in progress or a rewatch on", () => {
+    expect(asksRewatch({ status: "COMPLETED", rewatching: false }, false)).toBe(
+      false,
+    );
+    expect(asksRewatch({ status: "WATCHING", rewatching: false }, true)).toBe(
+      false,
+    );
+    expect(asksRewatch({ status: "WATCHING", rewatching: true }, true)).toBe(
+      false,
+    );
+    expect(asksRewatch(null, true)).toBe(false);
+  });
+
+  it("takes the API's next episode while rewatching", () => {
+    const entry = {
+      rewatching: true,
+      progress: {
+        watchedEpisodes: 1,
+        totalEpisodes: 2,
+        nextEpisode: { episodeId: "s1e2", seasonNumber: 1, episodeNumber: 2 },
+      },
+    };
+    expect(upNextEpisode(seen, entry, NOW)?.episode.id).toBe("s1e2");
+    expect(
+      upNextEpisode(seen, { rewatching: false, progress: null }, NOW),
+    ).toBeNull();
   });
 });

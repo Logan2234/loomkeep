@@ -1,4 +1,5 @@
 import type {
+  LibraryEntryDto,
   MediaDetailEpisodeDto,
   MediaDetailSeasonDto,
 } from "@loomkeep/shared";
@@ -97,11 +98,41 @@ function firstInRun(
 
 /** The first aired, unwatched episode of the regular run. */
 export const nextUpEpisode = (seasons: MediaDetailSeasonDto[], now: Date) =>
-  firstInRun(seasons, (e) => e.watchCount === 0 && isAired(e, now));
+  firstInRun(seasons, (e) => !e.seen && isAired(e, now));
+
+/**
+ * The episode to mark next: the first aired, unwatched one — or, during a
+ * rewatch, the one the API picked, every episode being watched already.
+ */
+export function upNextEpisode(
+  seasons: MediaDetailSeasonDto[],
+  entry: Pick<LibraryEntryDto, "rewatching" | "progress">,
+  now: Date,
+): RunEpisode | null {
+  if (!entry.rewatching) return nextUpEpisode(seasons, now);
+  const id = entry.progress?.nextEpisode?.episodeId;
+  return id ? firstInRun(seasons, (e) => e.id === id) : null;
+}
+
+/**
+ * Seeing an episode again on a show watched to the end asks whether the
+ * whole show is being rewatched — never while a rewatch is already on.
+ */
+export function asksRewatch(
+  entry: Pick<LibraryEntryDto, "status" | "rewatching"> | null,
+  seenBefore: boolean,
+): boolean {
+  return (
+    !!entry &&
+    seenBefore &&
+    !entry.rewatching &&
+    (entry.status === "COMPLETED" || entry.status === "UP_TO_DATE")
+  );
+}
 
 /** The first unwatched episode still to air. */
 export const announcedEpisode = (seasons: MediaDetailSeasonDto[], now: Date) =>
-  firstInRun(seasons, (e) => e.watchCount === 0 && !isAired(e, now));
+  firstInRun(seasons, (e) => !e.seen && !isAired(e, now));
 
 /**
  * The tab to open on arrival: where the next episode is; else, up to date on a
@@ -146,11 +177,10 @@ export function selectionActions(
 ): { watch: string[]; rewatch: string[]; unwatch: string[] } {
   const ids = (matches: (e: MediaDetailEpisodeDto) => boolean) =>
     episodes.filter(matches).flatMap((e) => (e.id ? [e.id] : []));
-  const watched = ids((e) => e.watchCount > 0);
   return {
-    watch: ids((e) => e.watchCount === 0 && isAired(e, now)),
-    rewatch: watched,
-    unwatch: watched,
+    watch: ids((e) => !e.seen && isAired(e, now)),
+    rewatch: ids((e) => e.watchCount > 0),
+    unwatch: ids((e) => e.seen),
   };
 }
 
@@ -204,7 +234,7 @@ export function runProgress(
     .filter((s) => s.number !== 0)
     .flatMap((s) => s.episodes);
   return {
-    watched: episodes.filter((e) => e.watchCount > 0).length,
+    watched: episodes.filter((e) => e.seen).length,
     aired: episodes.filter((e) => isAired(e, now)).length,
   };
 }
@@ -228,7 +258,7 @@ export function unwatchedGapCount(
       const before =
         s.number < seasonNumber ||
         (s.number === seasonNumber && ep.number < episodeNumber);
-      if (before && ep.watchCount === 0) count++;
+      if (before && !ep.seen) count++;
     }
   }
 

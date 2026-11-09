@@ -30,6 +30,7 @@ import {
   movieReleaseDates,
   movieReleaseInfo,
   type MovieReplayDto,
+  nextInRewatch,
   type PagedResult,
   type PileSummaryDto,
   type ProgressDto,
@@ -160,6 +161,7 @@ const MEDIA_ROW_SELECT = {
   createdAt: true,
   watchedEpisodes: true,
   lastWatchedAt: true,
+  rewatchStartedAt: true,
   mediaItem: {
     select: { type: true, status: true, title: true, episodeCount: true },
   },
@@ -181,6 +183,58 @@ function materializedProgress(entry: {
         nextEpisode: null,
       }
     : null;
+}
+
+/**
+ * The rewatch column an update writes: unchanged when not asked, cleared on
+ * stop, kept when already rewatching. A series' rewatch begins with the
+ * viewing that prompted it (its latest one), a movie's right now.
+ */
+function rewatchStartedAtFor(
+  rewatching: boolean | undefined,
+  entry: { rewatchStartedAt: Date | null; lastWatchedAt: Date | null },
+): Date | null | undefined {
+  if (rewatching === undefined) return undefined;
+  if (!rewatching) return null;
+  return entry.rewatchStartedAt ?? entry.lastWatchedAt ?? new Date();
+}
+
+/**
+ * Whether a viewing belongs to the current one: any viewing outside a
+ * rewatch, only those since it began during one. An undated (imported)
+ * viewing always predates a rewatch.
+ */
+function seenInViewing(
+  watchedAt: Date | null,
+  rewatchStartedAt: Date | null,
+): boolean {
+  return (
+    !rewatchStartedAt || (watchedAt !== null && watchedAt >= rewatchStartedAt)
+  );
+}
+
+/** The EpisodeWatch filter matching `seenInViewing`. */
+const inViewing = (
+  rewatchStartedAt: Date | null,
+): Prisma.EpisodeWatchWhereInput =>
+  rewatchStartedAt ? { watchedAt: { gte: rewatchStartedAt } } : {};
+
+/**
+ * The episode to watch next among the regular run, in airing order: the first
+ * aired one not watched (null airDate = AniList's generated episodes, treated
+ * as available), or during a rewatch the one following the last episode seen
+ * again — `watchedIds` then holds only the viewings since the rewatch began.
+ */
+function nextEpisodeOf<E extends { id: string; airDate: Date | null }>(
+  run: E[],
+  watchedIds: Set<string>,
+  rewatching: boolean,
+  now: Date,
+): E | null {
+  const aired = run.filter((e) => e.airDate === null || e.airDate <= now);
+  return rewatching
+    ? nextInRewatch(aired, (e) => watchedIds.has(e.id))
+    : (aired.find((e) => !watchedIds.has(e.id)) ?? null);
 }
 
 // Base comparator per criterion (its natural order); `order: "asc"` negates it.
@@ -327,7 +381,7 @@ export class LibraryService {
 
     return this.toEntryDto(
       entry,
-      await this.computeProgress(userId, mediaItem.id),
+      await this.computeProgress(userId, mediaItem.id, entry.rewatchStartedAt),
       await this.lastWatchedAt(userId, mediaItem.id),
       await this.reviews.getRating(
         userId,
@@ -387,7 +441,15 @@ export class LibraryService {
         const mediaItemIds = entries.map((e) => e.mediaItemId);
         const [ratings, progressByMedia, titles] = await Promise.all([
           this.reviews.getRatings(userId, ReviewTargetType.MEDIA, mediaItemIds),
-          this.computeProgressBatch(userId, mediaItemIds),
+          this.computeProgressBatch(
+            userId,
+            mediaItemIds,
+            new Map(
+              entries.flatMap((e) =>
+                e.rewatchStartedAt ? [[e.mediaItemId, e.rewatchStartedAt]] : [],
+              ),
+            ),
+          ),
           this.titlesIn(mediaItemIds, filters.lang),
         ]);
         return entries.map((entry) => {
@@ -635,6 +697,7 @@ export class LibraryService {
             progress,
             normalizeAiringFinished(entry.mediaItem.status),
             entry.status,
+            !!entry.rewatchStartedAt,
           ),
           rating: ratings.get(entry.mediaItemId) ?? null,
           startedAt: entry.startedAt?.toISOString() ?? null,
@@ -681,7 +744,11 @@ export class LibraryService {
     );
     return this.toEntryDto(
       entry,
-      await this.computeProgress(userId, entry.mediaItemId),
+      await this.computeProgress(
+        userId,
+        entry.mediaItemId,
+        entry.rewatchStartedAt,
+      ),
       await this.lastWatchedAt(userId, entry.mediaItemId),
       await this.reviews.getRating(
         userId,
@@ -741,6 +808,7 @@ export class LibraryService {
         ownershipStatus: dto.ownershipStatus,
         ownershipSource: dto.ownershipSource,
         episodeAlertsMuted: dto.episodeAlertsMuted,
+        rewatchStartedAt: rewatchStartedAtFor(dto.rewatching, owned),
       },
       include: ENTRY_INCLUDE,
     });
@@ -788,7 +856,11 @@ export class LibraryService {
 
     return this.toEntryDto(
       entry,
-      await this.computeProgress(userId, entry.mediaItemId),
+      await this.computeProgress(
+        userId,
+        entry.mediaItemId,
+        entry.rewatchStartedAt,
+      ),
       await this.lastWatchedAt(userId, entry.mediaItemId),
       await this.reviews.getRating(
         userId,
@@ -1095,6 +1167,8 @@ export class LibraryService {
       episode.season.mediaItem.type,
     );
 
+    await this.endFinishedRewatches(userId, [episode.season.mediaItemId]);
+
     await this.emitSeasonFinishedMilestones(
       userId,
       episode.season.mediaItemId,
@@ -1152,12 +1226,17 @@ export class LibraryService {
     const airedIds = episodes
       .filter((e) => !e.airDate || e.airDate <= now)
       .map((e) => e.id);
-    await this.markWatchedIfNew(userId, airedIds);
+    await this.markWatchedIfNew(
+      userId,
+      airedIds,
+      await this.rewatchStartedAt(userId, season.mediaItemId),
+    );
     await this.syncFinishedAt(
       userId,
       season.mediaItemId,
       season.mediaItem.type,
     );
+    await this.endFinishedRewatches(userId, [season.mediaItemId]);
     await this.emitSeasonFinishedMilestones(
       userId,
       season.mediaItemId,
@@ -1168,7 +1247,8 @@ export class LibraryService {
 
   /**
    * Undo a whole season: removes every watch the user has recorded for its
-   * episodes (all rewatches included, not just the latest one per episode).
+   * episodes (all rewatches included, not just the latest one per episode) —
+   * during a rewatch, only the ones since it began.
    */
   async unwatchSeason(userId: string, seasonId: string): Promise<void> {
     const season = await this.prisma.season.findUnique({
@@ -1195,14 +1275,17 @@ export class LibraryService {
     // Loaded before the deleteMany so revokeBySource still has the ids to
     // work with afterwards. Never award/revoke inside a
     // transaction, and here there's nothing left to look up post-delete).
+    const where: Prisma.EpisodeWatchWhereInput = {
+      userId,
+      episodeId: { in: episodes.map((e) => e.id) },
+      ...inViewing(await this.rewatchStartedAt(userId, season.mediaItemId)),
+    };
     const watches = await this.prisma.episodeWatch.findMany({
-      where: { userId, episodeId: { in: episodes.map((e) => e.id) } },
+      where,
       select: { id: true },
     });
 
-    await this.prisma.episodeWatch.deleteMany({
-      where: { userId, episodeId: { in: episodes.map((e) => e.id) } },
-    });
+    await this.prisma.episodeWatch.deleteMany({ where });
     await this.xp.revokeBySource(
       "EpisodeWatch",
       watches.map((w) => w.id),
@@ -1244,8 +1327,13 @@ export class LibraryService {
       );
     }
 
+    const rewatchStartedAt = await this.rewatchStartedAt(
+      userId,
+      target.season.mediaItemId,
+    );
+
     if (target.season.number === 0) {
-      await this.markWatchedIfNew(userId, [episodeId]);
+      await this.markWatchedIfNew(userId, [episodeId], rewatchStartedAt);
     } else {
       const episodes = await this.prisma.episode.findMany({
         where: {
@@ -1277,7 +1365,7 @@ export class LibraryService {
         episodeId: { in: episodes.map((e) => e.id) },
       });
 
-      await this.markWatchedIfNew(userId, throughIds);
+      await this.markWatchedIfNew(userId, throughIds, rewatchStartedAt);
       await this.emitSeasonFinishedMilestones(
         userId,
         target.season.mediaItemId,
@@ -1291,6 +1379,7 @@ export class LibraryService {
       target.season.mediaItemId,
       target.season.mediaItem.type,
     );
+    await this.endFinishedRewatches(userId, [target.season.mediaItemId]);
   }
 
   /**
@@ -1313,18 +1402,19 @@ export class LibraryService {
   private async markWatchedIfNew(
     userId: string,
     episodeIds: string[],
+    rewatchStartedAt: Date | null = null,
   ): Promise<void> {
     if (episodeIds.length === 0) return;
     const watchedIds = await this.watchedEpisodeIds(userId, {
       episodeId: { in: episodeIds },
+      ...inViewing(rewatchStartedAt),
     });
     const newEpisodeIds = episodeIds.filter((id) => !watchedIds.has(id));
     const toCreate = newEpisodeIds.map((id) => ({ userId, episodeId: id }));
 
     if (toCreate.length > 0) {
-      await this.prisma.episodeWatch.createMany({ data: toCreate });
-      const created = await this.prisma.episodeWatch.findMany({
-        where: { userId, episodeId: { in: newEpisodeIds } },
+      const created = await this.prisma.episodeWatch.createManyAndReturn({
+        data: toCreate,
         select: { id: true },
       });
       await this.xp.awardMany(
@@ -1622,11 +1712,34 @@ export class LibraryService {
     }
 
     const episodes = await this.ownedEpisodes(userId, ids);
-    const watches = await this.prisma.episodeWatch.findMany({
+    const rewatches = new Map(
+      (
+        await this.prisma.libraryEntry.findMany({
+          where: {
+            userId,
+            mediaItemId: {
+              in: [...new Set(episodes.map((e) => e.season.mediaItemId))],
+            },
+          },
+          select: { mediaItemId: true, rewatchStartedAt: true },
+        })
+      ).map((e) => [e.mediaItemId, e.rewatchStartedAt]),
+    );
+    const mediaOf = new Map(episodes.map((e) => [e.id, e.season.mediaItemId]));
+    // During a rewatch, watching, unwatching and what counts as watched only
+    // concern the viewings since it began; rewatching still takes any.
+    const allWatches = await this.prisma.episodeWatch.findMany({
       where: { userId, episodeId: { in: ids } },
       select: { id: true, episodeId: true, watchedAt: true },
     });
+    const watches = allWatches.filter((watch) =>
+      seenInViewing(
+        watch.watchedAt,
+        rewatches.get(mediaOf.get(watch.episodeId)!) ?? null,
+      ),
+    );
     const watchedIds = new Set(watches.map((watch) => watch.episodeId));
+    const everWatchedIds = new Set(allWatches.map((watch) => watch.episodeId));
 
     if (action === "unwatch") {
       await this.prisma.episodeWatch.deleteMany({
@@ -1649,7 +1762,7 @@ export class LibraryService {
     const now = new Date();
     const targets = episodes.filter((episode) =>
       action === "rewatch"
-        ? watchedIds.has(episode.id)
+        ? everWatchedIds.has(episode.id)
         : !watchedIds.has(episode.id) &&
           (!episode.airDate || episode.airDate <= now),
     );
@@ -1819,6 +1932,51 @@ export class LibraryService {
     for (const [mediaItemId, type] of types) {
       await this.syncFinishedAt(userId, mediaItemId, type);
     }
+
+    await this.endFinishedRewatches(userId, [...types.keys()]);
+  }
+
+  /** When the user's rewatch of this work began, if one is on. */
+  private async rewatchStartedAt(
+    userId: string,
+    mediaItemId: string,
+  ): Promise<Date | null> {
+    const entry = await this.prisma.libraryEntry.findUnique({
+      where: { userId_mediaItemId: { userId, mediaItemId } },
+      select: { rewatchStartedAt: true },
+    });
+    return entry?.rewatchStartedAt ?? null;
+  }
+
+  /** A series' rewatch is over once every aired episode was seen again. */
+  private async endFinishedRewatches(
+    userId: string,
+    mediaItemIds: string[],
+  ): Promise<void> {
+    const entries = await this.prisma.libraryEntry.findMany({
+      where: {
+        userId,
+        mediaItemId: { in: mediaItemIds },
+        rewatchStartedAt: { not: null },
+        mediaItem: { type: { not: MediaType.MOVIE } },
+      },
+      select: { id: true, mediaItemId: true, rewatchStartedAt: true },
+    });
+
+    for (const entry of entries) {
+      const progress = await this.computeProgress(
+        userId,
+        entry.mediaItemId,
+        entry.rewatchStartedAt,
+      );
+
+      if (progress && !progress.nextEpisode) {
+        await this.prisma.libraryEntry.update({
+          where: { id: entry.id },
+          data: { rewatchStartedAt: null },
+        });
+      }
+    }
   }
 
   private assertEntryOwnership(userId: string, entryId: string) {
@@ -1919,6 +2077,7 @@ export class LibraryService {
       select: {
         status: true,
         watchedEpisodes: true,
+        rewatchStartedAt: true,
         mediaItem: {
           select: {
             type: true,
@@ -1944,6 +2103,7 @@ export class LibraryService {
             materializedProgress(entry),
             normalizeAiringFinished(mediaItem.status),
             entry.status,
+            !!entry.rewatchStartedAt,
           ),
         },
       ];
@@ -1970,6 +2130,7 @@ export class LibraryService {
       select: {
         status: true,
         watchedEpisodes: true,
+        rewatchStartedAt: true,
         mediaItem: {
           select: {
             type: true,
@@ -1996,6 +2157,7 @@ export class LibraryService {
           materializedProgress(entry),
           normalizeAiringFinished(entry.mediaItem.status),
           entry.status,
+          !!entry.rewatchStartedAt,
         ),
       );
     }
@@ -2043,6 +2205,7 @@ export class LibraryService {
   private async computeProgressBatch(
     userId: string,
     mediaItemIds: string[],
+    rewatchStartedAt: Map<string, Date> = new Map(),
   ): Promise<
     Map<string, { progress: ProgressDto | null; lastWatchedAt: Date | null }>
   > {
@@ -2099,7 +2262,12 @@ export class LibraryService {
           lastWatchedByMedia.set(mediaItemId, w.watchedAt);
       }
 
-      if (w.episode.season.number > 0) {
+      const countsForProgress = seenInViewing(
+        w.watchedAt,
+        rewatchStartedAt.get(mediaItemId) ?? null,
+      );
+
+      if (w.episode.season.number > 0 && countsForProgress) {
         const set = watchedRegularIdsByMedia.get(mediaItemId);
         if (set) set.add(w.episodeId);
         else watchedRegularIdsByMedia.set(mediaItemId, new Set([w.episodeId]));
@@ -2121,9 +2289,11 @@ export class LibraryService {
 
       const watchedIds =
         watchedRegularIdsByMedia.get(mediaItemId) ?? new Set<string>();
-      const next = mediaEpisodes.find(
-        (e) =>
-          !watchedIds.has(e.id) && (e.airDate === null || e.airDate <= now),
+      const next = nextEpisodeOf(
+        mediaEpisodes,
+        watchedIds,
+        rewatchStartedAt.has(mediaItemId),
+        now,
       );
       result.set(mediaItemId, {
         progress: {
@@ -2151,6 +2321,7 @@ export class LibraryService {
   private async computeProgress(
     userId: string,
     mediaItemId: string,
+    rewatchStartedAt: Date | null = null,
   ): Promise<ProgressDto | null> {
     const regularEpisodes: Prisma.EpisodeWhereInput = {
       season: { mediaItemId, number: { gt: 0 } },
@@ -2171,15 +2342,17 @@ export class LibraryService {
       return null; // Movies (or media without any episode listing).
     }
 
+    // During a rewatch only the viewings since it began count.
     const watchedIds = await this.watchedEpisodeIds(userId, {
       episode: regularEpisodes,
+      ...inViewing(rewatchStartedAt),
     });
 
-    // Next up: first unwatched episode that has aired (null airDate = AniList's
-    // generated episodes, treated as available).
-    const now = new Date();
-    const next = episodes.find(
-      (e) => !watchedIds.has(e.id) && (e.airDate === null || e.airDate <= now),
+    const next = nextEpisodeOf(
+      episodes,
+      watchedIds,
+      !!rewatchStartedAt,
+      new Date(),
     );
 
     return {
@@ -2220,6 +2393,7 @@ export class LibraryService {
       progress,
       normalizeAiringFinished(media.status),
       entry.status,
+      !!entry.rewatchStartedAt,
     );
     // Movies have no episode watches: fall back to when it was marked finished.
     const lastWatchedAt = watchedAt ?? entry.finishedAt;
@@ -2239,6 +2413,7 @@ export class LibraryService {
       ownershipStatus: entry.ownershipStatus,
       ownershipSource: entry.ownershipSource,
       episodeAlertsMuted: entry.episodeAlertsMuted,
+      rewatching: !!entry.rewatchStartedAt,
       ...(entry.movieReleaseReminderAt
         ? { movieReleaseAlertsEnabled: true }
         : {}),
@@ -2278,6 +2453,13 @@ export class LibraryService {
       },
     });
     await this.xp.award(userId, XpReason.MOVIE_REPLAYED, replay.id);
+
+    if (entry.rewatchStartedAt) {
+      await this.prisma.libraryEntry.update({
+        where: { id: entryId },
+        data: { rewatchStartedAt: null },
+      });
+    }
 
     await this.activity.emit({
       userId,
@@ -2401,6 +2583,7 @@ export class LibraryService {
           ...NO_COMMUNITY_RATING,
           commentCount: 0,
           watchCount: 0,
+          seen: false,
           watches: [],
         })),
       })),
@@ -2485,7 +2668,11 @@ export class LibraryService {
     const entry = entryRow
       ? this.toEntryDto(
           entryRow,
-          await this.computeProgress(userId, media.id),
+          await this.computeProgress(
+            userId,
+            media.id,
+            entryRow.rewatchStartedAt,
+          ),
           await this.lastWatchedAt(userId, media.id),
           await this.reviews.getRating(
             userId,
@@ -2544,6 +2731,9 @@ export class LibraryService {
           ...(episodeRatings.get(episode.id) ?? NO_COMMUNITY_RATING),
           commentCount: commentCounts.get(episode.id) ?? 0,
           watchCount: episode.watches.length,
+          seen: episode.watches.some((w) =>
+            seenInViewing(w.watchedAt, entryRow?.rewatchStartedAt ?? null),
+          ),
           watches: episode.watches.map((w) => ({
             id: w.id,
             episodeId: episode.id,

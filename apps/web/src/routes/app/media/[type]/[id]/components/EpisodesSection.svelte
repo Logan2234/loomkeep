@@ -7,6 +7,7 @@
     undoEpisodeWatches,
     unwatchEpisode,
     unwatchSeason,
+    updateLibraryEntry,
     watchEpisode,
     watchSeason,
     watchThrough,
@@ -49,10 +50,10 @@
   import {
     announcedEpisode,
     arrivalTabKey,
+    asksRewatch,
     episodeTabs,
     isAired,
     largeTmdbImage,
-    nextUpEpisode,
     playlist,
     runProgress,
     selectionActions,
@@ -60,6 +61,7 @@
     selectionSpan,
     tabKeyOf,
     unwatchedGapCount,
+    upNextEpisode,
     type EpisodeTab,
   } from "./episodes";
   import GoToEpisode from "./GoToEpisode.svelte";
@@ -101,8 +103,13 @@
   const markWatchedMut = createApiMutation(() => ({
     mutate: (episodeId: string) => watchEpisode(episodeId),
     onSuccess: async (_data, episodeId) => {
+      const seenBefore = seasons.some((s) =>
+        s.episodes.some((e) => e.id === episodeId && e.watchCount > 0),
+      );
+      const ask = asksRewatch(entry, seenBefore);
       await reload();
       popCheck(episodeId);
+      if (ask) rewatchPrompt = { count: 1 };
     },
     onError: (err) => onError(resolveApiError(err)),
   }));
@@ -147,6 +154,7 @@
       single?: { code: string; count: number };
     }) => batchEpisodeWatches(action, ids),
     onSuccess: async (result, { action, single }) => {
+      const ask = action === "rewatch" && asksRewatch(entry, true);
       exitSelection();
       await reload();
       tapFeedback();
@@ -160,6 +168,7 @@
           ? { restore: result.removed }
           : { deleteWatchIds: result.created.map((w) => w.id) },
       );
+      if (ask && touched > 0) rewatchPrompt = { count: touched };
     },
     onError: (err) => onError(resolveApiError(err)),
   }));
@@ -171,6 +180,17 @@
     onSuccess: async () => {
       await reload();
       toast.success(m.media_action_undone(), 2000);
+    },
+    onError: (err) => onError(resolveApiError(err)),
+  }));
+
+  // Seeing a finished show's episode again: is the whole show being rewatched?
+  let rewatchPrompt = $state<{ count: number } | null>(null);
+  const startRewatchMut = createApiMutation(() => ({
+    mutate: () => updateLibraryEntry(entry!.id, { rewatching: true }),
+    onSuccess: async () => {
+      rewatchPrompt = null;
+      await reload();
     },
     onError: (err) => onError(resolveApiError(err)),
   }));
@@ -419,10 +439,9 @@
   }
 
   const seasonWatchedCount = (season: MediaDetailSeasonDto) =>
-    season.episodes.filter((e) => e.watchCount > 0).length;
+    season.episodes.filter((e) => e.seen).length;
   const seasonWatched = (season: MediaDetailSeasonDto) =>
-    season.episodes.length > 0 &&
-    season.episodes.every((ep) => ep.watchCount > 0);
+    season.episodes.length > 0 && season.episodes.every((ep) => ep.seen);
 
   // Which season just crossed into "fully watched", cleared on its own. Keyed
   // by number rather than a boolean so re-finishing another season while the
@@ -522,7 +541,7 @@
     markUnwatchMut.mutate(episodeId);
   }
 
-  const nextUp = $derived(entry ? nextUpEpisode(seasons, now) : null);
+  const nextUp = $derived(entry ? upNextEpisode(seasons, entry, now) : null);
   const announced = $derived(
     entry && !nextUp ? announcedEpisode(seasons, now) : null,
   );
@@ -702,9 +721,7 @@
     {exactTime}
     canOpenPosters={!!tmdbSourceId}
     watchedCount={seasonWatchedCount(season)}
-    hasPending={season.episodes.some(
-      (e) => e.id && e.watchCount === 0 && isAired(e, now),
-    )}
+    hasPending={season.episodes.some((e) => e.id && !e.seen && isAired(e, now))}
     finished={justFinished === season.number}
     allWatched={seasonWatched(season)}
     marking={markSeasonMut.loading && markSeasonMut.variables === seasonId}
@@ -767,8 +784,7 @@
                 {#if entry}
                   <span class="timecode text-dim text-xs">
                     {m.media_watched_of({
-                      watched: tab.episodes.filter((e) => e.watchCount > 0)
-                        .length,
+                      watched: tab.episodes.filter((e) => e.seen).length,
                       total: tab.episodes.length,
                     })}
                   </span>
@@ -799,6 +815,7 @@
                   {seasonNumber}
                   {code}
                   {exactTime}
+                  rewatching={!!entry?.rewatching}
                   tracked={!!entry}
                   {now}
                   selected={openEpisode?.season === seasonNumber &&
@@ -962,6 +979,19 @@
     busy={confirmCatchupYesMut.loading}
     onConfirm={confirmCatchupYes}
     onCancel={confirmCatchupNo} />
+{/if}
+
+{#if rewatchPrompt}
+  <ConfirmationModal
+    title={m.media_rewatch_prompt_title()}
+    message={m.media_rewatch_prompt_message()}
+    confirmLabel={m.media_rewatch_prompt_confirm()}
+    cancelLabel={rewatchPrompt.count === 1
+      ? m.media_rewatch_prompt_cancel_one()
+      : m.media_rewatch_prompt_cancel()}
+    busy={startRewatchMut.loading}
+    onConfirm={() => startRewatchMut.mutate()}
+    onCancel={() => (rewatchPrompt = null)} />
 {/if}
 
 {#if confirmUnwatchSeasonId}
