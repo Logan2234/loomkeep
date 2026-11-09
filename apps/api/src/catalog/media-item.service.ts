@@ -42,6 +42,12 @@ const MAX_REFRESHED_PER_RUN = 500;
 // refreshing one at a time.
 const REFRESH_CONCURRENCY = 3;
 
+// An ended or canceled series gets no new episodes and, unlike films and
+// anime, has no saga whose sequel must be spotted the same day: a week is
+// enough to catch a revival or a late fix. TMDB's own status strings.
+const ENDED_SERIES_SYNC_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+const ENDED_SERIES_STATUSES = ["Ended", "Canceled"];
+
 // Episode rows whose provider fields actually changed, updated at a time.
 // Matches REFRESH_CONCURRENCY above: same pool, same reason to bound it.
 const EPISODE_UPDATE_CONCURRENCY = 3;
@@ -90,11 +96,23 @@ export class MediaItemService {
   }
 
   private async runRefreshStale(): Promise<number> {
-    const staleBefore = new Date(Date.now() - CATALOG_SYNC_TTL_MS);
+    const now = Date.now();
     const items = await this.prisma.mediaItem.findMany({
       where: {
-        lastSyncedAt: { lt: staleBefore },
         entries: { some: { status: { not: "DROPPED" } } },
+        // Spelled as positives: a NOT over `status` would drop the rows
+        // where it is null.
+        OR: [
+          { lastSyncedAt: { lt: new Date(now - ENDED_SERIES_SYNC_TTL_MS) } },
+          {
+            lastSyncedAt: { lt: new Date(now - CATALOG_SYNC_TTL_MS) },
+            OR: [
+              { type: { not: "SERIES" } },
+              { status: null },
+              { status: { notIn: ENDED_SERIES_STATUSES } },
+            ],
+          },
+        ],
       },
       // Most stale first, so a catalog bigger than MAX_REFRESHED_PER_RUN
       // never starves the items that have been waiting the longest.

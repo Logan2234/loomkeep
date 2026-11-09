@@ -27,6 +27,8 @@ history from before it was started.
   in the last two days, and every account on Sundays.
 - Self-hosting: the games and books catalogue refreshes ask much less of
   IGDB and Open Library.
+- Self-hosting: an ended or canceled series is refreshed once a week
+  instead of every day.
 - Landing page: a questions section answers what people ask before signing
   up (what if the project stops, imports, ads, servers, phone, deleting an
   account).
