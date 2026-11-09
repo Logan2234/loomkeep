@@ -755,7 +755,7 @@
   "admin_job_backup_description": "Crea un backup e applica la politica di conservazione.",
   "admin_job_inactive_accounts_description": "Applica gli avvisi e le eliminazioni previsti dalla politica di inattività.",
   "admin_job_gamification_reconcile_description": "Riconcilia la progressione degli account con i dati attuali.",
-  "admin_job_gamification_achievements_sweep_description": "Rivaluta gli obiettivi con i dati attuali di ogni account.",
+  "admin_job_gamification_achievements_sweep_description": "Rivaluta gli obiettivi degli account attivi di recente (di tutti la domenica) con i loro dati attuali.",
   "admin_job_api_keys_maintenance_description": "Esegue la manutenzione delle chiavi API e invia le relative notifiche.",
   "admin_imports_source": "Origine",
   "admin_jobs_history_date": "Data",

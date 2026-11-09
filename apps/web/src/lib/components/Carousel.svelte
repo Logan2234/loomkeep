@@ -194,12 +194,15 @@
          the strip's content (links/buttons) stays independently reachable. -->
     <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
     <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+    <!-- overflow-y-hidden: overflow-x-auto alone would let what pokes out
+         below the cards (a `.btn-sm`'s enlarged tap area) scroll the strip
+         vertically. -->
     <div
       bind:this={stripEl}
       role="region"
       aria-label={label}
       tabindex={hasFocusableChildren ? undefined : 0}
-      class="no-scrollbar focus-visible:outline-accent flex snap-x {gap} {innerClass} {snapPad} overflow-x-auto select-none focus-visible:outline-2 focus-visible:outline-offset-2 {dragging
+      class="no-scrollbar focus-visible:outline-accent flex snap-x {gap} {innerClass} {snapPad} overflow-x-auto overflow-y-hidden select-none focus-visible:outline-2 focus-visible:outline-offset-2 {dragging
         ? 'cursor-grabbing'
         : 'cursor-grab'}"
       onscroll={updateEdges}

@@ -392,13 +392,14 @@ export class AchievementService {
   }
 
   /**
-   * Nightly safety net: re-evaluates every achievement for every user. This
+   * Nightly safety net: re-evaluates every achievement for the members
+   * active these last two days (two, so one failed night is caught up). This
    * catches anything not wired to a live award site, including every existing
    * account's history, with no separate backfill script needed (`check()`
    * never cares whether a row came from live use or an import).
    *
-   * This is a full sweep without activity-based targeting. Revisit that if
-   * the catalogue makes the loop expensive.
+   * Sundays sweep everyone: what moves without the member doing anything
+   * (followers, years of membership, API-key-only use) waits a week at most.
    */
   @Cron(CronExpression.EVERY_DAY_AT_5AM, {
     name: JOB_KEYS.GAMIFICATION_ACHIEVEMENTS_SWEEP,
@@ -412,7 +413,14 @@ export class AchievementService {
   }
 
   private async sweepAllUsers(): Promise<string> {
-    const users = await this.prisma.user.findMany({ select: { id: true } });
+    const now = new Date();
+    const users = await this.prisma.user.findMany({
+      where:
+        now.getUTCDay() === 0
+          ? {}
+          : { lastActiveAt: { gte: sinceDaysAgo(now, 2) } },
+      select: { id: true },
+    });
 
     for (const user of users) {
       await this.evaluate(user.id);

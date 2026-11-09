@@ -956,11 +956,14 @@ export class NotificationService {
   }
 
   async markSeen(userId: string): Promise<void> {
+    const { unseen } = await this.counts(userId);
     await this.prisma.user.update({
       where: { id: userId },
       data: { notificationsSeenAt: new Date() },
     });
-    this.publishChanged(userId);
+    // An open bell marks seen again on every event: telling the devices
+    // when nothing changed would answer itself in a loop.
+    if (unseen > 0) this.publishChanged(userId);
   }
 
   async markAllRead(userId: string): Promise<void> {

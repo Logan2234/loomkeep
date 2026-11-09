@@ -409,6 +409,7 @@ describe("NotificationService — bell and history", () => {
 
   it("opening the bell marks everything seen, on every device", async () => {
     const { service, prisma, events } = makeService();
+    (prisma.notification.count as Mock).mockResolvedValue(2);
 
     await service.markSeen("u1");
 
@@ -417,6 +418,16 @@ describe("NotificationService — bell and history", () => {
       data: { notificationsSeenAt: expect.any(Date) },
     });
     expect(events.emitToUser).toHaveBeenCalledWith("u1", "notification");
+  });
+
+  it("opening the bell with nothing unseen tells no device", async () => {
+    // An open bell marks seen on every event: emitting here would loop.
+    const { service, prisma, events } = makeService();
+
+    await service.markSeen("u1");
+
+    expect(prisma.user.update).toHaveBeenCalled();
+    expect(events.emitToUser).not.toHaveBeenCalled();
   });
 
   it("marks an entry read instead of deleting it", async () => {

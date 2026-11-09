@@ -394,6 +394,21 @@ describe("OpenLibraryProvider", () => {
     expect(calledUrl(fn, 1)).toContain("editions.language");
   });
 
+  it("skips the same-author search when the details are only stored", async () => {
+    const fn = mockFetchByUrl([
+      ["/works/OL27482W.json", { title: "The Hobbit" }],
+      ["q=key%3A", { numFound: 1, docs: [HOBBIT_DOC] }],
+      ["author_key%3A", { numFound: 0, docs: [] }],
+    ]);
+
+    const details = await providerWith("k").getStoredDetails("OL27482W");
+
+    expect(details.summary.title).toBe("The Hobbit");
+    expect(
+      fn.mock.calls.some(([url]) => String(url).includes("author_key%3A")),
+    ).toBe(false);
+  });
+
   it("passes a caller-supplied lang through instead of the English default", async () => {
     const fn = mockFetchByUrl([
       ["/works/OL27482W.json", { title: "The Hobbit" }],

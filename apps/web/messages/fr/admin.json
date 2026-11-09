@@ -755,7 +755,7 @@
   "admin_job_backup_description": "Crée une sauvegarde et applique la politique de rétention.",
   "admin_job_inactive_accounts_description": "Applique les avertissements et suppressions prévus par la politique d’inactivité.",
   "admin_job_gamification_reconcile_description": "Réconcilie la progression des comptes avec leurs données actuelles.",
-  "admin_job_gamification_achievements_sweep_description": "Réévalue les succès des comptes selon leurs données actuelles.",
+  "admin_job_gamification_achievements_sweep_description": "Réévalue les succès des comptes actifs récemment (de tous le dimanche) selon leurs données actuelles.",
   "admin_job_api_keys_maintenance_description": "Applique la maintenance des clés API et les notifications associées.",
   "admin_imports_source": "Source",
   "admin_jobs_history_date": "Date",

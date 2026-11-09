@@ -63,6 +63,11 @@ export interface BookCatalogProvider {
     editionKey?: string,
   ): Promise<ProviderBookDetails>;
   /**
+   * `getDetails()` for persisting: what's only shown live (same-author
+   * books) is left out, sparing a call per book on imports and refreshes.
+   */
+  getStoredDetails(sourceId: string): Promise<ProviderBookDetails>;
+  /**
    * The distinct editions (by language) available for the manual selector.
    * `lang` (ISO 639-1, e.g. "fr"): the locale each edition's `language` is
    * translated into.

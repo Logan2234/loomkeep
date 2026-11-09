@@ -34,7 +34,7 @@ const jobRunsStub = {
 
 function makeService(overrides: {
   bookExternalId?: unknown;
-  getDetails?: Mock;
+  getStoredDetails?: Mock;
   staleItems?: { id: string }[];
 }) {
   const prisma = {
@@ -58,7 +58,8 @@ function makeService(overrides: {
     },
   } as unknown as PrismaService;
   const openLibraryProvider = {
-    getDetails: overrides.getDetails ?? vi.fn().mockResolvedValue(details),
+    getStoredDetails:
+      overrides.getStoredDetails ?? vi.fn().mockResolvedValue(details),
   } as unknown as OpenLibraryProvider;
   const service = new BookItemService(prisma, openLibraryProvider, jobRunsStub);
   return { service, prisma, openLibraryProvider };
@@ -76,7 +77,7 @@ describe("BookItemService.upsertFromSource", () => {
     const result = await service.upsertFromSource("OPEN_LIBRARY", "OL42W");
 
     expect(result).toBe(recentlySynced.bookItem);
-    expect(openLibraryProvider.getDetails).not.toHaveBeenCalled();
+    expect(openLibraryProvider.getStoredDetails).not.toHaveBeenCalled();
   });
 
   it("refetches from the provider when the cached item is past the TTL", async () => {
@@ -92,7 +93,7 @@ describe("BookItemService.upsertFromSource", () => {
 
     await service.upsertFromSource("OPEN_LIBRARY", "OL42W");
 
-    expect(openLibraryProvider.getDetails).toHaveBeenCalledWith("OL42W");
+    expect(openLibraryProvider.getStoredDetails).toHaveBeenCalledWith("OL42W");
   });
 
   it("fetches from the provider when there is no cached item", async () => {
@@ -102,7 +103,7 @@ describe("BookItemService.upsertFromSource", () => {
 
     await service.upsertFromSource("OPEN_LIBRARY", "OL42W");
 
-    expect(openLibraryProvider.getDetails).toHaveBeenCalledWith("OL42W");
+    expect(openLibraryProvider.getStoredDetails).toHaveBeenCalledWith("OL42W");
     expect(prisma.bookItem.create).toHaveBeenCalled();
   });
 });
@@ -177,15 +178,15 @@ describe("BookItemService.refreshStale", () => {
     expect(query.where.lastSyncedAt.lt.getTime()).toBeLessThan(
       Date.now() - 6 * 24 * 60 * 60 * 1000,
     );
-    expect(openLibraryProvider.getDetails).toHaveBeenCalledWith("OL-b1");
-    expect(openLibraryProvider.getDetails).toHaveBeenCalledWith("OL-b2");
+    expect(openLibraryProvider.getStoredDetails).toHaveBeenCalledWith("OL-b1");
+    expect(openLibraryProvider.getStoredDetails).toHaveBeenCalledWith("OL-b2");
   });
 
   it("stores the picked edition's ISBN on refresh", async () => {
     const { service, prisma } = makeService({
       bookExternalId: { bookItemId: "b1" },
       staleItems: [{ id: "b1" }],
-      getDetails: vi
+      getStoredDetails: vi
         .fn()
         .mockResolvedValue({ ...details, isbn: "9780261102217" }),
     });
@@ -202,7 +203,7 @@ describe("BookItemService.refreshStale", () => {
     const { service } = makeService({
       bookExternalId: { bookItemId: "b1" },
       staleItems: [{ id: "b1" }, { id: "b2" }],
-      getDetails: vi
+      getStoredDetails: vi
         .fn()
         .mockRejectedValueOnce(new Error("boom"))
         .mockResolvedValueOnce(details),

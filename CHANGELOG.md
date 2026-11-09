@@ -23,6 +23,12 @@ history from before it was started.
 
 ### Changed
 
+- Self-hosting: the nightly achievements sweep now covers accounts active
+  in the last two days, and every account on Sundays.
+- Self-hosting: the games and books catalogue refreshes ask much less of
+  IGDB and Open Library.
+- Self-hosting: an ended or canceled series is refreshed once a week
+  instead of every day.
 - Landing page: a questions section answers what people ask before signing
   up (what if the project stops, imports, ads, servers, phone, deleting an
   account).
@@ -78,6 +84,9 @@ history from before it was started.
 
 ### Fixed
 
+- The open notifications panel no longer refreshes itself non-stop.
+- The home's "To watch" strip no longer scrolls a few pixels vertically.
+- A slow IGDB answer no longer fails the whole games catalogue refresh.
 - A review or list set to public on a private profile is visible to friends
   again, as a friends-only one is; strangers still don't see it.
 - Passkeys created or used in the Android app are no longer rejected with
