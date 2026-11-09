@@ -9,7 +9,7 @@ import type { ReviewService } from "../reviews/review.service";
 import type { ActivityService } from "../social/activity.service";
 import { stubAchievements, stubEvents, stubXp } from "../test-utils/stubs";
 import type { AgeGateService } from "../users/age-gate.service";
-import { LibraryService } from "./library.service";
+import { compareMediaEntries, LibraryService } from "./library.service";
 
 function makeRow(overrides: Partial<Record<string, unknown>> = {}) {
   const id = (overrides.id as string) ?? "entry-1";
@@ -1314,5 +1314,43 @@ describe("LibraryService.trackedStatuses", () => {
       { type: "SERIES", sourceId: "1399", status: "COMPLETED" },
     ]);
     expect(queryRaw).not.toHaveBeenCalled();
+  });
+});
+
+describe("compareMediaEntries — recent", () => {
+  const row = (
+    id: string,
+    createdAt: string,
+    lastWatchedAt: string | null,
+  ) => ({
+    id,
+    status: "WATCHING" as const,
+    rating: null,
+    startedAt: null,
+    finishedAt: null,
+    createdAt,
+    lastWatchedAt,
+    mediaItem: { title: id },
+    progress: null,
+  });
+
+  it("puts a title never watched where it was added, among the ones being watched", () => {
+    const paused = row(
+      "paused",
+      "2026-01-01T00:00:00Z",
+      "2026-02-01T00:00:00Z",
+    );
+    const plannedMovie = row("movie", "2026-03-01T00:00:00Z", null);
+    const watching = row(
+      "watching",
+      "2025-12-01T00:00:00Z",
+      "2026-04-01T00:00:00Z",
+    );
+
+    const sorted = [paused, plannedMovie, watching].sort((a, b) =>
+      compareMediaEntries("recent", a, b, undefined),
+    );
+
+    expect(sorted.map((r) => r.id)).toEqual(["watching", "movie", "paused"]);
   });
 });

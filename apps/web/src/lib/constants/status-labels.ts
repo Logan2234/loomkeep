@@ -6,6 +6,7 @@ import {
   type MediaFilterStatus,
   type MusicStatus,
   type SavedViewDomain,
+  SESSION_FILTER_PAUSED,
 } from "@loomkeep/shared";
 
 export const MEDIA_STATUS_META: Record<
@@ -183,7 +184,12 @@ export const LIBRARY_UNPICKED_STATUSES: Record<SavedViewDomain, string[]> = {
     "DORMANT",
     "GHOST",
   ] satisfies MediaFilterStatus[],
-  GAMES: ["BACKLOG", "PLAYING"] satisfies GameStatus[],
-  BOOKS: ["TO_READ", "READING"] satisfies BookStatus[],
+  // Paused is a kind of playing/reading: listed so its pill sits with them.
+  GAMES: ["BACKLOG", "PLAYING", SESSION_FILTER_PAUSED] satisfies (
+    GameStatus | typeof SESSION_FILTER_PAUSED
+  )[],
+  BOOKS: ["TO_READ", "READING", SESSION_FILTER_PAUSED] satisfies (
+    BookStatus | typeof SESSION_FILTER_PAUSED
+  )[],
   MUSIC: [],
 };

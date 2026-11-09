@@ -23,6 +23,11 @@ history from before it was started.
 
 ### Changed
 
+- Video library: sorted by recent activity, a title not watched yet (a
+  planned movie) now sits where it was added among the series you're
+  watching, instead of after all of them.
+- Video, game and book libraries: the status pills of what shows by default
+  come first, then, past a divider, Finished and Dropped.
 - Video, game and book libraries now show only what's still ahead (in
   progress, to watch, paused, ghost…) until a status is picked: finished and
   dropped titles appear once their own pill is selected. Music still shows
