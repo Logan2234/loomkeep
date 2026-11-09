@@ -78,6 +78,8 @@ history from before it was started.
 
 ### Fixed
 
+- The open notifications panel no longer refreshes itself non-stop.
+- The home's "To watch" strip no longer scrolls a few pixels vertically.
 - A review or list set to public on a private profile is visible to friends
   again, as a friends-only one is; strangers still don't see it.
 - Passkeys created or used in the Android app are no longer rejected with
