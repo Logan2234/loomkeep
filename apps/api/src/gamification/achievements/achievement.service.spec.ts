@@ -390,6 +390,30 @@ describe("AchievementService.equip/unequip", () => {
   });
 });
 
+describe("AchievementService nightly sweep", () => {
+  afterEach(() => vi.useRealTimers());
+
+  it("sweeps only the members active these last two days on a weekday", async () => {
+    vi.useFakeTimers({ now: new Date("2026-11-11T05:00:00Z") }); // Wednesday
+    const { service, prisma } = makeService();
+
+    await service.runAchievementsSweepJob();
+
+    const [[{ where }]] = (prisma.user.findMany as Mock).mock.calls;
+    expect(where.lastActiveAt.gte).toEqual(new Date("2026-11-09T05:00:00Z"));
+  });
+
+  it("sweeps every member on Sunday", async () => {
+    vi.useFakeTimers({ now: new Date("2026-11-15T05:00:00Z") }); // Sunday
+    const { service, prisma } = makeService();
+
+    await service.runAchievementsSweepJob();
+
+    const [[{ where }]] = (prisma.user.findMany as Mock).mock.calls;
+    expect(where).toEqual({});
+  });
+});
+
 describe("AchievementService rarity snapshot", () => {
   it("counts holders among eligible members only, every registry key included", async () => {
     const { service, prisma } = makeService();

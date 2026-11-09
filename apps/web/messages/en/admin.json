@@ -755,7 +755,7 @@
   "admin_job_backup_description": "Creates a backup and applies the retention policy.",
   "admin_job_inactive_accounts_description": "Applies the warnings and deletions defined by the inactivity policy.",
   "admin_job_gamification_reconcile_description": "Reconciles account progression with current data.",
-  "admin_job_gamification_achievements_sweep_description": "Re-evaluates achievements using each account's current data.",
+  "admin_job_gamification_achievements_sweep_description": "Re-evaluates achievements of recently active accounts (all of them on Sundays) using their current data.",
   "admin_job_api_keys_maintenance_description": "Maintains API keys and sends the related notifications.",
   "admin_imports_source": "Source",
   "admin_jobs_history_date": "Date",
