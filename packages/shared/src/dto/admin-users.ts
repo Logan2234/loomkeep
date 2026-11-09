@@ -1,4 +1,9 @@
-import type { Plan, Role, SecurityEventType } from "../enums";
+import type {
+  AccountDeletionReason,
+  Plan,
+  Role,
+  SecurityEventType,
+} from "../enums";
 
 export const INVITATION_LABEL_MAX_LENGTH = 60;
 
@@ -21,6 +26,8 @@ export interface AdminUserDto {
   suspendedUntil: string | null;
   /** When the account's self-requested deletion is due, null when none is scheduled. */
   deletionScheduledFor: string | null;
+  /** The reason picked when asking for the deletion, null when none was given or none is scheduled. */
+  deletionReason: AccountDeletionReason | null;
   /** Total XP (`UserScore`), 0 before any gain. */
   xp: number;
   /** The invitation this account signed up through — null for an open registration. */
@@ -124,6 +131,32 @@ export interface AdminUserLibraryStatsDto {
   books: number;
   music: number;
   total: number;
+}
+
+/** The library tiles of the admin account drawer, one per counter of the stats. */
+export const ADMIN_USER_LIBRARY_KINDS = [
+  "movies",
+  "series",
+  "anime",
+  "games",
+  "books",
+  "music",
+] as const;
+
+export type AdminUserLibraryKind = (typeof ADMIN_USER_LIBRARY_KINDS)[number];
+
+/** One work saved in an account's library, as the admin sees it. */
+export interface AdminUserLibraryEntryDto {
+  id: string;
+  title: string;
+  imageUrl: string | null;
+  /** Client route to the work's page, null when the catalog id is unknown. */
+  href: string | null;
+  /** The entry's status in its own domain (EntryStatus, GameStatus, BookStatus or MusicStatus). */
+  status: string;
+  favorite: boolean;
+  /** When the account added the work to its library. */
+  addedAt: string;
 }
 
 /** Minimal account result returned by the paginated admin picker search. */

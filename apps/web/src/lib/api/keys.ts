@@ -311,6 +311,8 @@ export const keys = {
       ["admin", "user-sessions", userId] as const,
     userLibraryStats: (userId: string) =>
       ["admin", "user-library-stats", userId] as const,
+    userLibrary: (userId: string, kind: string) =>
+      ["admin", "user-library", userId, kind] as const,
     userReviews: (userId: string) => ["admin", "user-reviews", userId] as const,
     userComments: (userId: string) =>
       ["admin", "user-comments", userId] as const,

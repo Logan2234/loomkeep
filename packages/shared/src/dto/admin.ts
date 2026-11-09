@@ -59,6 +59,7 @@ export {
 } from "./admin-stats-details";
 export {
   ADMIN_USER_FILTERS,
+  ADMIN_USER_LIBRARY_KINDS,
   AdjustAdminUserXpRequestDto,
   AdminInvitationDto,
   AdminInvitationLinkDto,
@@ -67,6 +68,8 @@ export {
   AdminUserDto,
   AdminUserFilter,
   AdminUserInvitationDto,
+  AdminUserLibraryEntryDto,
+  AdminUserLibraryKind,
   AdminUserLibraryStatsDto,
   AdminUserOptionDto,
   AdminUserPlanDto,

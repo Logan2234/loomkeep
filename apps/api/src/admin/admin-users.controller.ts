@@ -2,6 +2,8 @@ import {
   type AdminUserCommentDto,
   type AdminUserDto,
   type AdminUserFilter,
+  type AdminUserLibraryEntryDto,
+  type AdminUserLibraryKind,
   type AdminUserLibraryStatsDto,
   type AdminUserOptionDto,
   type AdminUserPlanDto,
@@ -15,6 +17,7 @@ import {
   type UserDataExportDto,
   type UserSummaryDto,
   ADMIN_USER_FILTERS,
+  ADMIN_USER_LIBRARY_KINDS,
   ErrorCode,
   ModerationMeasure,
   ReportTargetType,
@@ -28,6 +31,7 @@ import {
   HttpCode,
   HttpStatus,
   Param,
+  ParseEnumPipe,
   Patch,
   Post,
   Query,
@@ -43,6 +47,10 @@ import { CommentService } from "../comments/comment.service";
 import { AppException } from "../common/app.exception";
 import { PagedResponseDto } from "../common/dto/paged-response.dto";
 import { UserSummaryResponseDto } from "../common/dto/user-summary-response.dto";
+import {
+  CANONICAL_EXTERNAL_ID_SELECT,
+  canonicalExternalId,
+} from "../common/external-id.util";
 import {
   DEFAULT_PAGE_SIZE,
   parsePageQuery,
@@ -71,6 +79,7 @@ import { isSuspended } from "../users/suspension.util";
 import { AdminOnly } from "./admin-only.decorator";
 import { AdjustAdminUserXpDto } from "./dto/adjust-admin-user-xp.dto";
 import { AdminUserCommentResponseDto } from "./dto/admin-user-comment-response.dto";
+import { AdminUserLibraryEntryResponseDto } from "./dto/admin-user-library-entry-response.dto";
 import { AdminUserLibraryStatsResponseDto } from "./dto/admin-user-library-stats-response.dto";
 import { AdminUserOptionResponseDto } from "./dto/admin-user-option-response.dto";
 import { AdminUserPlanResponseDto } from "./dto/admin-user-plan-response.dto";
@@ -79,6 +88,11 @@ import { AdminUserRoleResponseDto } from "./dto/admin-user-role-response.dto";
 import { AdminUserXpResponseDto } from "./dto/admin-user-xp-response.dto";
 import { UpdateAdminUserPlanDto } from "./dto/update-admin-user-plan.dto";
 import { UpdateAdminUserRoleDto } from "./dto/update-admin-user-role.dto";
+
+/** Route values accepted for a library tile, in the shape `ParseEnumPipe` takes. */
+const LIBRARY_KINDS_ENUM = Object.fromEntries(
+  ADMIN_USER_LIBRARY_KINDS.map((kind) => [kind, kind]),
+);
 
 /** Account administration: listing, role, data export and sessions. */
 @AdminOnly()
@@ -231,6 +245,7 @@ export class AdminUsersController {
           u.inactivityWarningSentAt?.toISOString() ?? null,
         suspendedUntil: isSuspended(u) ? u.suspendedUntil!.toISOString() : null,
         deletionScheduledFor: u.deletionScheduledFor?.toISOString() ?? null,
+        deletionReason: u.deletionScheduledFor ? u.deletionReason : null,
         xp: u.score?.xp ?? 0,
         invitation: u.invitation
           ? {
@@ -425,6 +440,108 @@ export class AdminUsersController {
       music,
       total: movies + series + anime + games + books + music,
     };
+  }
+
+  /**
+   * The works behind one tile of the library stats, most recently added first.
+   * Paginated: a library can hold thousands of works.
+   */
+  @Get("users/:userId/library/:kind")
+  @ApiOkResponse({
+    type: PagedResponseDto(AdminUserLibraryEntryResponseDto),
+  })
+  async getUserLibrary(
+    @Param("userId") userId: string,
+    @Param("kind", new ParseEnumPipe(LIBRARY_KINDS_ENUM))
+    kind: AdminUserLibraryKind,
+    @Query("page") page?: string,
+    @Query("limit") limit?: string,
+  ): Promise<PagedResult<AdminUserLibraryEntryDto>> {
+    const { skip, take, limit: pageLimit } = parsePageQuery(page, limit, 50);
+    const paging = {
+      skip,
+      take: take + 1,
+      orderBy: [
+        { createdAt: Prisma.SortOrder.desc },
+        { id: Prisma.SortOrder.asc },
+      ],
+    };
+    const item = { title: true, ...CANONICAL_EXTERNAL_ID_SELECT } as const;
+
+    const toDto = (
+      row: {
+        id: string;
+        status: string;
+        favorite: boolean;
+        createdAt: Date;
+      },
+      work: {
+        title: string;
+        canonicalSource: string;
+        externalIds: { source: string; externalId: string }[];
+      },
+      imageUrl: string | null,
+      base: string,
+    ): AdminUserLibraryEntryDto => {
+      const sourceId = canonicalExternalId(work, work.externalIds);
+      return {
+        id: row.id,
+        title: work.title,
+        imageUrl,
+        href: sourceId ? `${base}/${sourceId}` : null,
+        status: row.status,
+        favorite: row.favorite,
+        addedAt: row.createdAt.toISOString(),
+      };
+    };
+
+    let items: AdminUserLibraryEntryDto[];
+
+    if (kind === "games") {
+      const rows = await this.prisma.gameEntry.findMany({
+        where: { userId },
+        ...paging,
+        include: { gameItem: { select: { ...item, coverUrl: true } } },
+      });
+      items = rows.map((r) =>
+        toDto(r, r.gameItem, r.gameItem.coverUrl, "/app/games"),
+      );
+    } else if (kind === "books") {
+      const rows = await this.prisma.bookEntry.findMany({
+        where: { userId },
+        ...paging,
+        include: { bookItem: { select: { ...item, coverUrl: true } } },
+      });
+      items = rows.map((r) =>
+        toDto(r, r.bookItem, r.bookItem.coverUrl, "/app/books"),
+      );
+    } else if (kind === "music") {
+      const rows = await this.prisma.musicEntry.findMany({
+        where: { userId },
+        ...paging,
+        include: { musicItem: { select: { ...item, coverUrl: true } } },
+      });
+      items = rows.map((r) =>
+        toDto(r, r.musicItem, r.musicItem.coverUrl, "/app/music"),
+      );
+    } else {
+      const media = {
+        movies: { type: "MOVIE", route: "movie" },
+        series: { type: "SERIES", route: "series" },
+        anime: { type: "ANIME", route: "anime" },
+      } as const;
+      const { type, route } = media[kind];
+      const rows = await this.prisma.libraryEntry.findMany({
+        where: { userId, mediaItem: { type } },
+        ...paging,
+        include: { mediaItem: { select: { ...item, posterUrl: true } } },
+      });
+      items = rows.map((r) =>
+        toDto(r, r.mediaItem, r.mediaItem.posterUrl, `/app/media/${route}`),
+      );
+    }
+
+    return toPagedResult(items, pageLimit);
   }
 
   /** Signed-in devices for one account, most recently active first. */

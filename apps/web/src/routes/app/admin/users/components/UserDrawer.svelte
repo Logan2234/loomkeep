@@ -35,6 +35,7 @@
   import Combobox from "#lib/components/Combobox.svelte";
   import ConfirmationModal from "#lib/components/ConfirmationModal.svelte";
   import Icon from "#lib/components/Icon.svelte";
+  import { DELETION_REASON_LABELS } from "#lib/constants/deletion-reasons.js";
   import { ELEVATED_SIDE_PANEL_BACKDROP_Z_INDEX } from "#lib/components/overlay-layers.js";
   import SidePanel from "#lib/components/SidePanel.svelte";
   import { downloadBlob, datedFilename } from "#lib/download.js";
@@ -44,10 +45,12 @@
   import {
     levelForXp,
     type AdminUserDto,
+    type AdminUserLibraryKind,
     type ModerationLegalBasis,
   } from "@loomkeep/shared";
   import { useQueryClient } from "@tanstack/svelte-query";
   import DeleteUserModal from "./DeleteUserModal.svelte";
+  import UserLibraryModal from "./UserLibraryModal.svelte";
   import UserActivityModal from "./UserActivityModal.svelte";
 
   let {
@@ -64,6 +67,10 @@
   let showCancelDeletionConfirm = $state(false);
   let showDeleteModal = $state(false);
   let activeModal = $state<ActivityKind | null>(null);
+  let libraryModal = $state<{
+    kind: AdminUserLibraryKind;
+    label: string;
+  } | null>(null);
   let avatarLightbox = $state(false);
   const queryClient = useQueryClient();
 
@@ -143,6 +150,34 @@
     fetch: () => getAdminUserLibraryStats(user.id),
   }));
   const libraryStats = $derived(libraryStatsQuery.data);
+  const libraryTiles = $derived(
+    libraryStats
+      ? ([
+          {
+            kind: "movies",
+            label: m.media_movies(),
+            value: libraryStats.movies,
+          },
+          {
+            kind: "series",
+            label: m.media_series_plural(),
+            value: libraryStats.series,
+          },
+          { kind: "anime", label: m.media_anime(), value: libraryStats.anime },
+          { kind: "games", label: m.common_Games(), value: libraryStats.games },
+          { kind: "books", label: m.common_Books(), value: libraryStats.books },
+          {
+            kind: "music",
+            label: m.common_albums(),
+            value: libraryStats.music,
+          },
+        ] satisfies {
+          kind: AdminUserLibraryKind;
+          label: string;
+          value: number;
+        }[])
+      : [],
+  );
 
   const reviewsQuery = createApiQuery(() => ({
     key: keys.admin.userReviews(user.id),
@@ -380,6 +415,13 @@
           {m.admin_users_deletion_scheduled({
             date: formatDate(user.deletionScheduledFor),
           })}
+          <span class="mt-0.5 block">
+            {user.deletionReason
+              ? m.admin_users_deletion_reason({
+                  reason: DELETION_REASON_LABELS[user.deletionReason](),
+                })
+              : m.admin_users_deletion_reason_none()}
+          </span>
         </span>
         <button
           type="button"
@@ -622,11 +664,15 @@
         <div class="skeleton h-28 rounded-lg"></div>
       {:else if libraryStats}
         <div class="grid grid-cols-3 gap-2">
-          {#each [{ label: m.media_movies(), value: libraryStats.movies }, { label: m.media_series_plural(), value: libraryStats.series }, { label: m.media_anime(), value: libraryStats.anime }, { label: m.common_Games(), value: libraryStats.games }, { label: m.common_Books(), value: libraryStats.books }, { label: m.common_albums(), value: libraryStats.music }] as stat (stat.label)}
-            <div class="border-border rounded-lg border px-2 py-2 text-center">
+          {#each libraryTiles as stat (stat.kind)}
+            <button
+              type="button"
+              disabled={stat.value === 0}
+              onclick={() => (libraryModal = stat)}
+              class="border-border hover:bg-surface-2 rounded-lg border px-2 py-2 text-center disabled:cursor-default disabled:opacity-50 disabled:hover:bg-transparent">
               <p class="font-display text-base font-bold">{stat.value}</p>
               <p class="text-dim text-[0.65rem]">{stat.label}</p>
-            </div>
+            </button>
           {/each}
         </div>
         <p class="text-dim mt-2 text-right text-xs">
@@ -717,6 +763,14 @@
     {reportsAgainst}
     onRetry={() => activeModal && retryActivity(activeModal)}
     onClose={() => (activeModal = null)} />
+{/if}
+
+{#if libraryModal}
+  <UserLibraryModal
+    userId={user.id}
+    kind={libraryModal.kind}
+    title={libraryModal.label}
+    onClose={() => (libraryModal = null)} />
 {/if}
 
 {#if showRevokeAllConfirm}
