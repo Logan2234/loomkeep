@@ -103,7 +103,7 @@
           {#if entry.favorite}
             <span class="text-danger shrink-0">
               <Icon name="heart" class="h-4 w-4" />
-              <span class="sr-only">{m.admin_users_library_favorite()}</span>
+              <span class="sr-only">{m.common_favorite()}</span>
             </span>
           {/if}
         </li>
