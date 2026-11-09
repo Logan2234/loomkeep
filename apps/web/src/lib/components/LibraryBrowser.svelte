@@ -89,10 +89,7 @@
   import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
   import { pileHeaderLabel } from "#lib/pile.js";
-  import {
-    filtersToSearchParams,
-    statusesFromParam,
-  } from "#lib/saved-views.js";
+  import { filtersToSearchParams } from "#lib/saved-views.js";
   import { toast } from "#lib/toast.svelte.js";
   import type {
     BulkEntriesResultDto,
@@ -123,7 +120,7 @@
     loadPile,
     keyOf,
     statusOptions,
-    defaultStatuses = [],
+    unpickedStatuses = [],
     sorts,
     defaultSort,
     card,
@@ -149,8 +146,12 @@
     /** Stable key for the poster grid's keyed each. */
     keyOf: (entry: T) => string;
     statusOptions: Option[];
-    /** The statuses the page opens on (what's still ahead); none means all. */
-    defaultStatuses?: string[];
+    /**
+     * What the list shows while no status pill is picked, e.g. what's still
+     * ahead, leaving the finished and dropped to their own pills. None means
+     * every status.
+     */
+    unpickedStatuses?: string[];
     sorts: Option[];
     defaultSort: string;
     /** Gets the toggle the card's favorite star should call. */
@@ -190,7 +191,7 @@
   const initialParams = page.url.searchParams;
 
   let statuses = $state<string[]>(
-    statusesFromParam(initialParams.get("status"), defaultStatuses),
+    initialParams.get("status")?.split(",").filter(Boolean) ?? [],
   );
   let favoritesOnly = $state(initialParams.get("fav") === "1");
   let sort = $state<string>(initialParams.get("sort") ?? defaultSort);
@@ -308,7 +309,7 @@
   // `goto()` (which updates `page.url`) makes the effect see its own output
   // as a fresh dependency change and re-fire itself, forever.
   function syncUrl() {
-    const params = filtersToSearchParams(current, defaultSort, defaultStatuses);
+    const params = filtersToSearchParams(current, defaultSort);
     if (activeViewId) params.set("view", activeViewId);
     const qs = params.toString();
     void goto(qs ? `?${qs}` : untrack(() => page.url.pathname), {
@@ -322,10 +323,15 @@
     syncUrl();
   });
 
+  // The pills picked, or else what the page shows unpicked.
+  const shownStatuses = $derived(
+    statuses.length > 0 ? statuses : unpickedStatuses,
+  );
+
   const browseKey = $derived(
     keys.library.browse(domain, {
       query: queryFilter,
-      statuses,
+      statuses: shownStatuses,
       favoritesOnly,
       extra,
       sort,
@@ -338,7 +344,7 @@
     fetch: (pageNum) =>
       load({
         query: queryFilter,
-        statuses,
+        statuses: shownStatuses,
         favoritesOnly,
         extra,
         sort,
@@ -354,7 +360,7 @@
 
   const pileParams = $derived<PileLoadParams>({
     query: queryFilter,
-    statuses,
+    statuses: shownStatuses,
     favoritesOnly,
     extra,
   });
@@ -475,7 +481,9 @@
   });
 
   function bulkTarget(): BulkEntriesTargetDto {
-    return allMatching ? { filters: current } : { ids: [...selected] };
+    return allMatching
+      ? { filters: { ...current, statuses: shownStatuses } }
+      : { ids: [...selected] };
   }
 
   function resultMessage(result: BulkEntriesResultDto): string {
@@ -757,16 +765,15 @@
     favoritesOnly || types.length > 0 || platforms.length > 0,
   );
   const hasFilters = $derived(statuses.length > 0 || hasPanelFilters);
-  const onDefaultStatuses = $derived(
-    defaultStatuses.length > 0 &&
-      statuses.length === defaultStatuses.length &&
-      statuses.every((s) => defaultStatuses.includes(s)),
+  // Some statuses left out while no pill is picked.
+  const narrowedUnpicked = $derived(
+    statuses.length === 0 && unpickedStatuses.length > 0,
   );
 
   // Nothing ahead on a page that opens on what's ahead: an empty library, or
   // one where everything is done? Only the whole library's count tells.
   const needsCounts = $derived(
-    onDefaultStatuses &&
+    narrowedUnpicked &&
       !hasPanelFilters &&
       !hasQuery &&
       !loading &&
@@ -784,8 +791,8 @@
   const libraryEmpty = $derived(
     !hasQuery &&
       !hasPanelFilters &&
-      (statuses.length === 0 ||
-        (onDefaultStatuses && countsQuery.data?.[domain] === 0)),
+      statuses.length === 0 &&
+      (!narrowedUnpicked || countsQuery.data?.[domain] === 0),
   );
 
   function clearFilters() {
@@ -797,7 +804,6 @@
 
   function resetFilters() {
     clearFilters();
-    statuses = [...defaultStatuses];
     sort = defaultSort;
     reversed = false;
     activeViewId = null;
@@ -1045,6 +1051,9 @@
               {m.library_empty_import()}
             </a>
           </div>
+        {:else if narrowedUnpicked && !hasQuery && !hasPanelFilters}
+          <!-- Everything here is done: nothing to clear, only pills to pick. -->
+          <p>{m.library_empty_unpicked()}</p>
         {:else}
           <p>
             {#if hasQuery}
@@ -1269,7 +1278,6 @@
     {domain}
     {current}
     {defaultSort}
-    {defaultStatuses}
     heading={m.saved_views_label()}
     bind:activeId={activeViewId}
     onApply={applyFilters} />

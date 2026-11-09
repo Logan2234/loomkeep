@@ -697,50 +697,35 @@ describe("LibraryBrowser", () => {
     expect(lastLoad(load).favoritesOnly).toBe(false);
   });
 
-  describe("on a page that opens on what's still ahead", () => {
-    const opensOnReading = { defaultStatuses: ["READING"] };
+  describe("on a page that leaves some statuses out until picked", () => {
+    const aheadOnly = { unpickedStatuses: ["READING"] };
 
-    it("filters on its default statuses, keeping a bare address", async () => {
+    it("shows what's ahead with no pill picked, keeping a bare address", async () => {
       const load = vi.fn(async () => pageOf([DUNE]));
-      renderBrowser(load, undefined, undefined, undefined, opensOnReading);
+      renderBrowser(load, undefined, undefined, undefined, aheadOnly);
 
       await screen.findByText("Dune");
       expect(lastLoad(load).statuses).toEqual(["READING"]);
       const statuses = screen.getByRole("group", { name: m.common_status() });
-      expect(
-        within(statuses)
-          .getByRole("button", { name: "Reading" })
-          .getAttribute("aria-pressed"),
-      ).toBe("true");
+      for (const pill of within(statuses).getAllByRole("button"))
+        expect(pill.getAttribute("aria-pressed")).toBe("false");
+      expect(goto).not.toHaveBeenCalledWith(
+        expect.stringContaining("status"),
+        expect.anything(),
+      );
     });
 
-    it("spells out every status once none is picked, and reads it back", async () => {
+    it("shows a left-out status once its pill is picked", async () => {
       const load = vi.fn(async () => pageOf([DUNE]));
-      const { unmount } = renderBrowser(
-        load,
-        undefined,
-        undefined,
-        undefined,
-        opensOnReading,
-      );
+      renderBrowser(load, undefined, undefined, undefined, aheadOnly);
       await screen.findByText("Dune");
 
       const statuses = screen.getByRole("group", { name: m.common_status() });
       await userEvent.click(
-        within(statuses).getByRole("button", { name: "Reading" }),
+        within(statuses).getByRole("button", { name: "Read" }),
       );
 
-      await waitFor(() => expect(lastLoad(load).statuses).toEqual([]));
-      expect(goto).toHaveBeenLastCalledWith(
-        "?status=all",
-        expect.objectContaining({ replace: true }),
-      );
-
-      unmount();
-      visit("/app/books?status=all");
-      renderBrowser(load, undefined, undefined, undefined, opensOnReading);
-      await screen.findByText("Dune");
-      expect(lastLoad(load).statuses).toEqual([]);
+      await waitFor(() => expect(lastLoad(load).statuses).toEqual(["READ"]));
     });
 
     it("still invites to search the catalogue when the library is empty", async () => {
@@ -754,7 +739,7 @@ describe("LibraryBrowser", () => {
         undefined,
         undefined,
         undefined,
-        opensOnReading,
+        aheadOnly,
       );
 
       expect(
@@ -762,27 +747,24 @@ describe("LibraryBrowser", () => {
       ).toBeTruthy();
     });
 
-    it("offers the whole library when everything in it is done", async () => {
+    it("points to the status pills when everything in it is done", async () => {
       server.use(
         http.get(apiUrl("/library/domain-counts"), () =>
           HttpResponse.json({ BOOKS: 3 }),
         ),
       );
-      const load = vi.fn(async ({ statuses }: LibraryLoadParams) =>
-        statuses.length > 0 ? pageOf([]) : pageOf([DUNE]),
+      renderBrowser(
+        vi.fn(async () => pageOf([])),
+        undefined,
+        undefined,
+        undefined,
+        aheadOnly,
       );
-      renderBrowser(load, undefined, undefined, undefined, opensOnReading);
 
+      expect(await screen.findByText(m.library_empty_unpicked())).toBeTruthy();
       expect(
-        await screen.findByText(m.library_empty_filters({ noun: "livre" })),
-      ).toBeTruthy();
-      expect(
-        screen.queryByText(m.library_empty_domain({ noun: "livre" })),
+        screen.queryByRole("button", { name: m.common_clear_filters() }),
       ).toBeNull();
-      await userEvent.click(
-        screen.getByRole("button", { name: m.common_clear_filters() }),
-      );
-      expect(await screen.findByText("Dune")).toBeTruthy();
     });
   });
 

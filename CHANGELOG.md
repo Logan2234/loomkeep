@@ -23,9 +23,10 @@ history from before it was started.
 
 ### Changed
 
-- Video, game and book libraries now open on what's still ahead (in
-  progress, to watch, paused, ghost…): finished and dropped titles are one
-  tap away in the status pills. Music still shows everything.
+- Video, game and book libraries now show only what's still ahead (in
+  progress, to watch, paused, ghost…) until a status is picked: finished and
+  dropped titles appear once their own pill is selected. Music still shows
+  everything.
 - Sagas view: the search sits beside the Works/Sagas switch as in the works
   view, and type and sort move into the same "Filters" panel.
 - Landing page: a questions section answers what people ask before signing

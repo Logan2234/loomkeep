@@ -1,27 +1,7 @@
 import { DOMAINS } from "#lib/constants/domains.js";
-import { LIBRARY_DEFAULT_STATUSES } from "#lib/constants/status-labels.js";
 import type { SavedViewDto, SavedViewFiltersDto } from "@loomkeep/shared";
 
 /** Each domain's library page. */
-
-/** The address's spelling of "every status", on a page that opens on some. */
-const ALL_STATUSES_PARAM = "all";
-
-const sameSet = (a: readonly string[], b: readonly string[]) =>
-  a.length === b.length && a.every((v) => b.includes(v));
-
-/**
- * The statuses a library page's address asks for: the page's own default
- * ones when it names none, every status when it says `all`.
- */
-export function statusesFromParam(
-  param: string | null,
-  defaultStatuses: readonly string[] = [],
-): string[] {
-  if (param === null) return [...defaultStatuses];
-  if (param === ALL_STATUSES_PARAM) return [];
-  return param.split(",").filter(Boolean);
-}
 
 /**
  * The filters as a library page's address carries them: only what differs
@@ -30,17 +10,12 @@ export function statusesFromParam(
 export function filtersToSearchParams(
   filters: SavedViewFiltersDto,
   defaultSort?: string,
-  defaultStatuses: readonly string[] = [],
 ): URLSearchParams {
   const params = new URLSearchParams();
   const q = filters.q?.trim();
   if (q) params.set("q", q);
-  const statuses = filters.statuses ?? [];
-  if (!sameSet(statuses, defaultStatuses))
-    params.set(
-      "status",
-      statuses.length > 0 ? statuses.join(",") : ALL_STATUSES_PARAM,
-    );
+  if (filters.statuses?.length)
+    params.set("status", filters.statuses.join(","));
   if (filters.favorite) params.set("fav", "1");
   if (filters.types?.length) params.set("type", filters.types.join(","));
   if (filters.platforms?.length)
@@ -56,11 +31,7 @@ export function filtersToSearchParams(
 
 /** The view's library page, with the view shown as applied. */
 export function savedViewHref(view: SavedViewDto): string {
-  const params = filtersToSearchParams(
-    view.filters,
-    undefined,
-    LIBRARY_DEFAULT_STATUSES[view.domain],
-  );
+  const params = filtersToSearchParams(view.filters);
   params.set("view", view.id);
   return `${DOMAINS[view.domain].href}?${params}`;
 }
@@ -73,7 +44,6 @@ export function sameFilters(
   a: SavedViewFiltersDto,
   b: SavedViewFiltersDto,
   defaultSort: string,
-  defaultStatuses: readonly string[] = [],
 ): boolean {
   const canonical = (f: SavedViewFiltersDto) =>
     filtersToSearchParams(
@@ -84,7 +54,6 @@ export function sameFilters(
         platforms: [...(f.platforms ?? [])].sort(),
       },
       defaultSort,
-      defaultStatuses,
     ).toString();
   return canonical(a) === canonical(b);
 }

@@ -1100,6 +1100,7 @@
   "library_search_noun": "Search for a {noun}",
   "library_empty_filters_query": "No {noun} matches these filters for “{query}”.",
   "library_empty_filters": "No {noun} matches these filters.",
+  "library_empty_unpicked": "Nothing left in progress or to start. Finished and dropped ones show once their status is picked.",
   "import_title": "Import {source}",
   "import_unmatched_count": "{count} to match",
   "stats_books_average_pages": "avg. {pages} pages",
