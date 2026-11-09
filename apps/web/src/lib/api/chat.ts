@@ -13,6 +13,7 @@ import type {
   PagedResult,
   PickRequestDto,
   PickResultDto,
+  PinConversationRequestDto,
   RecommendWorkRequestDto,
   RecommendWorkResultDto,
   ReportCategory,
@@ -146,6 +147,18 @@ export const muteConversation = (conversationId: string, muted: boolean) =>
     body: { muted },
   });
 
+export const pinConversation = (conversationId: string, pinned: boolean) =>
+  request<void>(`/chat/conversations/${id(conversationId)}/pin`, {
+    method: "PUT",
+    body: { pinned } satisfies PinConversationRequestDto,
+  });
+
+/** Off the viewer's list, history kept: the next message brings it back. */
+export const hideConversation = (conversationId: string) =>
+  request<void>(`/chat/conversations/${id(conversationId)}/hide`, {
+    method: "POST",
+  });
+
 export const getChatFriends = (query = "") =>
   request<UserSummaryDto[]>(`/chat/friends?q=${encodeURIComponent(query)}`);
 
@@ -178,6 +191,25 @@ export const muteWorkThread = (
   request<void>(`/chat/works/${targetType}/${id(targetId)}/mute`, {
     method: "PUT",
     body: { muted },
+  });
+
+export const pinWorkThread = (
+  targetType: CommentTargetType,
+  targetId: string,
+  pinned: boolean,
+) =>
+  request<void>(`/chat/works/${targetType}/${id(targetId)}/pin`, {
+    method: "PUT",
+    body: { pinned } satisfies PinConversationRequestDto,
+  });
+
+/** Off the "Œuvres" tab until the viewer writes in it or is mentioned. */
+export const unfollowWorkThread = (
+  targetType: CommentTargetType,
+  targetId: string,
+) =>
+  request<void>(`/chat/works/${targetType}/${id(targetId)}/unfollow`, {
+    method: "POST",
   });
 
 /** Unread again from this comment on, in the "Œuvres" tab. */

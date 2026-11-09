@@ -931,13 +931,18 @@ model CommentReaction {
 // Up to when a member read a work's discussion: the unread count of the
 // "Œuvres" tab in Messages. Writing in a discussion reads it too.
 model CommentThreadRead {
-  userId     String
-  targetType CommentTargetType
-  targetId   String
+  userId       String
+  targetType   CommentTargetType
+  targetId     String
   // Null for a discussion muted before it was ever read.
-  lastReadAt DateTime?
+  lastReadAt   DateTime?
   // Muted: its new comments don't count in Messages' launcher nor its tab.
-  mutedAt    DateTime?
+  mutedAt      DateTime?
+  // Pinned atop the "Œuvres" tab, most recently pinned first.
+  pinnedAt     DateTime?
+  // Left out of the "Œuvres" tab until the member writes in it or is
+  // mentioned in it again.
+  unfollowedAt DateTime?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -979,6 +984,11 @@ model ConversationMember {
   // the "Vu" the other member sees.
   lastReadAt     DateTime  @default(now())
   mutedAt        DateTime?
+  // Pinned atop the member's list, most recently pinned first.
+  pinnedAt       DateTime?
+  // Removed from the member's list, history kept: the next message, from
+  // either member, brings it back.
+  hiddenAt       DateTime?
   joinedAt       DateTime  @default(now())
 
   conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)

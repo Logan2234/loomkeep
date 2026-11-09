@@ -186,6 +186,7 @@ export class ConversationResponseDto implements ConversationDto {
   unread!: number;
   lastReadAt!: string;
   muted!: boolean;
+  pinned!: boolean;
   lastMessageAt!: string;
 }
 
@@ -212,6 +213,7 @@ export class WorkThreadResponseDto implements WorkThreadDto {
   unread!: number;
   lastReadAt!: string | null;
   muted!: boolean;
+  pinned!: boolean;
   canParticipate!: boolean;
   lastActivityAt!: string;
   lastComment!: WorkThreadLastCommentResponseDto | null;

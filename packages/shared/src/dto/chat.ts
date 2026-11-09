@@ -191,6 +191,8 @@ export interface ConversationDto {
   /** Up to when the viewer has read: where the "new" line goes. */
   lastReadAt: string;
   muted: boolean;
+  /** Pinned atop the viewer's list. */
+  pinned: boolean;
   lastMessageAt: string;
 }
 
@@ -224,6 +226,8 @@ export interface WorkThreadDto {
   lastReadAt: string | null;
   /** Muted: its unread still shows on it, but counts nowhere else. */
   muted: boolean;
+  /** Pinned atop the viewer's "Œuvres" tab. */
+  pinned: boolean;
   /** Writing needs the work in the library (comments' own rule). */
   canParticipate: boolean;
   lastActivityAt: string;
@@ -394,4 +398,9 @@ export interface ReactMessageRequestDto {
 
 export interface MuteConversationRequestDto {
   muted: boolean;
+}
+
+/** Pins a conversation, or a work's discussion, atop Messages' list. */
+export interface PinConversationRequestDto {
+  pinned: boolean;
 }

@@ -15,6 +15,7 @@ import {
   type OpenConversationRequestDto,
   type PickDomain,
   type PickRequestDto,
+  type PinConversationRequestDto,
   type ReactMessageRequestDto,
   type RecommendWorkRequestDto,
   type SagaDomain,
@@ -235,4 +236,9 @@ export class MarkWorkUnreadBody implements MarkWorkUnreadRequestDto {
 export class MuteConversationBody implements MuteConversationRequestDto {
   @IsBoolean()
   muted!: boolean;
+}
+
+export class PinConversationBody implements PinConversationRequestDto {
+  @IsBoolean()
+  pinned!: boolean;
 }

@@ -155,6 +155,7 @@ type Membership = {
   conversationId: string;
   lastReadAt: Date;
   mutedAt: Date | null;
+  pinnedAt: Date | null;
   conversation: {
     id: string;
     lastMessageAt: Date;
@@ -166,6 +167,7 @@ const MEMBERSHIP_SELECT = {
   conversationId: true,
   lastReadAt: true,
   mutedAt: true,
+  pinnedAt: true,
   conversation: {
     select: {
       id: true,
@@ -200,15 +202,25 @@ export class ChatService {
     private readonly lists: ListService,
   ) {}
 
-  /** The viewer's conversations that have at least one message, most recent first. */
+  /**
+   * The viewer's conversations that have at least one message and that they
+   * didn't remove from their list: pinned first, then most recent first.
+   */
   async list(
     viewerId: string,
     page: ParsedPage,
   ): Promise<PagedResult<ConversationDto>> {
     const viewer = await this.viewer(viewerId);
     const rows = (await this.prisma.conversationMember.findMany({
-      where: { userId: viewerId, conversation: { messages: { some: {} } } },
-      orderBy: { conversation: { lastMessageAt: "desc" } },
+      where: {
+        userId: viewerId,
+        hiddenAt: null,
+        conversation: { messages: { some: {} } },
+      },
+      orderBy: [
+        { pinnedAt: { sort: "desc", nulls: "last" } },
+        { conversation: { lastMessageAt: "desc" } },
+      ],
       skip: page.skip,
       take: page.take + 1,
       select: MEMBERSHIP_SELECT,
@@ -426,6 +438,11 @@ export class ChatService {
       this.prisma.conversationMember.update({
         where: { conversationId_userId: { conversationId, userId: authorId } },
         data: { lastReadAt: now },
+      }),
+      // A conversation removed from a list comes back with its next message.
+      this.prisma.conversationMember.updateMany({
+        where: { conversationId, hiddenAt: { not: null } },
+        data: { hiddenAt: null },
       }),
     ]);
 
@@ -840,6 +857,33 @@ export class ChatService {
     });
   }
 
+  async setPinned(
+    userId: string,
+    conversationId: string,
+    pinned: boolean,
+  ): Promise<void> {
+    await this.membership(userId, conversationId);
+    await this.prisma.conversationMember.update({
+      where: { conversationId_userId: { conversationId, userId } },
+      data: { pinnedAt: pinned ? new Date() : null },
+    });
+  }
+
+  /**
+   * Off the user's list, its history kept for both members: it comes back,
+   * whole, with the next message. Read on the way out, so nothing it holds
+   * still counts as unread; unpinned, so it comes back in its place.
+   */
+  async hide(userId: string, conversationId: string): Promise<void> {
+    await this.membership(userId, conversationId);
+    const now = new Date();
+    await this.prisma.conversationMember.update({
+      where: { conversationId_userId: { conversationId, userId } },
+      data: { hiddenAt: now, pinnedAt: null },
+    });
+    await this.markRead(userId, conversationId);
+  }
+
   /** Unread messages across the conversations the user didn't mute. */
   async unreadTotal(userId: string): Promise<number> {
     const counts = await this.unreadCounts(userId, true);
@@ -1243,6 +1287,7 @@ export class ChatService {
           unread: unread.get(m.conversationId) ?? 0,
           lastReadAt: m.lastReadAt.toISOString(),
           muted: m.mutedAt !== null,
+          pinned: m.pinnedAt !== null,
           lastMessageAt: m.conversation.lastMessageAt.toISOString(),
         };
       }),

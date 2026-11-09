@@ -13,6 +13,14 @@ history from before it was started.
 
 ## [Unreleased]
 
+### Added
+
+- Messages on a phone: press and hold a conversation to mark it read, mute
+  it, pin it to the top, open the friend's profile or delete it from your
+  list (it comes back, history included, with the next message).
+- Same on a work's discussion: mark read, mute, pin, go to the title, or
+  stop following it until you write in it or someone mentions you.
+
 ### Changed
 
 - Landing page: a questions section answers what people ask before signing

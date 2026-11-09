@@ -164,6 +164,53 @@ describe("Work threads (e2e)", () => {
     );
   });
 
+  function threads(key: string) {
+    return request(http)
+      .get("/api/chat/works")
+      .set("Cookie", session[key])
+      .expect(200)
+      .then((res) => res.body as { targetId: string; pinned: boolean }[]);
+  }
+
+  it("pins a discussion for its member only", async () => {
+    await request(http)
+      .put(`/api/chat/works/MEDIA/${mediaItemId}/pin`)
+      .set("Cookie", session.bob)
+      .send({ pinned: true })
+      .expect(200);
+
+    expect((await threads("bob"))[0]).toMatchObject({ pinned: true });
+    expect((await threads("alice"))[0]).toMatchObject({ pinned: false });
+  });
+
+  it("leaves out a discussion its member stopped following, someone else writing or not", async () => {
+    await request(http)
+      .post(`/api/chat/works/MEDIA/${mediaItemId}/unfollow`)
+      .set("Cookie", session.bob)
+      .expect(201);
+    expect(await threads("bob")).toEqual([]);
+
+    await new Promise((resolve) => setTimeout(resolve, COMMENT_COOLDOWN_MS));
+    await comment("alice", "Bob, tu en es où ?");
+    expect(await threads("bob")).toEqual([]);
+    expect(await unread("bob")).toBe(0);
+
+    // Still reachable from the work's page.
+    await request(http)
+      .get(`/api/chat/works/MEDIA/${mediaItemId}`)
+      .set("Cookie", session.bob)
+      .expect(200);
+  });
+
+  it("lists it again once its member writes in it, unpinned", async () => {
+    await new Promise((resolve) => setTimeout(resolve, COMMENT_COOLDOWN_MS));
+    await comment("bob", "J'y retourne ce soir.");
+
+    expect(await threads("bob")).toEqual([
+      expect.objectContaining({ targetId: mediaItemId, pinned: false }),
+    ]);
+  });
+
   it("leaves out the discussions of a domain turned off", async () => {
     await prisma.user.updateMany({
       where: { email: alice.email },
