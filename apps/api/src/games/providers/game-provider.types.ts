@@ -1,4 +1,5 @@
 import type {
+  CreatorRefDto,
   GameSagaMemberDto,
   GameSource,
   GameSummaryDto,
@@ -24,12 +25,15 @@ export interface ProviderGameDetails {
   similarGames: GameSummaryDto[];
   developers: string[];
   publishers: string[];
+  developerRefs: CreatorRefDto[];
+  publisherRefs: CreatorRefDto[];
   gameModes: string[];
   playerPerspectives: string[];
   /** Other games from the same franchise(s), excluding this one. */
   franchiseGames: GameSummaryDto[];
   /** Name of the first franchise this game belongs to, when known. */
   franchiseName: string | null;
+  franchiseRefs: CreatorRefDto[];
   /** IGDB's own user rating + critic aggregate, when known. */
   ratings: RatingDto[];
   externalIds: ProviderExternalId<GameSource>[];

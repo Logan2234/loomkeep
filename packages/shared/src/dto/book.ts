@@ -7,6 +7,7 @@ import type {
 } from "../enums";
 import { BookStatus } from "../enums";
 import type { RatingDto } from "./catalog";
+import type { CreatorRefDto } from "./creator";
 import type { SessionWeekDayDto } from "./session";
 import { SESSION_FILTER_PAUSED } from "./session";
 
@@ -50,6 +51,8 @@ export interface BookEditionDto {
 
 /** Full book details, fetched live from the source. */
 export interface BookDetailsDto extends BookSummaryDto {
+  /** The same people as `authors`, linkable to their page. */
+  authorRefs: CreatorRefDto[];
   overview: string | null;
   subtitle: string | null;
   publisher: string | null;

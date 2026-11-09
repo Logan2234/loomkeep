@@ -1,10 +1,12 @@
 import type {
   CastDetailDto,
+  CreatorRefDto,
   MediaExtrasDto,
   SagaMemberDto,
 } from "@loomkeep/shared";
 import {
   CatalogSource,
+  CreatorSource,
   MediaSource,
   MediaSummaryDto,
   MediaType,
@@ -54,14 +56,14 @@ export interface AnilistExtras {
   season?: string | null;
   trailer?: { id: string; site: string } | null;
   studios?: {
-    edges?: { isMain?: boolean; node: { name: string } }[];
+    edges?: { isMain?: boolean; node: { id: number; name: string } }[];
   };
   tags?: { name: string; isMediaSpoiler?: boolean; rank?: number | null }[];
   externalLinks?: { site: string; url?: string | null }[];
   staff?: {
     edges?: {
       role?: string | null;
-      node: { name: { full?: string | null } };
+      node: { id: number; name: { full?: string | null } };
     }[];
   };
   characters?: {
@@ -177,6 +179,9 @@ export function toExtras(
   sourceId: string,
   watchRegion: string,
 ): MediaExtrasDto {
+  const directorRefs = anilistDirectors(media?.staff);
+  const studioRefs = anilistStudios(media?.studios);
+
   return {
     // AniList's streaming links name no country, so they can't say where a
     // title is available: they stay in `externalLinks` only.
@@ -227,10 +232,15 @@ export function toExtras(
     images: [],
     // AniList has neither a tagline nor an official age certification.
     tagline: null,
-    directors: anilistDirectors(media?.staff),
+    directors: directorRefs.map((d) => d.name),
+    directorRefs,
+    // TMDB-only.
+    productionCompanyRefs: [],
+    networkRefs: [],
     trailerVideoId: anilistTrailer(media?.trailer),
     contentRating: null,
-    studios: anilistStudios(media?.studios),
+    studios: studioRefs.map((s) => s.name),
+    studioRefs,
     format: media?.format ?? null,
     season: media?.season ?? null,
     // Only anime-type relations: AniList also links manga/light-novel
@@ -401,12 +411,15 @@ function webUrl(url: string | null | undefined): string | null {
 }
 
 /** Staff credited with the exact role "Director" (case-insensitive). */
-function anilistDirectors(staff: AnilistExtras["staff"]): string[] {
-  const names = (staff?.edges ?? [])
-    .filter((e) => e.role?.trim().toLowerCase() === "director")
-    .map((e) => e.node.name.full)
-    .filter((n): n is string => !!n);
-  return [...new Set(names)];
+function anilistDirectors(staff: AnilistExtras["staff"]): CreatorRefDto[] {
+  const seen = new Set<number>();
+  return (staff?.edges ?? []).flatMap((e) => {
+    const name = e.node.name.full;
+    if (e.role?.trim().toLowerCase() !== "director" || !name) return [];
+    if (seen.has(e.node.id)) return [];
+    seen.add(e.node.id);
+    return [anilistRef(e.node.id, name)];
+  });
 }
 
 /** YouTube trailers only — the only site the lightbox knows how to embed. */
@@ -414,8 +427,14 @@ function anilistTrailer(trailer: AnilistExtras["trailer"]): string | null {
   return trailer?.site === "youtube" ? trailer.id : null;
 }
 
-function anilistStudios(studios: AnilistExtras["studios"]): string[] {
-  return (studios?.edges ?? []).filter((e) => e.isMain).map((e) => e.node.name);
+function anilistStudios(studios: AnilistExtras["studios"]): CreatorRefDto[] {
+  return (studios?.edges ?? [])
+    .filter((e) => e.isMain)
+    .map((e) => anilistRef(e.node.id, e.node.name));
+}
+
+function anilistRef(id: number, name: string): CreatorRefDto {
+  return { source: CreatorSource.ANILIST, id: String(id), name };
 }
 
 /** "1990 – 2020 · Oita" from whatever birth/death year and hometown exist. */

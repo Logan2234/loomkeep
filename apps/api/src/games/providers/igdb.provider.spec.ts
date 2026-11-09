@@ -192,10 +192,13 @@ describe("IgdbProvider", () => {
       similarGames: [],
       developers: [],
       publishers: [],
+      developerRefs: [],
+      publisherRefs: [],
       gameModes: [],
       playerPerspectives: [],
       franchiseGames: [],
       franchiseName: null,
+      franchiseRefs: [],
       ratings: [],
       externalIds: [{ source: "IGDB", externalId: "1020" }],
       storyline: null,
@@ -584,12 +587,12 @@ describe("IgdbProvider", () => {
           id: 1020,
           name: "Grand Theft Auto V",
           involved_companies: [
-            { company: { name: "Rockstar North" }, developer: true },
-            { company: { name: "Rockstar Games" }, publisher: true },
+            { company: { id: 10, name: "Rockstar North" }, developer: true },
+            { company: { id: 20, name: "Rockstar Games" }, publisher: true },
             // Same publisher listed twice (e.g. two regional editions) → deduped.
-            { company: { name: "Rockstar Games" }, publisher: true },
+            { company: { id: 20, name: "Rockstar Games" }, publisher: true },
             // Neither role set → excluded from both lists.
-            { company: { name: "Some Middleware Vendor" } },
+            { company: { id: 30, name: "Some Middleware Vendor" } },
           ],
         },
       ],
@@ -599,6 +602,36 @@ describe("IgdbProvider", () => {
 
     expect(details.developers).toEqual(["Rockstar North"]);
     expect(details.publishers).toEqual(["Rockstar Games"]);
+    expect(details.developerRefs).toEqual([
+      { source: "igdb", id: "10", name: "Rockstar North" },
+    ]);
+    expect(details.publisherRefs).toEqual([
+      { source: "igdb", id: "20", name: "Rockstar Games" },
+    ]);
+  });
+
+  it("links every franchise a game belongs to, not only the first", async () => {
+    mockFetchByUrl({
+      "id.twitch.tv": TOKEN_RESPONSE,
+      "/games": [
+        {
+          id: 1022,
+          name: "Hyrule Warriors",
+          franchises: [
+            { id: 596, name: "The Legend of Zelda", games: [] },
+            { id: 824, name: "Warriors", games: [] },
+          ],
+        },
+      ],
+    });
+
+    const details = await provider.getDetails("1022");
+
+    expect(details.franchiseName).toBe("The Legend of Zelda");
+    expect(details.franchiseRefs).toEqual([
+      { source: "igdb", id: "596", name: "The Legend of Zelda" },
+      { source: "igdb", id: "824", name: "Warriors" },
+    ]);
   });
 
   it("maps game modes and player perspectives", async () => {

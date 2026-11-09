@@ -1,6 +1,7 @@
 import type { BookDetailDto } from "@loomkeep/shared";
 import { BookSource } from "@loomkeep/shared";
 import { ApiProperty } from "@nestjs/swagger";
+import { CreatorRefResponseDto } from "../../catalog/dto/creator-ref-response.dto";
 import { RatingResponseDto } from "../../catalog/dto/rating-response.dto";
 import { BookEntryResponseDto } from "./book-entry-response.dto";
 import { BookSummaryResponseDto } from "./book-summary-response.dto";
@@ -13,6 +14,7 @@ export class BookDetailResponseDto implements BookDetailDto {
   sourceId!: string;
   title!: string;
   authors!: string[];
+  authorRefs!: CreatorRefResponseDto[];
   year!: number | null;
   coverUrl!: string | null;
   isAdult!: boolean;

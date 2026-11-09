@@ -14,6 +14,7 @@ export * from "./dto/catalog";
 export * from "./dto/chat";
 export * from "./dto/comment";
 export * from "./dto/config";
+export * from "./dto/creator";
 export * from "./dto/data-export";
 export * from "./dto/ee";
 export * from "./dto/entitlement";

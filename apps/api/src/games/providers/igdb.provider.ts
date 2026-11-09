@@ -1,5 +1,10 @@
-import type { GameTimeToBeatDto, RatingDto } from "@loomkeep/shared";
+import type {
+  CreatorRefDto,
+  GameTimeToBeatDto,
+  RatingDto,
+} from "@loomkeep/shared";
 import {
+  CreatorSource,
   ErrorCode,
   GameSource,
   GameSummaryDto,
@@ -81,12 +86,13 @@ interface IgdbWebsite {
 }
 
 interface IgdbInvolvedCompany {
-  company?: IgdbNamed;
+  company?: { id: number; name: string };
   developer?: boolean;
   publisher?: boolean;
 }
 
 interface IgdbFranchise {
+  id: number;
   name: string;
   games?: IgdbGame[];
 }
@@ -271,9 +277,9 @@ export class IgdbProvider implements GameCatalogProvider {
   private static readonly DETAIL_FIELDS =
     "name, slug, summary, storyline, first_release_date, release_dates.date, release_dates.date_format, cover.image_id, artworks.image_id, screenshots.image_id, genres.name, platforms.name, themes, websites.url, websites.category, websites.type, " +
     "similar_games.name, similar_games.cover.image_id, similar_games.first_release_date, similar_games.themes, " +
-    "involved_companies.company.name, involved_companies.developer, involved_companies.publisher, " +
+    "involved_companies.company.id, involved_companies.company.name, involved_companies.developer, involved_companies.publisher, " +
     "game_modes.name, player_perspectives.name, " +
-    "franchises.name, franchises.games.name, franchises.games.cover.image_id, franchises.games.first_release_date, franchises.games.themes, " +
+    "franchises.id, franchises.name, franchises.games.name, franchises.games.cover.image_id, franchises.games.first_release_date, franchises.games.themes, " +
     "videos.video_id, videos.name, age_ratings.rating_cover_url, " +
     "multiplayer_modes.campaigncoop, multiplayer_modes.onlinecoop, multiplayer_modes.offlinecoop, multiplayer_modes.splitscreen, multiplayer_modes.lancoop, " +
     "rating, rating_count, aggregated_rating, aggregated_rating_count";
@@ -406,6 +412,9 @@ export class IgdbProvider implements GameCatalogProvider {
     game: IgdbGame,
     timeToBeat: GameTimeToBeatDto | null,
   ): ProviderGameDetails {
+    const developerRefs = uniqueCompanies(game.involved_companies, "developer");
+    const publisherRefs = uniqueCompanies(game.involved_companies, "publisher");
+
     return {
       summary: this.toSummary(game),
       overview: game.summary ?? null,
@@ -424,12 +433,15 @@ export class IgdbProvider implements GameCatalogProvider {
       similarGames: (game.similar_games ?? [])
         .slice(0, MAX_SIMILAR_GAMES)
         .map((g) => this.toSummary(g)),
-      developers: uniqueCompanyNames(game.involved_companies, "developer"),
-      publishers: uniqueCompanyNames(game.involved_companies, "publisher"),
+      developers: developerRefs.map((c) => c.name),
+      publishers: publisherRefs.map((c) => c.name),
+      developerRefs,
+      publisherRefs,
       gameModes: game.game_modes?.map((m) => m.name) ?? [],
       playerPerspectives: game.player_perspectives?.map((p) => p.name) ?? [],
       franchiseGames: this.franchiseGames(game),
       franchiseName: game.franchises?.[0]?.name ?? null,
+      franchiseRefs: uniqueRefs(game.franchises ?? []),
       ratings: toRatings(game),
       externalIds: [{ source: GameSource.IGDB, externalId: String(game.id) }],
       storyline: game.storyline ?? null,
@@ -778,15 +790,26 @@ function multiplayerModeLabels(
   return labels;
 }
 
-/** Distinct company names with the given role (developer/publisher), in order. */
-function uniqueCompanyNames(
+/** Distinct companies with the given role (developer/publisher), in order. */
+function uniqueCompanies(
   companies: IgdbInvolvedCompany[] | undefined,
   role: "developer" | "publisher",
-): string[] {
-  const names = (companies ?? [])
-    .filter((c) => c[role] && c.company?.name)
-    .map((c) => c.company!.name);
-  return [...new Set(names)];
+): CreatorRefDto[] {
+  return uniqueRefs(
+    (companies ?? []).flatMap((c) => (c[role] && c.company ? [c.company] : [])),
+  );
+}
+
+/** One ref per IGDB id, first occurrence kept. */
+function uniqueRefs(entities: { id: number; name: string }[]): CreatorRefDto[] {
+  const seen = new Set<number>();
+  return entities
+    .filter((e) => (seen.has(e.id) ? false : seen.add(e.id)))
+    .map((e) => ({
+      source: CreatorSource.IGDB,
+      id: String(e.id),
+      name: e.name,
+    }));
 }
 
 /** Whether a raw id is a plausible IGDB/Steam numeric id, safe to interpolate. */

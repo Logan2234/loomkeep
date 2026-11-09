@@ -1,14 +1,23 @@
 import type {
   CastDetailDto,
+  CreatorRefDto,
+  CreatorWorkDto,
   EpisodeMediaDto,
   MediaExtrasDto,
   MediaSummaryDto,
+  PersonPageDto,
   RatingDto,
   SagaMemberDto,
   SeasonImagesDto,
   WatchProviderDto,
 } from "@loomkeep/shared";
-import { CatalogSource, MediaSource, MediaType } from "@loomkeep/shared";
+import {
+  CatalogSource,
+  CreatorGroupKey,
+  CreatorSource,
+  MediaSource,
+  MediaType,
+} from "@loomkeep/shared";
 import type {
   ProviderExternalId,
   ProviderMediaDetails,
@@ -26,6 +35,7 @@ const IMAGE_SIZE = {
   stillLarge: "w780",
   posterLarge: "w780",
   profile: "w185",
+  profileLarge: "h632",
   logo: "w92",
 } as const;
 
@@ -175,6 +185,9 @@ export interface TmdbExtras {
   // TV only — the show's own creator(s)/showrunner(s), a base field (no
   // append_to_response needed) with no per-movie equivalent.
   created_by?: { id: number; name: string }[];
+  production_companies?: { id: number; name: string }[];
+  // TV only.
+  networks?: { id: number; name: string }[];
   credits?: {
     cast?: {
       id: number;
@@ -198,13 +211,20 @@ export interface TmdbExtras {
 // Capped so the lightbox gallery stays a quick browse, not an endless scroll.
 const MAX_GALLERY_IMAGES = 12;
 
-/** One entry of a person's `combined_credits.cast` (movie or TV role). */
+/** One entry of a person's `combined_credits` (movie or TV credit). */
 type TmdbCreditItem = (TmdbMovieResult | TmdbTvResult) & {
   media_type: "movie" | "tv";
   popularity?: number;
+  genre_ids?: number[];
+  episode_count?: number;
 };
 
+type TmdbCastCredit = TmdbCreditItem & { character?: string | null };
+
+type TmdbCrewCredit = TmdbCreditItem & { department?: string; job?: string };
+
 export interface TmdbPersonDetails {
+  id: number;
   name: string;
   biography?: string | null;
   birthday?: string | null;
@@ -212,8 +232,10 @@ export interface TmdbPersonDetails {
   place_of_birth?: string | null;
   profile_path?: string | null;
   homepage?: string | null;
+  known_for_department?: string | null;
+  also_known_as?: string[];
   external_ids?: { imdb_id?: string | null; wikidata_id?: string | null };
-  combined_credits?: { cast?: TmdbCreditItem[] };
+  combined_credits?: { cast?: TmdbCastCredit[]; crew?: TmdbCrewCredit[] };
 }
 
 export interface TmdbFindResult {
@@ -453,6 +475,7 @@ export function toExtras(
       : [];
 
   const region = data["watch/providers"]?.results?.[watchRegion];
+  const directorRefs = tmdbDirectors(type, data);
   const summarize = (r: TmdbMovieResult & TmdbTvResult): MediaSummaryDto =>
     type === MediaType.MOVIE ? toMovieSummary(r) : toTvSummary(r);
 
@@ -484,12 +507,16 @@ export function toExtras(
       .slice(0, MAX_GALLERY_IMAGES)
       .map((b) => tmdbImage(b.file_path, IMAGE_SIZE.backdrop)),
     tagline: data.tagline?.trim() || null,
-    directors: directorNames(type, data),
+    directors: directorRefs.map((d) => d.name),
+    directorRefs,
+    productionCompanyRefs: toTmdbRefs(data.production_companies),
+    networkRefs: toTmdbRefs(data.networks),
     trailerVideoId: pickTrailer(data.videos?.results),
     contentRating: certification(type, data),
     // AniList-only fields — TMDB has no studios/format/season/relations/
     // externalLinks/tags equivalent wired up here.
     studios: [],
+    studioRefs: [],
     format: null,
     season: null,
     relations: [],
@@ -526,6 +553,145 @@ export function toCastDetail(p: TmdbPersonDetails): CastDetailDto {
   };
 }
 
+// TMDB's crew departments, as `known_for_department` and credits name them.
+// Any department not listed (Costume & Make-Up, Visual Effects, Lighting…)
+// lands in CREW.
+const TMDB_DEPARTMENTS: Record<string, CreatorGroupKey> = {
+  Acting: CreatorGroupKey.ACTING,
+  Directing: CreatorGroupKey.DIRECTING,
+  Writing: CreatorGroupKey.WRITING,
+  Production: CreatorGroupKey.PRODUCTION,
+  Sound: CreatorGroupKey.SOUND,
+  Camera: CreatorGroupKey.CAMERA,
+  Editing: CreatorGroupKey.EDITING,
+  Art: CreatorGroupKey.ART,
+};
+
+const GROUP_ORDER: CreatorGroupKey[] = Object.values(CreatorGroupKey);
+
+const departmentGroup = (department: string | undefined): CreatorGroupKey =>
+  (department && TMDB_DEPARTMENTS[department]) || CreatorGroupKey.CREW;
+
+/**
+ * A person's page with every credit TMDB lists, short films and appearances
+ * as themselves included: how to present those is the page's call. Library
+ * statuses are left null for the caller to fill.
+ */
+export function toPersonPage(
+  p: TmdbPersonDetails,
+  today: string,
+): PersonPageDto {
+  const groups = new Map<CreatorGroupKey, Map<string, CreatorWorkDto>>();
+
+  const workIn = (key: CreatorGroupKey, credit: TmdbCreditItem) => {
+    const works = groups.get(key) ?? new Map<string, CreatorWorkDto>();
+    groups.set(key, works);
+    const id = `${credit.media_type}:${credit.id}`;
+    const existing = works.get(id);
+    if (existing) return existing;
+    const work = toCreatorWork(credit, today);
+    works.set(id, work);
+    return work;
+  };
+
+  for (const credit of p.combined_credits?.cast ?? []) {
+    const work = workIn(CreatorGroupKey.ACTING, credit);
+    const character = credit.character?.trim();
+
+    // The same role can be listed once per season or alias.
+    if (character && !work.character?.split(" / ").includes(character)) {
+      work.character = work.character
+        ? `${work.character} / ${character}`
+        : character;
+    }
+
+    work.episodeCount = maxCount(work.episodeCount, credit.episode_count);
+  }
+
+  for (const credit of p.combined_credits?.crew ?? []) {
+    const work = workIn(departmentGroup(credit.department), credit);
+    if (credit.job && !work.jobs.includes(credit.job))
+      work.jobs.push(credit.job);
+    work.episodeCount = maxCount(work.episodeCount, credit.episode_count);
+  }
+
+  const knownFor = p.known_for_department
+    ? departmentGroup(p.known_for_department)
+    : null;
+
+  return {
+    source: CreatorSource.TMDB,
+    id: String(p.id),
+    name: p.name,
+    photoUrl: p.profile_path
+      ? tmdbImage(p.profile_path, IMAGE_SIZE.profileLarge)
+      : null,
+    description: p.biography?.trim() || null,
+    birthday: p.birthday || null,
+    deathday: p.deathday || null,
+    placeOfBirth: p.place_of_birth || null,
+    knownFor,
+    alsoKnownAs: p.also_known_as ?? [],
+    imdbId: p.external_ids?.imdb_id || null,
+    wikidataId: p.external_ids?.wikidata_id || null,
+    homepage: p.homepage?.trim() || null,
+    groups: [...groups.entries()]
+      .map(([key, works]) => ({
+        key,
+        works: [...works.values()].sort(byReleaseDate),
+      }))
+      .sort(
+        (a, b) =>
+          Number(b.key === knownFor) - Number(a.key === knownFor) ||
+          b.works.length - a.works.length ||
+          GROUP_ORDER.indexOf(a.key) - GROUP_ORDER.indexOf(b.key),
+      ),
+  };
+}
+
+function toCreatorWork(credit: TmdbCreditItem, today: string): CreatorWorkDto {
+  const summary =
+    credit.media_type === "movie"
+      ? toMovieSummary(credit as TmdbMovieResult)
+      : toTvSummary(credit as TmdbTvResult);
+  const releaseDate =
+    (credit.media_type === "movie"
+      ? (credit as TmdbMovieResult).release_date
+      : (credit as TmdbTvResult).first_air_date) || null;
+
+  return {
+    type: summary.type,
+    sourceId: summary.sourceId,
+    title: summary.title,
+    year: summary.year,
+    releaseDate,
+    posterUrl: summary.posterUrl,
+    isAdult: summary.isAdult,
+    jobs: [],
+    character: null,
+    episodeCount: null,
+    genreIds: credit.genre_ids ?? [],
+    upcoming: !releaseDate || releaseDate > today,
+    status: null,
+  };
+}
+
+function maxCount(
+  current: number | null,
+  next: number | undefined,
+): number | null {
+  if (!next) return current;
+  return current === null ? next : Math.max(current, next);
+}
+
+/** Oldest first; an undated work is an announcement and goes last. */
+function byReleaseDate(a: CreatorWorkDto, b: CreatorWorkDto): number {
+  if (a.releaseDate === b.releaseDate) return a.title.localeCompare(b.title);
+  if (!a.releaseDate) return 1;
+  if (!b.releaseDate) return -1;
+  return a.releaseDate < b.releaseDate ? -1 : 1;
+}
+
 /** "1985 – 2020 · Tokyo, Japan" from whatever birth/death/place fields exist. */
 function personSubtitle(p: TmdbPersonDetails): string | null {
   const birthYear = p.birthday?.slice(0, 4);
@@ -543,15 +709,26 @@ function personSubtitle(p: TmdbPersonDetails): string | null {
  * append has no reliable per-series director, so the show's own creator(s)
  * (`created_by`, a base field) stand in instead.
  */
-function directorNames(type: MediaType, data: TmdbExtras): string[] {
-  if (type === MediaType.MOVIE) {
-    const names = (data.credits?.crew ?? [])
-      .filter((c) => c.job === "Director")
-      .map((c) => c.name);
-    return [...new Set(names)];
-  }
+function tmdbDirectors(type: MediaType, data: TmdbExtras): CreatorRefDto[] {
+  return toTmdbRefs(
+    type === MediaType.MOVIE
+      ? (data.credits?.crew ?? []).filter((c) => c.job === "Director")
+      : data.created_by,
+  );
+}
 
-  return (data.created_by ?? []).map((c) => c.name);
+/** One ref per TMDB id, first occurrence kept. */
+function toTmdbRefs(
+  entities: { id: number; name: string }[] | undefined,
+): CreatorRefDto[] {
+  const seen = new Set<number>();
+  return (entities ?? [])
+    .filter((e) => (seen.has(e.id) ? false : seen.add(e.id)))
+    .map((e) => ({
+      source: CreatorSource.TMDB,
+      id: String(e.id),
+      name: e.name,
+    }));
 }
 
 /** Prefer an official trailer, else any trailer, else nothing. */

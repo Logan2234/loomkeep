@@ -1,5 +1,14 @@
-import type { BookEditionDto, RatingDto } from "@loomkeep/shared";
-import { BookSource, BookSummaryDto, ErrorCode } from "@loomkeep/shared";
+import type {
+  BookEditionDto,
+  CreatorRefDto,
+  RatingDto,
+} from "@loomkeep/shared";
+import {
+  BookSource,
+  BookSummaryDto,
+  CreatorSource,
+  ErrorCode,
+} from "@loomkeep/shared";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { AppException } from "../../common/app.exception";
@@ -348,6 +357,7 @@ export class OpenLibraryProvider implements BookCatalogProvider {
 
     return {
       summary,
+      authorRefs: doc ? authorRefs(doc) : [],
       // The edition's own synopsis when it has one (e.g. a translation's
       // back-cover text) — the work's description is usually in whatever
       // language the original cataloger wrote in, not necessarily `lang`.
@@ -657,6 +667,17 @@ const MAX_REDIRECT_HOPS = 3;
 /** An Open Library series id. */
 const SERIES_KEY = /^OL\d+L$/;
 const WHOLE_NUMBER = /^\d+$/;
+
+/**
+ * Each author with their key. Solr returns `author_name` and `author_key`
+ * index for index; a name without a key can't be linked and is left out.
+ */
+function authorRefs(doc: OpenLibraryDoc): CreatorRefDto[] {
+  return (doc.author_name ?? []).flatMap((name, i) => {
+    const id = doc.author_key?.[i];
+    return id ? [{ source: CreatorSource.OPEN_LIBRARY, id, name }] : [];
+  });
+}
 
 /** The first series the work is a whole-numbered volume of, if any. */
 function mainSeries(doc: OpenLibraryDoc): string | null {

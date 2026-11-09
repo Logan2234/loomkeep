@@ -1,4 +1,5 @@
 import type { CatalogSource, MediaType } from "../enums";
+import type { CreatorRefDto } from "./creator";
 import type { EpisodeWatchDto, LibraryEntryDto } from "./library";
 import type { PagedResult } from "./pagination";
 
@@ -134,6 +135,12 @@ export interface MediaExtrasDto {
    * the credited director(s) (AniList staff).
    */
   directors: string[];
+  /** The same people as `directors`, linkable to their page. */
+  directorRefs: CreatorRefDto[];
+  /** Production companies (TMDB only). */
+  productionCompanyRefs: CreatorRefDto[];
+  /** Original network(s) of a series (TMDB only). */
+  networkRefs: CreatorRefDto[];
   /** YouTube video id for a trailer, when the source lists one. */
   trailerVideoId: string | null;
   /**
@@ -144,6 +151,8 @@ export interface MediaExtrasDto {
   contentRating: string | null;
   /** Animation studio(s) credited as main studio (AniList only). */
   studios: string[];
+  /** The same studios as `studios`, linkable to their page. */
+  studioRefs: CreatorRefDto[];
   /** Release format, e.g. "TV", "MOVIE", "OVA", "ONA", "SPECIAL" (AniList only). */
   format: string | null;
   /** Airing season — "WINTER" | "SPRING" | "SUMMER" | "FALL" (AniList only). */

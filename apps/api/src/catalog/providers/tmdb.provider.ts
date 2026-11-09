@@ -3,17 +3,20 @@ import type {
   EpisodeMediaDto,
   MediaExtrasDto,
   MediaSagaDto,
+  PersonPageDto,
   SeasonImagesDto,
   WatchProviderDto,
 } from "@loomkeep/shared";
 import {
   CatalogSource,
+  ErrorCode,
   MediaSummaryDto,
   MediaType,
   regionalLocale,
 } from "@loomkeep/shared";
-import { Injectable } from "@nestjs/common";
+import { HttpStatus, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
+import { AppException } from "../../common/app.exception";
 import { utcDateKey } from "../../common/date.util";
 import { fetchJson } from "../../common/http.util";
 import { QuotaTrackerService } from "../../common/quota-tracker.service";
@@ -31,6 +34,7 @@ import {
   toMovieDetails,
   toMovieSagaMember,
   toMovieSummary,
+  toPersonPage,
   toSeasonImages,
   toTvDetails,
   toTvSeason,
@@ -440,6 +444,39 @@ export class TmdbProvider implements CatalogProvider {
     });
 
     return toCastDetail(p);
+  }
+
+  /**
+   * A person's page: identity and every film and series credit, titles and
+   * biography in `lang`. TMDB doesn't fall back to English for a missing
+   * translated biography, so a second, lighter call fetches it then.
+   */
+  async getPersonPage(id: string, lang?: string): Promise<PersonPageDto> {
+    // The id comes straight from the page's URL: anything but digits could
+    // reach another TMDB endpoint with our token.
+    if (!/^\d+$/.test(id)) {
+      throw new AppException(
+        HttpStatus.NOT_FOUND,
+        ErrorCode.CatalogPersonNotFound,
+        undefined,
+        `Not a TMDB person id: ${id}`,
+      );
+    }
+
+    const language = regionalLocale(lang);
+    const person = await this.get<TmdbPersonDetails>(`/person/${id}`, {
+      append_to_response: "combined_credits,external_ids",
+      language,
+    });
+
+    if (!person.biography?.trim() && !language.startsWith("en")) {
+      const english = await this.get<TmdbPersonDetails>(`/person/${id}`, {
+        language: "en-US",
+      }).catch(() => null);
+      person.biography = english?.biography ?? null;
+    }
+
+    return toPersonPage(person, utcDateKey(new Date()));
   }
 
   /** This week's trending films and series, adult titles left out. */

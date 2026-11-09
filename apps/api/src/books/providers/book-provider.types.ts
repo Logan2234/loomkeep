@@ -2,6 +2,7 @@ import type {
   BookEditionDto,
   BookSource,
   BookSummaryDto,
+  CreatorRefDto,
   RatingDto,
 } from "@loomkeep/shared";
 import type { ProviderExternalId } from "../../common/provider-external-id";
@@ -9,6 +10,8 @@ import type { ProviderExternalId } from "../../common/provider-external-id";
 /** Everything a provider knows about one book, in canonical form. */
 export interface ProviderBookDetails {
   summary: BookSummaryDto;
+  /** The same people as `summary.authors`, linkable to their page. */
+  authorRefs: CreatorRefDto[];
   overview: string | null;
   subtitle: string | null;
   publisher: string | null;

@@ -1,0 +1,100 @@
+import type { EntryStatus, MediaType } from "../enums";
+
+/**
+ * Catalogue a creator page reads from, as it appears in the page's URL
+ * (`/app/people/tmdb/137427`). One closed list spanning every domain: a
+ * person can be a TMDB or AniList staff member or an Open Library author.
+ */
+export const CreatorSource = {
+  TMDB: "tmdb",
+  ANILIST: "anilist",
+  IGDB: "igdb",
+  OPEN_LIBRARY: "openlibrary",
+} as const;
+
+export type CreatorSource = (typeof CreatorSource)[keyof typeof CreatorSource];
+
+/**
+ * A person, studio or franchise credited on a work, with what it takes to
+ * link to its page. Whether it is a person or a studio follows from the
+ * field holding it (`directorRefs`, `studioRefs`…).
+ */
+export interface CreatorRefDto {
+  source: CreatorSource;
+  /** The creator's id in `source`. */
+  id: string;
+  name: string;
+}
+
+/** One role group on a creator page ("Directing", "Acting"…). */
+export const CreatorGroupKey = {
+  DIRECTING: "DIRECTING",
+  WRITING: "WRITING",
+  PRODUCTION: "PRODUCTION",
+  SOUND: "SOUND",
+  CAMERA: "CAMERA",
+  EDITING: "EDITING",
+  ART: "ART",
+  CREW: "CREW",
+  ACTING: "ACTING",
+} as const;
+
+export type CreatorGroupKey =
+  (typeof CreatorGroupKey)[keyof typeof CreatorGroupKey];
+
+/**
+ * One work in a creator's group, with every job they hold on it within that
+ * group ("Screenplay" and "Story" both sit under Writing).
+ */
+export interface CreatorWorkDto {
+  /** MOVIE or SERIES for a TMDB person. */
+  type: MediaType;
+  sourceId: string;
+  title: string;
+  year: number | null;
+  /** Release or first air date ("2021-09-15"), when known. */
+  releaseDate: string | null;
+  posterUrl: string | null;
+  isAdult: boolean;
+  /** Crew jobs held on the work ("Director", "Screenplay"); empty for acting. */
+  jobs: string[];
+  /** Character played, for acting; "Self" for an appearance as oneself. */
+  character: string | null;
+  /** Episodes credited on a series, when the source counts them. */
+  episodeCount: number | null;
+  /** The source's genre ids (TMDB: 99 is documentary). */
+  genreIds: number[];
+  /** Not released yet. */
+  upcoming: boolean;
+  /** The viewer's status for the work; null when it's not in their library. */
+  status: EntryStatus | null;
+}
+
+export interface CreatorGroupDto {
+  key: CreatorGroupKey;
+  /** Oldest first; undated works last. */
+  works: CreatorWorkDto[];
+}
+
+/** A person's page: identity, then their works grouped by role. */
+export interface PersonPageDto {
+  source: CreatorSource;
+  id: string;
+  name: string;
+  photoUrl: string | null;
+  /** Biography in the viewer's language when the source has it. */
+  description: string | null;
+  /** ISO date of birth, when known. */
+  birthday: string | null;
+  deathday: string | null;
+  placeOfBirth: string | null;
+  /** The group the source says they're best known for. */
+  knownFor: CreatorGroupKey | null;
+  /** Other spellings and transliterations of the name. */
+  alsoKnownAs: string[];
+  imdbId: string | null;
+  wikidataId: string | null;
+  homepage: string | null;
+  /** The `knownFor` group first, then the largest. */
+  groups: CreatorGroupDto[];
+}

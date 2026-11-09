@@ -19,6 +19,7 @@ import { CommonModule } from "./common/common.module";
 import { loggerOptions } from "./common/logger.config";
 import { RuntimeConfigModule } from "./config/config.module";
 import { validateEnv } from "./config/env.validation";
+import { CreatorsModule } from "./creators/creators.module";
 import { EeModule } from "./ee/ee.module";
 import { EventsModule } from "./events/events.module";
 import { FeatureFlagsModule } from "./feature-flags/feature-flags.module";
@@ -85,6 +86,7 @@ import { UsersModule } from "./users/users.module";
     BooksModule,
     MusicModule,
     LibraryModule,
+    CreatorsModule,
     LinksModule,
     ImportModule,
     NotificationModule,
