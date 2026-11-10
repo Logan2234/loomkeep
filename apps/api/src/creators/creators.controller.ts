@@ -31,7 +31,10 @@ export class CreatorsController {
       "creator source",
       { caseSensitive: true },
     );
-    await this.domainGate.assertEnabled(user.sub, Domain.MEDIA);
+    await this.domainGate.assertEnabled(
+      user.sub,
+      source === CreatorSource.OPEN_LIBRARY ? Domain.BOOKS : Domain.MEDIA,
+    );
     return this.creators.getPerson(user.sub, source, id, safeLang(lang));
   }
 }

@@ -1,11 +1,17 @@
 import type { CreatorWorkDto } from "@loomkeep/shared";
 import { describe, expect, it } from "vitest";
-import { mixesTypes, splitCredits, visibleWorks } from "./person-page";
+import {
+  bySeries,
+  mixesTypes,
+  splitCredits,
+  visibleWorks,
+} from "./person-page";
 
 const work = (
   sourceId: string,
   extra: Partial<CreatorWorkDto> = {},
 ): CreatorWorkDto => ({
+  domain: "MEDIA",
   type: "MOVIE",
   sourceId,
   title: sourceId,
@@ -19,6 +25,8 @@ const work = (
   genreIds: [],
   upcoming: false,
   kind: "WORK",
+  editionCount: null,
+  series: null,
   status: null,
   ...extra,
 });
@@ -122,5 +130,48 @@ describe("splitCredits", () => {
       ["late-show", "TV_APPEARANCE"],
       ["lucid-dreams", "DOCUMENTARY"],
     ]);
+  });
+});
+
+describe("books", () => {
+  const discworld = (position: number) => ({
+    key: "OL339711L",
+    name: "Discworld",
+    position,
+  });
+  const books = [
+    work("mort", { editionCount: 61, series: discworld(4) }),
+    work("colour", { editionCount: 93, series: discworld(1) }),
+    work("strata", { editionCount: 21 }),
+    work("long-earth", {
+      editionCount: 14,
+      series: { key: "OL342589L", name: "The Long Earth", position: 1 },
+    }),
+  ];
+
+  it("puts the most published first", () => {
+    const ids = visibleWorks(books, {
+      type: "ALL",
+      inLibrary: false,
+      order: "known",
+    }).map((w) => w.sourceId);
+
+    expect(ids).toEqual(["colour", "mort", "strata", "long-earth"]);
+  });
+
+  it("gathers a series in reading order, a lone volume staying with the rest", () => {
+    const { series, others } = bySeries(books);
+
+    expect(series).toEqual([
+      {
+        key: "OL339711L",
+        name: "Discworld",
+        works: [
+          expect.objectContaining({ sourceId: "colour" }),
+          expect.objectContaining({ sourceId: "mort" }),
+        ],
+      },
+    ]);
+    expect(others.map((w) => w.sourceId)).toEqual(["strata", "long-earth"]);
   });
 });

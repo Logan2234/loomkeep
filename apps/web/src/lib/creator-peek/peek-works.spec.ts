@@ -6,6 +6,7 @@ const work = (
   sourceId: string,
   extra: Partial<CreatorWorkDto> = {},
 ): CreatorWorkDto => ({
+  domain: "MEDIA",
   type: "MOVIE",
   sourceId,
   title: sourceId,
@@ -19,6 +20,8 @@ const work = (
   genreIds: [],
   upcoming: false,
   kind: "WORK",
+  editionCount: null,
+  series: null,
   status: null,
   ...extra,
 });

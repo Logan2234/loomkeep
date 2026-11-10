@@ -1339,4 +1339,44 @@ describe("OpenLibraryProvider", () => {
       expect(fetch).not.toHaveBeenCalled();
     });
   });
+
+  describe("getAuthorPage", () => {
+    it("reads the author and their works in the viewer's language", async () => {
+      const fn = mockFetchByUrl([
+        ["/authors/OL25712A.json", { name: "Terry Pratchett" }],
+        [
+          "author_key%3AOL25712A",
+          {
+            docs: [
+              {
+                key: "/works/OL450125W",
+                title: "The Colour of Magic",
+                author_key: ["OL25712A"],
+                edition_count: 93,
+              },
+            ],
+          },
+        ],
+      ]);
+
+      const page = await providerWith().getAuthorPage("OL25712A", "fr");
+
+      expect(page.name).toBe("Terry Pratchett");
+      expect(page.groups[0].works[0].sourceId).toBe("OL450125W");
+      const search = fn.mock.calls
+        .map(([url]) => decodeURIComponent(String(url)))
+        .find((url) => url.includes("search.json"));
+      expect(search).toContain("lang=fr");
+      expect(search).toContain("editions.language");
+    });
+
+    it("never puts anything but an author id into a path", async () => {
+      const fetch = mockFetchByUrl([]);
+
+      await expect(
+        providerWith().getAuthorPage("../works/OL1W"),
+      ).rejects.toMatchObject({ status: 404 });
+      expect(fetch).not.toHaveBeenCalled();
+    });
+  });
 });

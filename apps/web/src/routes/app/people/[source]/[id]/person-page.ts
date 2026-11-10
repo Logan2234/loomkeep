@@ -5,7 +5,8 @@ import type {
 } from "@loomkeep/shared";
 
 export type WorkTypeFilter = "ALL" | "MOVIE" | "SERIES";
-export type WorkOrder = "newest" | "oldest";
+/** "known": most published first, for books, whose dates Open Library often gets wrong. */
+export type WorkOrder = "known" | "newest" | "oldest";
 
 export interface WorkFilters {
   type: WorkTypeFilter;
@@ -28,7 +29,64 @@ export function visibleWorks(
       (filters.type === "ALL" || work.type === filters.type) &&
       (!filters.inLibrary || work.status !== null),
   );
+
+  if (filters.order === "known") {
+    return kept.sort((a, b) => (b.editionCount ?? 0) - (a.editionCount ?? 0));
+  }
+
   return filters.order === "newest" ? kept.reverse() : kept;
+}
+
+export const workHref = (work: CreatorWorkDto) =>
+  work.domain === "BOOKS"
+    ? `/app/books/${work.sourceId}`
+    : `/app/media/${work.type?.toLowerCase()}/${work.sourceId}`;
+
+export interface SeriesBlock {
+  key: string;
+  name: string;
+  /** In series order. */
+  works: CreatorWorkDto[];
+}
+
+/**
+ * An author's series, each as a block in reading order, and the books
+ * outside them in the order given. A "series" of one book stays with the
+ * others.
+ */
+export function bySeries(works: CreatorWorkDto[]): {
+  series: SeriesBlock[];
+  others: CreatorWorkDto[];
+} {
+  const blocks = new Map<string, SeriesBlock>();
+
+  for (const work of works) {
+    if (!work.series) continue;
+    const block = blocks.get(work.series.key) ?? {
+      key: work.series.key,
+      name: work.series.name,
+      works: [],
+    };
+    block.works.push(work);
+    blocks.set(work.series.key, block);
+  }
+
+  const series = [...blocks.values()]
+    .filter((block) => block.works.length > 1)
+    .map((block) => ({
+      ...block,
+      works: [...block.works].sort(
+        (a, b) => (a.series?.position ?? 0) - (b.series?.position ?? 0),
+      ),
+    }));
+  const inSeries = new Set(series.map((block) => block.key));
+
+  return {
+    series,
+    others: works.filter(
+      (work) => !work.series || !inSeries.has(work.series.key),
+    ),
+  };
 }
 
 /** Whether the type filter has anything to choose between. */
@@ -40,6 +98,8 @@ const MENTION_KINDS: ReadonlySet<CreatorCreditKind> = new Set([
   "DOCUMENTARY",
   "CAMEO",
   "THANKS",
+  "ANTHOLOGY",
+  "OMNIBUS",
 ]);
 
 /**

@@ -1,8 +1,11 @@
 import type { CreatorRefDto, CreatorSource } from "@loomkeep/shared";
 
-// The sources whose people have a page so far: AniList staff and Open
-// Library authors stay plain names until theirs ship.
-const SOURCES_WITH_PERSON_PAGE: ReadonlySet<CreatorSource> = new Set(["tmdb"]);
+// The sources whose people have a page so far: AniList staff stay plain
+// names until theirs ship.
+const SOURCES_WITH_PERSON_PAGE: ReadonlySet<CreatorSource> = new Set([
+  "tmdb",
+  "openlibrary",
+]);
 
 /** The only place a person page's URL is built; null when there's no page. */
 export function creatorHref(
