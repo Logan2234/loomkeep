@@ -1,4 +1,4 @@
-import { MediaSource, MediaType } from "@loomkeep/shared";
+import { ErrorCode, MediaSource, MediaType } from "@loomkeep/shared";
 import { ConfigService } from "@nestjs/config";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -421,6 +421,166 @@ describe("TmdbProvider", () => {
     ]);
   });
 
+  describe("getPersonPage", () => {
+    const villeneuve = {
+      id: 137427,
+      name: "Denis Villeneuve",
+      biography: "Cinéaste québécois.",
+      birthday: "1967-10-03",
+      place_of_birth: "Bécancour, Québec, Canada",
+      profile_path: "/dv.jpg",
+      known_for_department: "Directing",
+      also_known_as: ["Дени Вильнёв"],
+      external_ids: { imdb_id: "nm0898288", wikidata_id: "Q22350" },
+      combined_credits: {
+        cast: [
+          {
+            id: 11,
+            media_type: "movie",
+            title: "Making of Dune",
+            release_date: "2021-10-01",
+            character: "Self",
+            genre_ids: [99],
+          },
+        ],
+        crew: [
+          {
+            id: 693134,
+            media_type: "movie",
+            title: "Dune : Deuxième partie",
+            release_date: "2024-02-27",
+            department: "Directing",
+            job: "Director",
+          },
+          {
+            id: 438631,
+            media_type: "movie",
+            title: "Dune",
+            release_date: "2021-09-15",
+            department: "Directing",
+            job: "Director",
+          },
+          {
+            id: 438631,
+            media_type: "movie",
+            title: "Dune",
+            release_date: "2021-09-15",
+            department: "Writing",
+            job: "Screenplay",
+          },
+          {
+            id: 1170608,
+            media_type: "movie",
+            title: "Dune : Le Messie",
+            department: "Directing",
+            job: "Director",
+          },
+          // Same id as a film: TMDB series ids are another namespace.
+          {
+            id: 438631,
+            media_type: "tv",
+            name: "Dune: Prophecy",
+            first_air_date: "2024-11-17",
+            department: "Production",
+            job: "Executive Producer",
+            episode_count: 6,
+          },
+          {
+            id: 7,
+            media_type: "movie",
+            title: "Arrival",
+            release_date: "2016-09-01",
+            department: "Visual Effects",
+            job: "Consultant",
+          },
+        ],
+      },
+    };
+
+    it("groups every credit by department, the best-known one first, oldest work first", async () => {
+      mockFetchByUrl({ "/person/137427": villeneuve });
+
+      const page = await provider.getPersonPage("137427", "fr");
+
+      expect(page).toMatchObject({
+        source: "tmdb",
+        id: "137427",
+        name: "Denis Villeneuve",
+        photoUrl: "https://image.tmdb.org/t/p/h632/dv.jpg",
+        description: "Cinéaste québécois.",
+        birthday: "1967-10-03",
+        knownFor: "DIRECTING",
+        alsoKnownAs: ["Дени Вильнёв"],
+        imdbId: "nm0898288",
+        wikidataId: "Q22350",
+      });
+      expect(page.groups.map((g) => g.key)).toEqual([
+        "DIRECTING",
+        "WRITING",
+        "PRODUCTION",
+        "CREW",
+        "ACTING",
+      ]);
+      // Undated is an announcement: last, and upcoming.
+      expect(page.groups[0].works.map((w) => [w.title, w.upcoming])).toEqual([
+        ["Dune", false],
+        ["Dune : Deuxième partie", false],
+        ["Dune : Le Messie", true],
+      ]);
+    });
+
+    it("keeps appearances as oneself, and tells films from series sharing an id", async () => {
+      mockFetchByUrl({ "/person/137427": villeneuve });
+
+      const page = await provider.getPersonPage("137427", "fr");
+      const group = (key: string) => page.groups.find((g) => g.key === key)!;
+
+      expect(group("ACTING").works).toEqual([
+        expect.objectContaining({
+          title: "Making of Dune",
+          character: "Self",
+          genreIds: [99],
+          jobs: [],
+        }),
+      ]);
+      expect(group("PRODUCTION").works).toEqual([
+        expect.objectContaining({
+          type: MediaType.SERIES,
+          sourceId: "438631",
+          jobs: ["Executive Producer"],
+          episodeCount: 6,
+          status: null,
+        }),
+      ]);
+      expect(group("WRITING").works[0]).toMatchObject({
+        type: MediaType.MOVIE,
+        sourceId: "438631",
+        jobs: ["Screenplay"],
+      });
+    });
+
+    it("falls back to the English biography when TMDB has no translation", async () => {
+      const fetch = mockFetchByUrl([
+        ["language=fr", { ...villeneuve, biography: "" }],
+        ["language=en-US", { id: 137427, biography: "Quebec filmmaker." }],
+      ]);
+
+      const page = await provider.getPersonPage("137427", "fr");
+
+      expect(page.description).toBe("Quebec filmmaker.");
+      expect(fetch).toHaveBeenCalledTimes(2);
+    });
+
+    it("never puts a non-numeric id into a TMDB path", async () => {
+      mockFetchByUrl({});
+
+      await expect(provider.getPersonPage("../account")).rejects.toMatchObject({
+        code: ErrorCode.CatalogPersonNotFound,
+      });
+      expect(global.fetch).not.toHaveBeenCalled();
+    });
+  });
+
   describe("getSaga", () => {
     it("lists a film's collection in release order, an unreleased part marked upcoming", async () => {
       mockFetchByUrl({
@@ -619,14 +779,15 @@ describe("TmdbProvider", () => {
       expect(extras.ratings).toEqual([]);
     });
 
-    it("maps a movie's director from credits.crew, deduped", async () => {
+    it("maps a movie's director from credits.crew, deduped, with its production companies", async () => {
       mockFetchByUrl({
         "/movie/27205": {
           id: 27205,
+          production_companies: [{ id: 923, name: "Legendary Pictures" }],
           credits: {
             crew: [
-              { id: 1, name: "Christopher Nolan", job: "Director" },
-              { id: 1, name: "Christopher Nolan", job: "Director" },
+              { id: 525, name: "Christopher Nolan", job: "Director" },
+              { id: 525, name: "Christopher Nolan", job: "Director" },
               { id: 2, name: "Someone Else", job: "Producer" },
             ],
           },
@@ -641,13 +802,21 @@ describe("TmdbProvider", () => {
       );
 
       expect(extras.directors).toEqual(["Christopher Nolan"]);
+      expect(extras.directorRefs).toEqual([
+        { source: "tmdb", id: "525", name: "Christopher Nolan" },
+      ]);
+      expect(extras.productionCompanyRefs).toEqual([
+        { source: "tmdb", id: "923", name: "Legendary Pictures" },
+      ]);
+      expect(extras.networkRefs).toEqual([]);
     });
 
-    it("maps a series' creators from created_by, not credits.crew", async () => {
+    it("maps a series' creators from created_by, not credits.crew, with its networks", async () => {
       mockFetchByUrl({
         "/tv/1396": {
           id: 1396,
-          created_by: [{ id: 1, name: "Vince Gilligan" }],
+          created_by: [{ id: 66633, name: "Vince Gilligan" }],
+          networks: [{ id: 174, name: "AMC" }],
           credits: {
             crew: [{ id: 2, name: "Someone Else", job: "Director" }],
           },
@@ -662,6 +831,12 @@ describe("TmdbProvider", () => {
       );
 
       expect(extras.directors).toEqual(["Vince Gilligan"]);
+      expect(extras.directorRefs).toEqual([
+        { source: "tmdb", id: "66633", name: "Vince Gilligan" },
+      ]);
+      expect(extras.networkRefs).toEqual([
+        { source: "tmdb", id: "174", name: "AMC" },
+      ]);
     });
 
     it("picks the official trailer over other YouTube videos", async () => {

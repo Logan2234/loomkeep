@@ -141,6 +141,7 @@ export class BookItemService {
     );
     return {
       ...details.summary,
+      authorRefs: details.authorRefs,
       overview: details.overview,
       subtitle: details.subtitle,
       publisher: details.publisher,

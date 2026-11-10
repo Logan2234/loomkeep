@@ -8,6 +8,7 @@ import type {
 } from "../enums";
 import { GameStatus } from "../enums";
 import type { RatingDto } from "./catalog";
+import type { CreatorRefDto } from "./creator";
 import type { SessionWeekDayDto } from "./session";
 import { SESSION_FILTER_PAUSED } from "./session";
 
@@ -70,6 +71,10 @@ export interface GameDetailsDto extends GameSummaryDto {
   similarGames: GameSummaryDto[];
   developers: string[];
   publishers: string[];
+  /** The same companies as `developers`, linkable to their page. */
+  developerRefs: CreatorRefDto[];
+  /** The same companies as `publishers`, linkable to their page. */
+  publisherRefs: CreatorRefDto[];
   /** Solo/coop/multiplayer… */
   gameModes: string[];
   /** First/third person, VR… */
@@ -78,6 +83,8 @@ export interface GameDetailsDto extends GameSummaryDto {
   franchiseGames: GameSummaryDto[];
   /** Name of the first franchise this game belongs to, when known. */
   franchiseName: string | null;
+  /** Every franchise the game belongs to, linkable to its page. */
+  franchiseRefs: CreatorRefDto[];
   /** IGDB's own user rating + critic aggregate, when known. */
   ratings: RatingDto[];
   /** Deeper narrative summary, distinct from `overview`, when IGDB has one. */

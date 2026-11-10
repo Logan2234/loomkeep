@@ -427,8 +427,8 @@ describe("AnilistProvider", () => {
             trailer: { id: "abc123", site: "youtube" },
             studios: {
               edges: [
-                { isMain: true, node: { name: "Madhouse" } },
-                { isMain: false, node: { name: "Some Other Credit" } },
+                { isMain: true, node: { id: 11, name: "Madhouse" } },
+                { isMain: false, node: { id: 12, name: "Some Other Credit" } },
               ],
             },
             tags: [
@@ -442,11 +442,11 @@ describe("AnilistProvider", () => {
               edges: [
                 {
                   role: "Director",
-                  node: { name: { full: "Keiichirou Saitou" } },
+                  node: { id: 101, name: { full: "Keiichirou Saitou" } },
                 },
                 {
                   role: "Series Composition",
-                  node: { name: { full: "Someone Else" } },
+                  node: { id: 102, name: { full: "Someone Else" } },
                 },
               ],
             },
@@ -525,6 +525,12 @@ describe("AnilistProvider", () => {
       expect(extras.season).toBe("FALL");
       expect(extras.trailerVideoId).toBe("abc123");
       expect(extras.studios).toEqual(["Madhouse"]);
+      expect(extras.studioRefs).toEqual([
+        { source: "anilist", id: "11", name: "Madhouse" },
+      ]);
+      expect(extras.directorRefs).toEqual([
+        { source: "anilist", id: "101", name: "Keiichirou Saitou" },
+      ]);
       expect(extras.tags).toEqual(["Iyashikei"]);
       expect(extras.externalLinks).toEqual([
         { name: "Crunchyroll", url: "https://crunchyroll.com/frieren" },

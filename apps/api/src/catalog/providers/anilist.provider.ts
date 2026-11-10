@@ -209,7 +209,7 @@ const EXTRAS_QUERY = `
       season
       trailer { id site }
       studios(sort: NAME) {
-        edges { isMain node { name } }
+        edges { isMain node { id name } }
       }
       tags {
         name
@@ -218,7 +218,7 @@ const EXTRAS_QUERY = `
       }
       externalLinks { site url }
       staff(sort: RELEVANCE, perPage: 25) {
-        edges { role node { name { full } } }
+        edges { role node { id name { full } } }
       }
       characters(sort: [ROLE, RELEVANCE], perPage: 12) {
         edges {

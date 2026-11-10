@@ -1,6 +1,7 @@
 import type { GameDetailDto, ReleaseDatePrecision } from "@loomkeep/shared";
 import { GameSource } from "@loomkeep/shared";
 import { ApiProperty } from "@nestjs/swagger";
+import { CreatorRefResponseDto } from "../../catalog/dto/creator-ref-response.dto";
 import { RatingResponseDto } from "../../catalog/dto/rating-response.dto";
 import { GameEntryResponseDto } from "./game-entry-response.dto";
 import { GameSummaryResponseDto } from "./game-summary-response.dto";
@@ -28,10 +29,13 @@ export class GameDetailResponseDto implements GameDetailDto {
   similarGames!: GameSummaryResponseDto[];
   developers!: string[];
   publishers!: string[];
+  developerRefs!: CreatorRefResponseDto[];
+  publisherRefs!: CreatorRefResponseDto[];
   gameModes!: string[];
   playerPerspectives!: string[];
   franchiseGames!: GameSummaryResponseDto[];
   franchiseName!: string | null;
+  franchiseRefs!: CreatorRefResponseDto[];
   ratings!: RatingResponseDto[];
   storyline!: string | null;
   trailerVideoId!: string | null;

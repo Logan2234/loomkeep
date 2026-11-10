@@ -202,6 +202,9 @@ describe("OpenLibraryProvider", () => {
 
     expect(details).toEqual({
       summary: HOBBIT_SUMMARY,
+      authorRefs: [
+        { source: "openlibrary", id: "OL26320A", name: "J.R.R. Tolkien" },
+      ],
       overview: "A hobbit goes on an adventure.",
       subtitle: "There and Back Again",
       publisher: "George Allen & Unwin",
