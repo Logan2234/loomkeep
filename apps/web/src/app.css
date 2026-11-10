@@ -386,7 +386,10 @@ html[data-page-transition="back"]::view-transition-old(root) {
 
 ::view-transition-group(work-poster),
 ::view-transition-old(work-poster),
-::view-transition-new(work-poster) {
+::view-transition-new(work-poster),
+::view-transition-group(creator-portrait),
+::view-transition-old(creator-portrait),
+::view-transition-new(creator-portrait) {
   animation-duration: 280ms;
   animation-timing-function: cubic-bezier(0.2, 0, 0, 1);
 }

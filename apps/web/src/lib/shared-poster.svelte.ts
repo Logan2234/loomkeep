@@ -57,5 +57,47 @@ export function namePoster(poster: HTMLElement | null): () => void {
   };
 }
 
+const PORTRAIT_TRANSITION_NAME = "creator-portrait";
+const CREATOR_PATH = /^\/app\/people\/[^/]+\/[^/]+$/;
+
+export const isCreatorPath = (pathname: string): boolean =>
+  CREATOR_PATH.test(pathname);
+
+/**
+ * On the page being left for a person's page: the photo shown with the link
+ * just tapped, in the same card or dialog ("See their page" in the cast
+ * modal). A name alone has none, and the page opens with the usual slide.
+ */
+export function tappedPortrait(
+  target: Element | null,
+  pathname: string,
+): HTMLElement | null {
+  const link = target?.closest<HTMLAnchorElement>("a[href]");
+  if (!link) return null;
+  const href = link.getAttribute("href") ?? "";
+  if (new URL(href, location.href).pathname !== pathname) return null;
+  return (
+    link
+      .closest('[role="dialog"]')
+      ?.querySelector<HTMLElement>("[data-creator-portrait]") ?? null
+  );
+}
+
+export const detailPortrait = (): HTMLElement | null =>
+  document.querySelector<HTMLElement>("[data-detail-portrait]");
+
+export function namePortrait(portrait: HTMLElement | null): () => void {
+  if (!portrait) return () => {};
+
+  portrait.style.viewTransitionName = PORTRAIT_TRANSITION_NAME;
+
+  return () => {
+    portrait.style.viewTransitionName = "";
+  };
+}
+
 /** The image a page still loading shows where its poster will be. */
 export const pendingPoster = $state<{ src: string | null }>({ src: null });
+
+/** The same for a person's page and its portrait. */
+export const pendingPortrait = $state<{ src: string | null }>({ src: null });

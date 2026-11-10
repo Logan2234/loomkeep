@@ -6,6 +6,7 @@
   import Carousel from "#lib/components/Carousel.svelte";
   import Modal from "#lib/components/Modal.svelte";
   import Poster from "#lib/components/Poster.svelte";
+  import { creatorHref } from "#lib/creator-href.js";
   import type { CastMemberDto } from "@loomkeep/shared";
 
   let { cast, source }: { cast: CastMemberDto[]; source: "anilist" | "tmdb" } =
@@ -22,6 +23,9 @@
   }));
   const castDetail = $derived(castQuery.data);
   const castLoading = $derived(castQuery.loading);
+  const personHref = $derived(
+    castMember?.id ? creatorHref({ source, id: castMember.id }) : null,
+  );
 
   function openCast(member: CastMemberDto) {
     if (!member.id) return;
@@ -100,12 +104,23 @@
   </section>
 {/if}
 
+{#snippet seePage()}
+  <div class="flex justify-end">
+    <a href={personHref} class="btn btn-primary">{m.creator_see_page()}</a>
+  </div>
+{/snippet}
+
 <!-- Cast detail modal (TMDB person), lazily loaded on click. -->
 {#if castMember}
-  <Modal onclose={closeCast} title="" wide>
+  <Modal
+    onclose={closeCast}
+    title=""
+    wide
+    actions={personHref ? seePage : undefined}>
     <div class="flex gap-4">
       <div
-        class="bg-surface-2 aspect-2/3 w-24 shrink-0 overflow-hidden rounded-lg">
+        class="bg-surface-2 aspect-2/3 w-24 shrink-0 overflow-hidden rounded-lg"
+        data-creator-portrait>
         {#if castDetail?.photoUrl ?? castMember.photoUrl}
           <img
             src={castDetail?.photoUrl ?? castMember.photoUrl}

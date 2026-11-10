@@ -40,6 +40,7 @@
   import ProgressBar from "#lib/components/ProgressBar.svelte";
   import NewBadge from "#lib/components/NewBadge.svelte";
   import { isFeatureNew } from "#lib/feature-badges.js";
+  import CreatorNames from "#lib/components/CreatorNames.svelte";
   import { mediaCompletionEstimate } from "#lib/media-completion-estimate.js";
   import { tapFeedback } from "#lib/native/haptics.js";
   import ProviderMark from "#lib/components/ProviderMark.svelte";
@@ -676,7 +677,11 @@
         </dd>
       </div>
     {/snippet}
-    {#snippet directorNames()}{extras?.directors.join(", ")}{/snippet}
+    {#snippet directorNames()}
+      <CreatorNames
+        refs={extras?.directorRefs ?? []}
+        newBadge={isFeatureNew("creator-pages")} />
+    {/snippet}
     {#snippet studioNames()}{extras?.studios.join(", ")}{/snippet}
     {#snippet detailsCard()}
       {#if extras && (extras.directors.length > 0 || extras.studios.length > 0 || extras.tags.length > 0 || extras.externalLinks.length > 0)}
