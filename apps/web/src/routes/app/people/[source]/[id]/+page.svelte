@@ -24,7 +24,9 @@
   import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
   import { flip } from "svelte/animate";
-  import { fade } from "svelte/transition";
+  import SeeMore from "#lib/components/SeeMore.svelte";
+  import { cubicOut } from "svelte/easing";
+  import { fade, slide } from "svelte/transition";
   import type {
     CreatorCreditKind,
     CreatorGroupKey,
@@ -107,9 +109,6 @@
   const mentions = $derived(
     credits.mentions.filter((w) => !mentionKind || w.kind === mentionKind),
   );
-  const shownMentions = $derived(
-    allMentions ? mentions : mentions.slice(0, MENTIONS_SHOWN),
-  );
 
   const life = $derived(
     person ? lifeYears(person.birthday, person.deathday) : null,
@@ -166,6 +165,26 @@
       </div>
     {/each}
   </PosterGrid>
+{/snippet}
+
+{#snippet mentionRow(work: CreatorWorkDto)}
+  <li class="border-border border-b">
+    <a
+      href={`/app/media/${work.type.toLowerCase()}/${work.sourceId}`}
+      class="hover:text-accent grid grid-cols-[3rem_minmax(0,1fr)_auto] items-baseline gap-2.5 py-2 text-sm transition-colors">
+      <span class="timecode text-dim text-xs">{work.year ?? "—"}</span>
+      <span class="truncate font-semibold">
+        {work.title}
+        {#if episodes(work)}
+          <span class="text-dim text-xs font-normal">· {episodes(work)}</span>
+        {/if}
+      </span>
+      <span
+        class="border-border text-dim rounded-full border px-2 text-[0.7rem] font-semibold whitespace-nowrap">
+        {MENTION_LABELS[work.kind]?.()}
+      </span>
+    </a>
+  </li>
 {/snippet}
 
 {#snippet bio()}
@@ -365,38 +384,29 @@
           {/if}
         </div>
         <ul class="mt-3 grid gap-x-8 md:grid-cols-2">
-          {#each shownMentions as work (`${work.type}:${work.sourceId}`)}
-            <li class="border-border border-b">
-              <a
-                href={`/app/media/${work.type.toLowerCase()}/${work.sourceId}`}
-                class="hover:text-accent grid grid-cols-[3rem_minmax(0,1fr)_auto] items-baseline gap-2.5 py-2 text-sm transition-colors">
-                <span class="timecode text-dim text-xs"
-                  >{work.year ?? "—"}</span>
-                <span class="truncate font-semibold">
-                  {work.title}
-                  {#if episodes(work)}
-                    <span class="text-dim text-xs font-normal"
-                      >· {episodes(work)}</span>
-                  {/if}
-                </span>
-                <span
-                  class="border-border text-dim rounded-full border px-2 text-[0.7rem] font-semibold whitespace-nowrap">
-                  {MENTION_LABELS[work.kind]?.()}
-                </span>
-              </a>
-            </li>
+          {#each mentions.slice(0, MENTIONS_SHOWN) as work (`${work.type}:${work.sourceId}`)}
+            {@render mentionRow(work)}
           {/each}
         </ul>
+        {#if allMentions && mentions.length > MENTIONS_SHOWN}
+          <ul
+            class="grid gap-x-8 md:grid-cols-2"
+            transition:slide={{
+              duration: reduced ? 0 : 260,
+              easing: cubicOut,
+            }}>
+            {#each mentions.slice(MENTIONS_SHOWN) as work (`${work.type}:${work.sourceId}`)}
+              {@render mentionRow(work)}
+            {/each}
+          </ul>
+        {/if}
         {#if mentions.length > MENTIONS_SHOWN}
-          <button
-            type="button"
-            class="text-accent mt-2 text-sm font-bold"
-            aria-expanded={allMentions}
-            onclick={() => (allMentions = !allMentions)}>
-            {allMentions
-              ? m.common_see_less()
-              : m.creator_mentions_all({ count: mentions.length })}
-          </button>
+          <SeeMore
+            expanded={allMentions}
+            onclick={() => (allMentions = !allMentions)}
+            more={m.creator_mentions_all({ count: mentions.length })}
+            ruled
+            class="mt-3" />
         {/if}
       </section>
     {/if}

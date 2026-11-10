@@ -197,4 +197,32 @@ describe("Person page", () => {
     expect(screen.getByRole("link", { name: "Dune" })).toBeTruthy();
     expect(screen.queryByRole("link", { name: "Dune : Le Messie" })).toBeNull();
   });
+
+  it("unfolds the appearances past the first six", async () => {
+    const talkShows = Array.from({ length: 8 }, (_, i) =>
+      work(String(500 + i), `Talk Show ${i + 1}`, {
+        type: "SERIES",
+        jobs: [],
+        character: "Self",
+        releaseDate: `20${10 + i}-01-01`,
+        kind: "TV_APPEARANCE",
+      }),
+    );
+    servePerson({
+      ...villeneuve,
+      groups: [villeneuve.groups[0], { key: "ACTING", works: talkShows }],
+    });
+    const user = userEvent.setup();
+    renderWithQuery(PersonPage, {});
+
+    const more = await screen.findByRole("button", {
+      name: m.creator_mentions_all({ count: 8 }),
+    });
+    expect(screen.queryByText("Talk Show 1")).toBeNull();
+
+    await user.click(more);
+
+    expect(more.getAttribute("aria-expanded")).toBe("true");
+    expect(screen.getByText("Talk Show 1")).toBeTruthy();
+  });
 });
