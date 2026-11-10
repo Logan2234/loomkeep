@@ -18,8 +18,12 @@
   import TabPanels from "#lib/components/TabPanels.svelte";
   import Tabs from "#lib/components/Tabs.svelte";
   import TrackingStatusBadge from "#lib/components/TrackingStatusBadge.svelte";
+  import Combobox from "#lib/components/Combobox.svelte";
   import { formatDate, joinMeta } from "#lib/format.js";
+  import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
+  import { flip } from "svelte/animate";
+  import { fade } from "svelte/transition";
   import type {
     CreatorCreditKind,
     CreatorGroupKey,
@@ -54,6 +58,11 @@
     THANKS: m.creator_kind_thanks,
   };
   const MENTIONS_SHOWN = 6;
+  const ORDER_OPTIONS = [
+    { label: m.creator_order_newest(), value: "newest" },
+    { label: m.creator_order_oldest(), value: "oldest" },
+  ];
+  const reduced = prefersReducedMotion();
 
   const source = $derived((page.params.source ?? "") as CreatorSource);
   const id = $derived(page.params.id ?? "");
@@ -124,30 +133,36 @@
 {#snippet workGrid(list: CreatorWorkDto[])}
   <PosterGrid size="small">
     {#each list as work (`${work.type}:${work.sourceId}`)}
-      <PosterCard
-        href={`/app/media/${work.type.toLowerCase()}/${work.sourceId}`}
-        src={work.posterUrl}
-        title={work.title}>
-        {#snippet badge()}
-          {#if work.status}
-            <TrackingStatusBadge
-              domain="MEDIA"
-              status={work.status}
-              onImage
-              compact />
-          {:else if work.upcoming}
-            <span
-              class="rounded-full bg-black/70 px-1.5 py-0.5 text-[0.6rem] font-bold text-white">
-              {m.media_saga_upcoming()}
+      <div
+        class="min-w-0"
+        animate:flip={{ duration: reduced ? 0 : 250 }}
+        in:fade|global={{ duration: reduced ? 0 : 150 }}
+        out:fade={{ duration: reduced ? 0 : 100 }}>
+        <PosterCard
+          href={`/app/media/${work.type.toLowerCase()}/${work.sourceId}`}
+          src={work.posterUrl}
+          title={work.title}>
+          {#snippet badge()}
+            {#if work.status}
+              <TrackingStatusBadge
+                domain="MEDIA"
+                status={work.status}
+                onImage
+                compact />
+            {:else if work.upcoming}
+              <span
+                class="rounded-full bg-black/70 px-1.5 py-0.5 text-[0.6rem] font-bold text-white">
+                {m.media_saga_upcoming()}
+              </span>
+            {/if}
+          {/snippet}
+          {#snippet meta()}
+            <span class="text-dim text-micro">
+              {joinMeta(work.year, credit(work))}
             </span>
-          {/if}
-        {/snippet}
-        {#snippet meta()}
-          <span class="text-dim text-micro">
-            {joinMeta(work.year, credit(work))}
-          </span>
-        {/snippet}
-      </PosterCard>
+          {/snippet}
+        </PosterCard>
+      </div>
     {/each}
   </PosterGrid>
 {/snippet}
@@ -282,13 +297,13 @@
               onclick={() => (inLibrary = !inLibrary)}>
               {m.creator_in_library()}
             </button>
-            <label class="ml-auto">
-              <span class="sr-only">{m.common_sort()}</span>
-              <select class="input w-auto py-1.5 text-sm" bind:value={order}>
-                <option value="newest">{m.creator_order_newest()}</option>
-                <option value="oldest">{m.creator_order_oldest()}</option>
-              </select>
-            </label>
+            <div class="ml-auto">
+              <Combobox
+                label={m.common_sort()}
+                options={ORDER_OPTIONS}
+                values={[order]}
+                onChange={(v) => (order = (v[0] as WorkOrder) ?? order)} />
+            </div>
           </div>
 
           {#if features.length > 0}
