@@ -8,6 +8,7 @@ export * from "./catalog";
 export * from "./comments";
 export * from "./config";
 export * from "./core";
+export * from "./creators";
 export * from "./games";
 export * from "./gamification";
 export * from "./import";
