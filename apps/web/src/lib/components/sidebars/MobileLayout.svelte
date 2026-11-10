@@ -5,11 +5,16 @@
   import { pageTransition } from "#lib/page-transition.js";
   import {
     detailPoster,
+    detailPortrait,
+    isCreatorPath,
     isWorkPath,
+    namePortrait,
     namePoster,
+    pendingPortrait,
     pendingPoster,
     posterImageSrc,
     posterLinkingTo,
+    tappedPortrait,
     tappedPoster,
   } from "#lib/shared-poster.svelte.js";
   import ProgrammeBoardMobileBar from "#lib/ee/nav/ProgrammeBoardMobileBar.svelte";
@@ -86,6 +91,13 @@
     pendingPoster.src = posterImageSrc(opening);
     const unnameOld = namePoster(backFromWork ? detailPoster() : opening);
     let unnameNew = () => {};
+    // Only on the way in: back on the work, the dialog it came from is closed.
+    const portrait = isCreatorPath(to.url.pathname)
+      ? tappedPortrait(lastTap, to.url.pathname)
+      : null;
+    pendingPortrait.src = posterImageSrc(portrait);
+    const unnamePortrait = namePortrait(portrait);
+    let unnamePagePortrait = () => {};
 
     return new Promise((resolve) => {
       const transition = document.startViewTransition(async () => {
@@ -93,6 +105,8 @@
         await complete;
         await tick();
         unnameOld();
+        unnamePortrait();
+        if (portrait) unnamePagePortrait = namePortrait(detailPortrait());
         if (opening) unnameNew = namePoster(detailPoster());
         else if (backFromWork) {
           unnameNew = namePoster(posterLinkingTo(from.url.pathname));
@@ -101,6 +115,7 @@
       void transition.finished.finally(() => {
         delete document.documentElement.dataset.pageTransition;
         unnameNew();
+        unnamePagePortrait();
       });
     });
   });

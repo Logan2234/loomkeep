@@ -15,6 +15,10 @@ history from before it was started.
 
 ### Added
 
+- Person pages: tap a film's director, a series' creator or "See their page"
+  on a cast member to see everything they've made, role by role, with your
+  status on each title. Appearances on talk shows and in documentaries are
+  listed apart.
 - Admin › Users: the account panel shows the reason given when a deletion is
   scheduled, and each library tile (movies, series, anime, games, books,
   albums) opens the list of works behind its counter.

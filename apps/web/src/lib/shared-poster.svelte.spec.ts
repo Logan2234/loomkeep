@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { isWorkPath, posterOfLink, tappedPoster } from "./shared-poster.svelte";
+import {
+  isCreatorPath,
+  isWorkPath,
+  posterOfLink,
+  tappedPortrait,
+  tappedPoster,
+} from "./shared-poster.svelte";
 
 function html(markup: string): HTMLElement {
   const root = document.createElement("div");
@@ -57,5 +63,31 @@ describe("tappedPoster", () => {
   it("returns the poster of the link heading there", () => {
     const root = html(`<a href="/a"><div data-work-poster id="p"></div></a>`);
     expect(tappedPoster(root.querySelector("a"), "/a")?.id).toBe("p");
+  });
+});
+
+describe("tappedPortrait", () => {
+  const dialog = () =>
+    html(`<div role="dialog">
+      <div data-creator-portrait id="photo"></div>
+      <a href="/app/people/tmdb/1190668">See their page</a>
+    </div>`);
+
+  it("returns the photo of the dialog whose link was tapped", () => {
+    const root = dialog();
+    expect(
+      tappedPortrait(root.querySelector("a"), "/app/people/tmdb/1190668")?.id,
+    ).toBe("photo");
+    expect(isCreatorPath("/app/people/tmdb/1190668")).toBe(true);
+  });
+
+  it("has nothing for a name outside a dialog or a link going elsewhere", () => {
+    const name = html(`<a href="/app/people/tmdb/137427">Denis</a>`);
+    expect(
+      tappedPortrait(name.querySelector("a"), "/app/people/tmdb/137427"),
+    ).toBeNull();
+    expect(
+      tappedPortrait(dialog().querySelector("a"), "/app/media"),
+    ).toBeNull();
   });
 });

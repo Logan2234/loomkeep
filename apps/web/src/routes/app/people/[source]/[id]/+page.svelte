@@ -20,6 +20,7 @@
   import TrackingStatusBadge from "#lib/components/TrackingStatusBadge.svelte";
   import Combobox from "#lib/components/Combobox.svelte";
   import { formatDate, joinMeta } from "#lib/format.js";
+  import { pendingPortrait } from "#lib/shared-poster.svelte.js";
   import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
   import { flip } from "svelte/animate";
@@ -188,7 +189,7 @@
       class="md:grid md:grid-cols-[minmax(0,1fr)_17rem] md:items-start md:gap-x-10">
       <div
         class="grid min-w-0 grid-cols-[6rem_minmax(0,1fr)] gap-x-4 md:grid-cols-[8rem_minmax(0,1fr)] md:gap-x-6">
-        <div class="overflow-hidden rounded-lg">
+        <div class="overflow-hidden rounded-lg" data-detail-portrait>
           <Poster src={person.photoUrl} title={person.name} alt={person.name} />
         </div>
         <div class="flex min-w-0 flex-col gap-1.5">
@@ -411,12 +412,29 @@
     {/if}
   </div>
 {:else}
-  <div class="mx-auto max-w-5xl px-5 pt-6 pb-10 md:px-8 md:pt-8">
-    <div class="flex gap-4" aria-hidden="true">
-      <div class="skeleton aspect-2/3 w-24 shrink-0 rounded-lg md:w-32"></div>
-      <div class="flex flex-1 flex-col gap-2 pt-1">
-        <div class="skeleton h-7 w-2/3 max-w-xs rounded"></div>
-        <div class="skeleton h-3 w-1/3 max-w-40 rounded"></div>
+  <!-- Laid out like the loaded header, so the portrait carried over from the
+       cast dialog lands where the real one will be. -->
+  <div
+    class="mx-auto max-w-5xl px-5 pt-2 pb-10 md:px-8 md:pt-8"
+    aria-hidden="true">
+    <div class="flex min-h-14 items-center">
+      <div class="skeleton h-7 w-2/3 max-w-xs rounded"></div>
+    </div>
+    <div
+      class="mt-4 grid grid-cols-[6rem_minmax(0,1fr)] gap-x-4 md:grid-cols-[8rem_minmax(0,1fr)] md:gap-x-6">
+      <div
+        class="skeleton aspect-2/3 overflow-hidden rounded-lg"
+        data-detail-portrait>
+        {#if pendingPortrait.src}
+          <img
+            src={pendingPortrait.src}
+            alt=""
+            class="h-full w-full object-cover" />
+        {/if}
+      </div>
+      <div class="flex flex-col gap-2 pt-1">
+        <div class="skeleton h-3 w-1/2 max-w-40 rounded"></div>
+        <div class="skeleton h-3 w-1/3 max-w-32 rounded"></div>
         <div class="skeleton mt-3 h-3 w-full max-w-lg rounded"></div>
         <div class="skeleton h-3 w-5/6 max-w-md rounded"></div>
       </div>

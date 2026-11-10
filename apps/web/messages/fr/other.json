@@ -591,6 +591,7 @@
   "book_edition_auto": "Automatique",
   "media_cast": "Distribution",
   "media_known_for": "Connu pour",
+  "creator_see_page": "Voir la fiche",
   "creator_known_for": "Connu pour : {group}",
   "creator_group_directing": "Réalisation",
   "creator_group_writing": "Scénario",

@@ -591,6 +591,7 @@
   "book_edition_auto": "Automatic",
   "media_cast": "Cast",
   "media_known_for": "Known for",
+  "creator_see_page": "See their page",
   "creator_known_for": "Known for: {group}",
   "creator_group_directing": "Directing",
   "creator_group_writing": "Writing",
