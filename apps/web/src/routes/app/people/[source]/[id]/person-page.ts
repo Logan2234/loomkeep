@@ -37,11 +37,6 @@ export function visibleWorks(
   return filters.order === "newest" ? kept.reverse() : kept;
 }
 
-export const workHref = (work: CreatorWorkDto) =>
-  work.domain === "BOOKS"
-    ? `/app/books/${work.sourceId}`
-    : `/app/media/${work.type?.toLowerCase()}/${work.sourceId}`;
-
 export interface SeriesBlock {
   key: string;
   name: string;

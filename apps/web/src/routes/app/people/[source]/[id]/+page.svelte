@@ -35,13 +35,13 @@
     CreatorWorkDto,
     EntryStatus,
   } from "@loomkeep/shared";
+  import { workHref } from "#lib/creator-href.js";
   import { lifeYears } from "#lib/life-years.js";
   import {
     bySeries,
     mixesTypes,
     splitCredits,
     visibleWorks,
-    workHref,
     type WorkOrder,
     type WorkTypeFilter,
   } from "./person-page";
