@@ -63,6 +63,11 @@ const WATCH_LIST_TTL_MS = 24 * 60 * 60 * 1000;
 const GALLERY_TTL_MS = 6 * 60 * 60 * 1000;
 const GALLERY_CACHE_SIZE = 500;
 
+// The Academy's definition of a short film.
+const SHORT_FILM_MAX_MINUTES = 40;
+// 20 films a page: past 100 shorts the rest stay listed as works.
+const SHORT_FILM_MAX_PAGES = 5;
+
 /** Films and (western) series, from The Movie Database. */
 @Injectable()
 export class TmdbProvider implements CatalogProvider {
@@ -464,10 +469,13 @@ export class TmdbProvider implements CatalogProvider {
     }
 
     const language = regionalLocale(lang);
-    const person = await this.get<TmdbPersonDetails>(`/person/${id}`, {
-      append_to_response: "combined_credits,external_ids",
-      language,
-    });
+    const [person, shortFilmIds] = await Promise.all([
+      this.get<TmdbPersonDetails>(`/person/${id}`, {
+        append_to_response: "combined_credits,external_ids",
+        language,
+      }),
+      this.shortFilmIds(id),
+    ]);
 
     if (!person.biography?.trim() && !language.startsWith("en")) {
       const english = await this.get<TmdbPersonDetails>(`/person/${id}`, {
@@ -476,7 +484,33 @@ export class TmdbProvider implements CatalogProvider {
       person.biography = english?.biography ?? null;
     }
 
-    return toPersonPage(person, utcDateKey(new Date()));
+    return toPersonPage(person, utcDateKey(new Date()), shortFilmIds);
+  }
+
+  /**
+   * The person's films of 40 minutes or less. Their credits carry no
+   * runtime, and Discover filters on it across all their films at once,
+   * where reading each film would cost one call per credit.
+   */
+  private async shortFilmIds(personId: string): Promise<Set<string>> {
+    type Page = { results: { id: number }[]; total_pages: number };
+    const page = (n: number) =>
+      this.get<Page>("/discover/movie", {
+        with_people: personId,
+        "with_runtime.gte": "1",
+        "with_runtime.lte": String(SHORT_FILM_MAX_MINUTES),
+        include_adult: "true",
+        page: String(n),
+      });
+
+    const first = await page(1);
+    const lastPage = Math.min(first.total_pages, SHORT_FILM_MAX_PAGES);
+    const rest = await Promise.all(
+      Array.from({ length: lastPage - 1 }, (_, i) => page(i + 2)),
+    );
+    return new Set(
+      [first, ...rest].flatMap((p) => p.results.map((m) => String(m.id))),
+    );
   }
 
   /** This week's trending films and series, adult titles left out. */

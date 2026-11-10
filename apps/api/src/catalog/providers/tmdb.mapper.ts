@@ -13,6 +13,7 @@ import type {
 } from "@loomkeep/shared";
 import {
   CatalogSource,
+  CreatorCreditKind,
   CreatorGroupKey,
   CreatorSource,
   MediaSource,
@@ -580,6 +581,7 @@ const departmentGroup = (department: string | undefined): CreatorGroupKey =>
 export function toPersonPage(
   p: TmdbPersonDetails,
   today: string,
+  shortFilmIds: ReadonlySet<string>,
 ): PersonPageDto {
   const groups = new Map<CreatorGroupKey, Map<string, CreatorWorkDto>>();
 
@@ -638,12 +640,17 @@ export function toPersonPage(
     groups: [...groups.entries()]
       .map(([key, works]) => ({
         key,
-        works: [...works.values()].sort(byReleaseDate),
+        works: [...works.values()]
+          .map((work) => ({
+            ...work,
+            kind: creditKind(key, work, shortFilmIds),
+          }))
+          .sort(byReleaseDate),
       }))
       .sort(
         (a, b) =>
           Number(b.key === knownFor) - Number(a.key === knownFor) ||
-          b.works.length - a.works.length ||
+          countWorks(b.works) - countWorks(a.works) ||
           GROUP_ORDER.indexOf(a.key) - GROUP_ORDER.indexOf(b.key),
       ),
   };
@@ -672,8 +679,50 @@ function toCreatorWork(credit: TmdbCreditItem, today: string): CreatorWorkDto {
     episodeCount: null,
     genreIds: credit.genre_ids ?? [],
     upcoming: !releaseDate || releaseDate > today,
+    kind: CreatorCreditKind.WORK,
     status: null,
   };
+}
+
+// "Self", "Self - Guest", "Himself (archive footage)"…
+const AS_ONESELF = /^(self|himself|herself|themselves)\b/i;
+const TMDB_DOCUMENTARY = 99;
+
+function creditKind(
+  group: CreatorGroupKey,
+  work: CreatorWorkDto,
+  shortFilmIds: ReadonlySet<string>,
+): CreatorCreditKind {
+  const documentary = work.genreIds.includes(TMDB_DOCUMENTARY);
+
+  if (group === CreatorGroupKey.ACTING) {
+    // A documentary credit with no character is the person being filmed.
+    const asOneself = work.character
+      ? AS_ONESELF.test(work.character)
+      : documentary;
+
+    if (asOneself) {
+      if (work.type === MediaType.SERIES)
+        return CreatorCreditKind.TV_APPEARANCE;
+      return documentary
+        ? CreatorCreditKind.DOCUMENTARY
+        : CreatorCreditKind.CAMEO;
+    }
+  } else if (work.jobs.length > 0 && work.jobs.every((j) => j === "Thanks")) {
+    return CreatorCreditKind.THANKS;
+  }
+
+  return work.type === MediaType.MOVIE && shortFilmIds.has(work.sourceId)
+    ? CreatorCreditKind.SHORT
+    : CreatorCreditKind.WORK;
+}
+
+/** The works a group counts, appearances and mentions left out. */
+function countWorks(works: CreatorWorkDto[]): number {
+  return works.filter(
+    (w) =>
+      w.kind === CreatorCreditKind.WORK || w.kind === CreatorCreditKind.SHORT,
+  ).length;
 }
 
 function maxCount(

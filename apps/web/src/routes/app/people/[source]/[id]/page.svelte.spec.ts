@@ -33,6 +33,7 @@ const work = (
   episodeCount: null,
   genreIds: [],
   upcoming: false,
+  kind: "WORK",
   status: null,
   ...extra,
 });
@@ -61,17 +62,35 @@ const villeneuve: PersonPageDto = {
           releaseDate: null,
           upcoming: true,
         }),
+        work("99343", "Next Floor", { year: 2008, kind: "SHORT" }),
       ],
     },
     {
       key: "ACTING",
       works: [
-        work("11", "Making of Dune", { jobs: [], character: "Self" }),
+        work("12", "Zigrail", {
+          year: 1995,
+          jobs: [],
+          character: "Denis",
+        }),
+        work("13", "Les Bougon", {
+          type: "SERIES",
+          year: 2004,
+          jobs: [],
+          character: "Client",
+          episodeCount: 1,
+        }),
+        work("11", "Making of Dune", {
+          jobs: [],
+          character: "Self",
+          kind: "DOCUMENTARY",
+        }),
         work("99", "Talk Show", {
           type: "SERIES",
           jobs: [],
-          character: "Himself",
+          character: "Self - Guest",
           episodeCount: 2,
+          kind: "TV_APPEARANCE",
         }),
       ],
     },
@@ -103,7 +122,7 @@ describe("Person page", () => {
     const tab = screen.getByRole("tab", { selected: true });
     expect(tab.textContent).toContain(m.creator_group_directing());
     // Newest first: the announcement leads, the tracked film carries its status.
-    const links = screen.getAllByRole("link", { name: /Dune/ });
+    const links = screen.getAllByRole("link", { name: /^Dune/ });
     expect(links.map((l) => l.getAttribute("aria-label"))).toEqual([
       "Dune : Le Messie",
       "Dune",
@@ -112,7 +131,40 @@ describe("Person page", () => {
     expect(screen.getByText(m.media_saga_upcoming())).toBeTruthy();
   });
 
-  it("lists appearances as oneself under Acting, and filters by type", async () => {
+  it("lists shorts under the works, and appearances apart from the tabs", async () => {
+    servePerson(villeneuve);
+    const user = userEvent.setup();
+    renderWithQuery(PersonPage, {});
+
+    expect(
+      await screen.findByRole("heading", {
+        name: new RegExp(m.creator_shorts()),
+      }),
+    ).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Next Floor" })).toBeTruthy();
+
+    const actingTab = screen.getByRole("tab", {
+      name: new RegExp(m.creator_group_acting()),
+    });
+    // Two roles: the appearances aren't counted.
+    expect(actingTab.textContent).toContain("2");
+    const mentions = screen.getByRole("heading", {
+      name: new RegExp(m.creator_mentions()),
+    }).parentElement!.parentElement!;
+    expect(within(mentions).getByText("Talk Show")).toBeTruthy();
+    expect(within(mentions).getByText("Making of Dune")).toBeTruthy();
+
+    await user.click(
+      within(mentions).getByRole("button", {
+        name: m.creator_kind_tv_appearance(),
+      }),
+    );
+
+    expect(within(mentions).queryByText("Making of Dune")).toBeNull();
+    expect(within(mentions).getByText("Talk Show")).toBeTruthy();
+  });
+
+  it("filters a tab's works by type", async () => {
     servePerson(villeneuve);
     const user = userEvent.setup();
     renderWithQuery(PersonPage, {});
@@ -122,23 +174,15 @@ describe("Person page", () => {
         name: new RegExp(m.creator_group_acting()),
       }),
     );
-
-    expect(
-      await screen.findByText(`2021 · ${m.creator_as_self()}`),
-    ).toBeTruthy();
-    expect(
-      screen.getByText(
-        `2021 · ${m.creator_as_self()} · 2 ${m.media_episode_short()}`,
-      ),
-    ).toBeTruthy();
+    expect(await screen.findByText("1995 · Denis")).toBeTruthy();
 
     const types = screen.getByRole("group", { name: m.creator_work_type() });
     await user.click(
       within(types).getByRole("button", { name: m.media_series_plural() }),
     );
 
-    expect(screen.queryByRole("link", { name: "Making of Dune" })).toBeNull();
-    expect(screen.getByRole("link", { name: "Talk Show" })).toBeTruthy();
+    expect(screen.queryByRole("link", { name: "Zigrail" })).toBeNull();
+    expect(screen.getByRole("link", { name: "Les Bougon" })).toBeTruthy();
   });
 
   it("narrows to the works in the viewer's library", async () => {

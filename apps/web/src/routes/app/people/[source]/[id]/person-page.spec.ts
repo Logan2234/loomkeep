@@ -1,9 +1,9 @@
 import type { CreatorWorkDto } from "@loomkeep/shared";
 import { describe, expect, it } from "vitest";
 import {
-  isSelfAppearance,
   lifeYears,
   mixesTypes,
+  splitCredits,
   visibleWorks,
 } from "./person-page";
 
@@ -23,6 +23,7 @@ const work = (
   episodeCount: null,
   genreIds: [],
   upcoming: false,
+  kind: "WORK",
   status: null,
   ...extra,
 });
@@ -82,12 +83,50 @@ describe("mixesTypes", () => {
   });
 });
 
-describe("isSelfAppearance", () => {
-  it("recognises TMDB's words for playing oneself", () => {
-    expect(isSelfAppearance("Self")).toBe(true);
-    expect(isSelfAppearance("Himself ")).toBe(true);
-    expect(isSelfAppearance("Paul Atreides")).toBe(false);
-    expect(isSelfAppearance(null)).toBe(false);
+describe("splitCredits", () => {
+  it("keeps works and shorts in the tabs, and lists each appearance once, newest first", () => {
+    const { tabs, mentions } = splitCredits([
+      {
+        key: "DIRECTING",
+        works: [work("next-floor", { kind: "SHORT" }), work("dune")],
+      },
+      {
+        key: "ACTING",
+        works: [
+          work("lucid-dreams", {
+            kind: "DOCUMENTARY",
+            releaseDate: "2014-06-24",
+          }),
+          work("late-show", {
+            type: "SERIES",
+            kind: "TV_APPEARANCE",
+            releaseDate: "2015-09-08",
+          }),
+          work("screening", { kind: "DOCUMENTARY" }),
+        ],
+      },
+      {
+        key: "CREW",
+        works: [
+          work("lucid-dreams", { kind: "THANKS", releaseDate: "2014-06-24" }),
+        ],
+      },
+    ]);
+
+    expect(tabs).toEqual([
+      {
+        key: "DIRECTING",
+        works: [
+          expect.objectContaining({ sourceId: "next-floor" }),
+          expect.objectContaining({ sourceId: "dune" }),
+        ],
+      },
+    ]);
+    expect(mentions.map((w) => [w.sourceId, w.kind])).toEqual([
+      ["screening", "DOCUMENTARY"],
+      ["late-show", "TV_APPEARANCE"],
+      ["lucid-dreams", "DOCUMENTARY"],
+    ]);
   });
 });
 

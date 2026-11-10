@@ -496,9 +496,13 @@ describe("TmdbProvider", () => {
         ],
       },
     };
+    const noShorts = { results: [], total_pages: 1 };
 
     it("groups every credit by department, the best-known one first, oldest work first", async () => {
-      mockFetchByUrl({ "/person/137427": villeneuve });
+      mockFetchByUrl({
+        "/person/137427": villeneuve,
+        "/discover/movie": noShorts,
+      });
 
       const page = await provider.getPersonPage("137427", "fr");
 
@@ -530,7 +534,10 @@ describe("TmdbProvider", () => {
     });
 
     it("keeps appearances as oneself, and tells films from series sharing an id", async () => {
-      mockFetchByUrl({ "/person/137427": villeneuve });
+      mockFetchByUrl({
+        "/person/137427": villeneuve,
+        "/discover/movie": noShorts,
+      });
 
       const page = await provider.getPersonPage("137427", "fr");
       const group = (key: string) => page.groups.find((g) => g.key === key)!;
@@ -561,6 +568,7 @@ describe("TmdbProvider", () => {
 
     it("falls back to the English biography when TMDB has no translation", async () => {
       const fetch = mockFetchByUrl([
+        ["/discover/movie", noShorts],
         ["language=fr", { ...villeneuve, biography: "" }],
         ["language=en-US", { id: 137427, biography: "Quebec filmmaker." }],
       ]);
@@ -568,7 +576,100 @@ describe("TmdbProvider", () => {
       const page = await provider.getPersonPage("137427", "fr");
 
       expect(page.description).toBe("Quebec filmmaker.");
-      expect(fetch).toHaveBeenCalledTimes(2);
+      expect(fetch).toHaveBeenCalledTimes(3);
+    });
+
+    it("tells works and shorts from appearances and mentions, and ranks groups on works alone", async () => {
+      const movie = (id: number, title: string, extra: object) => ({
+        id,
+        media_type: "movie",
+        title,
+        release_date: "2017-01-01",
+        ...extra,
+      });
+      const fetch = mockFetchByUrl([
+        [
+          "page=1",
+          { results: [{ id: 99343 }, { id: 1111185 }], total_pages: 2 },
+        ],
+        ["page=2", { results: [{ id: 600 }], total_pages: 2 }],
+        [
+          "/person/137427",
+          {
+            ...villeneuve,
+            known_for_department: null,
+            combined_credits: {
+              cast: [
+                movie(1111185, "Lucid Dreams: The Making of Enemy", {
+                  character: "Self",
+                  genre_ids: [99],
+                }),
+                movie(2, "Se souvenir des cendres", { genre_ids: [99] }),
+                movie(3, "Pink Panther", { character: "Himself" }),
+                movie(4, "Zigrail", { character: "Denis", genre_ids: [18] }),
+                {
+                  id: 5,
+                  media_type: "tv",
+                  name: "The Late Show",
+                  first_air_date: "2015-09-08",
+                  character: "Self - Guest",
+                  genre_ids: [10767],
+                },
+              ],
+              crew: [
+                movie(99343, "Next Floor", {
+                  department: "Directing",
+                  job: "Director",
+                }),
+                movie(6, "Hope", { department: "Crew", job: "Thanks" }),
+                movie(7, "Cornouailles", { department: "Crew", job: "Intern" }),
+                movie(8, "Mars et Avril", {
+                  department: "Crew",
+                  job: "Thanks",
+                }),
+                movie(8, "Mars et Avril", {
+                  department: "Crew",
+                  job: "Consultant",
+                }),
+              ],
+            },
+          },
+        ],
+      ]);
+
+      const page = await provider.getPersonPage("137427", "fr");
+      const kinds = (key: string) =>
+        Object.fromEntries(
+          page.groups
+            .find((g) => g.key === key)!
+            .works.map((w) => [w.title, w.kind]),
+        );
+
+      expect(kinds("ACTING")).toEqual({
+        "Lucid Dreams: The Making of Enemy": "DOCUMENTARY",
+        "Se souvenir des cendres": "DOCUMENTARY",
+        "Pink Panther": "CAMEO",
+        Zigrail: "WORK",
+        "The Late Show": "TV_APPEARANCE",
+      });
+      expect(kinds("CREW")).toEqual({
+        Hope: "THANKS",
+        Cornouailles: "WORK",
+        "Mars et Avril": "WORK",
+      });
+      expect(kinds("DIRECTING")).toEqual({ "Next Floor": "SHORT" });
+      // Acting has the most credits but a single work; Crew has two.
+      expect(page.groups.map((g) => g.key)).toEqual([
+        "CREW",
+        "DIRECTING",
+        "ACTING",
+      ]);
+      const discover = fetch.mock.calls
+        .map(([url]) => String(url))
+        .filter((url) => url.includes("/discover/movie"));
+      expect(discover).toHaveLength(2);
+      expect(discover[0]).toContain("with_people=137427");
+      expect(discover[0]).toContain("with_runtime.lte=40");
     });
 
     it("never puts a non-numeric id into a TMDB path", async () => {
