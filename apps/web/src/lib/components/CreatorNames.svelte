@@ -1,6 +1,7 @@
 <script lang="ts">
   // Credited people as a comma list, each linked to their page when their
-  // source has one.
+  // source has one, with a peek on hover.
+  import { creatorPeek } from "#lib/creator-peek/peek.svelte.js";
   import { creatorHref } from "#lib/creator-href.js";
   import type { CreatorRefDto } from "@loomkeep/shared";
   import NewBadge from "./NewBadge.svelte";
@@ -22,6 +23,7 @@
     <span>
       <a
         {href}
+        use:creatorPeek={{ ref }}
         class="decoration-dim/50 hover:text-accent underline underline-offset-4 transition-colors hover:decoration-current"
         >{ref.name}</a
       >{comma}

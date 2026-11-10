@@ -9,6 +9,7 @@
   import { bootstrap } from "#lib/bootstrap.svelte.js";
   import BootSplash from "#lib/components/BootSplash.svelte";
   import ChatLauncher from "#lib/components/chat/ChatLauncher.svelte";
+  import CreatorPeek from "#lib/creator-peek/CreatorPeek.svelte";
   import ChatRealtime from "#lib/components/chat/ChatRealtime.svelte";
   import ChatSheet from "#lib/components/chat/ChatSheet.svelte";
   import DeletionScheduledBanner from "#lib/components/DeletionScheduledBanner.svelte";
@@ -116,6 +117,7 @@
   <UnlockBubble />
   <WidgetIdentify />
   <OnboardingWidget />
+  <CreatorPeek />
   {#if appConfig.chatEnabled}
     <ChatRealtime />
     {#if !layout.compact}

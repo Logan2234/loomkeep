@@ -67,27 +67,33 @@ describe("tappedPoster", () => {
 });
 
 describe("tappedPortrait", () => {
-  const dialog = () =>
-    html(`<div role="dialog">
-      <div data-creator-portrait id="photo"></div>
-      <a href="/app/people/tmdb/1190668">See their page</a>
+  it("returns the photo of the cast card or peek whose link was tapped", () => {
+    const card = html(`<a href="/app/people/tmdb/505710">
+      <div data-creator-portrait id="card"></div>Zendaya</a>`);
+    const peek = html(`<div role="dialog">
+      <div><div data-creator-portrait id="peek"></div></div>
+      <div><a href="/app/people/tmdb/505710">See their page</a></div>
     </div>`);
 
-  it("returns the photo of the dialog whose link was tapped", () => {
-    const root = dialog();
-    expect(
-      tappedPortrait(root.querySelector("a"), "/app/people/tmdb/1190668")?.id,
-    ).toBe("photo");
-    expect(isCreatorPath("/app/people/tmdb/1190668")).toBe(true);
+    for (const [root, id] of [
+      [card, "card"],
+      [peek, "peek"],
+    ] as const) {
+      expect(
+        tappedPortrait(root.querySelector("a"), "/app/people/tmdb/505710")?.id,
+      ).toBe(id);
+    }
+
+    expect(isCreatorPath("/app/people/tmdb/505710")).toBe(true);
   });
 
-  it("has nothing for a name outside a dialog or a link going elsewhere", () => {
+  it("has nothing for a bare name or a link going elsewhere", () => {
     const name = html(`<a href="/app/people/tmdb/137427">Denis</a>`);
     expect(
       tappedPortrait(name.querySelector("a"), "/app/people/tmdb/137427"),
     ).toBeNull();
-    expect(
-      tappedPortrait(dialog().querySelector("a"), "/app/media"),
-    ).toBeNull();
+    const card = html(`<a href="/app/people/tmdb/505710">
+      <div data-creator-portrait></div></a>`);
+    expect(tappedPortrait(card.querySelector("a"), "/app/media")).toBeNull();
   });
 });

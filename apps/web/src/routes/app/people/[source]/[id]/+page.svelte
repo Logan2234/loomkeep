@@ -31,8 +31,8 @@
     CreatorSource,
     CreatorWorkDto,
   } from "@loomkeep/shared";
+  import { lifeYears } from "#lib/life-years.js";
   import {
-    lifeYears,
     mixesTypes,
     splitCredits,
     visibleWorks,
