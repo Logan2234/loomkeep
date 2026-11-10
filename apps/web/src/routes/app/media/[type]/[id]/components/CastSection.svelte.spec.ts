@@ -29,7 +29,15 @@ describe("CastSection", () => {
     const user = userEvent.setup();
     renderWithQuery(CastSection, {
       source: "tmdb",
-      cast: [{ id: "505710", name: "Zendaya", role: "Chani", photoUrl: null }],
+      cast: [
+        {
+          id: "505710",
+          name: "Zendaya",
+          role: "Chani",
+          photoUrl: null,
+          characterPhotoUrl: null,
+        },
+      ],
     });
 
     await user.click(screen.getByRole("button", { name: /Zendaya/ }));
@@ -55,6 +63,7 @@ describe("CastSection", () => {
           name: "Atsumi Tanezaki",
           role: "Frieren",
           photoUrl: null,
+          characterPhotoUrl: null,
         },
       ],
     });
