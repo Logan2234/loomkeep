@@ -15,6 +15,7 @@ const work = (
   title: string,
   extra: Partial<CreatorWorkDto> = {},
 ): CreatorWorkDto => ({
+  domain: "MEDIA",
   type: "MOVIE",
   sourceId,
   title,
@@ -28,6 +29,8 @@ const work = (
   genreIds: [],
   upcoming: false,
   kind: "WORK",
+  editionCount: null,
+  series: null,
   status: null,
   ...extra,
 });
@@ -46,6 +49,7 @@ const villeneuve: PersonPageDto = {
   imdbId: null,
   wikidataId: null,
   homepage: null,
+  rareCount: 0,
   groups: [
     {
       key: "DIRECTING",

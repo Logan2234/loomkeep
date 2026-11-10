@@ -16,13 +16,13 @@ const PARAMS = {
   "/app/music/[id]": "/app/music/6e335887-60ba-38f0-95af-fae7774336bf",
   "/app/lists/[id]": () => `/app/lists/${requireEnv("LIST_ID")}`,
   "/app/u/[username]": "/app/u/alice",
+  // Terry Pratchett: an Open Library author, which needs no key either.
+  "/app/people/[source]/[id]": "/app/people/openlibrary/OL25712A",
 };
 
 const EXCLUDED = {
   // TMDB and IGDB need API keys the ephemeral stack doesn't have.
   "/app/media/[type]/[id]": "TMDB key",
-  // TMDB only for now; an Open Library author can take its place once served.
-  "/app/people/[source]/[id]": "TMDB key",
   "/app/games/[id]": "IGDB key",
   "/app/messages/[id]": "the seed has no conversation",
   "/app/settings/import/simkl/callback": "OAuth redirect target",

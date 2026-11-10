@@ -1,4 +1,4 @@
-import type { EntryStatus, MediaType } from "../enums";
+import type { BookStatus, Domain, EntryStatus, MediaType } from "../enums";
 
 /**
  * Catalogue a creator page reads from, as it appears in the page's URL
@@ -59,6 +59,10 @@ export const CreatorCreditKind = {
   CAMEO: "CAMEO",
   /** Thanked in the credits, with no other job in the group. */
   THANKS: "THANKS",
+  /** A book gathering several authors, edited by someone else. */
+  ANTHOLOGY: "ANTHOLOGY",
+  /** Several of the author's books in one volume or box set. */
+  OMNIBUS: "OMNIBUS",
 } as const;
 
 export type CreatorCreditKind =
@@ -69,8 +73,10 @@ export type CreatorCreditKind =
  * group ("Screenplay" and "Story" both sit under Writing).
  */
 export interface CreatorWorkDto {
-  /** MOVIE or SERIES for a TMDB person. */
-  type: MediaType;
+  /** MEDIA for a TMDB person's works, BOOKS for an author's. */
+  domain: Extract<Domain, "MEDIA" | "BOOKS">;
+  /** MOVIE or SERIES for a TMDB person; null for a book. */
+  type: MediaType | null;
   sourceId: string;
   title: string;
   year: number | null;
@@ -89,8 +95,19 @@ export interface CreatorWorkDto {
   /** Not released yet. */
   upcoming: boolean;
   kind: CreatorCreditKind;
+  /** How many editions a book has: how widely it was published. Null for a film or series. */
+  editionCount: number | null;
+  /** The book's series and its place in it, when the source knows one. */
+  series: CreatorSeriesRefDto | null;
   /** The viewer's status for the work; null when it's not in their library. */
-  status: EntryStatus | null;
+  status: EntryStatus | BookStatus | null;
+}
+
+export interface CreatorSeriesRefDto {
+  key: string;
+  name: string;
+  /** Whole-number place in the series. */
+  position: number;
 }
 
 export interface CreatorGroupDto {
@@ -107,7 +124,7 @@ export interface PersonPageDto {
   photoUrl: string | null;
   /** Biography in the viewer's language when the source has it. */
   description: string | null;
-  /** ISO date of birth, when known. */
+  /** ISO date of birth, or just its year ("1948") when that's all the source knows. */
   birthday: string | null;
   deathday: string | null;
   placeOfBirth: string | null;
@@ -120,4 +137,6 @@ export interface PersonPageDto {
   homepage: string | null;
   /** The `knownFor` group first, then the one with the most works (appearances and mentions left out). */
   groups: CreatorGroupDto[];
+  /** Books left out for having too few editions, counted to point at the source. 0 for a TMDB person. */
+  rareCount: number;
 }

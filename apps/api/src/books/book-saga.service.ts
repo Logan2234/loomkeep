@@ -236,7 +236,8 @@ export class BookSagaService {
       .finally(() => this.refreshing.delete(id));
   }
 
-  private async statusesBySourceId(
+  /** The viewer's status for each Open Library work id they track. */
+  async statusesBySourceId(
     userId: string,
     sourceIds: string[],
   ): Promise<Map<string, BookStatus>> {

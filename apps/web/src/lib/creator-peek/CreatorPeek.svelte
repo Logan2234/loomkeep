@@ -8,7 +8,7 @@
   import { createApiQuery } from "#lib/api/query.svelte.js";
   import { TOOLTIP_Z_INDEX } from "#lib/components/overlay-layers.js";
   import Poster from "#lib/components/Poster.svelte";
-  import { creatorHref } from "#lib/creator-href.js";
+  import { creatorHref, workHref } from "#lib/creator-href.js";
   import { joinMeta } from "#lib/format.js";
   import { lifeYears } from "#lib/life-years.js";
   import { prefersReducedMotion } from "#lib/motion.js";
@@ -119,7 +119,7 @@
         {#each works as work (`${work.type}:${work.sourceId}`)}
           <li>
             <a
-              href={`/app/media/${work.type.toLowerCase()}/${work.sourceId}`}
+              href={workHref(work)}
               aria-label={work.title}
               class="hover:border-accent block overflow-hidden rounded-md border border-transparent transition-colors">
               <Poster src={work.posterUrl} title={work.title} alt="" />

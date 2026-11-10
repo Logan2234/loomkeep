@@ -5,15 +5,23 @@ import type { CreatorWorkDto, PersonPageDto } from "@loomkeep/shared";
 import { screen, within } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import PersonPage from "./+page.svelte";
 
+const route = vi.hoisted(() => ({
+  params: { source: "tmdb", id: "137427" },
+}));
 vi.mock("$app/state", () => ({
   page: {
-    params: { source: "tmdb", id: "137427" },
+    get params() {
+      return route.params;
+    },
     url: new URL("http://localhost/app/people/tmdb/137427"),
   },
 }));
+afterEach(() => {
+  route.params = { source: "tmdb", id: "137427" };
+});
 vi.mock("$app/navigation", () => import("#lib/test/navigation.svelte.js"));
 
 const work = (
@@ -21,6 +29,7 @@ const work = (
   title: string,
   extra: Partial<CreatorWorkDto> = {},
 ): CreatorWorkDto => ({
+  domain: "MEDIA",
   type: "MOVIE",
   sourceId,
   title,
@@ -34,6 +43,8 @@ const work = (
   genreIds: [],
   upcoming: false,
   kind: "WORK",
+  editionCount: null,
+  series: null,
   status: null,
   ...extra,
 });
@@ -52,6 +63,7 @@ const villeneuve: PersonPageDto = {
   imdbId: "nm0898288",
   wikidataId: null,
   homepage: null,
+  rareCount: 0,
   groups: [
     {
       key: "DIRECTING",
@@ -224,5 +236,90 @@ describe("Person page", () => {
 
     expect(more.getAttribute("aria-expanded")).toBe("true");
     expect(screen.getByText("Talk Show 1")).toBeTruthy();
+  });
+
+  it("shows an author's series in reading order, then their best-known books", async () => {
+    route.params = { source: "openlibrary", id: "OL25712A" };
+    const book = (
+      sourceId: string,
+      title: string,
+      editionCount: number,
+      extra: Partial<CreatorWorkDto> = {},
+    ) =>
+      work(sourceId, title, {
+        domain: "BOOKS",
+        type: null,
+        jobs: [],
+        releaseDate: null,
+        editionCount,
+        ...extra,
+      });
+    const discworld = (position: number) => ({
+      key: "OL339711L",
+      name: "Discworld",
+      position,
+    });
+    server.use(
+      http.get(apiUrl("/creators/openlibrary/person/OL25712A"), () =>
+        HttpResponse.json({
+          ...villeneuve,
+          source: "openlibrary",
+          id: "OL25712A",
+          name: "Terry Pratchett",
+          birthday: "1948",
+          placeOfBirth: null,
+          knownFor: "WRITING",
+          rareCount: 132,
+          groups: [
+            {
+              key: "WRITING",
+              works: [
+                book("OL1W", "Mortimer", 61, { series: discworld(4) }),
+                book("OL2W", "La huitième couleur", 93, {
+                  series: discworld(1),
+                  status: "READ",
+                }),
+                book("OL3W", "Strate-à-gemmes", 21),
+                book("OL4W", "De bons présages", 73),
+                book("OL5W", "Legends", 4, { kind: "ANTHOLOGY" }),
+              ],
+            },
+          ],
+        } satisfies PersonPageDto),
+      ),
+    );
+    renderWithQuery(PersonPage, {});
+
+    const series = await screen.findByRole("heading", { name: /Discworld/ });
+    expect(
+      within(series.parentElement!)
+        .getAllByRole("link")
+        .map((link) => link.getAttribute("aria-label")),
+    ).toEqual(["La huitième couleur", "Mortimer"]);
+    expect(screen.queryByRole("tablist")).toBeNull();
+
+    const others = screen.getByRole("heading", {
+      name: new RegExp(m.creator_other_works()),
+    });
+    const after = others.nextElementSibling!;
+    expect(
+      within(after as HTMLElement)
+        .getAllByRole("link")
+        .map((link) => link.getAttribute("aria-label")),
+    ).toEqual(["De bons présages", "Strate-à-gemmes"]);
+    expect(
+      screen
+        .getByRole("link", { name: "De bons présages" })
+        .getAttribute("href"),
+    ).toBe("/app/books/OL4W");
+
+    expect(
+      screen.getByRole("heading", {
+        name: new RegExp(m.creator_collections()),
+      }),
+    ).toBeTruthy();
+    expect(screen.getByText(m.creator_rare_count({ count: 132 }))).toBeTruthy();
+    // A bare year, beside the portrait and in the details.
+    expect(screen.getAllByText("1948")).toHaveLength(2);
   });
 });

@@ -16,6 +16,7 @@ import {
   CreatorCreditKind,
   CreatorGroupKey,
   CreatorSource,
+  Domain,
   MediaSource,
   MediaType,
 } from "@loomkeep/shared";
@@ -653,6 +654,7 @@ export function toPersonPage(
           countWorks(b.works) - countWorks(a.works) ||
           GROUP_ORDER.indexOf(a.key) - GROUP_ORDER.indexOf(b.key),
       ),
+    rareCount: 0,
   };
 }
 
@@ -667,6 +669,7 @@ function toCreatorWork(credit: TmdbCreditItem, today: string): CreatorWorkDto {
       : (credit as TmdbTvResult).first_air_date) || null;
 
   return {
+    domain: Domain.MEDIA,
     type: summary.type,
     sourceId: summary.sourceId,
     title: summary.title,
@@ -680,6 +683,8 @@ function toCreatorWork(credit: TmdbCreditItem, today: string): CreatorWorkDto {
     genreIds: credit.genre_ids ?? [],
     upcoming: !releaseDate || releaseDate > today,
     kind: CreatorCreditKind.WORK,
+    editionCount: null,
+    series: null,
     status: null,
   };
 }

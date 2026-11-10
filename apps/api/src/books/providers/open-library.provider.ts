@@ -1,6 +1,7 @@
 import type {
   BookEditionDto,
   CreatorRefDto,
+  PersonPageDto,
   RatingDto,
 } from "@loomkeep/shared";
 import {
@@ -15,15 +16,22 @@ import { AppException } from "../../common/app.exception";
 import { chunk } from "../../common/array.util";
 import { fetchJson, identifyingUserAgent } from "../../common/http.util";
 import { QuotaTrackerService } from "../../common/quota-tracker.service";
-import { stripTags } from "../../common/text.util";
 import type {
   BookCatalogProvider,
   ProviderBookDetails,
   ProviderBookSeries,
 } from "./book-provider.types";
+import {
+  type OpenLibraryAuthor,
+  toAuthorPage,
+} from "./open-library-author.mapper";
+import {
+  coverUrl,
+  description,
+  firstPositiveCover,
+} from "./open-library.format";
 
 export const OPEN_LIBRARY_API_URL = "https://openlibrary.org";
-const COVERS_URL = "https://covers.openlibrary.org/b/id";
 
 // Open Library has no "similar books" endpoint; other works by the primary
 // author is the closest equivalent. Capped so the carousel stays a quick
@@ -82,6 +90,14 @@ const DETAILS_FIELDS = `${SEARCH_FIELDS},series_key,series_position,editions,edi
 // title, which is often the original-language one (e.g. a French reader
 // searching would otherwise see "Harry Potter and the Philosopher's Stone").
 const SEARCH_FIELDS_WITH_EDITIONS = `${SEARCH_FIELDS},editions,editions.title`;
+
+// An author's works, enough to sort, group by series and title each in the
+// viewer's language when an edition in it exists.
+const AUTHOR_WORKS_FIELDS =
+  "key,title,author_key,first_publish_year,edition_count,cover_i,series_key,series_name,series_position,editions,editions.title,editions.language";
+// Stephen King has ~640 works on Open Library; nobody has more than a few
+// thousand, and the page drops most of them anyway.
+const AUTHOR_WORKS_LIMIT = 1000;
 
 // A series' volumes, each titled in the requested language like a search.
 const SERIES_FIELDS = `${SEARCH_FIELDS_WITH_EDITIONS},series_key,series_name,series_position`;
@@ -587,6 +603,38 @@ export class OpenLibraryProvider implements BookCatalogProvider {
     };
   }
 
+  /**
+   * An author's page: who they are, their books (series and all), and how
+   * many rare publications were left out. See `toAuthorPage` for the rules.
+   */
+  async getAuthorPage(
+    id: string,
+    lang: string = DEFAULT_LANG,
+  ): Promise<PersonPageDto> {
+    // From the page's URL, then interpolated into a path and a Solr query.
+    if (!AUTHOR_KEY.test(id)) {
+      throw new AppException(
+        HttpStatus.NOT_FOUND,
+        ErrorCode.CatalogPersonNotFound,
+        undefined,
+        `Not an Open Library author id: ${id}`,
+      );
+    }
+
+    const [author, docs] = await Promise.all([
+      this.get<OpenLibraryAuthor>(
+        `/authors/${id}.json`,
+        "Author not found on Open Library",
+      ),
+      this.searchDocs(`author_key:${id}`, AUTHOR_WORKS_LIMIT, {
+        fields: AUTHOR_WORKS_FIELDS,
+        lang,
+      }),
+    ]);
+
+    return toAuthorPage(id, author, docs, lang, new Date().getUTCFullYear());
+  }
+
   private async searchDocs(
     query: string,
     limit: number,
@@ -666,6 +714,7 @@ const MAX_REDIRECT_HOPS = 3;
 
 /** An Open Library series id. */
 const SERIES_KEY = /^OL\d+L$/;
+const AUTHOR_KEY = /^OL\d+A$/;
 const WHOLE_NUMBER = /^\d+$/;
 
 /**
@@ -861,22 +910,6 @@ function toRatings(doc: OpenLibraryDoc | undefined, url: string): RatingDto[] {
 }
 
 /**
- * Built directly, not verified — same approach as the other providers' image
- * URLs. The `-L` variant is ~500px wide, enough for the detail page's hero
- * and downscaled by the browser in poster grids.
- */
-function coverUrl(coverId: number | undefined): string | null {
-  return coverId ? `${COVERS_URL}/${coverId}-L.jpg` : null;
-}
-
-// Some edition records carry a placeholder id (e.g. -1) instead of omitting
-// `covers` — covers.openlibrary.org returns a 503 for those, so skip past
-// them to the first genuine one rather than emitting a broken image URL.
-function firstPositiveCover(covers: number[] | undefined): number | undefined {
-  return covers?.find((id) => id > 0);
-}
-
-/**
  * Free-form fallback for page count when `number_of_pages` is absent —
  * "245 p.", "396 pages", "288" have all been observed. Null for anything
  * that doesn't start with a number rather than guessing.
@@ -884,24 +917,6 @@ function firstPositiveCover(covers: number[] | undefined): number | undefined {
 function parsePagination(pagination: string | undefined): number | null {
   const match = /^\d+/.exec(pagination ?? "");
   return match ? Number(match[0]) : null;
-}
-
-/** A work's description, as either a bare string or a `{ value }` text object. */
-function description(raw: OpenLibraryWork["description"]): string | null {
-  const text = typeof raw === "string" ? raw : raw?.value;
-  if (!text) return null;
-
-  let cleaned = stripTags(text);
-  // Editors often append cross-reference notes ("This work has also been
-  // published in multiple volumes. See: ...") after a "---" divider — keep
-  // only the synopsis that precedes it.
-  const dividerIndex = cleaned.search(/\n\s*-{3,}\s*\n/);
-  if (dividerIndex !== -1) cleaned = cleaned.slice(0, dividerIndex);
-  // Markdown links ([text](url)) → just the link text; the raw url reads as
-  // clutter in a plain-text synopsis.
-  cleaned = cleaned.replace(/\[([^\]]+)\]\([^)]+\)/g, "$1").trim();
-
-  return cleaned.length > 0 ? cleaned : null;
 }
 
 function parseYear(publishDate: string | undefined): number | null {

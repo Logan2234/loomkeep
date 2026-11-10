@@ -28,13 +28,17 @@
   import { cubicOut } from "svelte/easing";
   import { fade, slide } from "svelte/transition";
   import type {
+    BookStatus,
     CreatorCreditKind,
     CreatorGroupKey,
     CreatorSource,
     CreatorWorkDto,
+    EntryStatus,
   } from "@loomkeep/shared";
+  import { workHref } from "#lib/creator-href.js";
   import { lifeYears } from "#lib/life-years.js";
   import {
+    bySeries,
     mixesTypes,
     splitCredits,
     visibleWorks,
@@ -59,16 +63,22 @@
     DOCUMENTARY: m.creator_kind_documentary,
     CAMEO: m.creator_kind_cameo,
     THANKS: m.creator_kind_thanks,
+    ANTHOLOGY: m.creator_kind_anthology,
+    OMNIBUS: m.creator_kind_omnibus,
   };
   const MENTIONS_SHOWN = 6;
-  const ORDER_OPTIONS = [
-    { label: m.creator_order_newest(), value: "newest" },
-    { label: m.creator_order_oldest(), value: "oldest" },
-  ];
+  const SERIES_SHOWN = 8;
   const reduced = prefersReducedMotion();
 
   const source = $derived((page.params.source ?? "") as CreatorSource);
   const id = $derived(page.params.id ?? "");
+  const isAuthor = $derived(source === "openlibrary");
+  const home = $derived(isAuthor ? "/app/books" : "/app/media");
+  const orderOptions = $derived([
+    ...(isAuthor ? [{ label: m.creator_order_known(), value: "known" }] : []),
+    { label: m.creator_order_newest(), value: "newest" },
+    { label: m.creator_order_oldest(), value: "oldest" },
+  ]);
 
   const personQuery = createApiQuery(() => ({
     key: keys.creators.person(source, id),
@@ -83,7 +93,11 @@
   let chosenGroup = $state<CreatorGroupKey | null>(null);
   let type = $state<WorkTypeFilter>("ALL");
   let inLibrary = $state(false);
-  let order = $state<WorkOrder>("newest");
+  let chosenOrder = $state<WorkOrder | null>(null);
+  // Open Library's first-publication years are often wrong: an author's
+  // books open on the most published ones instead.
+  const order = $derived(chosenOrder ?? (isAuthor ? "known" : "newest"));
+  let openSeries = $state<Record<string, boolean>>({});
   let mentionKind = $state<CreatorCreditKind | null>(null);
   let allMentions = $state(false);
 
@@ -102,6 +116,7 @@
   );
   const features = $derived(works.filter((w) => w.kind !== "SHORT"));
   const shorts = $derived(works.filter((w) => w.kind === "SHORT"));
+  const shelves = $derived(bySeries(features));
 
   const mentionKinds = $derived([
     ...new Set(credits.mentions.map((w) => w.kind)),
@@ -123,14 +138,24 @@
       ? `${work.episodeCount} ${m.media_episode_short()}`
       : null;
 
+  const editions = (count: number | null) =>
+    count
+      ? `${count} ${count > 1 ? m.creator_edition_plural() : m.creator_edition_singular()}`
+      : null;
+
+  /** A year alone when that's all the source knows. */
+  const personDate = (date: string) =>
+    date.length === 4 ? date : formatDate(date);
+
   function credit(work: CreatorWorkDto): string {
+    if (work.domain === "BOOKS") return editions(work.editionCount) ?? "";
     const role =
       group?.key === "ACTING" ? work.character : work.jobs.join(", ");
     return joinMeta(role, episodes(work));
   }
 </script>
 
-{#snippet workGrid(list: CreatorWorkDto[])}
+{#snippet workGrid(list: CreatorWorkDto[], volumes = false)}
   <PosterGrid size="small">
     {#each list as work (`${work.type}:${work.sourceId}`)}
       <div
@@ -139,14 +164,20 @@
         in:fade|global={{ duration: reduced ? 0 : 150 }}
         out:fade={{ duration: reduced ? 0 : 100 }}>
         <PosterCard
-          href={`/app/media/${work.type.toLowerCase()}/${work.sourceId}`}
+          href={workHref(work)}
           src={work.posterUrl}
           title={work.title}>
           {#snippet badge()}
-            {#if work.status}
+            {#if work.status && work.domain === "BOOKS"}
+              <TrackingStatusBadge
+                domain="BOOKS"
+                status={work.status as BookStatus}
+                onImage
+                compact />
+            {:else if work.status}
               <TrackingStatusBadge
                 domain="MEDIA"
-                status={work.status}
+                status={work.status as EntryStatus}
                 onImage
                 compact />
             {:else if work.upcoming}
@@ -158,7 +189,12 @@
           {/snippet}
           {#snippet meta()}
             <span class="text-dim text-micro">
-              {joinMeta(work.year, credit(work))}
+              {volumes && work.series
+                ? joinMeta(
+                    m.creator_series_volume({ position: work.series.position }),
+                    work.year,
+                  )
+                : joinMeta(work.year, credit(work))}
             </span>
           {/snippet}
         </PosterCard>
@@ -167,10 +203,96 @@
   </PosterGrid>
 {/snippet}
 
+{#snippet groupContent()}
+  <div class="mt-4 flex flex-wrap items-center gap-2">
+    {#if typesMixed}
+      <SegmentedControl
+        options={[
+          { value: "ALL", label: m.common_all() },
+          { value: "MOVIE", label: m.media_movies() },
+          { value: "SERIES", label: m.media_series_plural() },
+        ]}
+        value={type}
+        onChange={(value) => (type = value)}
+        label={m.creator_work_type()} />
+    {/if}
+    <button
+      type="button"
+      class="chip {inLibrary ? 'chip-on' : ''}"
+      aria-pressed={inLibrary}
+      onclick={() => (inLibrary = !inLibrary)}>
+      {m.creator_in_library()}
+    </button>
+    <div class="ml-auto">
+      <Combobox
+        label={m.common_sort()}
+        options={orderOptions}
+        values={[order]}
+        onChange={(v) => (chosenOrder = (v[0] as WorkOrder) ?? order)} />
+    </div>
+  </div>
+
+  {#each shelves.series as block (block.key)}
+    <section class="mt-6">
+      <h2 class="font-display mb-3 text-lg font-bold">
+        {block.name}
+        <span class="timecode text-dim ml-1 text-xs">{block.works.length}</span>
+      </h2>
+      {@render workGrid(block.works.slice(0, SERIES_SHOWN), true)}
+      {#if block.works.length > SERIES_SHOWN}
+        {#if openSeries[block.key]}
+          <div
+            class="pt-4"
+            transition:slide={{
+              duration: reduced ? 0 : 260,
+              easing: cubicOut,
+            }}>
+            {@render workGrid(block.works.slice(SERIES_SHOWN), true)}
+          </div>
+        {/if}
+        <SeeMore
+          expanded={!!openSeries[block.key]}
+          onclick={() =>
+            (openSeries = {
+              ...openSeries,
+              [block.key]: !openSeries[block.key],
+            })}
+          more={m.creator_mentions_all({ count: block.works.length })}
+          ruled
+          class="mt-3" />
+      {/if}
+    </section>
+  {/each}
+  {#if shelves.others.length > 0}
+    {#if shelves.series.length > 0}
+      <h2 class="font-display mt-8 mb-3 text-lg font-bold">
+        {m.creator_other_works()}
+        <span class="timecode text-dim ml-1 text-xs"
+          >{shelves.others.length}</span>
+      </h2>
+    {/if}
+    <div class={shelves.series.length > 0 ? "" : "mt-5"}>
+      {@render workGrid(shelves.others)}
+    </div>
+  {/if}
+  {#if shorts.length > 0}
+    <h2 class="font-display mt-8 mb-3 text-lg font-bold">
+      {m.creator_shorts()}
+      <span class="timecode text-dim ml-1 text-xs">{shorts.length}</span>
+    </h2>
+    {@render workGrid(shorts)}
+  {/if}
+  {#if works.length === 0}
+    <EmptyState padding="py-12">
+      <p>{m.creator_no_match()}</p>
+    </EmptyState>
+  {/if}
+{/snippet}
+
 {#snippet mentionRow(work: CreatorWorkDto)}
   <li class="border-border border-b">
     <a
-      href={`/app/media/${work.type.toLowerCase()}/${work.sourceId}`}
+      href={workHref(work)}
       class="hover:text-accent grid grid-cols-[3rem_minmax(0,1fr)_auto] items-baseline gap-2.5 py-2 text-sm transition-colors">
       <span class="timecode text-dim text-xs">{work.year ?? "—"}</span>
       <span class="truncate font-semibold">
@@ -192,17 +314,20 @@
     text={person?.description ?? ""}
     lines={4}
     class="text-dim text-sm whitespace-pre-line" />
+  {#if isAuthor}
+    <p class="text-dim text-micro mt-1 italic">{m.creator_bio_english()}</p>
+  {/if}
 {/snippet}
 
 {#if personQuery.error}
   <div class="mx-auto max-w-5xl px-5 py-6 md:px-8">
     <Banner variant="error">{personQuery.error}</Banner>
-    <a href="/app/media" onclick={goBack} class="btn btn-ghost mt-4"
+    <a href={home} onclick={goBack} class="btn btn-ghost mt-4"
       >← {m.common_back()}</a>
   </div>
 {:else if person}
   <div class="mx-auto max-w-5xl px-5 pt-2 pb-10 md:px-8 md:pt-8">
-    <PageHeader title={person.name} back="/app/media" backInHistory />
+    <PageHeader title={person.name} back={home} backInHistory />
 
     <div
       class="md:grid md:grid-cols-[minmax(0,1fr)_17rem] md:items-start md:gap-x-10">
@@ -212,7 +337,9 @@
           <Poster src={person.photoUrl} title={person.name} alt={person.name} />
         </div>
         <div class="flex min-w-0 flex-col gap-1.5">
-          {#if person.knownFor}
+          {#if isAuthor}
+            <p class="text-dim text-sm">{m.book_author()}</p>
+          {:else if person.knownFor}
             <p class="text-dim text-sm">
               {m.creator_known_for({ group: GROUP_LABELS[person.knownFor]() })}
             </p>
@@ -264,13 +391,13 @@
             {#if person.birthday}
               <div>
                 <dt class="timecode text-xs">{m.creator_born()}</dt>
-                <dd class="mt-0.5 text-sm">{formatDate(person.birthday)}</dd>
+                <dd class="mt-0.5 text-sm">{personDate(person.birthday)}</dd>
               </div>
             {/if}
             {#if person.deathday}
               <div>
                 <dt class="timecode text-xs">{m.creator_died()}</dt>
-                <dd class="mt-0.5 text-sm">{formatDate(person.deathday)}</dd>
+                <dd class="mt-0.5 text-sm">{personDate(person.deathday)}</dd>
               </div>
             {/if}
             {#if person.alsoKnownAs.length > 0}
@@ -288,61 +415,22 @@
 
     {#if group}
       <div class="mt-8">
-        <Tabs
-          tabs={credits.tabs.map((g) => ({
-            value: g.key,
-            label: `${GROUP_LABELS[g.key]()} · ${g.works.length}`,
-          }))}
-          current={group.key}
-          onSelect={(key) => (chosenGroup = key)}
-          label={m.creator_roles()}
-          idPrefix="creator-group" />
-        <TabPanels current={group.key} idPrefix="creator-group">
-          <div class="mt-4 flex flex-wrap items-center gap-2">
-            {#if typesMixed}
-              <SegmentedControl
-                options={[
-                  { value: "ALL", label: m.common_all() },
-                  { value: "MOVIE", label: m.media_movies() },
-                  { value: "SERIES", label: m.media_series_plural() },
-                ]}
-                value={type}
-                onChange={(value) => (type = value)}
-                label={m.creator_work_type()} />
-            {/if}
-            <button
-              type="button"
-              class="chip {inLibrary ? 'chip-on' : ''}"
-              aria-pressed={inLibrary}
-              onclick={() => (inLibrary = !inLibrary)}>
-              {m.creator_in_library()}
-            </button>
-            <div class="ml-auto">
-              <Combobox
-                label={m.common_sort()}
-                options={ORDER_OPTIONS}
-                values={[order]}
-                onChange={(v) => (order = (v[0] as WorkOrder) ?? order)} />
-            </div>
-          </div>
-
-          {#if features.length > 0}
-            <div class="mt-5">{@render workGrid(features)}</div>
-          {/if}
-          {#if shorts.length > 0}
-            <h2 class="font-display mt-8 mb-3 text-lg font-bold">
-              {m.creator_shorts()}
-              <span class="timecode text-dim ml-1 text-xs"
-                >{shorts.length}</span>
-            </h2>
-            {@render workGrid(shorts)}
-          {/if}
-          {#if works.length === 0}
-            <EmptyState padding="py-12">
-              <p>{m.creator_no_match()}</p>
-            </EmptyState>
-          {/if}
-        </TabPanels>
+        {#if credits.tabs.length > 1}
+          <Tabs
+            tabs={credits.tabs.map((g) => ({
+              value: g.key,
+              label: `${GROUP_LABELS[g.key]()} · ${g.works.length}`,
+            }))}
+            current={group.key}
+            onSelect={(key) => (chosenGroup = key)}
+            label={m.creator_roles()}
+            idPrefix="creator-group" />
+          <TabPanels current={group.key} idPrefix="creator-group">
+            {@render groupContent()}
+          </TabPanels>
+        {:else}
+          {@render groupContent()}
+        {/if}
       </div>
     {:else if credits.mentions.length === 0}
       <EmptyState padding="py-12">
@@ -355,7 +443,7 @@
         <div
           class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2">
           <h2 class="font-display text-xl font-bold">
-            {m.creator_mentions()}
+            {isAuthor ? m.creator_collections() : m.creator_mentions()}
             <span class="timecode text-dim ml-1 text-xs"
               >{credits.mentions.length}</span>
           </h2>
@@ -411,7 +499,28 @@
       </section>
     {/if}
 
-    {#if source === "tmdb"}
+    {#if person.rareCount > 0 && !inLibrary}
+      <p
+        class="border-border text-dim mt-8 flex flex-wrap items-baseline gap-x-3 gap-y-1 border-t pt-4 text-sm">
+        {m.creator_rare_count({ count: person.rareCount })}
+        <a
+          href={`https://openlibrary.org/authors/${person.id}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="text-accent font-semibold hover:underline"
+          >{m.book_open_library_link()}</a>
+      </p>
+    {/if}
+
+    {#if isAuthor}
+      <p class="text-dim text-micro mt-8 flex items-center gap-1.5">
+        <ProviderMark
+          brand="openlibrary"
+          decorative
+          class="h-3 w-3 shrink-0 opacity-70" />
+        {m.settings_datasources_openlibrary_notice()}
+      </p>
+    {:else if source === "tmdb"}
       <p class="text-dim text-micro mt-8 flex items-center gap-1.5">
         <ProviderMark
           brand="tmdb"

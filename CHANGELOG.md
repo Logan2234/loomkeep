@@ -19,6 +19,8 @@ history from before it was started.
   to see everything they've made, role by role, with your status on each
   title. Appearances on talk shows and in documentaries are listed apart. On
   a computer, resting the pointer on their name gives a quick look first.
+- Author pages: open a book's author to see their books, series first, the
+  best known on top, with your reading status on each.
 - Admin › Users: the account panel shows the reason given when a deletion is
   scheduled, and each library tile (movies, series, anime, games, books,
   albums) opens the list of works behind its counter.

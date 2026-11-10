@@ -3,6 +3,8 @@
   import { layout } from "#lib/layout.svelte.js";
   import StatusCorrectionModal from "#lib/components/StatusCorrectionModal.svelte";
   import ExternalRatingChips from "#lib/components/ExternalRatingChips.svelte";
+  import CreatorNames from "#lib/components/CreatorNames.svelte";
+  import { isFeatureNew } from "#lib/feature-badges.js";
   import DetailsCard from "#lib/components/DetailsCard.svelte";
   import WorkSocialSection from "#lib/components/WorkSocialSection.svelte";
   import { page } from "$app/state";
@@ -450,6 +452,16 @@
 
   {#snippet detailsPanel()}
     <DetailsCard>
+      {#if detail && detail.authorRefs.length > 0}
+        <div>
+          <dt class="timecode text-xs">{m.book_author()}</dt>
+          <dd class="mt-0.5 flex flex-wrap gap-x-1.5 text-sm font-semibold">
+            <CreatorNames
+              refs={detail.authorRefs}
+              newBadge={isFeatureNew("creator-pages")} />
+          </dd>
+        </div>
+      {/if}
       {#if detail?.publisher}
         <div>
           <dt class="timecode text-xs">{m.media_publisher()}</dt>

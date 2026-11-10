@@ -1,6 +1,8 @@
 import type { CreatorWorkDto, PersonPageDto } from "@loomkeep/shared";
 import { CreatorCreditKind, ErrorCode, MediaType } from "@loomkeep/shared";
 import { vi } from "vitest";
+import type { BookSagaService } from "../books/book-saga.service";
+import type { OpenLibraryProvider } from "../books/providers/open-library.provider";
 import type { TmdbProvider } from "../catalog/providers/tmdb.provider";
 import type { LibraryService } from "../library/library.service";
 import type { AgeGateService } from "../users/age-gate.service";
@@ -8,6 +10,7 @@ import { CreatorService } from "./creator.service";
 
 function work(overrides: Partial<CreatorWorkDto>): CreatorWorkDto {
   return {
+    domain: "MEDIA",
     type: MediaType.MOVIE,
     sourceId: "1",
     title: "Work",
@@ -21,6 +24,8 @@ function work(overrides: Partial<CreatorWorkDto>): CreatorWorkDto {
     genreIds: [],
     upcoming: false,
     kind: CreatorCreditKind.WORK,
+    editionCount: null,
+    series: null,
     status: null,
     ...overrides,
   };
@@ -42,6 +47,7 @@ function page(works: CreatorWorkDto[]): PersonPageDto {
     wikidataId: null,
     homepage: null,
     groups: [{ key: "DIRECTING", works }],
+    rareCount: 0,
   };
 }
 
@@ -58,12 +64,20 @@ function setup(person: PersonPageDto, allowAdult = false) {
     ),
   };
   const ageGate = { allowsAdultContent: vi.fn().mockResolvedValue(allowAdult) };
+  const openLibrary = { getAuthorPage: vi.fn().mockResolvedValue(person) };
+  const bookSagas = {
+    statusesBySourceId: vi
+      .fn()
+      .mockResolvedValue(new Map([["OL45804W", "READ"]])),
+  };
   const service = new CreatorService(
     tmdb as unknown as TmdbProvider,
+    openLibrary as unknown as OpenLibraryProvider,
     library as unknown as LibraryService,
+    bookSagas as unknown as BookSagaService,
     ageGate as unknown as AgeGateService,
   );
-  return { service, tmdb, library };
+  return { service, tmdb, library, openLibrary, bookSagas };
 }
 
 describe("CreatorService.getPerson", () => {
@@ -126,11 +140,37 @@ describe("CreatorService.getPerson", () => {
     expect(tmdb.getPersonPage).toHaveBeenCalledTimes(2);
   });
 
-  it("has no person page for a source other than TMDB yet", async () => {
+  it("reads an Open Library author's books with the viewer's reading statuses", async () => {
+    const author = {
+      ...page([
+        work({ domain: "BOOKS", type: null, sourceId: "OL45804W" }),
+        work({ domain: "BOOKS", type: null, sourceId: "OL45805W" }),
+      ]),
+      source: "openlibrary" as const,
+    };
+    const { service, openLibrary, bookSagas, tmdb } = setup(author);
+
+    const result = await service.getPerson(
+      "u1",
+      "openlibrary",
+      "OL25712A",
+      "fr",
+    );
+
+    expect(openLibrary.getAuthorPage).toHaveBeenCalledWith("OL25712A", "fr");
+    expect(tmdb.getPersonPage).not.toHaveBeenCalled();
+    expect(bookSagas.statusesBySourceId).toHaveBeenCalledWith("u1", [
+      "OL45804W",
+      "OL45805W",
+    ]);
+    expect(result.groups[0].works.map((w) => w.status)).toEqual(["READ", null]);
+  });
+
+  it("has no person page for AniList or IGDB yet", async () => {
     const { service } = setup(page([]));
 
     await expect(
-      service.getPerson("u1", "openlibrary", "OL24529A"),
+      service.getPerson("u1", "anilist", "95185"),
     ).rejects.toMatchObject({ code: ErrorCode.CatalogNoPersonDetails });
   });
 });
