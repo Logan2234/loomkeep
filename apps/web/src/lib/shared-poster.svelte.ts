@@ -10,12 +10,15 @@ export const isWorkPath = (pathname: string): boolean =>
   WORK_PATH.test(pathname);
 
 /** The poster belonging to a link, the closest one when a parent holds several. */
-export function posterOfLink(link: Element): HTMLElement | null {
+export const posterOfLink = (link: Element): HTMLElement | null =>
+  nearest(link, "[data-work-poster]");
+
+function nearest(link: Element, selector: string): HTMLElement | null {
   let scope: Element | null = link;
 
   for (let level = 0; scope && level <= MAX_ANCESTORS; level++) {
-    const poster = scope.querySelector<HTMLElement>("[data-work-poster]");
-    if (poster) return poster;
+    const found = scope.querySelector<HTMLElement>(selector);
+    if (found) return found;
     scope = scope.parentElement;
   }
 
@@ -64,9 +67,9 @@ export const isCreatorPath = (pathname: string): boolean =>
   CREATOR_PATH.test(pathname);
 
 /**
- * On the page being left for a person's page: the photo shown with the link
- * just tapped, in the same card or dialog ("See their page" in the cast
- * modal). A name alone has none, and the page opens with the usual slide.
+ * On the page being left for a person's page: the photo of the link just
+ * tapped, a cast card's or the peek's. A name alone has none, and the page
+ * opens with the usual slide.
  */
 export function tappedPortrait(
   target: Element | null,
@@ -76,11 +79,20 @@ export function tappedPortrait(
   if (!link) return null;
   const href = link.getAttribute("href") ?? "";
   if (new URL(href, location.href).pathname !== pathname) return null;
-  return (
-    link
-      .closest('[role="dialog"]')
-      ?.querySelector<HTMLElement>("[data-creator-portrait]") ?? null
-  );
+  return nearest(link, "[data-creator-portrait]");
+}
+
+/** On the page back from a person's page: the photo of the link that opened it. */
+export function portraitLinkingTo(pathname: string): HTMLElement | null {
+  // A director who also acts is linked twice: by name first, then by card.
+  for (const link of document.querySelectorAll(
+    `a[href="${CSS.escape(pathname)}"]`,
+  )) {
+    const portrait = nearest(link, "[data-creator-portrait]");
+    if (portrait) return portrait;
+  }
+
+  return null;
 }
 
 export const detailPortrait = (): HTMLElement | null =>

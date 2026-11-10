@@ -20,13 +20,7 @@ const detail: CastDetailDto = {
 };
 
 describe("CastSection", () => {
-  it("links a TMDB cast member's dialog to their page", async () => {
-    server.use(
-      http.get(apiUrl("/catalog/tmdb/person/505710"), () =>
-        HttpResponse.json(detail),
-      ),
-    );
-    const user = userEvent.setup();
+  it("links a TMDB cast member straight to their page", () => {
     renderWithQuery(CastSection, {
       source: "tmdb",
       cast: [
@@ -40,15 +34,12 @@ describe("CastSection", () => {
       ],
     });
 
-    await user.click(screen.getByRole("button", { name: /Zendaya/ }));
-
-    const link = await screen.findByRole("link", {
-      name: m.creator_see_page(),
-    });
-    expect(link.getAttribute("href")).toBe("/app/people/tmdb/505710");
+    expect(
+      screen.getByRole("link", { name: /Zendaya/ }).getAttribute("href"),
+    ).toBe("/app/people/tmdb/505710");
   });
 
-  it("offers no page for an AniList voice actor yet", async () => {
+  it("opens the detail dialog for an AniList voice actor, with no page yet", async () => {
     server.use(
       http.get(apiUrl("/catalog/anilist/person/95185"), () =>
         HttpResponse.json({ ...detail, name: "Atsumi Tanezaki" }),

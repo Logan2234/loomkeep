@@ -6,14 +6,16 @@
   import Carousel from "#lib/components/Carousel.svelte";
   import Modal from "#lib/components/Modal.svelte";
   import Poster from "#lib/components/Poster.svelte";
+  import { creatorPeek } from "#lib/creator-peek/peek.svelte.js";
   import { creatorHref } from "#lib/creator-href.js";
   import type { CastMemberDto } from "@loomkeep/shared";
 
   let { cast, source }: { cast: CastMemberDto[]; source: "anilist" | "tmdb" } =
     $props();
 
-  // Cast modal: the clicked member (for the header shown immediately) plus its
-  // lazily-loaded detail. Only members with an id are clickable (TMDB persons).
+  // A member whose source has person pages links there (and peeks on hover).
+  // Others with an id open this modal: the clicked member, for the header
+  // shown immediately, plus its lazily-loaded detail.
   let castMember = $state<CastMemberDto | null>(null);
 
   const castQuery = createApiQuery(() => ({
@@ -23,9 +25,8 @@
   }));
   const castDetail = $derived(castQuery.data);
   const castLoading = $derived(castQuery.loading);
-  const personHref = $derived(
-    castMember?.id ? creatorHref({ source, id: castMember.id }) : null,
-  );
+  const pageOf = (member: CastMemberDto) =>
+    member.id ? creatorHref({ source, id: member.id }) : null;
 
   function openCast(member: CastMemberDto) {
     if (!member.id) return;
@@ -42,6 +43,7 @@
 
 {#snippet castCard(c: CastMemberDto, clickable: boolean)}
   <div
+    data-creator-portrait
     class="bg-surface-2 aspect-2/3 w-full overflow-hidden rounded-lg border border-transparent {clickable
       ? 'group-hover/cast:border-accent transition-colors'
       : ''}">
@@ -87,7 +89,19 @@
       label={m.media_cast()}
       gap="gap-3">
       {#snippet card(c)}
-        {#if c.id}
+        {@const href = pageOf(c)}
+        {#if href}
+          <a
+            {href}
+            use:creatorPeek={{
+              ref: { source, id: c.id!, name: c.name },
+              role: c.role,
+              photoUrl: c.photoUrl,
+            }}
+            class="group/cast block w-24 text-center">
+            {@render castCard(c, true)}
+          </a>
+        {:else if c.id}
           <button
             type="button"
             onclick={() => openCast(c)}
@@ -104,23 +118,12 @@
   </section>
 {/if}
 
-{#snippet seePage()}
-  <div class="flex justify-end">
-    <a href={personHref} class="btn btn-primary">{m.creator_see_page()}</a>
-  </div>
-{/snippet}
-
-<!-- Cast detail modal (TMDB person), lazily loaded on click. -->
+<!-- Cast detail modal (AniList voice actors), lazily loaded on click. -->
 {#if castMember}
-  <Modal
-    onclose={closeCast}
-    title=""
-    wide
-    actions={personHref ? seePage : undefined}>
+  <Modal onclose={closeCast} title="" wide>
     <div class="flex gap-4">
       <div
-        class="bg-surface-2 aspect-2/3 w-24 shrink-0 overflow-hidden rounded-lg"
-        data-creator-portrait>
+        class="bg-surface-2 aspect-2/3 w-24 shrink-0 overflow-hidden rounded-lg">
         {#if castDetail?.photoUrl ?? castMember.photoUrl}
           <img
             src={castDetail?.photoUrl ?? castMember.photoUrl}

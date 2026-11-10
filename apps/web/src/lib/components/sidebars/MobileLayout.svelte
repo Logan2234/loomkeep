@@ -13,6 +13,7 @@
     pendingPortrait,
     pendingPoster,
     posterImageSrc,
+    portraitLinkingTo,
     posterLinkingTo,
     tappedPortrait,
     tappedPoster,
@@ -91,12 +92,16 @@
     pendingPoster.src = posterImageSrc(opening);
     const unnameOld = namePoster(backFromWork ? detailPoster() : opening);
     let unnameNew = () => {};
-    // Only on the way in: back on the work, the dialog it came from is closed.
+    // A person's portrait travels the same way, from a cast card.
+    const backFromCreator =
+      direction === "back" && isCreatorPath(from.url.pathname);
     const portrait = isCreatorPath(to.url.pathname)
       ? tappedPortrait(lastTap, to.url.pathname)
       : null;
     pendingPortrait.src = posterImageSrc(portrait);
-    const unnamePortrait = namePortrait(portrait);
+    const unnamePortrait = namePortrait(
+      backFromCreator ? detailPortrait() : portrait,
+    );
     let unnamePagePortrait = () => {};
 
     return new Promise((resolve) => {
@@ -107,6 +112,11 @@
         unnameOld();
         unnamePortrait();
         if (portrait) unnamePagePortrait = namePortrait(detailPortrait());
+        else if (backFromCreator) {
+          unnamePagePortrait = namePortrait(
+            portraitLinkingTo(from.url.pathname),
+          );
+        }
         if (opening) unnameNew = namePoster(detailPoster());
         else if (backFromWork) {
           unnameNew = namePoster(posterLinkingTo(from.url.pathname));
