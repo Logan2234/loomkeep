@@ -5,7 +5,11 @@ import type {
   MediaType,
   PersonPageDto,
 } from "@loomkeep/shared";
-import { CreatorGroupKey, CreatorSource } from "@loomkeep/shared";
+import {
+  CreatorCreditKind,
+  CreatorGroupKey,
+  CreatorSource,
+} from "@loomkeep/shared";
 import { ApiProperty } from "@nestjs/swagger";
 
 export class CreatorWorkResponseDto implements CreatorWorkDto {
@@ -21,6 +25,10 @@ export class CreatorWorkResponseDto implements CreatorWorkDto {
   episodeCount!: number | null;
   genreIds!: number[];
   upcoming!: boolean;
+
+  @ApiProperty({ enum: CreatorCreditKind })
+  kind!: CreatorCreditKind;
+
   status!: EntryStatus | null;
 }
 

@@ -1,5 +1,5 @@
 import type { CreatorWorkDto, PersonPageDto } from "@loomkeep/shared";
-import { ErrorCode, MediaType } from "@loomkeep/shared";
+import { CreatorCreditKind, ErrorCode, MediaType } from "@loomkeep/shared";
 import { vi } from "vitest";
 import type { TmdbProvider } from "../catalog/providers/tmdb.provider";
 import type { LibraryService } from "../library/library.service";
@@ -20,6 +20,7 @@ function work(overrides: Partial<CreatorWorkDto>): CreatorWorkDto {
     episodeCount: null,
     genreIds: [],
     upcoming: false,
+    kind: CreatorCreditKind.WORK,
     status: null,
     ...overrides,
   };

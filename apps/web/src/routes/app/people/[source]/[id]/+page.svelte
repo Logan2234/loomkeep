@@ -18,18 +18,23 @@
   import TabPanels from "#lib/components/TabPanels.svelte";
   import Tabs from "#lib/components/Tabs.svelte";
   import TrackingStatusBadge from "#lib/components/TrackingStatusBadge.svelte";
+  import Combobox from "#lib/components/Combobox.svelte";
   import { formatDate, joinMeta } from "#lib/format.js";
   import { pendingPortrait } from "#lib/shared-poster.svelte.js";
+  import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
+  import { flip } from "svelte/animate";
+  import { fade } from "svelte/transition";
   import type {
+    CreatorCreditKind,
     CreatorGroupKey,
     CreatorSource,
     CreatorWorkDto,
   } from "@loomkeep/shared";
   import {
-    isSelfAppearance,
     lifeYears,
     mixesTypes,
+    splitCredits,
     visibleWorks,
     type WorkOrder,
     type WorkTypeFilter,
@@ -47,6 +52,19 @@
     ACTING: m.creator_group_acting,
   };
 
+  const MENTION_LABELS: Partial<Record<CreatorCreditKind, () => string>> = {
+    TV_APPEARANCE: m.creator_kind_tv_appearance,
+    DOCUMENTARY: m.creator_kind_documentary,
+    CAMEO: m.creator_kind_cameo,
+    THANKS: m.creator_kind_thanks,
+  };
+  const MENTIONS_SHOWN = 6;
+  const ORDER_OPTIONS = [
+    { label: m.creator_order_newest(), value: "newest" },
+    { label: m.creator_order_oldest(), value: "oldest" },
+  ];
+  const reduced = prefersReducedMotion();
+
   const source = $derived((page.params.source ?? "") as CreatorSource);
   const id = $derived(page.params.id ?? "");
 
@@ -56,16 +74,19 @@
     enabled: !!source && !!id,
   }));
   const person = $derived(personQuery.data);
+  const credits = $derived(
+    person ? splitCredits(person.groups) : { tabs: [], mentions: [] },
+  );
 
   let chosenGroup = $state<CreatorGroupKey | null>(null);
   let type = $state<WorkTypeFilter>("ALL");
   let inLibrary = $state(false);
   let order = $state<WorkOrder>("newest");
+  let mentionKind = $state<CreatorCreditKind | null>(null);
+  let allMentions = $state(false);
 
   const group = $derived(
-    person?.groups.find((g) => g.key === chosenGroup) ??
-      person?.groups[0] ??
-      null,
+    credits.tabs.find((g) => g.key === chosenGroup) ?? credits.tabs[0] ?? null,
   );
   const typesMixed = $derived(!!group && mixesTypes(group.works));
   const works = $derived(
@@ -76,6 +97,18 @@
           order,
         })
       : [],
+  );
+  const features = $derived(works.filter((w) => w.kind !== "SHORT"));
+  const shorts = $derived(works.filter((w) => w.kind === "SHORT"));
+
+  const mentionKinds = $derived([
+    ...new Set(credits.mentions.map((w) => w.kind)),
+  ]);
+  const mentions = $derived(
+    credits.mentions.filter((w) => !mentionKind || w.kind === mentionKind),
+  );
+  const shownMentions = $derived(
+    allMentions ? mentions : mentions.slice(0, MENTIONS_SHOWN),
   );
 
   const life = $derived(
@@ -93,14 +126,47 @@
 
   function credit(work: CreatorWorkDto): string {
     const role =
-      group?.key === "ACTING"
-        ? isSelfAppearance(work.character)
-          ? m.creator_as_self()
-          : work.character
-        : work.jobs.join(", ");
+      group?.key === "ACTING" ? work.character : work.jobs.join(", ");
     return joinMeta(role, episodes(work));
   }
 </script>
+
+{#snippet workGrid(list: CreatorWorkDto[])}
+  <PosterGrid size="small">
+    {#each list as work (`${work.type}:${work.sourceId}`)}
+      <div
+        class="min-w-0"
+        animate:flip={{ duration: reduced ? 0 : 250 }}
+        in:fade|global={{ duration: reduced ? 0 : 150 }}
+        out:fade={{ duration: reduced ? 0 : 100 }}>
+        <PosterCard
+          href={`/app/media/${work.type.toLowerCase()}/${work.sourceId}`}
+          src={work.posterUrl}
+          title={work.title}>
+          {#snippet badge()}
+            {#if work.status}
+              <TrackingStatusBadge
+                domain="MEDIA"
+                status={work.status}
+                onImage
+                compact />
+            {:else if work.upcoming}
+              <span
+                class="rounded-full bg-black/70 px-1.5 py-0.5 text-[0.6rem] font-bold text-white">
+                {m.media_saga_upcoming()}
+              </span>
+            {/if}
+          {/snippet}
+          {#snippet meta()}
+            <span class="text-dim text-micro">
+              {joinMeta(work.year, credit(work))}
+            </span>
+          {/snippet}
+        </PosterCard>
+      </div>
+    {/each}
+  </PosterGrid>
+{/snippet}
 
 {#snippet bio()}
   <ClampedText
@@ -204,7 +270,7 @@
     {#if group}
       <div class="mt-8">
         <Tabs
-          tabs={person.groups.map((g) => ({
+          tabs={credits.tabs.map((g) => ({
             value: g.key,
             label: `${GROUP_LABELS[g.key]()} · ${g.works.length}`,
           }))}
@@ -232,57 +298,107 @@
               onclick={() => (inLibrary = !inLibrary)}>
               {m.creator_in_library()}
             </button>
-            <label class="ml-auto">
-              <span class="sr-only">{m.common_sort()}</span>
-              <select class="input w-auto py-1.5 text-sm" bind:value={order}>
-                <option value="newest">{m.creator_order_newest()}</option>
-                <option value="oldest">{m.creator_order_oldest()}</option>
-              </select>
-            </label>
+            <div class="ml-auto">
+              <Combobox
+                label={m.common_sort()}
+                options={ORDER_OPTIONS}
+                values={[order]}
+                onChange={(v) => (order = (v[0] as WorkOrder) ?? order)} />
+            </div>
           </div>
 
-          {#if works.length > 0}
-            <div class="mt-5">
-              <PosterGrid size="small">
-                {#each works as work (`${work.type}:${work.sourceId}`)}
-                  <PosterCard
-                    href={`/app/media/${work.type.toLowerCase()}/${work.sourceId}`}
-                    src={work.posterUrl}
-                    title={work.title}>
-                    {#snippet badge()}
-                      {#if work.status}
-                        <TrackingStatusBadge
-                          domain="MEDIA"
-                          status={work.status}
-                          onImage
-                          compact />
-                      {:else if work.upcoming}
-                        <span
-                          class="rounded-full bg-black/70 px-1.5 py-0.5 text-[0.6rem] font-bold text-white">
-                          {m.media_saga_upcoming()}
-                        </span>
-                      {/if}
-                    {/snippet}
-                    {#snippet meta()}
-                      <span class="text-dim text-micro">
-                        {joinMeta(work.year, credit(work))}
-                      </span>
-                    {/snippet}
-                  </PosterCard>
-                {/each}
-              </PosterGrid>
-            </div>
-          {:else}
+          {#if features.length > 0}
+            <div class="mt-5">{@render workGrid(features)}</div>
+          {/if}
+          {#if shorts.length > 0}
+            <h2 class="font-display mt-8 mb-3 text-lg font-bold">
+              {m.creator_shorts()}
+              <span class="timecode text-dim ml-1 text-xs"
+                >{shorts.length}</span>
+            </h2>
+            {@render workGrid(shorts)}
+          {/if}
+          {#if works.length === 0}
             <EmptyState padding="py-12">
               <p>{m.creator_no_match()}</p>
             </EmptyState>
           {/if}
         </TabPanels>
       </div>
-    {:else}
+    {:else if credits.mentions.length === 0}
       <EmptyState padding="py-12">
         <p>{m.creator_no_works()}</p>
       </EmptyState>
+    {/if}
+
+    {#if credits.mentions.length > 0}
+      <section class="border-border mt-10 border-t pt-6">
+        <div
+          class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2">
+          <h2 class="font-display text-xl font-bold">
+            {m.creator_mentions()}
+            <span class="timecode text-dim ml-1 text-xs"
+              >{credits.mentions.length}</span>
+          </h2>
+          {#if mentionKinds.length > 1}
+            <div
+              class="flex flex-wrap gap-2"
+              role="group"
+              aria-label={m.creator_mention_kind()}>
+              <button
+                type="button"
+                class="chip {mentionKind === null ? 'chip-on' : ''}"
+                aria-pressed={mentionKind === null}
+                onclick={() => (mentionKind = null)}>
+                {m.common_all()}
+              </button>
+              {#each mentionKinds as kind (kind)}
+                <button
+                  type="button"
+                  class="chip {mentionKind === kind ? 'chip-on' : ''}"
+                  aria-pressed={mentionKind === kind}
+                  onclick={() => (mentionKind = kind)}>
+                  {MENTION_LABELS[kind]?.()}
+                </button>
+              {/each}
+            </div>
+          {/if}
+        </div>
+        <ul class="mt-3 grid gap-x-8 md:grid-cols-2">
+          {#each shownMentions as work (`${work.type}:${work.sourceId}`)}
+            <li class="border-border border-b">
+              <a
+                href={`/app/media/${work.type.toLowerCase()}/${work.sourceId}`}
+                class="hover:text-accent grid grid-cols-[3rem_minmax(0,1fr)_auto] items-baseline gap-2.5 py-2 text-sm transition-colors">
+                <span class="timecode text-dim text-xs"
+                  >{work.year ?? "—"}</span>
+                <span class="truncate font-semibold">
+                  {work.title}
+                  {#if episodes(work)}
+                    <span class="text-dim text-xs font-normal"
+                      >· {episodes(work)}</span>
+                  {/if}
+                </span>
+                <span
+                  class="border-border text-dim rounded-full border px-2 text-[0.7rem] font-semibold whitespace-nowrap">
+                  {MENTION_LABELS[work.kind]?.()}
+                </span>
+              </a>
+            </li>
+          {/each}
+        </ul>
+        {#if mentions.length > MENTIONS_SHOWN}
+          <button
+            type="button"
+            class="text-accent mt-2 text-sm font-bold"
+            aria-expanded={allMentions}
+            onclick={() => (allMentions = !allMentions)}>
+            {allMentions
+              ? m.common_see_less()
+              : m.creator_mentions_all({ count: mentions.length })}
+          </button>
+        {/if}
+      </section>
     {/if}
 
     {#if source === "tmdb"}

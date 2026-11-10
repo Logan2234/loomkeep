@@ -43,6 +43,28 @@ export type CreatorGroupKey =
   (typeof CreatorGroupKey)[keyof typeof CreatorGroupKey];
 
 /**
+ * What a credit amounts to. A page lists `WORK` and `SHORT` credits as the
+ * person's works; the others are appearances and mentions, listed apart so
+ * they don't bury them.
+ */
+export const CreatorCreditKind = {
+  WORK: "WORK",
+  /** A film of 40 minutes or less. */
+  SHORT: "SHORT",
+  /** On a series as oneself: talk show, ceremony, reality show. */
+  TV_APPEARANCE: "TV_APPEARANCE",
+  /** In a documentary film as oneself (making-of, portrait). */
+  DOCUMENTARY: "DOCUMENTARY",
+  /** In a fiction film as oneself. */
+  CAMEO: "CAMEO",
+  /** Thanked in the credits, with no other job in the group. */
+  THANKS: "THANKS",
+} as const;
+
+export type CreatorCreditKind =
+  (typeof CreatorCreditKind)[keyof typeof CreatorCreditKind];
+
+/**
  * One work in a creator's group, with every job they hold on it within that
  * group ("Screenplay" and "Story" both sit under Writing).
  */
@@ -66,6 +88,7 @@ export interface CreatorWorkDto {
   genreIds: number[];
   /** Not released yet. */
   upcoming: boolean;
+  kind: CreatorCreditKind;
   /** The viewer's status for the work; null when it's not in their library. */
   status: EntryStatus | null;
 }
@@ -95,6 +118,6 @@ export interface PersonPageDto {
   imdbId: string | null;
   wikidataId: string | null;
   homepage: string | null;
-  /** The `knownFor` group first, then the largest. */
+  /** The `knownFor` group first, then the one with the most works (appearances and mentions left out). */
   groups: CreatorGroupDto[];
 }

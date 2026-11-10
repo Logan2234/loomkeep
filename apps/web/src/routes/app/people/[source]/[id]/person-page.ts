@@ -1,4 +1,8 @@
-import type { CreatorWorkDto } from "@loomkeep/shared";
+import type {
+  CreatorCreditKind,
+  CreatorGroupDto,
+  CreatorWorkDto,
+} from "@loomkeep/shared";
 
 export type WorkTypeFilter = "ALL" | "MOVIE" | "SERIES";
 export type WorkOrder = "newest" | "oldest";
@@ -31,12 +35,50 @@ export function visibleWorks(
 export const mixesTypes = (works: CreatorWorkDto[]) =>
   new Set(works.map((work) => work.type)).size > 1;
 
-// TMDB credits an appearance as oneself with these English words, whatever
-// the requested language.
-const SELF = /^(self|himself|herself|themselves)$/i;
+const MENTION_KINDS: ReadonlySet<CreatorCreditKind> = new Set([
+  "TV_APPEARANCE",
+  "DOCUMENTARY",
+  "CAMEO",
+  "THANKS",
+]);
 
-export const isSelfAppearance = (character: string | null) =>
-  !!character && SELF.test(character.trim());
+/**
+ * The role tabs keep the person's works. Appearances and mentions go to one
+ * list under them, each title once, newest first: a talk show credited under
+ * Acting and thanked under Crew is a single line.
+ */
+export function splitCredits(groups: CreatorGroupDto[]): {
+  tabs: CreatorGroupDto[];
+  mentions: CreatorWorkDto[];
+} {
+  const tabs = groups
+    .map((group) => ({
+      key: group.key,
+      works: group.works.filter((work) => !MENTION_KINDS.has(work.kind)),
+    }))
+    .filter((group) => group.works.length > 0);
+
+  const seen = new Set<string>();
+  const mentions = groups
+    .flatMap((group) => group.works)
+    .filter((work) => {
+      const id = `${work.type}:${work.sourceId}`;
+      if (!MENTION_KINDS.has(work.kind) || seen.has(id)) return false;
+      seen.add(id);
+      return true;
+    })
+    .sort(newestFirst);
+
+  return { tabs, mentions };
+}
+
+/** Undated first: TMDB leaves the date off what isn't out yet. */
+function newestFirst(a: CreatorWorkDto, b: CreatorWorkDto): number {
+  if (a.releaseDate === b.releaseDate) return 0;
+  if (!a.releaseDate) return -1;
+  if (!b.releaseDate) return 1;
+  return a.releaseDate < b.releaseDate ? 1 : -1;
+}
 
 /** "1967", or "1929 – 2018": the years a person lived. */
 export function lifeYears(
