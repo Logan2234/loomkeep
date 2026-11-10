@@ -17,6 +17,7 @@
     favorite = false,
     onToggleFavorite,
     progress = null,
+    badge,
     meta,
   }: {
     href: string;
@@ -27,6 +28,8 @@
     onToggleFavorite?: (next: boolean) => void;
     /** Drawn along the poster's bottom edge; paused progress is dimmed. */
     progress?: { percent: number; paused?: boolean } | null;
+    /** Over the poster's top-left corner, e.g. the viewer's status. */
+    badge?: Snippet;
     meta: Snippet;
   } = $props();
 
@@ -40,6 +43,9 @@
     class="block rounded-lg transition-transform duration-200 ease-[cubic-bezier(.34,1.56,.64,1)] active:scale-[0.97] active:duration-75 active:ease-out md:group-hover:-translate-y-0.5">
     <div class="relative overflow-hidden rounded-lg">
       <Poster {src} {title} alt="" />
+      {#if badge}
+        <span class="absolute top-1.5 left-1.5">{@render badge()}</span>
+      {/if}
       {#if progress}
         <span class="absolute inset-x-0 bottom-0 h-0.75 bg-black/45">
           <span

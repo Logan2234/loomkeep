@@ -25,6 +25,7 @@
     domain,
     status,
     onImage = false,
+    compact = false,
     class: cls = "",
   }: (
     | { domain: "MEDIA"; status: EntryStatus }
@@ -34,6 +35,8 @@
   ) & {
     /** Over a backdrop image, where the tinted fills wouldn't read. */
     onImage?: boolean;
+    /** Pill-sized, for a poster corner. */
+    compact?: boolean;
     class?: string;
   } = $props();
 
@@ -69,11 +72,13 @@
 
 <span
   title={description}
-  class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold {(onImage
-    ? TONES_ON_IMAGE
-    : TONES)[look.tone]} {cls}">
+  class="inline-flex items-center rounded-full font-bold {compact
+    ? 'gap-1 px-1.5 py-0.5 text-[0.6rem]'
+    : 'gap-1.5 px-2.5 py-1 text-xs'} {(onImage ? TONES_ON_IMAGE : TONES)[
+    look.tone
+  ]} {cls}">
   <span data-status-icon={look.icon}>
-    <Icon name={look.icon} class="h-3.5 w-3.5" />
+    <Icon name={look.icon} class={compact ? "h-3 w-3" : "h-3.5 w-3.5"} />
   </span>
   {label}
 </span>

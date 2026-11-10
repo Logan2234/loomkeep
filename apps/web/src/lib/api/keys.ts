@@ -260,6 +260,10 @@ export const keys = {
     watchProviders: (region: string | null) =>
       ["catalog", "watch-providers", region] as const,
   },
+  creators: {
+    person: (source: string, id: string) =>
+      ["creators", "person", source, id] as const,
+  },
   admin: {
     overview: () => ["admin", "overview"] as const,
     instanceSettings: () => ["admin", "instance-settings"] as const,

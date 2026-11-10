@@ -21,6 +21,8 @@ const PARAMS = {
 const EXCLUDED = {
   // TMDB and IGDB need API keys the ephemeral stack doesn't have.
   "/app/media/[type]/[id]": "TMDB key",
+  // TMDB only for now; an Open Library author can take its place once served.
+  "/app/people/[source]/[id]": "TMDB key",
   "/app/games/[id]": "IGDB key",
   "/app/messages/[id]": "the seed has no conversation",
   "/app/settings/import/simkl/callback": "OAuth redirect target",
