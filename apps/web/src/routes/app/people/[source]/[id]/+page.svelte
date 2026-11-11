@@ -507,20 +507,11 @@
           href={`https://openlibrary.org/authors/${person.id}`}
           target="_blank"
           rel="noopener noreferrer"
-          class="text-accent font-semibold hover:underline"
-          >{m.book_open_library_link()}</a>
+          class="link-accent decoration-1">{m.book_open_library_link()}</a>
       </p>
     {/if}
 
-    {#if isAuthor}
-      <p class="text-dim text-micro mt-8 flex items-center gap-1.5">
-        <ProviderMark
-          brand="openlibrary"
-          decorative
-          class="h-3 w-3 shrink-0 opacity-70" />
-        {m.settings_datasources_openlibrary_notice()}
-      </p>
-    {:else if source === "tmdb"}
+    {#if source === "tmdb"}
       <p class="text-dim text-micro mt-8 flex items-center gap-1.5">
         <ProviderMark
           brand="tmdb"
