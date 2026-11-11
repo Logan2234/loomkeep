@@ -4,7 +4,7 @@ import {
   Injectable,
   type NestInterceptor,
 } from "@nestjs/common";
-import type { Request } from "express";
+import type { FastifyRequest } from "fastify";
 import { from, mergeMap, type Observable } from "rxjs";
 import { AdultImageKeysService } from "./adult-image-keys.service";
 import { stripAdultImages } from "./adult-images.util";
@@ -24,7 +24,7 @@ export class NativeAppAdultImagesInterceptor implements NestInterceptor {
   intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
     if (context.getType() !== "http") return next.handle();
 
-    const request = context.switchToHttp().getRequest<Request>();
+    const request = context.switchToHttp().getRequest<FastifyRequest>();
 
     if (!request.headers["user-agent"]?.includes(NATIVE_APP_AGENT)) {
       return next.handle();
