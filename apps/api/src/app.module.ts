@@ -1,6 +1,6 @@
 import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
-import { APP_FILTER, APP_GUARD } from "@nestjs/core";
+import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from "@nestjs/core";
 import { ScheduleModule } from "@nestjs/schedule";
 import { ThrottlerGuard, ThrottlerModule } from "@nestjs/throttler";
 import { LoggerModule } from "nestjs-pino";
@@ -36,6 +36,8 @@ import { ListsModule } from "./lists/list.module";
 import { MailModule } from "./mail/mail.module";
 import { MetricsModule } from "./metrics/metrics.module";
 import { MusicModule } from "./music/music.module";
+import { AdultImageKeysService } from "./native-app/adult-image-keys.service";
+import { NativeAppAdultImagesInterceptor } from "./native-app/native-app-adult-images.interceptor";
 import { NewsletterModule } from "./newsletter/newsletter.module";
 import { NotificationActionsModule } from "./notification-actions/notification-actions.module";
 import { NotificationModule } from "./notifications/notification.module";
@@ -122,6 +124,11 @@ import { UsersModule } from "./users/users.module";
     {
       provide: APP_FILTER,
       useClass: AllExceptionsFilter,
+    },
+    AdultImageKeysService,
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: NativeAppAdultImagesInterceptor,
     },
   ],
 })
