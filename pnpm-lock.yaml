@@ -253,8 +253,8 @@ importers:
         specifier: ^12.3.3
         version: 12.3.3(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@10.2.2)
       '@nestjs/config':
-        specifier: ^12.0.1
-        version: 12.0.1(@nestjs/common@12.3.3(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@10.2.2))(rxjs@7.8.2)
+        specifier: ^12.1.0
+        version: 12.1.0(@nestjs/common@12.3.3(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@10.2.2))(rxjs@7.8.2)
       '@nestjs/core':
         specifier: ^12.3.3
         version: 12.3.3(@nestjs/common@12.3.3(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@10.2.2))(@nestjs/websockets@12.3.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)
@@ -304,8 +304,8 @@ importers:
         specifier: ^0.15.1
         version: 0.15.1
       dotenv:
-        specifier: ^18.0.9
-        version: 18.0.9
+        specifier: ^18.0.10
+        version: 18.0.10
       fastify:
         specifier: ^5.12.3
         version: 5.12.8
@@ -2001,8 +2001,8 @@ packages:
       class-validator:
         optional: true
 
-  '@nestjs/config@12.0.1':
-    resolution: {integrity: sha512-pxqEtULFi4qXda0TqyR2YFq7o4UoRa7h4K5H0lgFuBMrUGr6x6VVldaJJrowFyh4uvp8dNq9Mie3T+l+uEOTfw==}
+  '@nestjs/config@12.1.0':
+    resolution: {integrity: sha512-3r5YNFF6jsgH4lpl+P3kzFI531GLOLJI+frIYVR3pUUS2SnA5TTZEWu0/tQlK9hMHn9NKqnVMsNKTGvvATY9ng==}
     peerDependencies:
       '@nestjs/common': ^11.0.0 || ^12.0.0
       rxjs: ^7.1.0
@@ -5303,13 +5303,13 @@ packages:
     resolution: {integrity: sha512-nI4U3TottKAcAD9LLud4Cb7b2QztQMUEfHbvhTH09bqXTxnSie8WnjPALV/WMCrJZ6UV/qHJ6L03OqO3LcdYZw==}
     engines: {node: '>=12'}
 
-  dotenv@18.0.3:
-    resolution: {integrity: sha512-/8CJTyL817qPnfbQrJgOEcrU3fDrJkRIoXBE566wHuvIXKOCHUZhPqGPbCPi9SogjdGnreF0TlvnTgK6J/8zpA==}
+  dotenv@18.0.10:
+    resolution: {integrity: sha512-89FAA1xchzK2mxVWdr5F/0rldwiueXs6zJM86rO66EzekR1iBdiXRthyG+m5GvkJaFH3C2LESzamTkgndmLT2A==}
     engines: {node: '>=12'}
     hasBin: true
 
-  dotenv@18.0.9:
-    resolution: {integrity: sha512-3fVOW4cB02R066PUSwn8O4TJyz9NckQl7F81blIbaq9jKBm2tSmOKky7ZHIXzGvkVPXCSn6jkpziBPZdGFs8Tw==}
+  dotenv@18.0.3:
+    resolution: {integrity: sha512-/8CJTyL817qPnfbQrJgOEcrU3fDrJkRIoXBE566wHuvIXKOCHUZhPqGPbCPi9SogjdGnreF0TlvnTgK6J/8zpA==}
     engines: {node: '>=12'}
     hasBin: true
 
@@ -10459,7 +10459,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@nestjs/config@12.0.1(@nestjs/common@12.3.3(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@10.2.2))(rxjs@7.8.2)':
+  '@nestjs/config@12.1.0(@nestjs/common@12.3.3(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@10.2.2))(rxjs@7.8.2)':
     dependencies:
       '@nestjs/common': 12.3.3(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@10.2.2)
       '@standard-schema/spec': 1.1.0
@@ -13900,9 +13900,9 @@ snapshots:
 
   dotenv@17.4.2: {}
 
-  dotenv@18.0.3: {}
+  dotenv@18.0.10: {}
 
-  dotenv@18.0.9: {}
+  dotenv@18.0.3: {}
 
   dset@3.1.4: {}
 
