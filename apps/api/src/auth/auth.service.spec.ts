@@ -982,6 +982,8 @@ describe("AuthService.refresh", () => {
         tokenHash: hashToken("old-token"),
       }),
     });
+    // Purged daily with the other spent credentials, never per rotation.
+    expect(prisma.consumedRefreshToken.deleteMany).not.toHaveBeenCalled();
     expect(jwtService.verifyAsync).toHaveBeenCalledWith(
       "old-token",
       expect.objectContaining({

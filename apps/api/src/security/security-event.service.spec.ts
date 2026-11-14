@@ -19,6 +19,9 @@ function makeService({ recentLocks = 0 } = {}) {
     webauthnChallenge: { deleteMany: vi.fn().mockReturnValue({ count: 0 }) },
     userToken: { deleteMany: vi.fn().mockReturnValue({ count: 0 }) },
     emailChangeRequest: { deleteMany: vi.fn().mockReturnValue({ count: 0 }) },
+    consumedRefreshToken: {
+      deleteMany: vi.fn().mockReturnValue({ count: 0 }),
+    },
     $transaction: vi.fn((ops: unknown[]) => Promise.all(ops)),
     user: {
       findUnique: vi
@@ -241,6 +244,9 @@ describe("SecurityEventService.purgeExpired", () => {
     expect(prisma.webauthnChallenge.deleteMany).toHaveBeenCalledWith(expired);
     expect(prisma.userToken.deleteMany).toHaveBeenCalledWith(expired);
     expect(prisma.emailChangeRequest.deleteMany).toHaveBeenCalledWith(expired);
+    expect(prisma.consumedRefreshToken.deleteMany).toHaveBeenCalledWith(
+      expired,
+    );
   });
 });
 

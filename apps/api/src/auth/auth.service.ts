@@ -713,10 +713,10 @@ export class AuthService {
       );
     }
 
+    // Expired ConsumedRefreshToken rows are purged daily with the other
+    // spent credentials (SecurityEventService.purgeExpiredCredentials), not
+    // here: a global DELETE on every rotation of every session.
     const tokenHash = sha256Hex(refreshToken);
-    await this.prisma.consumedRefreshToken.deleteMany({
-      where: { expiresAt: { lt: new Date() } },
-    });
     const stored = await this.prisma.refreshToken.findUnique({
       where: { tokenHash },
       include: { user: true },
