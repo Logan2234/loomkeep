@@ -907,7 +907,12 @@ describe("CommentService.adminRemove", () => {
 
     expect(tx.comment.update).toHaveBeenCalled();
     expect(prisma.comment.update).not.toHaveBeenCalled();
-    expect(xp.revokeBySource).toHaveBeenCalledWith("Comment", ["c1"], tx);
+    expect(xp.revokeBySource).toHaveBeenCalledWith(
+      AUTHOR.id,
+      "Comment",
+      ["c1"],
+      tx,
+    );
     expect(events.emitToCommentsThread).not.toHaveBeenCalled();
     svc.publishAdminRemoval("MEDIA", "m1");
     expect(events.emitToCommentsThread).toHaveBeenCalledWith(
@@ -1096,7 +1101,7 @@ describe("CommentService — XP wiring", () => {
       },
     });
     await svc.remove("author", "c1");
-    expect(xp.revokeBySource).toHaveBeenCalledWith("Comment", ["c1"]);
+    expect(xp.revokeBySource).toHaveBeenCalledWith("author", "Comment", ["c1"]);
   });
 
   it("credits COMMENT_REACTION_RECEIVED to the comment's author, never the reactor", async () => {
@@ -1161,9 +1166,12 @@ describe("CommentService — XP wiring", () => {
       },
     });
     await svc.unreact("reactor", "c1");
-    expect(xp.revokeBySource).toHaveBeenCalledWith("CommentReaction", [
-      "reaction-1",
-    ]);
+    // The comment's author earned it, not the reactor.
+    expect(xp.revokeBySource).toHaveBeenCalledWith(
+      "author",
+      "CommentReaction",
+      ["reaction-1"],
+    );
   });
 });
 

@@ -325,7 +325,9 @@ describe("deleteOwnedReplay", () => {
     });
 
     expect(remove).toHaveBeenCalled();
-    expect(xp.revokeBySource).toHaveBeenCalledWith("BookReplay", ["replay-1"]);
+    expect(xp.revokeBySource).toHaveBeenCalledWith("user-1", "BookReplay", [
+      "replay-1",
+    ]);
   });
 
   it("refuses another user's replay without deleting anything", async () => {

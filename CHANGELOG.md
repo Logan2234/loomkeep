@@ -130,6 +130,8 @@ history from before it was started.
   "invalid link" after they worked.
 - Empty video, game and music libraries name what to add in your language
   instead of always in French.
+- Unticking an episode, or removing a show, no longer takes the "season
+  completed" XP away from everyone else who finished that season.
 
 ## 1.13.0 — Home-screen widgets, actionable notifications, and a phone-first app
 

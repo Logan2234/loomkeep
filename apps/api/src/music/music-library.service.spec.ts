@@ -89,8 +89,12 @@ describe("MusicLibraryService.deleteEntry", () => {
     expect(musicEntryDelete).toHaveBeenCalledWith({
       where: { id: "entry-1" },
     });
-    expect(xp.revokeBySource).toHaveBeenCalledWith("MusicEntry", ["entry-1"]);
-    expect(xp.revokeBySource).toHaveBeenCalledWith("Entry", ["entry-1"]);
+    expect(xp.revokeBySource).toHaveBeenCalledWith("user-1", "MusicEntry", [
+      "entry-1",
+    ]);
+    expect(xp.revokeBySource).toHaveBeenCalledWith("user-1", "Entry", [
+      "entry-1",
+    ]);
   });
 });
 

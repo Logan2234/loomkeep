@@ -501,7 +501,7 @@ export class MusicLibraryService {
       this.prisma.musicEntry.delete({ where: { id: entryId } }),
     ]);
 
-    await revokeEntryXp(this.xp, [
+    await revokeEntryXp(this.xp, userId, [
       { sourceType: "MusicEntry", ids: [entryId] },
       { sourceType: "Entry", ids: [entryId] },
       { sourceType: "Review", ids: reviews.map((r) => r.id) },

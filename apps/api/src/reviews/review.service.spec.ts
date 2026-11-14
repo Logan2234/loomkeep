@@ -419,7 +419,13 @@ function makeForVoting(opts: {
 }) {
   const upsert = vi.fn().mockResolvedValue({ id: "vote-1" });
   const deleteMany = vi.fn().mockResolvedValue({ count: 1 });
-  const findUnique = vi.fn().mockResolvedValue(opts.existingVote ?? null);
+  const findUnique = vi
+    .fn()
+    .mockResolvedValue(
+      opts.existingVote
+        ? { ...opts.existingVote, review: { userId: opts.reviewOwnerId } }
+        : null,
+    );
   const prisma = {
     review: {
       findUnique: vi.fn().mockResolvedValue({ userId: opts.reviewOwnerId }),
@@ -548,7 +554,9 @@ describe("ReviewService.vote", () => {
       existingVote: { id: "vote-1", value: "UP" },
     });
     await svc.vote("viewer", "r1", "DOWN" as never);
-    expect(xp.revokeBySource).toHaveBeenCalledWith("ReviewVote", ["vote-1"]);
+    expect(xp.revokeBySource).toHaveBeenCalledWith("author", "ReviewVote", [
+      "vote-1",
+    ]);
   });
 
   it("re-awards on a DOWN -> UP flip", async () => {
@@ -570,7 +578,9 @@ describe("ReviewService.vote", () => {
       existingVote: { id: "vote-1", value: "UP" },
     });
     await svc.unvote("viewer", "r1");
-    expect(xp.revokeBySource).toHaveBeenCalledWith("ReviewVote", ["vote-1"]);
+    expect(xp.revokeBySource).toHaveBeenCalledWith("author", "ReviewVote", [
+      "vote-1",
+    ]);
   });
 
   it("does not attempt a revoke on unvote when the removed vote was DOWN", async () => {
@@ -661,19 +671,22 @@ describe("ReviewService — structural review deletion revokes XP", () => {
   it("setRating(null) revokes every reason for the review", async () => {
     const { svc, xp } = makeForWrite({ rating: 8, text: VERY_LONG_TEXT });
     await svc.setRating("u1", "MEDIA" as never, "m1", null);
-    expect(xp.revokeBySource).toHaveBeenCalledWith("Review", ["r1"]);
+    expect(xp.revokeBySource).toHaveBeenCalledWith("u1", "Review", ["r1"]);
   });
 
   it("remove() revokes every reason for the review", async () => {
     const { svc, xp } = makeForWrite({ rating: 8, text: VERY_LONG_TEXT });
     await svc.remove("u1", "MEDIA" as never, "m1");
-    expect(xp.revokeBySource).toHaveBeenCalledWith("Review", ["r1"]);
+    expect(xp.revokeBySource).toHaveBeenCalledWith("u1", "Review", ["r1"]);
   });
 
   it("removeMany() revokes every reason for each deleted review", async () => {
     const { svc, xp } = makeForWrite({ rating: 8, text: VERY_LONG_TEXT });
     await svc.removeMany("u1", ["r1", "r2"]);
-    expect(xp.revokeBySource).toHaveBeenCalledWith("Review", ["r1", "r2"]);
+    expect(xp.revokeBySource).toHaveBeenCalledWith("u1", "Review", [
+      "r1",
+      "r2",
+    ]);
   });
 });
 
@@ -708,7 +721,12 @@ describe("ReviewService.adminRemove", () => {
 
     expect(tx.review.delete).toHaveBeenCalledWith({ where: { id: "rev1" } });
     expect(prisma.review.delete).not.toHaveBeenCalled();
-    expect(xp.revokeBySource).toHaveBeenCalledWith("Review", ["rev1"], tx);
+    expect(xp.revokeBySource).toHaveBeenCalledWith(
+      "author1",
+      "Review",
+      ["rev1"],
+      tx,
+    );
   });
 
   it("deletes the review, revokes its XP and returns what the notice needs", async () => {
@@ -741,7 +759,12 @@ describe("ReviewService.adminRemove", () => {
       text: "hors sujet",
     });
     expect(deleteFn).toHaveBeenCalledWith({ where: { id: "rev1" } });
-    expect(xp.revokeBySource).toHaveBeenCalledWith("Review", ["rev1"]);
+    expect(xp.revokeBySource).toHaveBeenCalledWith(
+      "author1",
+      "Review",
+      ["rev1"],
+      undefined,
+    );
   });
 
   it("404s when the review is already gone", async () => {

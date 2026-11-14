@@ -84,7 +84,7 @@ describe("cycle and entry XP", () => {
         nextStatus: "PLAYING",
       }),
     ).toBe(false);
-    expect(xp.revokeBySource).toHaveBeenCalledWith("GamePlaythrough", [
+    expect(xp.revokeBySource).toHaveBeenCalledWith("owner", "GamePlaythrough", [
       "cycle-1",
     ]);
     await syncCycleCompletionXp(xp, achievements, {
@@ -98,15 +98,15 @@ describe("cycle and entry XP", () => {
   it("awaits revocations in the domain's specified order", async () => {
     const xp = stubXp();
     const order: string[] = [];
-    vi.mocked(xp.revokeBySource).mockImplementation(async (source) => {
+    vi.mocked(xp.revokeBySource).mockImplementation(async (userId, source) => {
       await Promise.resolve();
-      order.push(source);
+      order.push(`${userId}:${source}`);
     });
-    await revokeEntryXp(xp, [
+    await revokeEntryXp(xp, "owner", [
       { sourceType: "MusicEntry", ids: ["entry"] },
       { sourceType: "Entry", ids: ["entry"] },
       { sourceType: "Review", ids: ["review"] },
     ]);
-    expect(order).toEqual(["MusicEntry", "Entry", "Review"]);
+    expect(order).toEqual(["owner:MusicEntry", "owner:Entry", "owner:Review"]);
   });
 });

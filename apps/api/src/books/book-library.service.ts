@@ -744,7 +744,7 @@ export class BookLibraryService {
       this.prisma.bookEntry.delete({ where: { id: entryId } }),
     ]);
 
-    await revokeEntryXp(this.xp, [
+    await revokeEntryXp(this.xp, userId, [
       { sourceType: "Entry", ids: [entryId] },
       { sourceType: "BookReading", ids: readings.map((reading) => reading.id) },
       { sourceType: "Review", ids: reviews.map((r) => r.id) },

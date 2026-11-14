@@ -228,7 +228,7 @@ export class ListService {
     if (count === 0)
       throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.ListNotFound);
 
-    await this.xp.revokeBySource("List", [id]);
+    await this.xp.revokeBySource(userId, "List", [id]);
   }
 
   /**
@@ -257,7 +257,7 @@ export class ListService {
       throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.ListNotFound);
 
     await tx.list.delete({ where: { id } });
-    await this.xp.revokeBySource("List", [id], tx);
+    await this.xp.revokeBySource(list.userId, "List", [id], tx);
 
     return {
       ownerId: list.userId,

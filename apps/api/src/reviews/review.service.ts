@@ -240,8 +240,8 @@ export class ReviewService {
         ACHIEVEMENT_KEYS_ON_REVIEW_VOTE_UP,
       );
       await this.maybeNotifyVoteThreshold(reviewId, review.userId, review);
-    } else {
-      await this.xp.revokeBySource("ReviewVote", [voteRow.id]);
+    } else if (review.userId) {
+      await this.xp.revokeBySource(review.userId, "ReviewVote", [voteRow.id]);
     }
 
     const info = await this.voteInfo(reviewId, viewerId);
@@ -281,15 +281,18 @@ export class ReviewService {
     // work with afterwards.
     const existing = await this.prisma.reviewVote.findUnique({
       where: { reviewId_userId: { reviewId, userId: viewerId } },
-      select: { id: true, value: true },
+      select: { id: true, value: true, review: { select: { userId: true } } },
     });
 
     await this.prisma.reviewVote.deleteMany({
       where: { reviewId, userId: viewerId },
     });
 
-    if (existing?.value === ReviewVoteValue.UP) {
-      await this.xp.revokeBySource("ReviewVote", [existing.id]);
+    // Credited to the review's author, not the voter (see vote()).
+    if (existing?.value === ReviewVoteValue.UP && existing.review.userId) {
+      await this.xp.revokeBySource(existing.review.userId, "ReviewVote", [
+        existing.id,
+      ]);
     }
 
     const { score } = await this.voteInfo(reviewId, viewerId);
@@ -398,7 +401,8 @@ export class ReviewService {
     });
     // One call clears WORK_RATED/REVIEW_WRITTEN/REVIEW_DETAILED for every
     // deleted review, regardless of reason (see XpService.revokeBySource).
-    await this.xp.revokeBySource("Review", ids);
+    // Scoped to `userId` like the delete: a foreign id leaves its author's XP.
+    await this.xp.revokeBySource(userId, "Review", ids);
     return count;
   }
 
@@ -437,7 +441,7 @@ export class ReviewService {
     if (count === 0)
       throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.ReviewNotFound);
 
-    if (existing) await this.xp.revokeBySource("Review", [existing.id]);
+    if (existing) await this.xp.revokeBySource(userId, "Review", [existing.id]);
   }
 
   /**
@@ -460,10 +464,9 @@ export class ReviewService {
 
     await db.review.delete({ where: { id } });
 
-    if (tx) {
-      await this.xp.revokeBySource("Review", [id], tx);
-    } else {
-      await this.xp.revokeBySource("Review", [id]);
+    // A detached review (deleted account) has no XP left to take back.
+    if (review.userId) {
+      await this.xp.revokeBySource(review.userId, "Review", [id], tx);
     }
 
     return {
@@ -960,7 +963,8 @@ export class ReviewService {
       await this.prisma.review.deleteMany({
         where: { userId, targetType, targetId },
       });
-      if (existing) await this.xp.revokeBySource("Review", [existing.id]);
+      if (existing)
+        await this.xp.revokeBySource(userId, "Review", [existing.id]);
       return;
     }
 

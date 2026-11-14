@@ -330,7 +330,7 @@ export async function deleteOwnedReplay(
   }
 
   await args.remove();
-  await xp.revokeBySource(args.xpSource, [args.replayId]);
+  await xp.revokeBySource(args.userId, args.xpSource, [args.replayId]);
 }
 
 /**
@@ -418,7 +418,7 @@ export async function syncCycleCompletionXp(
     args.previousStatus === args.completedStatus &&
     args.nextStatus !== args.completedStatus
   ) {
-    await xp.revokeBySource(args.sourceType, [args.cycle.id]);
+    await xp.revokeBySource(args.userId, args.sourceType, [args.cycle.id]);
   }
 
   if (
@@ -442,10 +442,12 @@ export async function syncCycleCompletionXp(
   return true;
 }
 
+/** Revokes `userId`'s XP over every source an entry removal takes with it. */
 export async function revokeEntryXp(
   xp: XpService,
+  userId: string,
   sources: { sourceType: string; ids: string[] }[],
 ): Promise<void> {
   for (const source of sources)
-    await xp.revokeBySource(source.sourceType, source.ids);
+    await xp.revokeBySource(userId, source.sourceType, source.ids);
 }

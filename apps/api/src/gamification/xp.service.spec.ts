@@ -273,42 +273,57 @@ describe("XpService.awardMany", () => {
 });
 
 describe("XpService.revokeBySource", () => {
-  it("stamps every live XpEntry of the given sources revoked, keeping the rows, and resums each affected user's score", async () => {
+  it("stamps the user's live XpEntry rows of the given sources revoked, keeping the rows, and resums their score", async () => {
     const { service, prisma } = makeService();
-    (prisma.xpEntry.findMany as Mock).mockResolvedValue([
-      { userId: "user-1" },
-      { userId: "user-2" },
-    ]);
+    (prisma.xpEntry.updateMany as Mock).mockResolvedValue({ count: 2 });
 
-    await service.revokeBySource("EpisodeWatch", ["w1", "w2"]);
+    await service.revokeBySource("user-1", "EpisodeWatch", ["w1", "w2"]);
 
     expect(prisma.xpEntry.updateMany).toHaveBeenCalledWith({
       where: {
+        userId: "user-1",
         sourceType: "EpisodeWatch",
         sourceId: { in: ["w1", "w2"] },
         revokedAt: null,
       },
       data: { revokedAt: expect.any(Date) },
     });
-    expect(prisma.userScore.upsert).toHaveBeenCalledTimes(2);
+    expect(prisma.userScore.upsert).toHaveBeenCalledOnce();
+    expect(prisma.userScore.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { userId: "user-1" } }),
+    );
   });
 
-  it("leaves revoked entries out of the resummed score", async () => {
+  // A shared catalogue row (SEASON_COMPLETED is anchored to Season.id) is
+  // the source of every user who completed it: revoking one user's gain
+  // must never reach the others' (audit 2026-11-14, BUG-01).
+  it("only ever touches the given user's rows, even for a shared source", async () => {
     const { service, prisma } = makeService();
-    (prisma.xpEntry.findMany as Mock).mockResolvedValue([{ userId: "user-1" }]);
+    (prisma.xpEntry.updateMany as Mock).mockResolvedValue({ count: 1 });
 
-    await service.revokeBySource("EpisodeWatch", ["w1"]);
+    await service.revokeBySource("user-b", "Season", ["season-1"]);
 
+    const [{ where }] = (prisma.xpEntry.updateMany as Mock).mock.calls[0];
+    expect(where.userId).toBe("user-b");
+    expect(prisma.xpEntry.aggregate).toHaveBeenCalledTimes(1);
     expect(prisma.xpEntry.aggregate).toHaveBeenCalledWith({
-      where: { userId: "user-1", revokedAt: null },
+      where: { userId: "user-b", revokedAt: null },
       _sum: { amount: true },
     });
+  });
+
+  it("leaves the score alone when nothing was live to revoke", async () => {
+    const { service, prisma } = makeService();
+
+    await service.revokeBySource("user-1", "EpisodeWatch", ["w1"]);
+
+    expect(prisma.userScore.upsert).not.toHaveBeenCalled();
   });
 
   it("does nothing for an empty source list", async () => {
     const { service, prisma } = makeService();
 
-    await service.revokeBySource("EpisodeWatch", []);
+    await service.revokeBySource("user-1", "EpisodeWatch", []);
 
     expect(prisma.xpEntry.updateMany).not.toHaveBeenCalled();
   });
@@ -317,14 +332,13 @@ describe("XpService.revokeBySource", () => {
     const { service, prisma } = makeService();
     const tx = {
       xpEntry: {
-        findMany: vi.fn().mockResolvedValue([{ userId: "user-1" }]),
-        updateMany: vi.fn(),
+        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
         aggregate: vi.fn().mockResolvedValue({ _sum: { amount: 7 } }),
       },
       userScore: { upsert: vi.fn() },
     } as unknown as Prisma.TransactionClient;
 
-    await service.revokeBySource("Review", ["rev1"], tx);
+    await service.revokeBySource("user-1", "Review", ["rev1"], tx);
 
     expect(tx.xpEntry.updateMany).toHaveBeenCalled();
     expect(tx.userScore.upsert).toHaveBeenCalledWith({
