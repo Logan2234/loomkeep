@@ -1,4 +1,5 @@
 import type { Params } from "nestjs-pino";
+import { redactQuery, redactUrl } from "./log-redaction";
 
 const isDev = process.env.NODE_ENV === "development";
 
@@ -28,14 +29,23 @@ export const loggerOptions: Params = {
       ],
       censor: "[redacted]",
     },
+    // Feed and unsubscribe links carry their secret in `?token=` (a calendar
+    // app can't send a header): out of the URL and the parsed query alike.
+    serializers: {
+      req: (req: Record<string, unknown>) => ({
+        ...req,
+        url: redactUrl(req.url as string | undefined),
+        query: redactQuery(req.query),
+      }),
+    },
     customLogLevel: (_req, res, err) => {
       if (err || res.statusCode >= 500) return "error";
       if (res.statusCode >= 400) return "warn";
       return "info";
     },
     customSuccessMessage: (req, res) =>
-      `${req.method} ${req.url} -> ${res.statusCode}`,
+      `${req.method} ${redactUrl(req.url)} -> ${res.statusCode}`,
     customErrorMessage: (req, res, err) =>
-      `${req.method} ${req.url} -> ${res.statusCode} (${err.message})`,
+      `${req.method} ${redactUrl(req.url)} -> ${res.statusCode} (${err.message})`,
   },
 };

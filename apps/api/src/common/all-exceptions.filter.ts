@@ -8,6 +8,7 @@ import * as Sentry from "@sentry/node";
 import type { FastifyRequest } from "fastify";
 import { Logger } from "nestjs-pino";
 import { AppException } from "./app.exception";
+import { redactUrl } from "./log-redaction";
 import { ValidationException } from "./validation.exception";
 
 const GENERIC_SERVER_ERROR_MESSAGE = "Internal server error";
@@ -62,7 +63,10 @@ export class AllExceptionsFilter {
     const status = this.resolveStatus(exception);
     const request = host.switchToHttp().getRequest<FastifyRequest>();
     const response = host.switchToHttp().getResponse();
-    const context = { method: request?.method, url: request?.url };
+    const context = {
+      method: request?.method,
+      url: redactUrl(request?.url),
+    };
 
     if (status >= 500) {
       this.logger.error({ err: exception, ...context }, "Unhandled exception");

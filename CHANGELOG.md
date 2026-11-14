@@ -133,6 +133,11 @@ history from before it was started.
 - Unticking an episode, or removing a show, no longer takes the "season
   completed" XP away from everyone else who finished that season.
 
+### Security
+
+- Calendar, release and activity feed tokens no longer appear in the API's
+  and Caddy's access logs.
+
 ## 1.13.0 — Home-screen widgets, actionable notifications, and a phone-first app
 
 ### Breaking changes

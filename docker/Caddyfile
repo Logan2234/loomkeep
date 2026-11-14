@@ -32,7 +32,15 @@
 	# every other container's json-file log driver output.
 	log {
 		output stdout
-		format json
+		# Feed and unsubscribe links carry their secret in `?token=` (a
+		# calendar app can't send a header), so it never reaches Loki. Caddy
+		# already leaves Cookie and Authorization out of its logs.
+		format filter {
+			wrap json
+			request>uri query {
+				replace token REDACTED
+			}
+		}
 	}
 
 	header {
