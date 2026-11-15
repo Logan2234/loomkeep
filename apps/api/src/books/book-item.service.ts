@@ -210,7 +210,21 @@ export class BookItemService {
       return existingRef.bookItem;
     }
 
-    const details = await this.providerFor().getStoredDetails(sourceId);
+    let details: ProviderBookDetails;
+
+    try {
+      details = await this.providerFor().getStoredDetails(sourceId);
+    } catch (err) {
+      // A provider outage or rate limit mustn't block tracking a work the
+      // cache already holds: the stale copy serves until the next refresh.
+      if (!existingRef) throw err;
+      this.logger.warn(
+        `Open Library ${sourceId} unavailable, serving the cached copy`,
+        err,
+      );
+      return existingRef.bookItem;
+    }
+
     return this.persistDetails(source, details);
   }
 

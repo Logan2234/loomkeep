@@ -213,7 +213,21 @@ export class GameItemService {
       return existingRef.gameItem;
     }
 
-    const details = await this.providerFor().getDetails(sourceId);
+    let details: ProviderGameDetails;
+
+    try {
+      details = await this.providerFor().getDetails(sourceId);
+    } catch (err) {
+      // A provider outage or rate limit mustn't block tracking a work the
+      // cache already holds: the stale copy serves until the next refresh.
+      if (!existingRef) throw err;
+      this.logger.warn(
+        `IGDB ${sourceId} unavailable, serving the cached copy`,
+        err,
+      );
+      return existingRef.gameItem;
+    }
+
     return this.persistDetails(source, details);
   }
 

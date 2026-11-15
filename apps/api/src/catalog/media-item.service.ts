@@ -418,7 +418,20 @@ export class MediaItemService {
     // getMediaDetail() only skip the MediaItemTranslation lookup for that
     // locale because this call site guarantees it's what's actually stored.
     // Passing `lang` through here would silently break that guarantee.
-    const details = await this.providerFor(source).getDetails(sourceId, type);
+    let details: ProviderMediaDetails;
+
+    try {
+      details = await this.providerFor(source).getDetails(sourceId, type);
+    } catch (err) {
+      // A provider outage or rate limit mustn't block tracking a work the
+      // cache already holds: the stale copy serves until the next refresh.
+      if (!existingRef) throw err;
+      this.logger.warn(
+        `${source} ${sourceId} unavailable, serving the cached copy`,
+        err,
+      );
+      return existingRef.mediaItem;
+    }
 
     if (existingRef) {
       return this.refresh(
