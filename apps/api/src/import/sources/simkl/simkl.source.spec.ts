@@ -1,4 +1,5 @@
 import type { ImportPlan, ImportPlanItem } from "@loomkeep/shared";
+import { ErrorCode } from "@loomkeep/shared";
 import { ConfigService } from "@nestjs/config";
 import { vi } from "vitest";
 import { MediaItemService } from "../../../catalog/media-item.service";
@@ -187,7 +188,7 @@ describe("SimklImportSource (via ImportJobService)", () => {
     const job = await runToEnd(service, "u1", started.id);
 
     expect(job.status).toBe("failed");
-    expect(job.error).toMatch(/token exchange failed/i);
+    expect(job.errorCode).toBe(ErrorCode.ImportSimklConnectionFailed);
   });
 
   it("sends the first web origin as the redirect URI when WEB_ORIGIN lists several", async () => {

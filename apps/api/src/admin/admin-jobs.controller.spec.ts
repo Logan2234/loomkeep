@@ -21,6 +21,8 @@ function makeController() {
     { runScheduled: vi.fn() } as never,
     { scan: vi.fn() } as never,
     { runReminders: vi.fn() } as never,
+    { runPurgeJob: vi.fn() } as never,
+    { runPurgeJob: vi.fn() } as never,
   );
   return { controller, scanAll };
 }

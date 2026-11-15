@@ -65,7 +65,7 @@ function makeService({ smtp = true }: { smtp?: boolean } = {}) {
   } as unknown as ConfigService;
 
   return {
-    service: new InvitationService(prisma, mail, config),
+    service: new InvitationService(prisma, mail, config, {} as never),
     prisma,
     mail,
   };
@@ -316,6 +316,7 @@ describe("InvitationService.claim", () => {
       {} as PrismaService,
       {} as MailService,
       { get: () => undefined } as unknown as ConfigService,
+      {} as never,
     ).claim(client, "inv-1");
 
     expect(client.invitation.updateMany).toHaveBeenCalledWith({

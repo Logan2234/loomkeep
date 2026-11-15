@@ -569,7 +569,7 @@ describe("BookLibraryService — XP wiring", () => {
       stubAchievements(),
       stubEvents(),
       {} as import("../lists/list.service").ListService,
-      undefined,
+      stubSessionXp(),
       sagas,
     );
 
