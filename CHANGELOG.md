@@ -132,6 +132,9 @@ history from before it was started.
   instead of always in French.
 - Unticking an episode, or removing a show, no longer takes the "season
   completed" XP away from everyone else who finished that season.
+- The catalogue refresh no longer stalls behind titles a provider stopped
+  serving, and a refresh where every title failed shows as failed in
+  Admin › Jobs instead of "Nothing to refresh".
 
 ### Security
 

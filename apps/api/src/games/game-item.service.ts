@@ -5,8 +5,12 @@ import { Cron, CronExpression } from "@nestjs/schedule";
 import type { GameItem } from "@prisma/client";
 import { chunk } from "../common/array.util";
 import {
+  assertSomeRefreshed,
   CATALOG_SYNC_TTL_MS,
   isCatalogFresh,
+  notFailedSince,
+  type RefreshOutcome,
+  summarizeRefresh,
 } from "../common/catalog-sync.util";
 import { mapWithConcurrency } from "../common/concurrency.util";
 import { isUniqueViolation } from "../common/prisma-error.util";
@@ -54,33 +58,31 @@ export class GameItemService {
    */
   @Cron(CronExpression.EVERY_6_HOURS, { name: JOB_KEYS.GAMES_REFRESH_STALE })
   async refreshStale(): Promise<number> {
-    return this.jobRuns.record(
+    const { refreshed } = await this.jobRuns.record(
       JOB_KEYS.GAMES_REFRESH_STALE,
-      () => this.runRefreshStale(),
-      (refreshed) =>
-        refreshed > 0
-          ? `${refreshed} game item(s) refreshed`
-          : "Nothing to refresh",
+      async () => assertSomeRefreshed(await this.runRefreshStale(), "game"),
+      summarizeRefresh("game item"),
     );
+    return refreshed;
   }
 
-  private async runRefreshStale(): Promise<number> {
+  private async runRefreshStale(): Promise<RefreshOutcome> {
     const staleBefore = new Date(Date.now() - CATALOG_SYNC_TTL_MS);
     const items = await this.prisma.gameItem.findMany({
       where: {
         lastSyncedAt: { lt: staleBefore },
         entries: { some: { status: { not: "DROPPED" } } },
+        ...notFailedSince(staleBefore),
       },
       orderBy: { lastSyncedAt: "asc" },
       take: MAX_REFRESHED_PER_RUN,
       include: { externalIds: true },
     });
-    const sourceIds = items.flatMap(
-      (item) =>
-        item.externalIds.find((ext) => ext.source === item.canonicalSource)
-          ?.externalId ?? [],
-    );
-    if (sourceIds.length === 0) return 0;
+    if (items.length === 0) return { refreshed: 0, failed: 0 };
+    const sourceIdOf = (item: (typeof items)[number]) =>
+      item.externalIds.find((ext) => ext.source === item.canonicalSource)
+        ?.externalId;
+    const sourceIds = items.flatMap((item) => sourceIdOf(item) ?? []);
 
     // Batched rather than upsertFromSource per game: two IGDB queries per
     // batch instead of two per game, under a 4 requests/second cap.
@@ -96,6 +98,8 @@ export class GameItemService {
       }
     }
 
+    // Every batch failing is IGDB being unreachable, not these games: the
+    // run fails and nothing is set aside.
     if (details.length === 0 && lastError) throw lastError;
 
     const outcomes = await mapWithConcurrency(
@@ -125,7 +129,25 @@ export class GameItemService {
       },
     );
 
-    return outcomes.filter(Boolean).length;
+    // A game IGDB no longer returns (removed or merged) failed as much as
+    // one whose batch or save did.
+    const persisted = new Set(
+      details.flatMap((detail, i) =>
+        outcomes[i] ? detail.summary.sourceId : [],
+      ),
+    );
+    const failedIds = items.flatMap((item) => {
+      const sourceId = sourceIdOf(item);
+      return sourceId && persisted.has(sourceId) ? [] : item.id;
+    });
+    await this.prisma.gameItem.updateMany({
+      where: { id: { in: failedIds } },
+      data: { syncFailedAt: new Date() },
+    });
+    return {
+      refreshed: items.length - failedIds.length,
+      failed: failedIds.length,
+    };
   }
 
   providerFor(): GameCatalogProvider {
@@ -310,6 +332,7 @@ export class GameItemService {
       timeToBeatSubmissions: details.timeToBeat?.submissions ?? null,
       isAdult: details.summary.isAdult,
       lastSyncedAt: new Date(),
+      syncFailedAt: null,
     };
   }
 }
