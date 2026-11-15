@@ -144,6 +144,8 @@ history from before it was started.
   and Caddy's access logs.
 - A session caught reusing a stolen refresh token is cut off at once,
   including its live connection, instead of up to 15 minutes later.
+- A failed import no longer sends the server's internal error text to the
+  browser; it stays in the logs and the import history.
 
 ## 1.13.0 — Home-screen widgets, actionable notifications, and a phone-first app
 

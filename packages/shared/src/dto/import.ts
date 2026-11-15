@@ -205,9 +205,11 @@ export interface ImportJobDto {
   plan: ImportPlan | null;
   /** Populated once a commit job completes. */
   report: ImportReport | null;
-  /** Diagnostic text, not a user-facing message. */
-  error: string | null;
-  /** Stable error code, including failures of background work. */
+  /**
+   * Stable error code, including failures of background work. The raw
+   * failure text stays server-side (logs, import history): it can name
+   * tables, columns or internal URLs.
+   */
   errorCode?: ErrorCode | null;
 }
 

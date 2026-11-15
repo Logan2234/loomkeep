@@ -679,7 +679,7 @@ function toDto(job: JobRecord): ImportJobDto {
     progress: job.progress,
     plan: job.plan,
     report: job.report,
-    error: job.error,
+    // Not `job.error`: that text is for the logs and the import history.
     errorCode: job.errorCode,
   };
 }

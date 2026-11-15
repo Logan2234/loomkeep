@@ -414,6 +414,33 @@ describe("ImportJobService.commit — IMPORT_COMPLETED", () => {
     expect(xp.award).not.toHaveBeenCalled();
   });
 
+  // The raw failure text can name tables, columns or internal URLs: it is
+  // kept for the import history, never sent to the browser (audit
+  // 2026-11-14, SEC-06).
+  it("keeps the raw failure text out of the job it returns", async () => {
+    const { service, importRunCreate } = makeCommitService(async () => {
+      throw new Error('relation "LibraryEntry" does not exist');
+    });
+    seedAnalyzedJob(service, "analyzed-1");
+
+    const job = service.commit("u1", "tvtime", "analyzed-1", {
+      include: [],
+    } as never);
+    await vi.waitFor(() => expect(importRunCreate).toHaveBeenCalled());
+
+    const returned = service.getJob("u1", job.id);
+    expect(returned.status).toBe("failed");
+    expect(returned.errorCode).toBe(ErrorCode.InternalError);
+    expect(JSON.stringify(returned)).not.toContain("LibraryEntry");
+    expect(importRunCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          error: 'relation "LibraryEntry" does not exist',
+        }),
+      }),
+    );
+  });
+
   it("pushes a final live progress update to the job's owner once it settles", async () => {
     const { service, events } = makeCommitService(async () => ({
       overwrite: false,

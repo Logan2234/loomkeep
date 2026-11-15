@@ -229,17 +229,12 @@ describe("import presentation", () => {
     const tile = { label: "Libellé hérité", value: 1, sub: "Détail hérité" };
     expect(importReportLabel(tile)).toBe(m.common_results());
     expect(importReportSubtitle(tile)).toBeNull();
-    const job = {
-      error: "Raw provider diagnostic",
-      errorCode: ErrorCode.ImportSteamLibraryPrivate,
-    };
-    expect(importJobError(job)).toBe(m.apierr_import_steam_library_private());
-    expect(importJobError({ error: "Texte hérité" })).toBe(
-      m.import_processing_failed(),
-    );
+    expect(
+      importJobError({ errorCode: ErrorCode.ImportSteamLibraryPrivate }),
+    ).toBe(m.apierr_import_steam_library_private());
+    expect(importJobError({})).toBe(m.import_processing_failed());
     expect(
       importJobError({
-        error: null,
         errorCode: "future.code" as ImportJobDto["errorCode"],
       }),
     ).toBe(m.apierr_status_500());

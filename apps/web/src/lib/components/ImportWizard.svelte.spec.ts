@@ -69,7 +69,6 @@ const job = (id: string, extra: Partial<ImportJobDto>): ImportJobDto => ({
   progress: { done: 2, total: 2 },
   plan: null,
   report: null,
-  error: null,
   ...extra,
 });
 
