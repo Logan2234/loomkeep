@@ -135,6 +135,8 @@ history from before it was started.
 - The catalogue refresh no longer stalls behind titles a provider stopped
   serving, and a refresh where every title failed shows as failed in
   Admin › Jobs instead of "Nothing to refresh".
+- A dropped connection, a busy server or an update in progress no longer
+  signs you out: only an expired or revoked session does.
 
 ### Security
 

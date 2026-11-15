@@ -81,6 +81,8 @@ export async function request<T>(
     !retried &&
     (await isAccessTokenProblem(response))
   ) {
+    // Throws, session kept, when the refresh itself couldn't get through
+    // (offline, a deploy's 502, a 429): see refreshOnce().
     const refreshed = await tryRefresh();
 
     if (refreshed) {
@@ -215,6 +217,9 @@ let refreshInFlight: Promise<boolean> | null = null;
  * connecting access token's own expiry is reached, and unlike a REST call
  * there's no 401 to react to — sharing this same mutex is what keeps that
  * case from racing an ordinary request's own refresh.
+ *
+ * Resolves `true` once refreshed and `false` when the session is gone;
+ * rejects when the refresh couldn't get an answer about the session at all.
  */
 export function tryRefresh(): Promise<boolean> {
   refreshInFlight ??= doRefresh().finally(() => {
@@ -245,11 +250,18 @@ async function refreshOnce(): Promise<boolean> {
     );
     return true;
   } catch (error) {
+    if (!(error instanceof ApiError)) throw error;
+
     // Another tab rotated the token a moment ago: its new cookies are this
     // tab's too, so the session is fine.
-    return (
-      error instanceof ApiError &&
-      error.code === ErrorCode.AuthRefreshSuperseded
-    );
+    if (error.code === ErrorCode.AuthRefreshSuperseded) return true;
+
+    // Only the API saying no about the session (an expired, revoked or
+    // replayed token, a suspended account) ends it. Offline, a deploy's 502
+    // or a 429 says nothing about it: signing out on those logged people out
+    // of a session that was still valid.
+    if (error.status === 401 || error.status === 403) return false;
+
+    throw error;
   }
 }

@@ -150,6 +150,29 @@ describe("realtime socket", () => {
     expect(authMock.clear).not.toHaveBeenCalled();
   });
 
+  it("tries again later, signed in, when the refresh can't reach the API", async () => {
+    server.use(
+      http.post(apiUrl("/auth/refresh"), () =>
+        HttpResponse.json({ statusCode: 502 }, { status: 502 }),
+      ),
+    );
+    const retry = vi.spyOn(globalThis, "setTimeout");
+    vi.resetModules();
+    await import("./socket");
+    const disconnectHandler = fakeSocket.on.mock.calls.find(
+      ([event]) => event === "disconnect",
+    )?.[1] as (reason: string) => void;
+
+    disconnectHandler("io server disconnect");
+    await vi.waitFor(() =>
+      expect(retry).toHaveBeenCalledWith(expect.any(Function), 30_000),
+    );
+
+    expect(authMock.clear).not.toHaveBeenCalled();
+    expect(fakeSocket.connect).not.toHaveBeenCalled();
+    retry.mockRestore();
+  });
+
   it("logs out instead of retrying forever when the refresh token is also dead", async () => {
     serveRefresh(false);
     vi.resetModules();
