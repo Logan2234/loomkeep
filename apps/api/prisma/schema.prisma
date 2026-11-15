@@ -2656,6 +2656,10 @@ model XpEntry {
   @@index([userId, createdAt])
   @@index([userId, revokedAt])
   @@index([reason, id])
+  // XpService.revokeBySource: one user's live rows of a few sources, on
+  // every unwatch, deletion or vote change. The partial unique index has
+  // `reason` between `userId` and the source, so it can't serve this.
+  @@index([userId, sourceType, sourceId])
 }
 
 // Materialised sum of the user's XpEntry rows, kept only for cheap

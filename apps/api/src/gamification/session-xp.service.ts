@@ -51,7 +51,9 @@ export class SessionXpService {
     );
 
     if (!remains) {
-      await this.xp.revokeBySource("SESSION_DAY", [this.sourceId(userId, day)]);
+      await this.xp.revokeBySource(userId, "SESSION_DAY", [
+        this.sourceId(userId, day),
+      ]);
     }
   }
 

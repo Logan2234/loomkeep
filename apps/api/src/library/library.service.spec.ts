@@ -419,7 +419,10 @@ describe("LibraryService.deleteEntry", () => {
     await expect(
       service.deleteEntry("user-1", "entry-2"),
     ).resolves.toBeUndefined();
-    expect(xp.revokeBySource).toHaveBeenCalledWith("MovieReplay", ["r1", "r2"]);
+    expect(xp.revokeBySource).toHaveBeenCalledWith("user-1", "MovieReplay", [
+      "r1",
+      "r2",
+    ]);
   });
 });
 
@@ -661,7 +664,9 @@ describe("LibraryService — XP wiring", () => {
     );
 
     await service.deleteReplay("user-1", "replay-1");
-    expect(xp.revokeBySource).toHaveBeenCalledWith("MovieReplay", ["replay-1"]);
+    expect(xp.revokeBySource).toHaveBeenCalledWith("user-1", "MovieReplay", [
+      "replay-1",
+    ]);
   });
 
   it("awards SEASON_COMPLETED once every aired episode of the season has been watched", async () => {
@@ -973,7 +978,7 @@ describe("LibraryService — bulk episode watches", () => {
     expect(prisma.episodeWatch.deleteMany).toHaveBeenCalledWith({
       where: { id: { in: ["w1", "w2"] } },
     });
-    expect(xp.revokeBySource).toHaveBeenCalledWith("EpisodeWatch", [
+    expect(xp.revokeBySource).toHaveBeenCalledWith("user-1", "EpisodeWatch", [
       "w1",
       "w2",
     ]);

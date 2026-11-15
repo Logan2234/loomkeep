@@ -1,12 +1,22 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { apiUrl, server } from "#lib/test/msw.js";
+import { http, HttpResponse } from "msw";
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 
-const { plugin, getToken, appListeners } = vi.hoisted(() => ({
+const { plugin, appListeners } = vi.hoisted(() => ({
   plugin: {
     connect: vi.fn(async () => undefined),
     disconnect: vi.fn(async () => undefined),
     refresh: vi.fn(async () => undefined),
   },
-  getToken: vi.fn(async () => ({ token: "widget-token" })),
   appListeners: [] as ((state: { isActive: boolean }) => void)[],
 }));
 vi.mock("@capacitor/core", () => ({
@@ -24,14 +34,19 @@ vi.mock("@capacitor/app", () => ({
     },
   },
 }));
-vi.mock("#lib/api/notifications.js", () => ({
-  getHomeScreenWidgetToken: getToken,
-}));
+beforeAll(() => server.listen({ onUnhandledFrame: "error" }));
+afterEach(() => server.resetHandlers());
+afterAll(() => server.close());
 
 beforeEach(() => {
   vi.resetModules();
   vi.clearAllMocks();
   appListeners.length = 0;
+  server.use(
+    http.post(apiUrl("/home-screen-widgets/token"), () =>
+      HttpResponse.json({ token: "widget-token" }),
+    ),
+  );
 });
 
 describe("home-screen widgets", () => {

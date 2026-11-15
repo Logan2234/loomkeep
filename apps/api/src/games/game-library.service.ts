@@ -741,7 +741,7 @@ export class GameLibraryService {
       this.prisma.gameEntry.delete({ where: { id: entryId } }),
     ]);
 
-    await revokeEntryXp(this.xp, [
+    await revokeEntryXp(this.xp, userId, [
       { sourceType: "Entry", ids: [entryId] },
       {
         sourceType: "GamePlaythrough",

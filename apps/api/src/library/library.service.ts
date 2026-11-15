@@ -936,6 +936,7 @@ export class LibraryService {
     ]);
 
     await this.xp.revokeBySource(
+      userId,
       "EpisodeWatch",
       watches.map((w) => w.id),
     );
@@ -943,8 +944,8 @@ export class LibraryService {
     // "LibraryEntry") in one call — intentional: deleting a whole entry
     // must wipe every reason anchored to it, unlike unwatching a single
     // season/episode, which only ever revokes its own reason.
-    await this.xp.revokeBySource("LibraryEntry", [entryId]);
-    await revokeEntryXp(this.xp, [
+    await this.xp.revokeBySource(userId, "LibraryEntry", [entryId]);
+    await revokeEntryXp(this.xp, userId, [
       { sourceType: "Entry", ids: [entryId] },
       { sourceType: "Season", ids: seasons.map((s) => s.id) },
       { sourceType: "MovieReplay", ids: replays.map((r) => r.id) },
@@ -1287,6 +1288,7 @@ export class LibraryService {
 
     await this.prisma.episodeWatch.deleteMany({ where });
     await this.xp.revokeBySource(
+      userId,
       "EpisodeWatch",
       watches.map((w) => w.id),
     );
@@ -1472,7 +1474,7 @@ export class LibraryService {
           seasonCompletedXp(episodes),
         );
       } else {
-        await this.xp.revokeBySource("Season", [season.id]);
+        await this.xp.revokeBySource(userId, "Season", [season.id]);
       }
     }
 
@@ -1501,7 +1503,7 @@ export class LibraryService {
         );
         await this.awardSagaIfCompleted(userId, entry.mediaItemId);
       } else {
-        await this.xp.revokeBySource("LibraryEntry", [entry.id]);
+        await this.xp.revokeBySource(userId, "LibraryEntry", [entry.id]);
       }
     }
   }
@@ -1681,7 +1683,7 @@ export class LibraryService {
     await this.assertMediaOwnership(userId, latest.episode.season.mediaItemId);
 
     await this.prisma.episodeWatch.delete({ where: { id: latest.id } });
-    await this.xp.revokeBySource("EpisodeWatch", [latest.id]);
+    await this.xp.revokeBySource(userId, "EpisodeWatch", [latest.id]);
     await this.syncSeasonAndSeriesXp(userId, [latest.episode.seasonId]);
     await this.syncFinishedAt(
       userId,
@@ -1746,6 +1748,7 @@ export class LibraryService {
         where: { id: { in: watches.map((watch) => watch.id) } },
       });
       await this.xp.revokeBySource(
+        userId,
         "EpisodeWatch",
         watches.map((watch) => watch.id),
       );
@@ -1869,6 +1872,7 @@ export class LibraryService {
     ]);
 
     await this.xp.revokeBySource(
+      userId,
       "EpisodeWatch",
       toDelete.map((watch) => watch.id),
     );

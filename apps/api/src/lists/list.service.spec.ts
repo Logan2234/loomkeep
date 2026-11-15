@@ -1185,6 +1185,6 @@ describe("ListService — XP wiring", () => {
     expect(xp.award).toHaveBeenCalledWith("u1", "LIST_CREATED", "l1");
 
     await svc.remove("u1", "l1");
-    expect(xp.revokeBySource).toHaveBeenCalledWith("List", ["l1"]);
+    expect(xp.revokeBySource).toHaveBeenCalledWith("u1", "List", ["l1"]);
   });
 });

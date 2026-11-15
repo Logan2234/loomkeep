@@ -253,12 +253,19 @@ export class XpService {
   }
 
   /**
-   * Reverses every XpEntry anchored to one of `sourceIds` (of `sourceType`)
-   * — the entry point for every cancellation path (unwatch, delete, …).
-   * Stamps them revoked rather than deleting them, so the history can show
-   * what was taken back, and resums `UserScore` for every user affected.
+   * Reverses `userId`'s XpEntry rows anchored to one of `sourceIds` (of
+   * `sourceType`) — the entry point for every cancellation path (unwatch,
+   * delete, …). Stamps them revoked rather than deleting them, so the history
+   * can show what was taken back, and resums that user's `UserScore`.
+   *
+   * `userId` is whoever the XP was credited to, which isn't always the caller:
+   * a review vote or a comment reaction credits the author. It is never
+   * optional, because some sources are shared catalogue rows — SEASON_COMPLETED
+   * is anchored to `Season.id` — and a filter on the source alone revoked the
+   * gain of every user who had earned it from that row.
    */
   async revokeBySource(
+    userId: string,
     sourceType: string,
     sourceIds: string[],
     tx?: Prisma.TransactionClient,
@@ -266,16 +273,17 @@ export class XpService {
     if (sourceIds.length === 0) return;
     const db = tx ?? this.prisma;
 
-    const where = { sourceType, sourceId: { in: sourceIds }, revokedAt: null };
-    const affected = await db.xpEntry.findMany({
-      where,
-      select: { userId: true },
-      distinct: ["userId"],
+    const { count } = await db.xpEntry.updateMany({
+      where: {
+        userId,
+        sourceType,
+        sourceId: { in: sourceIds },
+        revokedAt: null,
+      },
+      data: { revokedAt: new Date() },
     });
 
-    await db.xpEntry.updateMany({ where, data: { revokedAt: new Date() } });
-
-    await Promise.all(affected.map((a) => this.recomputeScore(a.userId, tx)));
+    if (count > 0) await this.recomputeScore(userId, tx);
   }
 
   /**

@@ -607,7 +607,7 @@ export class CommentService {
       throw new AppException(HttpStatus.FORBIDDEN, ErrorCode.CommentForbidden);
 
     await this.softDelete(id, false);
-    await this.xp.revokeBySource("Comment", [id]);
+    await this.xp.revokeBySource(authorId, "Comment", [id]);
     this.events.emitToCommentsThread(
       existing.targetType,
       existing.targetId,
@@ -636,10 +636,9 @@ export class CommentService {
 
     await this.softDelete(id, true, tx);
 
-    if (tx) {
-      await this.xp.revokeBySource("Comment", [id], tx);
-    } else {
-      await this.xp.revokeBySource("Comment", [id]);
+    // An anonymised author (deleted account) has no XP left to take back.
+    if (existing.authorId) {
+      await this.xp.revokeBySource(existing.authorId, "Comment", [id], tx);
     }
 
     if (!tx) this.publishAdminRemoval(existing.targetType, existing.targetId);
@@ -758,7 +757,13 @@ export class CommentService {
     });
 
     if (existing) {
-      await this.xp.revokeBySource("CommentReaction", [existing.id]);
+      // Credited to the comment's author, not the reactor (see react()).
+      if (comment.authorId) {
+        await this.xp.revokeBySource(comment.authorId, "CommentReaction", [
+          existing.id,
+        ]);
+      }
+
       this.events.emitToCommentsThread(
         existing.comment.targetType,
         existing.comment.targetId,

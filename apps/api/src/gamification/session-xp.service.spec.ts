@@ -43,7 +43,7 @@ describe("SessionXpService", () => {
       new Date("2026-09-26T14:00:00.000Z"),
     );
 
-    expect(xp.revokeBySource).toHaveBeenCalledWith("SESSION_DAY", [
+    expect(xp.revokeBySource).toHaveBeenCalledWith("user-1", "SESSION_DAY", [
       "user-1:2026-09-26",
     ]);
   });

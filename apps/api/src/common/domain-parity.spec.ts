@@ -329,12 +329,27 @@ describe.each(Object.keys(DELETE_ENTRY) as CacheDomain[])(
 
       const revoked = new Set(
         xp.revokeBySource.mock.calls
-          .filter(([, ids]) => (ids as string[]).length > 0)
-          .map(([sourceType]) => sourceType),
+          .filter(([, , ids]) => (ids as string[]).length > 0)
+          .map(([, sourceType]) => sourceType),
       );
       expect([...revoked].sort()).toEqual(
         expect.arrayContaining([...ENTRY_XP_SOURCES[domain]].sort()),
       );
+    });
+
+    // Some sources are shared catalogue rows (a season), so a revocation
+    // that isn't scoped to the remover takes the XP of everyone who earned
+    // it from that row (audit 2026-11-14, BUG-01).
+    it("revokes only the remover's own XP", async () => {
+      const { run, xp } = deleteEntry();
+
+      await run();
+
+      expect(xp.revokeBySource).toHaveBeenCalled();
+
+      for (const [userId] of xp.revokeBySource.mock.calls) {
+        expect(userId).toBe(USER);
+      }
     });
 
     if (domain === "GAMES" || domain === "BOOKS") {

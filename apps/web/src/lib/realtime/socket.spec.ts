@@ -1,6 +1,18 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { apiUrl, server } from "#lib/test/msw.js";
+import { ErrorCode } from "@loomkeep/shared";
+import { http, HttpResponse } from "msw";
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 
-const { fakeSocket, ioMock, tryRefreshMock, authMock } = vi.hoisted(() => {
+const { fakeSocket, ioMock, authMock } = vi.hoisted(() => {
   const fakeSocket = {
     on: vi.fn(),
     off: vi.fn(),
@@ -12,17 +24,33 @@ const { fakeSocket, ioMock, tryRefreshMock, authMock } = vi.hoisted(() => {
   return {
     fakeSocket,
     ioMock: vi.fn(() => fakeSocket),
-    tryRefreshMock: vi.fn(),
     authMock: { clear: vi.fn() },
   };
 });
 
 vi.mock("socket.io-client", () => ({ io: ioMock }));
-vi.mock("#lib/api/core.js", () => ({
-  API_URL: "http://localhost:3000/api",
-  tryRefresh: tryRefreshMock,
-}));
 vi.mock("#lib/auth.svelte.js", () => ({ auth: authMock }));
+
+beforeAll(() => server.listen({ onUnhandledFrame: "error" }));
+afterEach(() => server.resetHandlers());
+afterAll(() => server.close());
+
+/** Answers the session refresh the socket asks for, counting the calls. */
+function serveRefresh(succeeds: boolean) {
+  const calls = { count: 0 };
+  server.use(
+    http.post(apiUrl("/auth/refresh"), () => {
+      calls.count++;
+      return succeeds
+        ? new HttpResponse(null, { status: 204 })
+        : HttpResponse.json(
+            { statusCode: 401, code: ErrorCode.AuthInvalidRefreshToken },
+            { status: 401 },
+          );
+    }),
+  );
+  return calls;
+}
 
 describe("realtime socket", () => {
   beforeEach(() => {
@@ -90,6 +118,7 @@ describe("realtime socket", () => {
   });
 
   it("does nothing on our own disconnect (logout) — no refresh, no reconnect", async () => {
+    const refresh = serveRefresh(true);
     vi.resetModules();
     await import("./socket");
     const disconnectHandler = fakeSocket.on.mock.calls.find(
@@ -97,14 +126,15 @@ describe("realtime socket", () => {
     )?.[1] as (reason: string) => void;
 
     disconnectHandler("io client disconnect");
+    await new Promise((r) => setTimeout(r, 0));
 
-    expect(tryRefreshMock).not.toHaveBeenCalled();
+    expect(refresh.count).toBe(0);
   });
 
   it("refreshes and reconnects on an unexpected disconnect (e.g. token expiry) once the refresh succeeds", async () => {
     // socket.io does NOT auto-reconnect after a server-initiated disconnect —
     // this reconnect() call is the only thing that brings the tab back.
-    tryRefreshMock.mockResolvedValue(true);
+    const refresh = serveRefresh(true);
     vi.resetModules();
     await import("./socket");
     const disconnectHandler = fakeSocket.on.mock.calls.find(
@@ -115,13 +145,13 @@ describe("realtime socket", () => {
     disconnectHandler("io server disconnect");
     await new Promise((r) => setTimeout(r, 0));
 
-    expect(tryRefreshMock).toHaveBeenCalledTimes(1);
+    expect(refresh.count).toBe(1);
     expect(fakeSocket.connect).toHaveBeenCalledTimes(1);
     expect(authMock.clear).not.toHaveBeenCalled();
   });
 
   it("logs out instead of retrying forever when the refresh token is also dead", async () => {
-    tryRefreshMock.mockResolvedValue(false);
+    serveRefresh(false);
     vi.resetModules();
     await import("./socket");
     const disconnectHandler = fakeSocket.on.mock.calls.find(

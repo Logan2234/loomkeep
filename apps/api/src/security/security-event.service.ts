@@ -182,7 +182,9 @@ export class SecurityEventService {
    * prompt dismissed (`webauthn/login-options` is public, so anyone can
    * create these), a reset or verification link never clicked, an email
    * change never confirmed. Each flow deletes its own row on success, but
-   * nothing else ever did once it expired, so they piled up for good.
+   * nothing else ever did once it expired, so they piled up for good. Also
+   * the consumed refresh tokens kept for reuse detection, which only matter
+   * until the session they belonged to would have expired.
    */
   private async purgeExpiredCredentials(now: Date): Promise<void> {
     const expired = { expiresAt: { lt: now } };
@@ -191,6 +193,7 @@ export class SecurityEventService {
       this.prisma.webauthnChallenge.deleteMany({ where: expired }),
       this.prisma.userToken.deleteMany({ where: expired }),
       this.prisma.emailChangeRequest.deleteMany({ where: expired }),
+      this.prisma.consumedRefreshToken.deleteMany({ where: expired }),
     ]);
     const total = counts.reduce((sum, { count }) => sum + count, 0);
 

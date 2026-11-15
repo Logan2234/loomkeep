@@ -48,9 +48,11 @@ wording change or a rename.
   Library, MusicBrainz — one provider per domain) are queried live. A
   `MediaItem`/`GameItem`/`BookItem`/`MusicItem` is created only when a user
   first tracks it, through its domain's `upsertFromSource()`. Refreshes
-  (24h TTL) never delete seasons/episodes, so `EpisodeWatch` rows keep a
-  valid target. Behaviour the four domains must share gets a case in
-  `apps/api/src/common/domain-parity.spec.ts`.
+  (24h TTL, 7 days for an ended series) never delete seasons/episodes, so
+  `EpisodeWatch` rows keep a valid target. Media, games and books also
+  re-sync in a 6-hourly `refreshStale` job; music has none, an album only
+  refreshes when someone tracks it again. Behaviour the four domains must
+  share gets a case in `apps/api/src/common/domain-parity.spec.ts`.
 - TMDB movie/TV ids are separate namespaces: every call carries a
   `MediaType`. TVDB ids are captured from TMDB because the TV Time import
   reconciles through them.
@@ -83,11 +85,17 @@ wording change or a rename.
   `InstanceSettings` table (Admin › Settings, `instanceSetting()`); an env
   var of the same name wins and locks it.
 - Premium is a seam, not sold yet: call
-  `EntitlementService.isEffectivelyPremium()`, never `hasPremium()`.
+  `EntitlementService.isEffectivelyPremium()` (`true` for everyone while
+  the `premium-features` flag is off), never `hasPremium()`. Two callers need the
+  raw plan and keep `hasPremium()`: `GET /users/me/entitlement` (the web's
+  lock state) and `ApiRateLimitService.limitFor` (the API quota must not
+  rise for everyone before premium ships).
 - A whole premium feature lives in `ee/` (`apps/api/src/ee`,
   `apps/web/src/lib/ee`) under [LICENSE-EE](LICENSE-EE). The core never
   imports `ee/` (ESLint enforces it), every `ee/` controller carries
-  `EeLicenseGuard`, web screens use `useEeLock()`.
+  `EeLicenseGuard` except the public `EeStatusController` (`GET /ee/status`,
+  which is how the web learns the instance is unlicensed), web screens use
+  `useEeLock()`.
 
 ### Web
 
