@@ -30,9 +30,34 @@ absorbs attacks before they reach it. In Cloudflare's dashboard:
 
 </Steps>
 
-Nothing to change on Loomkeep's side: with the
-[HTTPS override](/self-hosting/https/), the API already trusts the one proxy
-in front of it, Caddy, which passes on visitors' real addresses.
+Then tell Loomkeep about it. Once proxied, every visitor reaches your server
+from a Cloudflare address, not their own. Left as is, the API counts sign-in
+attempts and requests per Cloudflare server: everyone routed through the
+same one shares the same limits (sign-ins start failing with "too many
+requests" at busy times, and one person hammering the login blocks the
+others), and the security log and "new device" emails show Cloudflare's
+addresses.
+
+Add the Cloudflare override after the [HTTPS override](/self-hosting/https/),
+in `COMPOSE_FILE` or on the command line:
+
+```sh
+docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.cloudflare.yml up -d
+```
+
+Caddy then trusts Cloudflare's published address ranges, and those only,
+to pass on the visitor's address. A request that doesn't come through
+Cloudflare is still judged on its own address, so no one can pretend to be
+someone else by sending the header themselves.
+
+<Aside type="caution">
+Only with the orange cloud on. With plain DNS (grey cloud) there is no
+Cloudflare server in between, and the API would read the wrong address.
+</Aside>
+
+Cloudflare rarely changes its ranges; when it does, update
+`docker/cloudflare/cloudflare.global.caddy` from
+[cloudflare.com/ips](https://www.cloudflare.com/ips/).
 
 Keep your provider's firewall limited to ports 22, 80 and 443, not only the
 server's own: Docker can open ports around `ufw`.

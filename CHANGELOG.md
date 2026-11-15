@@ -49,6 +49,10 @@ history from before it was started.
   clean-ups, with a run button and an optional Healthchecks.io variable each
   (`HEALTHCHECKS_SECURITY_PURGE_URL`, `HEALTHCHECKS_INVITATIONS_PURGE_URL`,
   `HEALTHCHECKS_NOTIFICATIONS_PURGE_URL`).
+- Self-hosting behind Cloudflare's proxy: a `docker-compose.cloudflare.yml`
+  override makes the API see visitors' real addresses, so they no longer
+  share Cloudflare's sign-in and request limits. See "Behind Cloudflare" in
+  the docs.
 
 ### Changed
 

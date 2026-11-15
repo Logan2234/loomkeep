@@ -125,7 +125,12 @@ jobs:
           mounts=(-v "$PWD/docker/Caddyfile:/etc/caddy/Caddyfile:ro")
           while IFS= read -r site; do
             mounts+=(-v "$PWD/$site:/etc/caddy/sites-enabled/$(basename "$site"):ro")
-          done < <(find docker -name '*.caddy')
+          done < <(find docker -name '*.caddy' ! -name '*.global.caddy')
+          # Global options (docker-compose.cloudflare.yml's trusted proxies)
+          # go into the Caddyfile's global block, not beside the sites.
+          while IFS= read -r global; do
+            mounts+=(-v "$PWD/$global:/etc/caddy/global.d/$(basename "$global"):ro")
+          done < <(find docker -name '*.global.caddy')
           # The production image, so a Dependabot bump of it is validated too.
           caddy_image=$(grep -oP 'image: \Kcaddy:\S+' docker/docker-compose.prod.yml)
           docker run --rm "${mounts[@]}" \
