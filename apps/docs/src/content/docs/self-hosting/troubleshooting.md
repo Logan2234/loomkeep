@@ -21,8 +21,8 @@ instance runs.
 is empty: see [Configuration](/self-hosting/configuration/#required).
 
 **The API stops right after starting: "Missing required environment
-variable".** Same cause, named in the message. With the HTTPS override,
-`MFA_ENCRYPTION_KEY` is required too.
+variable".** Same cause, named in the message. Once `WEB_ORIGIN` is
+https, `MFA_ENCRYPTION_KEY` is required too.
 
 **No certificate, the domain doesn't answer over HTTPS.** Check that DNS
 points at the server (`dig +short <domain>`) and that ports 80 and 443 are

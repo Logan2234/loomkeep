@@ -19,7 +19,7 @@ import { sinceDaysAgo, utcDateKey } from "../../common/date.util";
 import { canonicalExternalId } from "../../common/external-id.util";
 import { primaryWebOrigin } from "../../common/web-origin.util";
 import { EntitlementService } from "../../entitlements/entitlement.service";
-import { LibraryService } from "../../library/library.service";
+import { CalendarService } from "../../library/calendar.service";
 import { notificationCopy } from "../../notifications/notification-copy";
 import { PrismaService } from "../../prisma/prisma.service";
 import type { ReleaseFeed, ReleaseFeedEntry } from "./feed.util";
@@ -59,7 +59,7 @@ export class CalendarFeedService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly entitlements: EntitlementService,
-    private readonly library: LibraryService,
+    private readonly calendar: CalendarService,
     private readonly config: ConfigService,
   ) {}
 
@@ -67,7 +67,7 @@ export class CalendarFeedService {
   async getCalendarIcs(token: string): Promise<string | null> {
     const user = await this.premiumUserForToken(token);
     return user
-      ? buildCalendarIcs(await this.library.getCalendar(user.id))
+      ? buildCalendarIcs(await this.calendar.getCalendar(user.id))
       : null;
   }
 

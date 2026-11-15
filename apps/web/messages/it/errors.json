@@ -11,6 +11,7 @@
   "apierr_auth_invalid_credentials": "Credenziali errate.",
   "apierr_auth_invalid_mfa_challenge": "Questa sessione di verifica non è valida o è scaduta. Accedi di nuovo.",
   "apierr_auth_mfa_too_many_attempts": "Troppi tentativi, accedi di nuovo.",
+  "apierr_auth_mfa_account_locked": "Troppi codici errati per questo account. Aspetta 15 minuti, poi accedi di nuovo.",
   "apierr_auth_mfa_invalid_code": "Codice non valido.",
   "apierr_auth_invalid_refresh_token": "La tua sessione è scaduta, accedi di nuovo.",
   "apierr_auth_refresh_superseded": "La tua sessione è appena stata rinnovata in un’altra scheda, riprova.",

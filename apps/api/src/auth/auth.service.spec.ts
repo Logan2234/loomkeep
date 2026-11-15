@@ -92,6 +92,10 @@ function makeService(adminEmail?: string, registrationEnabled?: string) {
       create: vi.fn(),
       update: vi.fn(),
     },
+    securityEvent: {
+      // The account-wide MFA lock reads the recent MFA_CHALLENGE_LOCKED trail.
+      findMany: vi.fn().mockResolvedValue([]),
+    },
     mfaLoginChallenge: {
       create: vi.fn(),
       findUnique: vi.fn(),
@@ -1576,6 +1580,91 @@ describe("AuthService.resendMfaEmailCode", () => {
 });
 
 describe("AuthService.verifyMfaLogin", () => {
+  // A new challenge is one password sign-in away: without an account-wide
+  // limit, 5 tries per challenge allowed ~50 guesses a minute per IP (audit
+  // 2026-11-14, SEC-05).
+  describe("account-wide lock", () => {
+    const totpChallenge = () => {
+      const user = makeUser({ mfaTotpEnabled: true, mfaTotpSecretEnc: "enc" });
+      return {
+        id: "challenge-1",
+        userId: user.id,
+        totpAllowed: true,
+        emailAllowed: false,
+        emailCodeHash: null,
+        emailCodeExpiresAt: null,
+        attempts: 0,
+        expiresAt: new Date(Date.now() + 60_000),
+        user,
+      };
+    };
+
+    const minutesAgo = (minutes: number) => ({
+      createdAt: new Date(Date.now() - minutes * 60_000),
+    });
+
+    it("refuses codes for 15 minutes after three locked challenges in an hour", async () => {
+      const { service, prisma, mfa } = makeService();
+      (prisma.mfaLoginChallenge.findUnique as Mock).mockResolvedValue(
+        totpChallenge(),
+      );
+      (prisma.securityEvent.findMany as Mock).mockResolvedValue([
+        minutesAgo(2),
+        minutesAgo(20),
+        minutesAgo(40),
+      ]);
+
+      await expect(
+        service.verifyMfaLogin("challenge-1", "123456"),
+      ).rejects.toMatchObject({ code: ErrorCode.AuthMfaAccountLocked });
+      // Refused before a try is taken or a code is even checked.
+      expect(prisma.mfaLoginChallenge.update).not.toHaveBeenCalled();
+      expect(mfa.acceptTotpCode).not.toHaveBeenCalled();
+      expect(prisma.securityEvent.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            userId: "user-1",
+            type: "MFA_CHALLENGE_LOCKED",
+          }),
+          take: 3,
+        }),
+      );
+    });
+
+    it("lets codes through again once 15 minutes have passed", async () => {
+      const { service, prisma, mfa } = makeService();
+      (prisma.mfaLoginChallenge.findUnique as Mock).mockResolvedValue(
+        totpChallenge(),
+      );
+      (prisma.securityEvent.findMany as Mock).mockResolvedValue([
+        minutesAgo(16),
+        minutesAgo(30),
+        minutesAgo(50),
+      ]);
+      (mfa.acceptTotpCode as Mock).mockResolvedValue("accepted");
+
+      await expect(
+        service.verifyMfaLogin("challenge-1", "123456"),
+      ).resolves.toMatchObject({ user: { id: "user-1" } });
+    });
+
+    it("doesn't lock below three locked challenges", async () => {
+      const { service, prisma, mfa } = makeService();
+      (prisma.mfaLoginChallenge.findUnique as Mock).mockResolvedValue(
+        totpChallenge(),
+      );
+      (prisma.securityEvent.findMany as Mock).mockResolvedValue([
+        minutesAgo(1),
+        minutesAgo(2),
+      ]);
+      (mfa.acceptTotpCode as Mock).mockResolvedValue("accepted");
+
+      await expect(
+        service.verifyMfaLogin("challenge-1", "123456"),
+      ).resolves.toMatchObject({ user: { id: "user-1" } });
+    });
+  });
+
   it("accepts a valid TOTP code and completes the session", async () => {
     const { service, prisma, mfa } = makeService();
     const user = makeUser({ mfaTotpEnabled: true, mfaTotpSecretEnc: "enc" });

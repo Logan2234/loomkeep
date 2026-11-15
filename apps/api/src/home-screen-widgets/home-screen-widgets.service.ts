@@ -21,6 +21,7 @@ import { AppException } from "../common/app.exception";
 import { canonicalExternalId } from "../common/external-id.util";
 import { localDay, localDayOrUtc } from "../common/local-day.util";
 import { XpService } from "../gamification/xp.service";
+import { CalendarService } from "../library/calendar.service";
 import { LibraryService } from "../library/library.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { SessionTimerService } from "../session-timer/session-timer.service";
@@ -79,6 +80,7 @@ export class HomeScreenWidgetsService {
     private readonly domains: DomainGateService,
     private readonly timers: SessionTimerService,
     private readonly xp: XpService,
+    private readonly calendar: CalendarService,
   ) {}
 
   token(userId: string, sessionId: string | undefined): { token: string } {
@@ -121,7 +123,7 @@ export class HomeScreenWidgetsService {
         ? this.toWatch(userId, lang)
         : [],
       parts.has("releases")
-        ? this.library.getCalendar(userId, acceptLanguage).then((calendar) =>
+        ? this.calendar.getCalendar(userId, acceptLanguage).then((calendar) =>
             calendar
               .filter((entry) =>
                 enabled.has(entry.game ? Domain.GAMES : Domain.MEDIA),

@@ -21,7 +21,8 @@ function makeGuard(
     mfaEmailEnabled?: boolean;
     webauthnCredentials?: number;
   } = {},
-  nodeEnv: string = "production",
+  nodeEnv = "production",
+  webOrigin?: string,
 ) {
   const prisma = {
     user: {
@@ -34,7 +35,13 @@ function makeGuard(
     },
   } as unknown as PrismaService;
   const config = {
-    get: vi.fn((key: string) => (key === "NODE_ENV" ? nodeEnv : undefined)),
+    get: vi.fn((key: string) =>
+      key === "NODE_ENV"
+        ? nodeEnv
+        : key === "WEB_ORIGIN"
+          ? webOrigin
+          : undefined,
+    ),
   } as unknown as ConfigService;
   return { guard: new AdminGuard(prisma, config), prisma };
 }
@@ -63,6 +70,21 @@ describe("AdminGuard", () => {
     await expect(guard.canActivate(contextFor("user-1"))).rejects.toMatchObject(
       { code: ErrorCode.AuthMfaRequired },
     );
+  });
+
+  // An https instance from the base compose has no NODE_ENV: its admin
+  // still needs a second factor (audit 2026-11-14, SEC-02).
+  it("rejects an admin with no MFA method on an https instance without NODE_ENV", async () => {
+    // "" stands for unset: undefined would take the "production" default.
+    const { guard } = makeGuard("ADMIN", {}, "", "https://media.example.org");
+    await expect(guard.canActivate(contextFor("user-1"))).rejects.toMatchObject(
+      { code: ErrorCode.AuthMfaRequired },
+    );
+  });
+
+  it("allows an admin with no MFA method on a plain-http LAN instance", async () => {
+    const { guard } = makeGuard("ADMIN", {}, "", "http://192.168.1.20");
+    await expect(guard.canActivate(contextFor("user-1"))).resolves.toBe(true);
   });
 
   it("allows an admin account with no MFA method active outside production", async () => {

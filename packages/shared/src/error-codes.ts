@@ -18,6 +18,8 @@ export const ErrorCode = {
   AuthAccountSuspended: "auth.account_suspended",
   AuthInvalidMfaChallenge: "auth.invalid_mfa_challenge",
   AuthMfaTooManyAttempts: "auth.mfa_too_many_attempts",
+  /** Three challenges of this account locked within an hour: codes are refused for 15 minutes. */
+  AuthMfaAccountLocked: "auth.mfa_account_locked",
   AuthMfaInvalidCode: "auth.mfa_invalid_code",
   AuthInvalidRefreshToken: "auth.invalid_refresh_token",
   // Another tab rotated this refresh token a moment ago: its cookies are

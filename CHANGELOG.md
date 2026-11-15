@@ -13,6 +13,16 @@ history from before it was started.
 
 ## [Unreleased]
 
+### Breaking changes
+
+- **Self-hosting over HTTPS without the HTTPS override: set
+  `MFA_ENCRYPTION_KEY` before upgrading.** Once `WEB_ORIGIN` starts with
+  `https://`, the API hardens itself even with `NODE_ENV` unset: it refuses
+  to start without `MFA_ENCRYPTION_KEY`, marks session cookies `Secure`, and
+  admin accounts need a second factor (authenticator app, emailed code or
+  security key) to open the admin panel. A plain-http `WEB_ORIGIN` (an
+  instance on your home network) is unaffected.
+
 ### Added
 
 - Person pages: open a film's director, a series' creator or a cast member
@@ -39,6 +49,10 @@ history from before it was started.
   clean-ups, with a run button and an optional Healthchecks.io variable each
   (`HEALTHCHECKS_SECURITY_PURGE_URL`, `HEALTHCHECKS_INVITATIONS_PURGE_URL`,
   `HEALTHCHECKS_NOTIFICATIONS_PURGE_URL`).
+- Self-hosting behind Cloudflare's proxy: a `docker-compose.cloudflare.yml`
+  override makes the API see visitors' real addresses, so they no longer
+  share Cloudflare's sign-in and request limits. See "Behind Cloudflare" in
+  the docs.
 
 ### Changed
 
@@ -141,6 +155,9 @@ history from before it was started.
   Admin › Jobs instead of "Nothing to refresh".
 - A dropped connection, a busy server or an update in progress no longer
   signs you out: only an expired or revoked session does.
+- The release calendar shows the next six months of episodes, instead of
+  stopping after 60 when you follow daily shows, and starts at midnight in
+  your time zone rather than the server's.
 
 ### Security
 
@@ -150,6 +167,9 @@ history from before it was started.
   including its live connection, instead of up to 15 minutes later.
 - A failed import no longer sends the server's internal error text to the
   browser; it stays in the logs and the import history.
+- After three runs of wrong two-factor codes within an hour, an account
+  refuses codes for 15 minutes (security keys still work), so a password
+  thief can no longer guess them through endless new sign-ins.
 
 ## 1.13.0 — Home-screen widgets, actionable notifications, and a phone-first app
 

@@ -29,6 +29,7 @@ const MESSAGES = {
     m.apierr_auth_invalid_mfa_challenge(),
   [ErrorCode.AuthMfaTooManyAttempts]: () =>
     m.apierr_auth_mfa_too_many_attempts(),
+  [ErrorCode.AuthMfaAccountLocked]: () => m.apierr_auth_mfa_account_locked(),
   [ErrorCode.AuthMfaInvalidCode]: () => m.apierr_auth_mfa_invalid_code(),
   [ErrorCode.AuthInvalidRefreshToken]: () =>
     m.apierr_auth_invalid_refresh_token(),

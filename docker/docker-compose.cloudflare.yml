@@ -1,0 +1,20 @@
+# Optional add-on for an instance whose domain is proxied by Cloudflare
+# (orange cloud). Without it, the API sees every visitor as a Cloudflare
+# server: everyone behind the same one shares the sign-in and request rate
+# limits, and the security log and "new device" emails show Cloudflare
+# addresses. Add it after the HTTPS override:
+#
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.cloudflare.yml up -d
+#
+# Only with the orange cloud on: with plain DNS (grey cloud) there is no
+# Cloudflare hop, and the API would read one address too far back.
+# See https://docs.loomkeep.app/self-hosting/cloudflare/.
+services:
+  caddy:
+    volumes:
+      - ./cloudflare/cloudflare.global.caddy:/etc/caddy/global.d/cloudflare.global.caddy:ro
+
+  api:
+    environment:
+      # Caddy, then the Cloudflare server in front of it.
+      TRUST_PROXY_HOPS: "2"

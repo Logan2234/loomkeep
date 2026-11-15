@@ -16,6 +16,9 @@
 {
 	admin localhost:2019
 	metrics
+	# Global options an add-on brings, e.g. docker-compose.cloudflare.yml's
+	# trusted proxies. A glob matching no file (plain setup) is a no-op.
+	import /etc/caddy/global.d/*.caddy
 }
 
 # Metrics only, for Prometheus (docker/observability/prometheus.yml). Not

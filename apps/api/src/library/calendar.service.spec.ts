@@ -1,5 +1,5 @@
 import { vi } from "vitest";
-import { LibraryService } from "./library.service";
+import { CalendarService } from "./calendar.service";
 
 describe("local movie release calendar", () => {
   afterEach(() => vi.useRealTimers());
@@ -32,17 +32,7 @@ describe("local movie release calendar", () => {
         findUniqueOrThrow: vi.fn().mockResolvedValue({ watchRegion: "FR" }),
       },
     };
-    const service = new LibraryService(
-      prisma as never,
-      {} as never,
-      {} as never,
-      {} as never,
-      {} as never,
-      {} as never,
-      {} as never,
-      {} as never,
-      {} as never,
-    );
+    const service = new CalendarService(prisma as never);
     expect(await service.getCalendar("u1")).toEqual([
       expect.objectContaining({
         entryId: "e1",
@@ -81,18 +71,13 @@ describe("local movie release calendar", () => {
       episode: { findMany: vi.fn().mockResolvedValue([]) },
       libraryEntry: { findMany: vi.fn().mockResolvedValue([]) },
       gameEntry: { findMany: gameEntryFindMany },
+      user: {
+        findUniqueOrThrow: vi
+          .fn()
+          .mockResolvedValue({ watchRegion: null, timezone: "UTC" }),
+      },
     };
-    const service = new LibraryService(
-      prisma as never,
-      {} as never,
-      {} as never,
-      {} as never,
-      {} as never,
-      {} as never,
-      {} as never,
-      {} as never,
-      {} as never,
-    );
+    const service = new CalendarService(prisma as never);
 
     expect(await service.getCalendar("u1")).toEqual([
       expect.objectContaining({
@@ -118,5 +103,33 @@ describe("local movie release calendar", () => {
         }),
       }),
     );
+  });
+
+  // Six months of episodes from the user's own midnight, not 60 episodes
+  // from the server's: a few daily shows used to hide every later episode
+  // (audit 2026-11-14, BUG-05).
+  it("lists six months of episodes from the start of the user's own day", async () => {
+    vi.useFakeTimers().setSystemTime(new Date("2026-11-14T23:30:00Z"));
+    const episodeFindMany = vi.fn().mockResolvedValue([]);
+    const prisma = {
+      episode: { findMany: episodeFindMany },
+      libraryEntry: { findMany: vi.fn().mockResolvedValue([]) },
+      gameEntry: { findMany: vi.fn().mockResolvedValue([]) },
+      user: {
+        findUniqueOrThrow: vi
+          .fn()
+          .mockResolvedValue({ watchRegion: null, timezone: "Europe/Paris" }),
+      },
+    };
+
+    await new CalendarService(prisma as never).getCalendar("u1");
+
+    // 00:30 on the 15th in Paris: the day began at 23:00 UTC on the 14th.
+    const [[query]] = episodeFindMany.mock.calls;
+    expect(query.where.airDate).toEqual({
+      gte: new Date("2026-11-14T23:00:00Z"),
+      lt: new Date("2027-05-16T23:00:00Z"),
+    });
+    expect(query.take).toBe(500);
   });
 });

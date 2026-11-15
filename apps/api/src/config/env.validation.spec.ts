@@ -39,6 +39,17 @@ describe("validateEnv", () => {
     expect(() => validateEnv(env)).toThrow("MFA_ENCRYPTION_KEY");
   });
 
+  // The base compose leaves NODE_ENV unset: an instance served over https
+  // is a real deployment all the same (audit 2026-11-14, SEC-02).
+  it("requires MFA_ENCRYPTION_KEY on an https instance without NODE_ENV", () => {
+    expect(() =>
+      validateEnv(baseEnv({ WEB_ORIGIN: "https://media.example.org" })),
+    ).toThrow("MFA_ENCRYPTION_KEY");
+    expect(() =>
+      validateEnv(baseEnv({ WEB_ORIGIN: "http://192.168.1.20:8080" })),
+    ).not.toThrow();
+  });
+
   it("passes in production once MFA_ENCRYPTION_KEY is set", () => {
     const env = baseEnv({
       NODE_ENV: "production",

@@ -10,13 +10,13 @@ variable with its own comments; optional services have theirs on
 
 ## Required
 
-| Variable                                            | What it is                                                                                                                                                                |
-| --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` | The database's credentials.                                                                                                                                               |
-| `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET`           | Sign sessions. Changing either signs everyone out.                                                                                                                        |
-| `MFA_ENCRYPTION_KEY`                                | Encrypts authenticator-app secrets. Required with the HTTPS override. **Never change it** once someone uses an authenticator app: their second factor would stop working. |
-| `BACKUP_ENCRYPTION_PUBLIC_KEY`                      | The [age](https://age-encryption.org) public key backups are encrypted for.                                                                                               |
-| `TMDB_API_TOKEN`                                    | Films and series: see [Catalogue keys](/self-hosting/catalogues/).                                                                                                        |
+| Variable                                            | What it is                                                                                                                                                                   |
+| --------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` | The database's credentials.                                                                                                                                                  |
+| `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET`           | Sign sessions. Changing either signs everyone out.                                                                                                                           |
+| `MFA_ENCRYPTION_KEY`                                | Encrypts authenticator-app secrets. Required once `WEB_ORIGIN` is https. **Never change it** once someone uses an authenticator app: their second factor would stop working. |
+| `BACKUP_ENCRYPTION_PUBLIC_KEY`                      | The [age](https://age-encryption.org) public key backups are encrypted for.                                                                                                  |
+| `TMDB_API_TOKEN`                                    | Films and series: see [Catalogue keys](/self-hosting/catalogues/).                                                                                                           |
 
 ## Addresses
 

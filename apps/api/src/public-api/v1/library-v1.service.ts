@@ -24,6 +24,7 @@ import type { ListEntriesFilters } from "../../common/entry-lifecycle.util";
 import { compareTitles, timeMs } from "../../common/sort.util";
 import { primaryWebOrigin } from "../../common/web-origin.util";
 import { GameLibraryService } from "../../games/game-library.service";
+import { CalendarService } from "../../library/calendar.service";
 import { LibraryService } from "../../library/library.service";
 import { MusicLibraryService } from "../../music/music-library.service";
 import { PrismaService } from "../../prisma/prisma.service";
@@ -90,6 +91,7 @@ export class LibraryV1Service {
     private readonly books: BookLibraryService,
     private readonly music: MusicLibraryService,
     private readonly titles: WorkTitlesService,
+    private readonly calendarService: CalendarService,
   ) {
     this.webOrigin = webOriginOf(config);
   }
@@ -241,7 +243,7 @@ export class LibraryV1Service {
     end.setHours(0, 0, 0, 0);
     end.setDate(end.getDate() + days);
 
-    const episodes = (await this.media.getCalendar(userId))
+    const episodes = (await this.calendarService.getCalendar(userId))
       .filter((episode) => new Date(episode.airDate) < end)
       .flatMap((episode) =>
         episode.seasonNumber === null ||

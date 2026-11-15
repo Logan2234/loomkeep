@@ -23,7 +23,7 @@ import { Aside, Steps } from "@astrojs/starlight/components";
    | `POSTGRES_USER`, `POSTGRES_DB`             | Any name, e.g. `loomkeep`.                                   |
    | `POSTGRES_PASSWORD`                        | A long random password.                                      |
    | `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET`  | Two different values from `openssl rand -hex 32`.            |
-   | `MFA_ENCRYPTION_KEY`                       | `openssl rand -base64 32`. Needed in production, and never to be changed once someone uses two-factor authentication. |
+   | `MFA_ENCRYPTION_KEY`                       | `openssl rand -base64 32`. Needed once served over HTTPS, and never to be changed once someone uses two-factor authentication. |
    | `TMDB_API_TOKEN`                           | Your TMDB token: see [Catalogue keys](/self-hosting/catalogues/). |
    | `BACKUP_ENCRYPTION_PUBLIC_KEY`             | The public key backups are encrypted for: see [Backups](/self-hosting/upgrades-and-backups/#backups). |
    | `ADMIN_EMAIL`                              | The email you will sign up with: that account becomes the administrator. |
