@@ -153,6 +153,9 @@ history from before it was started.
   including its live connection, instead of up to 15 minutes later.
 - A failed import no longer sends the server's internal error text to the
   browser; it stays in the logs and the import history.
+- After three runs of wrong two-factor codes within an hour, an account
+  refuses codes for 15 minutes (security keys still work), so a password
+  thief can no longer guess them through endless new sign-ins.
 
 ## 1.13.0 — Home-screen widgets, actionable notifications, and a phone-first app
 

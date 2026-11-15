@@ -85,6 +85,16 @@ const DUMMY_PASSWORD_HASH = bcrypt.hashSync(
 const MFA_CHALLENGE_TTL_MINUTES = 10;
 const MFA_EMAIL_CODE_TTL_MINUTES = 10;
 const MAX_MFA_CHALLENGE_ATTEMPTS = 5;
+/**
+ * Per account, on top of the per-challenge cap above: a new challenge is one
+ * password sign-in away, so 5 tries per challenge alone allowed ~50 code
+ * guesses a minute from each IP. After this many locked challenges within
+ * the window, codes are refused until the cool-off has passed since the
+ * latest one — at most 15 guesses an hour, and the owner gets the lock email.
+ */
+const MFA_ACCOUNT_LOCK_THRESHOLD = 3;
+const MFA_ACCOUNT_LOCK_WINDOW_MS = 60 * 60_000;
+const MFA_ACCOUNT_LOCK_MS = 15 * 60_000;
 
 export interface AuthResult {
   user: UserDto;
@@ -493,6 +503,8 @@ export class AuthService {
       );
     }
 
+    await this.assertMfaAccountNotLocked(challenge.userId);
+
     const attempts = await this.consumeMfaAttempt(challenge.id);
 
     if (attempts === null) {
@@ -570,6 +582,35 @@ export class AuthService {
     } catch (err) {
       if (isRecordNotFound(err)) return null;
       throw err;
+    }
+  }
+
+  /**
+   * Refuses codes while the account cools off: see MFA_ACCOUNT_LOCK_THRESHOLD.
+   * Read from the MFA_CHALLENGE_LOCKED trail lockMfaChallenge() writes. A
+   * security key isn't guessable and stays usable meanwhile.
+   */
+  private async assertMfaAccountNotLocked(userId: string): Promise<void> {
+    const now = Date.now();
+    const locks = await this.prisma.securityEvent.findMany({
+      where: {
+        userId,
+        type: "MFA_CHALLENGE_LOCKED",
+        createdAt: { gt: new Date(now - MFA_ACCOUNT_LOCK_WINDOW_MS) },
+      },
+      orderBy: { createdAt: "desc" },
+      take: MFA_ACCOUNT_LOCK_THRESHOLD,
+      select: { createdAt: true },
+    });
+
+    if (
+      locks.length >= MFA_ACCOUNT_LOCK_THRESHOLD &&
+      now - locks[0].createdAt.getTime() < MFA_ACCOUNT_LOCK_MS
+    ) {
+      throw new AppException(
+        HttpStatus.TOO_MANY_REQUESTS,
+        ErrorCode.AuthMfaAccountLocked,
+      );
     }
   }
 

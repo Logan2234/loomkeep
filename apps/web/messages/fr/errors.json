@@ -11,6 +11,7 @@
   "apierr_auth_invalid_credentials": "Identifiants incorrects.",
   "apierr_auth_invalid_mfa_challenge": "Cette session de vérification est invalide ou a expiré. Reconnecte-toi.",
   "apierr_auth_mfa_too_many_attempts": "Trop de tentatives, reconnecte-toi.",
+  "apierr_auth_mfa_account_locked": "Trop de codes erronés pour ce compte. Attends 15 minutes, puis reconnecte-toi.",
   "apierr_auth_mfa_invalid_code": "Code invalide.",
   "apierr_auth_invalid_refresh_token": "Ta session a expiré, reconnecte-toi.",
   "apierr_auth_refresh_superseded": "Ta session vient d’être renouvelée dans un autre onglet, réessaie.",
