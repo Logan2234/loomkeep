@@ -61,3 +61,45 @@ export function localDay(timezone: string, date: Date): string | null {
 export function localDayOrUtc(timezone: string, date: Date): string {
   return localDay(timezone, date) ?? utcDateKey(date);
 }
+
+/** How far `timezone` runs ahead of UTC at `at`, in milliseconds. */
+function offsetMs(timezone: string, at: Date): number {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: timezone,
+    hourCycle: "h23",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  }).formatToParts(at);
+  const part = (type: string) =>
+    Number(parts.find((p) => p.type === type)?.value);
+  const asUtc = Date.UTC(
+    part("year"),
+    part("month") - 1,
+    part("day"),
+    part("hour"),
+    part("minute"),
+    part("second"),
+  );
+  return asUtc - Math.floor(at.getTime() / 1000) * 1000;
+}
+
+/**
+ * The instant the user's current day began, midnight in `timezone` — UTC
+ * midnight for an invalid zone, like `localDayOrUtc`. What "from today"
+ * means for someone whose evening is already tomorrow in UTC.
+ */
+export function startOfLocalDay(timezone: string, at: Date): Date {
+  const day = localDay(timezone, at);
+  if (!day) return new Date(`${utcDateKey(at)}T00:00:00.000Z`);
+
+  const midnightUtc = Date.parse(`${day}T00:00:00.000Z`);
+  // Two passes: the offset at UTC midnight can differ from the one at local
+  // midnight when a DST change falls in between.
+  let start = midnightUtc - offsetMs(timezone, new Date(midnightUtc));
+  start = midnightUtc - offsetMs(timezone, new Date(start));
+  return new Date(start);
+}

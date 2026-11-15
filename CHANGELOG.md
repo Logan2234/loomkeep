@@ -141,6 +141,9 @@ history from before it was started.
   Admin › Jobs instead of "Nothing to refresh".
 - A dropped connection, a busy server or an update in progress no longer
   signs you out: only an expired or revoked session does.
+- The release calendar shows the next six months of episodes, instead of
+  stopping after 60 when you follow daily shows, and starts at midnight in
+  your time zone rather than the server's.
 
 ### Security
 

@@ -2,10 +2,20 @@ import type { CalendarEntryDto } from "@loomkeep/shared";
 import { movieReleaseDates, movieReleaseInfo } from "@loomkeep/shared";
 import { Injectable } from "@nestjs/common";
 import { resolveWatchRegion } from "../catalog/watch-region.util";
-import { utcDateKey } from "../common/date.util";
+import { addDays } from "../common/date.util";
+import { localDayOrUtc, startOfLocalDay } from "../common/local-day.util";
 import { toGameItemDto } from "../games/game-item.mapper";
 import { PrismaService } from "../prisma/prisma.service";
 import { toMediaItemDto } from "./media-item-dto.util";
+
+/** How far ahead the calendar lists episodes: about six months. */
+const EPISODE_WINDOW_DAYS = 183;
+/**
+ * Bounds the episode list for someone following many daily shows. A count
+ * alone used to be the only bound (60): a few daily shows filled it within
+ * days, hiding every later episode while films months away still showed.
+ */
+const MAX_EPISODES = 500;
 
 /**
  * The release calendar: upcoming episodes, local movie releases and game
@@ -21,18 +31,27 @@ export class CalendarService {
    * tracks, excluding dropped ones — the release calendar. Shows with muted
    * alerts stay listed: muting only silences the digest. Each carries the
    * show's backlog (`episodesBehind`), counted up to the start of today so
-   * an episode airing today is never its own backlog.
+   * an episode airing today is never its own backlog. "Today" is the user's,
+   * from `User.timezone`, not the server's UTC day.
    */
   async getCalendar(
     userId: string,
     acceptLanguage?: string,
   ): Promise<CalendarEntryDto[]> {
-    const startOfToday = new Date();
-    startOfToday.setHours(0, 0, 0, 0);
+    const user = await this.prisma.user.findUniqueOrThrow({
+      where: { id: userId },
+      select: { watchRegion: true, timezone: true },
+    });
+    const now = new Date();
+    const today = localDayOrUtc(user.timezone, now);
+    const startOfToday = startOfLocalDay(user.timezone, now);
 
     const episodes = await this.prisma.episode.findMany({
       where: {
-        airDate: { gte: startOfToday },
+        airDate: {
+          gte: startOfToday,
+          lt: addDays(startOfToday, EPISODE_WINDOW_DAYS),
+        },
         season: {
           mediaItem: {
             entries: { some: { userId, status: { not: "DROPPED" } } },
@@ -40,7 +59,7 @@ export class CalendarService {
         },
       },
       orderBy: { airDate: "asc" },
-      take: 60,
+      take: MAX_EPISODES,
       include: {
         season: {
           include: {
@@ -87,16 +106,7 @@ export class CalendarService {
       },
       include: { mediaItem: { include: { externalIds: true } } },
     });
-    const gameEntries = await this.calendarGames(userId);
-    if (movies.length === 0)
-      return [...episodeEntries, ...gameEntries].sort((a, b) =>
-        a.airDate.localeCompare(b.airDate),
-      );
-    const user = await this.prisma.user.findUniqueOrThrow({
-      where: { id: userId },
-      select: { watchRegion: true },
-    });
-    const today = utcDateKey(new Date());
+    const gameEntries = await this.calendarGames(userId, today);
     const movieEntries: CalendarEntryDto[] = movies.flatMap((entry) => {
       const region = resolveWatchRegion(
         user.watchRegion ?? entry.movieReleaseRegion ?? undefined,
@@ -134,8 +144,10 @@ export class CalendarService {
    * Upcoming releases of the games the user tracks, when their day is known —
    * or their month, on its 1st. A vaguer date has no day to sit on.
    */
-  private async calendarGames(userId: string): Promise<CalendarEntryDto[]> {
-    const today = utcDateKey(new Date());
+  private async calendarGames(
+    userId: string,
+    today: string,
+  ): Promise<CalendarEntryDto[]> {
     const entries = await this.prisma.gameEntry.findMany({
       where: {
         userId,
