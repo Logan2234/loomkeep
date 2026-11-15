@@ -46,6 +46,7 @@ function makeService(overrides: {
       create: vi.fn().mockResolvedValue({ id: "created" }),
       update: vi.fn().mockResolvedValue({ id: "updated" }),
       findMany: vi.fn().mockResolvedValue(overrides.staleItems ?? []),
+      updateMany: vi.fn().mockResolvedValue({ count: 0 }),
       findUniqueOrThrow: vi.fn(
         async ({ where }: { where: { id: string } }) => ({
           id: where.id,
@@ -199,8 +200,8 @@ describe("BookItemService.refreshStale", () => {
     });
   });
 
-  it("keeps going when one book fails to refresh", async () => {
-    const { service } = makeService({
+  it("keeps going when one book fails to refresh, setting it aside for a cycle", async () => {
+    const { service, prisma } = makeService({
       bookExternalId: { bookItemId: "b1" },
       staleItems: [{ id: "b1" }, { id: "b2" }],
       getStoredDetails: vi
@@ -210,5 +211,16 @@ describe("BookItemService.refreshStale", () => {
     });
 
     expect(await service.refreshStale()).toBe(1);
+    // Out of the stalest-first queue until its failure ages out (audit
+    // 2026-11-14, BUG-02).
+    expect(prisma.bookItem.updateMany).toHaveBeenCalledWith({
+      where: { id: { in: ["b1"] } },
+      data: { syncFailedAt: expect.any(Date) },
+    });
+    const [[query]] = (prisma.bookItem.findMany as Mock).mock.calls;
+    expect(query.where.OR).toEqual([
+      { syncFailedAt: null },
+      { syncFailedAt: { lt: query.where.lastSyncedAt.lt } },
+    ]);
   });
 });

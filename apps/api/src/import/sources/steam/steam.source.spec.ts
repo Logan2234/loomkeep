@@ -1,5 +1,5 @@
 import type { ImportPlan, ImportPlanItem } from "@loomkeep/shared";
-import { GameSource } from "@loomkeep/shared";
+import { ErrorCode, GameSource } from "@loomkeep/shared";
 import { ConfigService } from "@nestjs/config";
 import { vi, type Mock } from "vitest";
 import type { QuotaTrackerService } from "../../../common/quota-tracker.service";
@@ -275,7 +275,7 @@ describe("SteamImportSource (via ImportJobService)", () => {
     const job = await runToEnd(service, "user1", started.id);
 
     expect(job.status).toBe("failed");
-    expect(job.error).toMatch(/public/i);
+    expect(job.errorCode).toBe(ErrorCode.ImportSteamLibraryPrivate);
   });
 
   it("commit persists chosen games and skips adult titles disabled at commit time", async () => {

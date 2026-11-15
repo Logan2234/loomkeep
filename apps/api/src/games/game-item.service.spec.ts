@@ -52,6 +52,7 @@ function makeService(overrides: {
       create: vi.fn().mockResolvedValue({ id: "created" }),
       update: vi.fn().mockResolvedValue({ id: "updated" }),
       findMany: vi.fn().mockResolvedValue(overrides.staleItems ?? []),
+      updateMany: vi.fn().mockResolvedValue({ count: 0 }),
     },
   } as unknown as PrismaService;
   const igdbProvider = {
@@ -208,9 +209,19 @@ describe("GameItemService.refreshStale", () => {
     canonicalSource: "IGDB",
     externalIds: [{ source: "IGDB", externalId: igdbId }],
   });
+  const detailsFor = (igdbId: string) =>
+    ({
+      ...details,
+      summary: { ...details.summary, sourceId: igdbId },
+      externalIds: [{ source: "IGDB", externalId: igdbId }],
+    }) as ProviderGameDetails;
+  const setAside = (prisma: PrismaService) =>
+    (prisma.gameItem.updateMany as Mock).mock.calls[0][0].where.id.in;
 
   it("fetches every stale game in one batched provider call", async () => {
-    const getDetailsByIds = vi.fn().mockResolvedValue([details, details]);
+    const getDetailsByIds = vi
+      .fn()
+      .mockResolvedValue([detailsFor("42"), detailsFor("43")]);
     const { service, igdbProvider } = makeService({
       gameExternalId: { gameItemId: "existing-1" },
       staleItems: [staleItem("g1", "42"), staleItem("g2", "43")],
@@ -237,27 +248,46 @@ describe("GameItemService.refreshStale", () => {
     expect(query.where.lastSyncedAt.lt.getTime()).toBeLessThan(
       Date.now() - 23 * 60 * 60 * 1000,
     );
+    // A failed refresh sits out one cycle (audit 2026-11-14, BUG-02).
+    expect(query.where.OR).toEqual([
+      { syncFailedAt: null },
+      { syncFailedAt: { lt: query.where.lastSyncedAt.lt } },
+    ]);
   });
 
   it("keeps going when one game fails to persist", async () => {
     const { service, prisma } = makeService({
       gameExternalId: { gameItemId: "existing-1" },
       staleItems: [staleItem("g1", "42"), staleItem("g2", "43")],
-      getDetailsByIds: vi.fn().mockResolvedValue([details, details]),
+      getDetailsByIds: vi
+        .fn()
+        .mockResolvedValue([detailsFor("42"), detailsFor("43")]),
     });
     (prisma.gameItem.update as Mock)
       .mockRejectedValueOnce(new Error("boom"))
       .mockResolvedValueOnce({ id: "updated" });
 
     expect(await service.refreshStale()).toBe(1);
+    expect(setAside(prisma)).toEqual(["g1"]);
+  });
+
+  it("sets aside a game IGDB no longer returns", async () => {
+    const { service, prisma } = makeService({
+      gameExternalId: { gameItemId: "existing-1" },
+      staleItems: [staleItem("g1", "42"), staleItem("g2", "43")],
+      getDetailsByIds: vi.fn().mockResolvedValue([detailsFor("43")]),
+    });
+
+    expect(await service.refreshStale()).toBe(1);
+    expect(setAside(prisma)).toEqual(["g1"]);
   });
 
   it("keeps going when one IGDB batch fails", async () => {
     const getDetailsByIds = vi
       .fn()
       .mockRejectedValueOnce(new Error("IGDB timeout"))
-      .mockResolvedValueOnce([details]);
-    const { service } = makeService({
+      .mockResolvedValueOnce([detailsFor("101")]);
+    const { service, prisma } = makeService({
       gameExternalId: { gameItemId: "existing-1" },
       staleItems: Array.from({ length: 150 }, (_, i) =>
         staleItem(`g${i}`, String(i + 1)),
@@ -268,15 +298,19 @@ describe("GameItemService.refreshStale", () => {
     expect(await service.refreshStale()).toBe(1);
     expect(getDetailsByIds).toHaveBeenCalledTimes(2);
     expect(getDetailsByIds.mock.calls[0][0]).toHaveLength(100);
+    expect(setAside(prisma)).toHaveLength(149);
+    expect(setAside(prisma)).not.toContain("g100");
   });
 
   it("fails the run when every IGDB batch fails", async () => {
-    const { service } = makeService({
+    const { service, prisma } = makeService({
       staleItems: [staleItem("g1", "42")],
       getDetailsByIds: vi.fn().mockRejectedValue(new Error("IGDB down")),
     });
 
     await expect(service.refreshStale()).rejects.toThrow("IGDB down");
+    // An unreachable IGDB isn't these games' fault: nothing is set aside.
+    expect(prisma.gameItem.updateMany).not.toHaveBeenCalled();
   });
 
   it("calls nothing when no game is stale", async () => {

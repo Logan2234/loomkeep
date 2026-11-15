@@ -21,6 +21,5 @@ export class ImportJobResponseDto implements ImportJobDto {
   progress!: ImportJobProgressResponseDto;
   plan!: ImportPlanResponseDto | null;
   report!: ImportReportResponseDto | null;
-  error!: string | null;
   errorCode?: ErrorCode | null;
 }

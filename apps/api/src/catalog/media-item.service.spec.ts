@@ -12,7 +12,10 @@ const jobRunsStub = {
 describe("MediaItemService.refreshStale", () => {
   function makeService(items: unknown[]) {
     const prisma = {
-      mediaItem: { findMany: vi.fn().mockResolvedValue(items) },
+      mediaItem: {
+        findMany: vi.fn().mockResolvedValue(items),
+        updateMany: vi.fn().mockResolvedValue({ count: 0 }),
+      },
     } as unknown as PrismaService;
     const sagas = { sync: vi.fn().mockResolvedValue(undefined) };
     const service = new MediaItemService(
@@ -33,6 +36,15 @@ describe("MediaItemService.refreshStale", () => {
     expect(prisma.mediaItem.findMany).toHaveBeenCalledWith({
       where: {
         entries: { some: { status: { not: "DROPPED" } } },
+        // A failed refresh sits out one cycle (a day) before the next try.
+        AND: [
+          {
+            OR: [
+              { syncFailedAt: null },
+              { syncFailedAt: { lt: new Date("2026-11-08T12:00:00Z") } },
+            ],
+          },
+        ],
         // An ended series waits a week; anything else, a day.
         OR: [
           { lastSyncedAt: { lt: new Date("2026-11-02T12:00:00Z") } },
@@ -116,15 +128,21 @@ describe("MediaItemService.refreshStale", () => {
     ]);
   });
 
-  it("skips items missing their canonical external id", async () => {
+  it("sets aside items missing their canonical external id, failing a run that refreshed nothing", async () => {
     const items = [{ id: "m1", canonicalSource: "TMDB", externalIds: [] }];
-    const { service } = makeService(items);
+    const { service, prisma } = makeService(items);
+    vi.spyOn(service["logger"], "error").mockImplementation(() => undefined);
     const upsert = vi.spyOn(service, "upsertFromSource");
 
-    const refreshed = await service.refreshStale();
+    await expect(service.refreshStale()).rejects.toThrow(
+      "Every media refresh failed (1)",
+    );
 
-    expect(refreshed).toBe(0);
     expect(upsert).not.toHaveBeenCalled();
+    expect(prisma.mediaItem.updateMany).toHaveBeenCalledWith({
+      where: { id: { in: ["m1"] } },
+      data: { syncFailedAt: expect.any(Date) },
+    });
   });
 
   it("keeps refreshing the rest of the batch when one item fails", async () => {
@@ -140,7 +158,7 @@ describe("MediaItemService.refreshStale", () => {
         externalIds: [{ source: "TMDB", externalId: "2" }],
       },
     ];
-    const { service } = makeService(items);
+    const { service, prisma } = makeService(items);
     vi.spyOn(service["logger"], "error").mockImplementation(() => undefined);
     const upsert = vi
       .spyOn(service, "upsertFromSource")
@@ -151,6 +169,11 @@ describe("MediaItemService.refreshStale", () => {
 
     expect(refreshed).toBe(1);
     expect(upsert).toHaveBeenCalledTimes(2);
+    // The failed one leaves the head of the queue (audit 2026-11-14, BUG-02).
+    expect(prisma.mediaItem.updateMany).toHaveBeenCalledWith({
+      where: { id: { in: ["m1"] } },
+      data: { syncFailedAt: expect.any(Date) },
+    });
   });
 });
 

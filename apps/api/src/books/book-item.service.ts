@@ -7,7 +7,13 @@ import type {
 import { Injectable, Logger } from "@nestjs/common";
 import { Cron, CronExpression } from "@nestjs/schedule";
 import type { BookItem } from "@prisma/client";
-import { isCatalogFresh } from "../common/catalog-sync.util";
+import {
+  assertSomeRefreshed,
+  isCatalogFresh,
+  notFailedSince,
+  type RefreshOutcome,
+  summarizeRefresh,
+} from "../common/catalog-sync.util";
 import { mapWithConcurrency } from "../common/concurrency.util";
 import { isUniqueViolation } from "../common/prisma-error.util";
 import { JOB_KEYS } from "../jobs/job-keys";
@@ -46,20 +52,22 @@ export class BookItemService {
    */
   @Cron(CronExpression.EVERY_6_HOURS, { name: JOB_KEYS.BOOKS_REFRESH_STALE })
   async refreshStale(): Promise<number> {
-    return this.jobRuns.record(
+    const { refreshed } = await this.jobRuns.record(
       JOB_KEYS.BOOKS_REFRESH_STALE,
-      () => this.runRefreshStale(),
-      (refreshed) =>
-        refreshed > 0
-          ? `${refreshed} book item(s) refreshed`
-          : "Nothing to refresh",
+      async () => assertSomeRefreshed(await this.runRefreshStale(), "book"),
+      summarizeRefresh("book item"),
     );
+    return refreshed;
   }
 
-  private async runRefreshStale(): Promise<number> {
+  private async runRefreshStale(): Promise<RefreshOutcome> {
     const staleBefore = new Date(Date.now() - BACKGROUND_SYNC_TTL_MS);
     const items = await this.prisma.bookItem.findMany({
-      where: { lastSyncedAt: { lt: staleBefore }, entries: { some: {} } },
+      where: {
+        lastSyncedAt: { lt: staleBefore },
+        entries: { some: {} },
+        ...notFailedSince(staleBefore),
+      },
       orderBy: { lastSyncedAt: "asc" },
       take: MAX_REFRESHED_PER_RUN,
       select: { id: true },
@@ -79,7 +87,15 @@ export class BookItemService {
       },
     );
 
-    return outcomes.filter(Boolean).length;
+    const failedIds = items.flatMap((item, i) => (outcomes[i] ? [] : item.id));
+    await this.prisma.bookItem.updateMany({
+      where: { id: { in: failedIds } },
+      data: { syncFailedAt: new Date() },
+    });
+    return {
+      refreshed: items.length - failedIds.length,
+      failed: failedIds.length,
+    };
   }
 
   /** Open Library is the only source today. */
@@ -309,6 +325,7 @@ export class BookItemService {
       seriesKey: details.seriesKey,
       isAdult: details.summary.isAdult,
       lastSyncedAt: new Date(),
+      syncFailedAt: null,
     };
   }
 }

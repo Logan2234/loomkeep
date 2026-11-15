@@ -14,6 +14,8 @@ import {
   type ParsedPage,
 } from "../common/pagination.util";
 import { currentRequest } from "../common/request-context";
+import { JOB_KEYS } from "../jobs/job-keys";
+import { JobRunService } from "../jobs/job-run.service";
 import {
   SECURITY_ALERT_EVENTS,
   type SecurityAlertEvent,
@@ -52,6 +54,11 @@ export interface ListSecurityEventsParams {
   page?: ParsedPage;
 }
 
+interface SecurityPurgeCounts {
+  events: number;
+  credentials: number;
+}
+
 @Injectable()
 export class SecurityEventService {
   private readonly logger = new Logger(SecurityEventService.name);
@@ -59,6 +66,7 @@ export class SecurityEventService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly mail: MailService,
+    private readonly jobRuns: JobRunService,
   ) {}
 
   async record(params: RecordSecurityEventParams): Promise<Date> {
@@ -165,15 +173,31 @@ export class SecurityEventService {
     });
   }
 
-  @Cron(CronExpression.EVERY_DAY_AT_6AM)
-  async purgeExpired(now = new Date()): Promise<void> {
+  /**
+   * Through JobRunService like every other job: a retention purge that
+   * fails must show in Admin › Jobs and Healthchecks, not only in a log.
+   */
+  @Cron(CronExpression.EVERY_DAY_AT_6AM, { name: JOB_KEYS.SECURITY_PURGE })
+  runPurgeJob(): Promise<SecurityPurgeCounts> {
+    return this.jobRuns.record(
+      JOB_KEYS.SECURITY_PURGE,
+      () => this.purgeExpired(),
+      ({ events, credentials }) =>
+        `${events} security event(s), ${credentials} expired credential(s) purged`,
+    );
+  }
+
+  async purgeExpired(now = new Date()): Promise<SecurityPurgeCounts> {
     const { count } = await this.prisma.securityEvent.deleteMany({
       where: { createdAt: { lt: sinceDaysAgo(now, RETENTION_DAYS) } },
     });
 
     if (count > 0) this.logger.log(`Purged ${count} expired security events`);
 
-    await this.purgeExpiredCredentials(now);
+    return {
+      events: count,
+      credentials: await this.purgeExpiredCredentials(now),
+    };
   }
 
   /**
@@ -186,7 +210,7 @@ export class SecurityEventService {
    * the consumed refresh tokens kept for reuse detection, which only matter
    * until the session they belonged to would have expired.
    */
-  private async purgeExpiredCredentials(now: Date): Promise<void> {
+  private async purgeExpiredCredentials(now: Date): Promise<number> {
     const expired = { expiresAt: { lt: now } };
     const counts = await this.prisma.$transaction([
       this.prisma.mfaLoginChallenge.deleteMany({ where: expired }),
@@ -200,6 +224,8 @@ export class SecurityEventService {
     if (total > 0) {
       this.logger.log(`Purged ${total} expired authentication challenges`);
     }
+
+    return total;
   }
 
   /**

@@ -2,6 +2,7 @@ import type { NestFastifyApplication } from "@nestjs/platform-fastify";
 import { vi, type Mock } from "vitest";
 import { parsePageQuery } from "../common/pagination.util";
 import { registerRequestContext } from "../common/request-context";
+import type { JobRunService } from "../jobs/job-run.service";
 import type { MailService } from "../mail/mail.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import { SecurityEventService } from "./security-event.service";
@@ -31,7 +32,25 @@ function makeService({ recentLocks = 0 } = {}) {
   } as unknown as PrismaService;
   const mail = { sendSecurityAlert: vi.fn() } as unknown as MailService;
 
-  return { service: new SecurityEventService(prisma, mail), prisma, mail };
+  const jobRuns = {
+    record: vi.fn(
+      async <T>(
+        _key: string,
+        fn: () => Promise<T>,
+        summarize: (result: T) => string,
+      ) => {
+        const result = await fn();
+        summarize(result);
+        return result;
+      },
+    ),
+  } as unknown as JobRunService;
+  return {
+    service: new SecurityEventService(prisma, mail, jobRuns),
+    prisma,
+    mail,
+    jobRuns,
+  };
 }
 
 describe("SecurityEventService.record", () => {
@@ -231,6 +250,24 @@ describe("SecurityEventService.purgeExpired", () => {
     expect(prisma.securityEvent.deleteMany).toHaveBeenCalledWith({
       where: { createdAt: { lt: new Date("2025-09-24T06:00:00Z") } },
     });
+  });
+
+  // A retention purge that fails must show in Admin › Jobs and Healthchecks,
+  // not only in a log line (audit 2026-11-14, OBS-02).
+  it("runs the daily purge as a recorded job", async () => {
+    const { service, prisma, jobRuns } = makeService();
+    (prisma.securityEvent.deleteMany as Mock).mockResolvedValue({ count: 3 });
+
+    await expect(service.runPurgeJob()).resolves.toEqual({
+      events: 3,
+      credentials: 0,
+    });
+
+    const [[key, , summarize]] = (jobRuns.record as Mock).mock.calls;
+    expect(key).toBe("security.purge");
+    expect(summarize({ events: 3, credentials: 2 })).toBe(
+      "3 security event(s), 2 expired credential(s) purged",
+    );
   });
 
   it("deletes the expired challenges and one-time tokens abandoned flows leave behind", async () => {

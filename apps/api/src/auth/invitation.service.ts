@@ -15,6 +15,8 @@ import { randomToken, sha256Hex } from "../common/crypto.util";
 import { addDays, sinceDaysAgo } from "../common/date.util";
 import { type ParsedPage, toPagedResult } from "../common/pagination.util";
 import { primaryWebOrigin } from "../common/web-origin.util";
+import { JOB_KEYS } from "../jobs/job-keys";
+import { JobRunService } from "../jobs/job-run.service";
 import { MailService } from "../mail/mail.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { avatarUrl } from "../users/avatar.util";
@@ -74,6 +76,7 @@ export class InvitationService {
     private readonly prisma: PrismaService,
     private readonly mail: MailService,
     config: ConfigService,
+    private readonly jobRuns: JobRunService,
   ) {
     // WEB_ORIGIN may list several origins (see main.ts's CORS setup); links
     // point at the first, like every other link the API hands out.
@@ -271,8 +274,16 @@ export class InvitationService {
    * enough in the admin list. A redeemed one is kept: it's what the admin
    * drawer's "invité par" line reads.
    */
-  @Cron(DEAD_INVITATION_PURGE_CRON)
-  async purgeDead(now = new Date()): Promise<void> {
+  @Cron(DEAD_INVITATION_PURGE_CRON, { name: JOB_KEYS.INVITATIONS_PURGE })
+  runPurgeJob(): Promise<number> {
+    return this.jobRuns.record(
+      JOB_KEYS.INVITATIONS_PURGE,
+      () => this.purgeDead(),
+      (count) => `${count} dead invitation(s) purged`,
+    );
+  }
+
+  async purgeDead(now = new Date()): Promise<number> {
     const before = sinceDaysAgo(now, DEAD_INVITATION_RETENTION_DAYS);
     const { count } = await this.prisma.invitation.deleteMany({
       where: {
@@ -282,6 +293,7 @@ export class InvitationService {
     });
 
     if (count > 0) this.logger.log(`Purged ${count} dead invitations`);
+    return count;
   }
 
   private async findRedeemable(

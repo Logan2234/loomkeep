@@ -54,14 +54,26 @@ export function disconnectRealtimeSocket(): void {
 socket.on("disconnect", (reason) => {
   if (reason === "io client disconnect") return;
 
-  void tryRefresh().then((refreshed) => {
-    if (refreshed) connectRealtimeSocket();
-    // A dead refresh token means the session itself is gone — mirror the
-    // REST path's own auth.clear() (core.ts) instead of leaving isLoggedIn
-    // stuck true with no live connection and no way back short of a reload.
-    else auth.clear();
-  });
+  refreshThenReconnect();
 });
+
+/** Delay before trying again when the refresh couldn't reach the API. */
+const REFRESH_RETRY_MS = 30_000;
+
+function refreshThenReconnect(): void {
+  tryRefresh().then(
+    (refreshed) => {
+      if (refreshed) connectRealtimeSocket();
+      // A dead refresh token means the session itself is gone — mirror the
+      // REST path's own auth.clear() (core.ts) instead of leaving isLoggedIn
+      // stuck true with no live connection and no way back short of a reload.
+      else auth.clear();
+    },
+    // Offline, mid-deploy or rate-limited: the session may well be fine, so
+    // the socket tries again later rather than signing anyone out.
+    () => setTimeout(refreshThenReconnect, REFRESH_RETRY_MS),
+  );
+}
 
 export function onRealtimeEvent<T = void>(
   event: RealtimeEvent,

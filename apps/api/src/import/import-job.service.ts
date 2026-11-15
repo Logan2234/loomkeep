@@ -679,7 +679,6 @@ function toDto(job: JobRecord): ImportJobDto {
     progress: job.progress,
     plan: job.plan,
     report: job.report,
-    error: job.error,
     errorCode: job.errorCode,
   };
 }

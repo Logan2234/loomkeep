@@ -894,12 +894,13 @@ describe("AuthService.refresh", () => {
   });
 
   it("revokes the token family when a consumed refresh token is replayed", async () => {
-    const { service, prisma } = makeService();
+    const { service, prisma, sessionCache, events } = makeService();
     (prisma.refreshToken.findUnique as Mock).mockResolvedValue(null);
     (prisma.consumedRefreshToken.findUnique as Mock).mockResolvedValue({
       sessionId: "rt-1",
       createdAt: new Date(Date.now() - 60_000),
     });
+    sessionCache.markLive("rt-1");
 
     await expect(service.refresh("replayed-token")).rejects.toMatchObject({
       code: ErrorCode.AuthInvalidRefreshToken,
@@ -907,6 +908,10 @@ describe("AuthService.refresh", () => {
     expect(prisma.refreshToken.deleteMany).toHaveBeenCalledWith({
       where: { id: "rt-1" },
     });
+    // The thief's access token and socket stop at once, not 30 s or 15 min
+    // later (audit 2026-11-14, SEC-03).
+    expect(sessionCache.isKnownLive("rt-1")).toBe(false);
+    expect(events.disconnectSession).toHaveBeenCalledWith("rt-1");
   });
 
   // Two tabs share the cookies, hence the expiry: both refresh with the
@@ -942,7 +947,7 @@ describe("AuthService.refresh", () => {
   });
 
   it("throws AppException(auth.invalid_refresh_token) when the stored session already expired", async () => {
-    const { service, prisma } = makeService();
+    const { service, prisma, events } = makeService();
     (prisma.refreshToken.findUnique as Mock).mockResolvedValue({
       id: "rt-1",
       expiresAt: new Date(Date.now() - 1000),
@@ -952,6 +957,23 @@ describe("AuthService.refresh", () => {
     await expect(service.refresh("some-token")).rejects.toMatchObject({
       code: ErrorCode.AuthInvalidRefreshToken,
     });
+    expect(events.disconnectSession).toHaveBeenCalledWith("rt-1");
+  });
+
+  it("ends a suspended account's session everywhere it is still open", async () => {
+    const { service, prisma, sessionCache, events } = makeService();
+    (prisma.refreshToken.findUnique as Mock).mockResolvedValue({
+      id: "rt-1",
+      expiresAt: new Date(Date.now() + 60_000),
+      user: makeUser({ suspendedUntil: new Date(Date.now() + 86_400_000) }),
+    });
+    sessionCache.markLive("rt-1");
+
+    await expect(service.refresh("some-token")).rejects.toMatchObject({
+      code: ErrorCode.AuthAccountSuspended,
+    });
+    expect(sessionCache.isKnownLive("rt-1")).toBe(false);
+    expect(events.disconnectSession).toHaveBeenCalledWith("rt-1");
   });
 
   it("rotates the stored token in place and returns a fresh pair", async () => {

@@ -742,11 +742,7 @@ export class AuthService {
 
       // Replayed later than that: taken as a stolen token, the whole
       // session goes.
-      if (consumed) {
-        await this.prisma.refreshToken.deleteMany({
-          where: { id: consumed.sessionId },
-        });
-      }
+      if (consumed) await this.endSession(consumed.sessionId);
 
       throw new AppException(
         HttpStatus.UNAUTHORIZED,
@@ -755,7 +751,7 @@ export class AuthService {
     }
 
     if (stored.expiresAt < new Date()) {
-      await this.prisma.refreshToken.deleteMany({ where: { id: stored.id } });
+      await this.endSession(stored.id);
       throw new AppException(
         HttpStatus.UNAUTHORIZED,
         ErrorCode.AuthInvalidRefreshToken,
@@ -763,7 +759,7 @@ export class AuthService {
     }
 
     if (isSuspended(stored.user)) {
-      await this.prisma.refreshToken.deleteMany({ where: { id: stored.id } });
+      await this.endSession(stored.id);
       assertNotSuspended(stored.user);
     }
 
@@ -808,6 +804,17 @@ export class AuthService {
       accessToken: signed.accessToken,
       refreshToken: signed.refreshToken,
     };
+  }
+
+  /**
+   * Ends a session for good: its row, its cached "still live" answer (or the
+   * access token keeps working up to SessionCacheService's TTL) and its open
+   * socket (or it keeps receiving pushes until the token expires).
+   */
+  private async endSession(sessionId: string): Promise<void> {
+    await this.prisma.refreshToken.deleteMany({ where: { id: sessionId } });
+    this.sessionCache.invalidate(sessionId);
+    this.events.disconnectSession(sessionId);
   }
 
   /** Invalidates one refresh token (logout on the current device). */

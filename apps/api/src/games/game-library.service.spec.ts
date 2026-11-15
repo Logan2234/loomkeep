@@ -1,6 +1,12 @@
 import { vi } from "vitest";
 import type { PrismaService } from "../prisma/prisma.service";
-import { stubAchievements, stubEvents, stubXp } from "../test-utils/stubs";
+import {
+  stubAchievements,
+  stubEvents,
+  stubSagas,
+  stubSessionXp,
+  stubXp,
+} from "../test-utils/stubs";
 import type { AgeGateService } from "../users/age-gate.service";
 import type { GameItemService } from "./game-item.service";
 import { GameLibraryService } from "./game-library.service";
@@ -84,6 +90,7 @@ describe("GameLibraryService.deleteEntry", () => {
       stubEvents(),
       {} as import("../lists/list.service").ListService,
       { refreshAfterDelete } as never,
+      stubSagas(),
     );
 
     await service.deleteEntry("user-1", "entry-1");
@@ -163,6 +170,8 @@ describe("GameLibraryService — XP wiring", () => {
       stubAchievements(),
       events,
       {} as import("../lists/list.service").ListService,
+      stubSessionXp(),
+      stubSagas(),
     );
 
     await service.upsertEntry("user-1", {
@@ -222,6 +231,8 @@ describe("GameLibraryService — unreleased games", () => {
       stubAchievements(),
       stubEvents(),
       {} as import("../lists/list.service").ListService,
+      stubSessionXp(),
+      stubSagas(),
     );
     return { service, update };
   }
@@ -294,6 +305,8 @@ describe("GameLibraryService.getPile", () => {
       stubAchievements(),
       stubEvents(),
       {} as import("../lists/list.service").ListService,
+      stubSessionXp(),
+      stubSagas(),
     );
 
     const pile = await service.getPile("user-1", { favorite: true });
@@ -324,6 +337,8 @@ describe("GameLibraryService.getPile", () => {
       stubAchievements(),
       stubEvents(),
       {} as import("../lists/list.service").ListService,
+      stubSessionXp(),
+      stubSagas(),
     );
 
     await service.getPile("user-1", { statuses: ["PAUSED"] });
@@ -376,6 +391,8 @@ describe("GameLibraryService — the platform played on", () => {
       stubAchievements(),
       stubEvents(),
       {} as import("../lists/list.service").ListService,
+      stubSessionXp(),
+      stubSagas(),
     );
     return { service, update, findMany };
   }

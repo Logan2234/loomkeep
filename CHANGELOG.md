@@ -35,6 +35,10 @@ history from before it was started.
   stay), picking up after the episode you've just seen, until every episode
   is seen again. A movie you've seen can go back to To watch from its "…"
   menu.
+- Admin › Jobs now lists the security log, invitations and notifications
+  clean-ups, with a run button and an optional Healthchecks.io variable each
+  (`HEALTHCHECKS_SECURITY_PURGE_URL`, `HEALTHCHECKS_INVITATIONS_PURGE_URL`,
+  `HEALTHCHECKS_NOTIFICATIONS_PURGE_URL`).
 
 ### Changed
 
@@ -132,11 +136,20 @@ history from before it was started.
   instead of always in French.
 - Unticking an episode, or removing a show, no longer takes the "season
   completed" XP away from everyone else who finished that season.
+- The catalogue refresh no longer stalls behind titles a provider stopped
+  serving, and a refresh where every title failed shows as failed in
+  Admin › Jobs instead of "Nothing to refresh".
+- A dropped connection, a busy server or an update in progress no longer
+  signs you out: only an expired or revoked session does.
 
 ### Security
 
 - Calendar, release and activity feed tokens no longer appear in the API's
   and Caddy's access logs.
+- A session caught reusing a stolen refresh token is cut off at once,
+  including its live connection, instead of up to 15 minutes later.
+- A failed import no longer sends the server's internal error text to the
+  browser; it stays in the logs and the import history.
 
 ## 1.13.0 — Home-screen widgets, actionable notifications, and a phone-first app
 

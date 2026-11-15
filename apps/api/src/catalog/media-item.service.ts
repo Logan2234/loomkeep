@@ -7,8 +7,12 @@ import { Injectable, Logger } from "@nestjs/common";
 import { Cron, CronExpression } from "@nestjs/schedule";
 import { Prisma, type MediaItem } from "@prisma/client";
 import {
+  assertSomeRefreshed,
   CATALOG_SYNC_TTL_MS,
   isCatalogFresh,
+  notFailedSince,
+  summarizeRefresh,
+  type RefreshOutcome,
 } from "../common/catalog-sync.util";
 import { mapWithConcurrency } from "../common/concurrency.util";
 import { isUniqueViolation } from "../common/prisma-error.util";
@@ -85,21 +89,20 @@ export class MediaItemService {
    */
   @Cron(CronExpression.EVERY_6_HOURS, { name: JOB_KEYS.MEDIA_REFRESH_STALE })
   async refreshStale(): Promise<number> {
-    return this.jobRuns.record(
+    const { refreshed } = await this.jobRuns.record(
       JOB_KEYS.MEDIA_REFRESH_STALE,
-      () => this.runRefreshStale(),
-      (refreshed) =>
-        refreshed > 0
-          ? `${refreshed} media item(s) refreshed`
-          : "Nothing to refresh",
+      async () => assertSomeRefreshed(await this.runRefreshStale(), "media"),
+      summarizeRefresh("media item"),
     );
+    return refreshed;
   }
 
-  private async runRefreshStale(): Promise<number> {
+  private async runRefreshStale(): Promise<RefreshOutcome> {
     const now = Date.now();
     const items = await this.prisma.mediaItem.findMany({
       where: {
         entries: { some: { status: { not: "DROPPED" } } },
+        AND: [notFailedSince(new Date(now - CATALOG_SYNC_TTL_MS))],
         // Spelled as positives: a NOT over `status` would drop the rows
         // where it is null.
         OR: [
@@ -128,7 +131,13 @@ export class MediaItemService {
         const sourceId = item.externalIds.find(
           (ext) => ext.source === item.canonicalSource,
         )?.externalId;
-        if (!sourceId) return false;
+
+        if (!sourceId) {
+          this.logger.error(
+            `Media ${item.id} has no ${item.canonicalSource} id to refresh from`,
+          );
+          return false;
+        }
 
         try {
           await this.upsertFromSource(
@@ -153,7 +162,12 @@ export class MediaItemService {
       },
     );
 
-    const refreshed = outcomes.filter(Boolean).length;
+    const failedIds = items.flatMap((item, i) => (outcomes[i] ? [] : item.id));
+    await this.prisma.mediaItem.updateMany({
+      where: { id: { in: failedIds } },
+      data: { syncFailedAt: new Date() },
+    });
+    const refreshed = items.length - failedIds.length;
 
     if (refreshed > 0) {
       this.logger.log(
@@ -161,7 +175,7 @@ export class MediaItemService {
       );
     }
 
-    return refreshed;
+    return { refreshed, failed: failedIds.length };
   }
 
   /** Admin-triggered re-sync: refetches from the canonical source, bypassing the TTL. */
@@ -639,6 +653,7 @@ export class MediaItemService {
       runtimeMin: details.runtimeMin,
       isAdult: details.summary.isAdult,
       lastSyncedAt: new Date(),
+      syncFailedAt: null,
     };
   }
 

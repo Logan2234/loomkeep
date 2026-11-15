@@ -108,6 +108,9 @@ const JOB_LABELS = {
   "admin.updateCheck": () => m.admin_job_update_check(),
   "users.scheduledDeletions": () => m.admin_job_scheduled_deletions(),
   "notifications.pausedReminder": () => m.admin_job_paused_reminder(),
+  "security.purge": () => m.admin_job_security_purge(),
+  "invitations.purge": () => m.admin_job_invitations_purge(),
+  "notifications.purge": () => m.admin_job_notifications_purge(),
 };
 
 export function adminJobLabel(key: string): string {
@@ -136,6 +139,9 @@ const JOB_DESCRIPTIONS = {
     m.admin_job_scheduled_deletions_description(),
   "notifications.pausedReminder": () =>
     m.admin_job_paused_reminder_description(),
+  "security.purge": () => m.admin_job_security_purge_description(),
+  "invitations.purge": () => m.admin_job_invitations_purge_description(),
+  "notifications.purge": () => m.admin_job_notifications_purge_description(),
 };
 
 export function adminJobDescription(key: string): string | null {
@@ -182,6 +188,12 @@ export function adminJobSchedule(key: string): string | null {
       return m.admin_job_daily_at({ time: "05:15" });
     case "notifications.pausedReminder":
       return m.admin_job_hourly();
+    case "security.purge":
+      return m.admin_job_daily_at({ time: "06:00" });
+    case "invitations.purge":
+      return m.admin_job_daily_at({ time: "06:30" });
+    case "notifications.purge":
+      return m.admin_job_daily_at({ time: "07:00" });
     default:
       return null;
   }

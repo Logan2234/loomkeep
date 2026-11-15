@@ -1933,6 +1933,9 @@ model MediaItem {
   sagaKey         String?
   metadata        Json          @default("{}")
   lastSyncedAt    DateTime      @default(now())
+  // Last failed background refresh: keeps the item out of the refresh
+  // job for one cycle (see notFailedSince), cleared by the next sync.
+  syncFailedAt    DateTime?
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 
@@ -2277,6 +2280,9 @@ model GameItem {
   sagaKey                 String?
   metadata                Json       @default("{}")
   lastSyncedAt            DateTime   @default(now())
+  // Last failed background refresh: keeps the item out of the refresh
+  // job for one cycle (see notFailedSince), cleared by the next sync.
+  syncFailedAt            DateTime?
   createdAt               DateTime   @default(now())
   updatedAt               DateTime   @updatedAt
 
@@ -2401,6 +2407,9 @@ model BookItem {
   seriesKey       String?
   metadata        Json       @default("{}")
   lastSyncedAt    DateTime   @default(now())
+  // Last failed background refresh: keeps the item out of the refresh
+  // job for one cycle (see notFailedSince), cleared by the next sync.
+  syncFailedAt    DateTime?
   createdAt       DateTime   @default(now())
   updatedAt       DateTime   @updatedAt
 

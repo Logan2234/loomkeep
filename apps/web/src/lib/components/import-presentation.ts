@@ -170,9 +170,7 @@ export function importListSubtitle(list: ImportPlanList): string {
     : m.import_list_titles({ count });
 }
 
-export function importJobError(
-  job: Pick<ImportJobDto, "error" | "errorCode">,
-): string {
+export function importJobError(job: Pick<ImportJobDto, "errorCode">): string {
   return job.errorCode
     ? resolveApiError(new ApiError(500, "", job.errorCode))
     : m.import_processing_failed();
