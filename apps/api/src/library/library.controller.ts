@@ -39,6 +39,7 @@ import { parseListEntriesQuery } from "../common/entry-lifecycle.util";
 import { toQueryArray } from "../common/query-array.util";
 import { PileSummaryResponseDto } from "../stats/dto/pile-summary-response.dto";
 import { DomainGateService } from "../users/domain-gate.service";
+import { CalendarService } from "./calendar.service";
 import { AddMovieReplayDto } from "./dto/add-movie-replay.dto";
 import { BulkUpdateEntriesBody } from "./dto/bulk-update-entries.dto";
 import { CalendarEntryResponseDto } from "./dto/calendar-entry-response.dto";
@@ -65,6 +66,7 @@ export class LibraryController {
     private readonly libraryService: LibraryService,
     private readonly domainGate: DomainGateService,
     private readonly sagas: SagaService,
+    private readonly calendar: CalendarService,
   ) {}
 
   @Get()
@@ -176,7 +178,7 @@ export class LibraryController {
     @CurrentUser() user: JwtPayload,
     @Headers("accept-language") acceptLanguage?: string,
   ): Promise<CalendarEntryDto[]> {
-    return this.libraryService.getCalendar(user.sub, acceptLanguage);
+    return this.calendar.getCalendar(user.sub, acceptLanguage);
   }
 
   @Get("entries/:id")

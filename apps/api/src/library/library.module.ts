@@ -5,6 +5,7 @@ import { GamificationModule } from "../gamification/gamification.module";
 import { ListsModule } from "../lists/list.module";
 import { ReviewsModule } from "../reviews/reviews.module";
 import { UsersModule } from "../users/users.module";
+import { CalendarService } from "./calendar.service";
 import { LibraryController } from "./library.controller";
 import { LibraryService } from "./library.service";
 import { MediaController } from "./media.controller";
@@ -20,7 +21,7 @@ import { SagaService } from "./saga.service";
     EventsModule,
   ],
   controllers: [LibraryController, MediaController],
-  providers: [LibraryService, SagaService],
-  exports: [LibraryService, SagaService],
+  providers: [LibraryService, SagaService, CalendarService],
+  exports: [LibraryService, SagaService, CalendarService],
 })
 export class LibraryModule {}

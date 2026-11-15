@@ -1,5 +1,5 @@
 import { vi } from "vitest";
-import { LibraryService } from "./library.service";
+import { CalendarService } from "./calendar.service";
 
 describe("local movie release calendar", () => {
   afterEach(() => vi.useRealTimers());
@@ -32,17 +32,7 @@ describe("local movie release calendar", () => {
         findUniqueOrThrow: vi.fn().mockResolvedValue({ watchRegion: "FR" }),
       },
     };
-    const service = new LibraryService(
-      prisma as never,
-      {} as never,
-      {} as never,
-      {} as never,
-      {} as never,
-      {} as never,
-      {} as never,
-      {} as never,
-      {} as never,
-    );
+    const service = new CalendarService(prisma as never);
     expect(await service.getCalendar("u1")).toEqual([
       expect.objectContaining({
         entryId: "e1",
@@ -82,17 +72,7 @@ describe("local movie release calendar", () => {
       libraryEntry: { findMany: vi.fn().mockResolvedValue([]) },
       gameEntry: { findMany: gameEntryFindMany },
     };
-    const service = new LibraryService(
-      prisma as never,
-      {} as never,
-      {} as never,
-      {} as never,
-      {} as never,
-      {} as never,
-      {} as never,
-      {} as never,
-      {} as never,
-    );
+    const service = new CalendarService(prisma as never);
 
     expect(await service.getCalendar("u1")).toEqual([
       expect.objectContaining({

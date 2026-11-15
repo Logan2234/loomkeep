@@ -2,7 +2,6 @@ import {
   ActivityType,
   type BulkEntriesResultDto,
   type BulkEntriesTargetDto,
-  type CalendarEntryDto,
   type CatalogSource,
   Domain,
   type EntryEpisodesResponseDto,
@@ -15,7 +14,6 @@ import {
   type EpisodeWatchDto,
   type EpisodeWatchRestoreDto,
   ErrorCode,
-  isAnimeUnaired,
   isDormant,
   isGhost,
   isRuntimeKnown,
@@ -49,7 +47,6 @@ import { revokeEntryXp } from "../common/entry-lifecycle.util";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import type {
   ExternalSource as DbExternalSource,
-  MediaExternalId,
   MediaItem,
   MovieReplay,
   Prisma,
@@ -83,7 +80,6 @@ import {
 import { canonicalExternalId } from "../common/external-id.util";
 import { compareTitles, timeMs } from "../common/sort.util";
 import { EventsGateway } from "../events/events.gateway";
-import { toGameItemDto } from "../games/game-item.mapper";
 import { AchievementService } from "../gamification/achievements/achievement.service";
 
 import { ACHIEVEMENT_KEYS_BY_XP_REASON } from "../gamification/achievements/triggers";
@@ -103,6 +99,7 @@ import type { BulkUpdateEntriesBody } from "./dto/bulk-update-entries.dto";
 import { UpdateEntryDto } from "./dto/update-entry.dto";
 import { UpsertEntryDto } from "./dto/upsert-entry.dto";
 import { WatchEpisodeDto } from "./dto/watch-episode.dto";
+import { toMediaItemDto } from "./media-item-dto.util";
 import { completedSagaWorks, MEDIA_SAGA_STATUS } from "./saga-progress.util";
 import { deriveStatus, normalizeAiringFinished } from "./status.util";
 
@@ -1509,154 +1506,6 @@ export class LibraryService {
   }
 
   /**
-   * Upcoming local movie releases and episodes (air date today or later) of the series/anime the user
-   * tracks, excluding dropped ones — the release calendar. Shows with muted
-   * alerts stay listed: muting only silences the digest. Each carries the
-   * show's backlog (`episodesBehind`), counted up to the start of today so
-   * an episode airing today is never its own backlog.
-   */
-  async getCalendar(
-    userId: string,
-    acceptLanguage?: string,
-  ): Promise<CalendarEntryDto[]> {
-    const startOfToday = new Date();
-    startOfToday.setHours(0, 0, 0, 0);
-
-    const episodes = await this.prisma.episode.findMany({
-      where: {
-        airDate: { gte: startOfToday },
-        season: {
-          mediaItem: {
-            entries: { some: { userId, status: { not: "DROPPED" } } },
-          },
-        },
-      },
-      orderBy: { airDate: "asc" },
-      take: 60,
-      include: {
-        season: {
-          include: {
-            mediaItem: {
-              include: {
-                externalIds: true,
-                // Unique per (userId, mediaItemId), and guaranteed to exist
-                // by the `where` above — this is the user's tracked entry.
-                entries: {
-                  where: { userId },
-                  select: { id: true, episodeAlertsMuted: true },
-                },
-              },
-            },
-          },
-        },
-      },
-    });
-
-    const behind = await this.episodesBehind(
-      userId,
-      [...new Set(episodes.map((e) => e.season.mediaItemId))],
-      startOfToday,
-    );
-
-    const episodeEntries: CalendarEntryDto[] = episodes.map((episode) => ({
-      mediaItem: toMediaItemDto(episode.season.mediaItem),
-      game: null,
-      entryId: episode.season.mediaItem.entries[0].id,
-      episodeAlertsMuted:
-        episode.season.mediaItem.entries[0].episodeAlertsMuted,
-      episodesBehind: behind.get(episode.season.mediaItemId) ?? 0,
-      seasonNumber: episode.season.number,
-      episodeNumber: episode.number,
-      episodeTitle: episode.title,
-      // airDate is guaranteed non-null by the `gte` filter above.
-      airDate: episode.airDate!.toISOString(),
-    }));
-    const movies = await this.prisma.libraryEntry.findMany({
-      where: {
-        userId,
-        status: { not: "DROPPED" },
-        mediaItem: { type: "MOVIE" },
-      },
-      include: { mediaItem: { include: { externalIds: true } } },
-    });
-    const gameEntries = await this.calendarGames(userId);
-    if (movies.length === 0)
-      return [...episodeEntries, ...gameEntries].sort((a, b) =>
-        a.airDate.localeCompare(b.airDate),
-      );
-    const user = await this.prisma.user.findUniqueOrThrow({
-      where: { id: userId },
-      select: { watchRegion: true },
-    });
-    const today = utcDateKey(new Date());
-    const movieEntries: CalendarEntryDto[] = movies.flatMap((entry) => {
-      const region = resolveWatchRegion(
-        user.watchRegion ?? entry.movieReleaseRegion ?? undefined,
-        acceptLanguage,
-      );
-      const release = movieReleaseInfo(
-        movieReleaseDates(entry.mediaItem.movieReleaseDates),
-        entry.mediaItem.status,
-        region,
-      );
-      if (!release.localDate || release.localDate < today || !release.localType)
-        return [];
-      return [
-        {
-          mediaItem: toMediaItemDto(entry.mediaItem),
-          game: null,
-          entryId: entry.id,
-          episodeAlertsMuted: !entry.movieReleaseReminderAt,
-          episodesBehind: 0,
-          seasonNumber: null,
-          episodeNumber: null,
-          episodeTitle: null,
-          airDate: `${release.localDate}T00:00:00.000Z`,
-          releaseRegion: region,
-          releaseType: release.localType,
-        },
-      ];
-    });
-    return [...episodeEntries, ...movieEntries, ...gameEntries].sort((a, b) =>
-      a.airDate.localeCompare(b.airDate),
-    );
-  }
-
-  /**
-   * Upcoming releases of the games the user tracks, when their day is known —
-   * or their month, on its 1st. A vaguer date has no day to sit on.
-   */
-  private async calendarGames(userId: string): Promise<CalendarEntryDto[]> {
-    const today = utcDateKey(new Date());
-    const entries = await this.prisma.gameEntry.findMany({
-      where: {
-        userId,
-        status: { not: "DROPPED" },
-        user: { enabledDomains: { has: "GAMES" } },
-        gameItem: {
-          releaseDatePrecision: { in: ["DAY", "MONTH"] },
-          releaseDate: { gte: new Date(`${today}T00:00:00.000Z`) },
-        },
-      },
-      include: { gameItem: { include: { externalIds: true } } },
-    });
-    return entries.map((entry) => ({
-      mediaItem: null,
-      game: toGameItemDto(entry.gameItem),
-      entryId: entry.id,
-      episodeAlertsMuted: !entry.releaseReminderAt,
-      episodesBehind: 0,
-      seasonNumber: null,
-      episodeNumber: null,
-      episodeTitle: null,
-      releasePrecision:
-        entry.gameItem.releaseDatePrecision === "MONTH" ? "MONTH" : "DAY",
-      // Non-null: guaranteed by the `gte` filter above.
-      airDate: entry.gameItem.releaseDate!.toISOString(),
-    }));
-  }
-
-  /**
    * Undo watching an episode: removes the user's most recent watch for it
    * (so it decrements a rewatch count, and unwatches the episode at one watch).
    */
@@ -2167,36 +2016,6 @@ export class LibraryService {
     }
 
     return statuses;
-  }
-
-  /**
-   * Per media: regular episodes aired before `before` (or undated — AniList's
-   * generated ones, available like in `computeProgress`) the user never
-   * watched. Media with no backlog are absent from the map.
-   */
-  private async episodesBehind(
-    userId: string,
-    mediaItemIds: string[],
-    before: Date,
-  ): Promise<Map<string, number>> {
-    if (mediaItemIds.length === 0) return new Map();
-
-    const rows = await this.prisma.$queryRaw<
-      { mediaItemId: string; behind: bigint }[]
-    >`
-      SELECT s."mediaItemId", COUNT(*) AS behind
-      FROM "Season" s
-      JOIN "Episode" e ON e."seasonId" = s.id
-      WHERE s."mediaItemId" = ANY(${mediaItemIds})
-        AND s.number > 0
-        AND (e."airDate" IS NULL OR e."airDate" < ${before})
-        AND NOT EXISTS (
-          SELECT 1 FROM "EpisodeWatch" w
-          WHERE w."episodeId" = e.id AND w."userId" = ${userId}
-        )
-      GROUP BY s."mediaItemId"
-    `;
-    return new Map(rows.map((r) => [r.mediaItemId, Number(r.behind)]));
   }
 
   /**
@@ -2767,29 +2586,6 @@ const NO_COMMUNITY_RATING = {
   reviewAverage: null,
   myRating: null,
 } as const;
-
-function toMediaItemDto(
-  media: MediaItem & { externalIds: MediaExternalId[] },
-  translatedTitle?: string,
-): MediaItemDto {
-  return {
-    id: media.id,
-    type: media.type,
-    title: translatedTitle ?? media.title,
-    posterUrl: media.posterUrl,
-    canonicalSource: media.canonicalSource,
-    sourceId: canonicalExternalId(media, media.externalIds),
-    ...((media.type === "MOVIE" &&
-      movieReleaseInfo(
-        movieReleaseDates(media.movieReleaseDates),
-        media.status,
-        "US",
-      ).upcoming) ||
-    (media.type === "ANIME" && isAnimeUnaired(media.status))
-      ? { upcoming: true }
-      : {}),
-  };
-}
 
 function toReplayDto(replay: MovieReplay): MovieReplayDto {
   return { id: replay.id, finishedAt: replay.finishedAt.toISOString() };

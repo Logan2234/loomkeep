@@ -1,7 +1,7 @@
 import type { ConfigService } from "@nestjs/config";
 import { vi } from "vitest";
 import type { EntitlementService } from "../../entitlements/entitlement.service";
-import type { LibraryService } from "../../library/library.service";
+import type { CalendarService } from "../../library/calendar.service";
 import type { PrismaService } from "../../prisma/prisma.service";
 import { CalendarFeedService } from "./calendar-feed.service";
 
@@ -25,12 +25,12 @@ function makeService(
   const config = {
     get: vi.fn().mockReturnValue("https://loomkeep.app,http://localhost:5173"),
   } as unknown as ConfigService;
-  const library = {
+  const calendar = {
     getCalendar: vi.fn().mockResolvedValue([]),
-  } as unknown as LibraryService;
+  } as unknown as CalendarService;
 
   return {
-    service: new CalendarFeedService(prisma, entitlements, library, config),
+    service: new CalendarFeedService(prisma, entitlements, calendar, config),
     prisma,
   };
 }
