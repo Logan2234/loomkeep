@@ -7,6 +7,7 @@ import { join } from "node:path";
 import { Public } from "../auth/decorators/public.decorator";
 import { isRegistrationEnabled } from "../auth/registration.config";
 import { isChatEnabled } from "../chat/chat.config";
+import { isHardened } from "../common/hardening.util";
 import { configuredSupportAddress } from "../common/instance-defaults";
 import { primaryWebOrigin } from "../common/web-origin.util";
 import { isGamificationEnabled } from "../gamification/gamification.config";
@@ -33,7 +34,7 @@ export class PublicConfigController {
       registrationEnabled: isRegistrationEnabled(this.config),
       publicApiEnabled: instanceSetting(this.config, "publicApiEnabled"),
       erdEnabled: this.config.get<string>("NODE_ENV") === "development",
-      adminMfaEnforced: this.config.get<string>("NODE_ENV") === "production",
+      adminMfaEnforced: isHardened((key) => this.config.get<string>(key)),
       version,
       // Set at build time (see apps/api/Dockerfile) — "unknown" outside a
       // CI-built image (pnpm dev, or any docker compose run against a

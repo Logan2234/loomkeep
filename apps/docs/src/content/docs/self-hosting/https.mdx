@@ -61,6 +61,11 @@ PUBLIC_API_URL=https://loomkeep.example.com/api
 WEB_ORIGIN=https://loomkeep.example.com
 ```
 
+An https `WEB_ORIGIN` turns on the API's hardening: session cookies marked
+`Secure`, a second factor required on admin accounts, and
+`MFA_ENCRYPTION_KEY` required at startup. Set that key first, and give the
+admin account an authenticator app, an emailed code or a security key.
+
 So that rate limits and logs see visitors' real addresses rather than your
 proxy's, tell the API to trust it, in a small override of your own, for
 instance `docker/docker-compose.proxy.yml`, added to `COMPOSE_FILE`:

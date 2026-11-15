@@ -6,6 +6,7 @@ import {
   createHash,
   randomBytes,
 } from "node:crypto";
+import { isHardened } from "../common/hardening.util";
 import {
   ACCESS_TOKEN_TTL_SECONDS,
   REFRESH_TOKEN_TTL_DAYS,
@@ -17,7 +18,7 @@ const INITIALIZATION_VECTOR_BYTES = 12;
 const AUTHENTICATION_TAG_BYTES = 16;
 
 function cookieAttributes(path: string, maxAge: number): string {
-  const secure = process.env.NODE_ENV === "production" ? "; Secure" : "";
+  const secure = isHardened((key) => process.env[key]) ? "; Secure" : "";
   return `Path=${path}; Max-Age=${maxAge}; HttpOnly; SameSite=Strict${secure}`;
 }
 

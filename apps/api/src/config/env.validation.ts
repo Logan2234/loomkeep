@@ -1,3 +1,5 @@
+import { isHardened } from "../common/hardening.util";
+
 /**
  * Fail-fast check for `ConfigModule.forRoot({ validate })` — everything else
  * (catalog provider keys, backups, SMTP, push...) stays lazily read and
@@ -17,11 +19,11 @@ export function validateEnv(
 ): Record<string, string | undefined> {
   const missing: string[] = ALWAYS_REQUIRED.filter((key) => !env[key]);
 
-  // AdminGuard enforces MFA on every admin account unconditionally once
-  // NODE_ENV=production — without this key, TOTP setup throws and
+  // AdminGuard enforces MFA on every admin account on a hardened instance
+  // (see isHardened) — without this key, TOTP setup throws and
   // email MFA depends on SMTP being configured too, so a production admin
   // with neither can end up permanently locked out of /admin.
-  if (env.NODE_ENV === "production" && !env.MFA_ENCRYPTION_KEY) {
+  if (isHardened((key) => env[key]) && !env.MFA_ENCRYPTION_KEY) {
     missing.push("MFA_ENCRYPTION_KEY");
   }
 

@@ -13,6 +13,16 @@ history from before it was started.
 
 ## [Unreleased]
 
+### Breaking changes
+
+- **Self-hosting over HTTPS without the HTTPS override: set
+  `MFA_ENCRYPTION_KEY` before upgrading.** Once `WEB_ORIGIN` starts with
+  `https://`, the API hardens itself even with `NODE_ENV` unset: it refuses
+  to start without `MFA_ENCRYPTION_KEY`, marks session cookies `Secure`, and
+  admin accounts need a second factor (authenticator app, emailed code or
+  security key) to open the admin panel. A plain-http `WEB_ORIGIN` (an
+  instance on your home network) is unaffected.
+
 ### Added
 
 - Person pages: open a film's director, a series' creator or a cast member
