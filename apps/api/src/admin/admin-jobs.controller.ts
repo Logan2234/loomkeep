@@ -9,6 +9,7 @@ import {
 } from "@nestjs/common";
 import { ApiOkResponse } from "@nestjs/swagger";
 import { ApiKeyLifecycleService } from "../api-keys/api-key-lifecycle.service";
+import { InvitationService } from "../auth/invitation.service";
 import { BookItemService } from "../books/book-item.service";
 import { MediaItemService } from "../catalog/media-item.service";
 import { AppException } from "../common/app.exception";
@@ -21,6 +22,7 @@ import { NotificationDigestService } from "../notifications/notification-digest.
 import { NotificationService } from "../notifications/notification.service";
 import { PausedReminderService } from "../notifications/paused-reminder.service";
 import { ReportService } from "../reports/report.service";
+import { SecurityEventService } from "../security/security-event.service";
 import { InactiveAccountService } from "../users/inactive-account.service";
 import { ScheduledDeletionService } from "../users/scheduled-deletion.service";
 import { AdminOnly } from "./admin-only.decorator";
@@ -53,6 +55,8 @@ export class AdminJobsController {
     private readonly updateCheck: UpdateCheckService,
     private readonly scheduledDeletions: ScheduledDeletionService,
     private readonly pausedReminders: PausedReminderService,
+    private readonly securityEvents: SecurityEventService,
+    private readonly invitations: InvitationService,
   ) {}
 
   /** Every known scheduled job, with its recent run history. */
@@ -91,6 +95,9 @@ export class AdminJobsController {
       [JOB_KEYS.UPDATE_CHECK]: () => this.updateCheck.runScheduled(),
       [JOB_KEYS.SCHEDULED_DELETIONS]: () => this.scheduledDeletions.scan(),
       [JOB_KEYS.PAUSED_REMINDER]: () => this.pausedReminders.runReminders(),
+      [JOB_KEYS.SECURITY_PURGE]: () => this.securityEvents.runPurgeJob(),
+      [JOB_KEYS.INVITATIONS_PURGE]: () => this.invitations.runPurgeJob(),
+      [JOB_KEYS.NOTIFICATIONS_PURGE]: () => this.notifications.runPurgeJob(),
     };
   }
 

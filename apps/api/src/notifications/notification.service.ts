@@ -1048,8 +1048,16 @@ export class NotificationService {
    * and the release rows the digest is done with. Unread entries stay: the
    * inactive-account purge bounds them.
    */
-  @Cron(NOTIFICATIONS_PURGE_CRON)
-  async purge(now = new Date()): Promise<void> {
+  @Cron(NOTIFICATIONS_PURGE_CRON, { name: JOB_KEYS.NOTIFICATIONS_PURGE })
+  runPurgeJob(): Promise<number> {
+    return this.jobRuns.record(
+      JOB_KEYS.NOTIFICATIONS_PURGE,
+      () => this.purge(),
+      (count) => `${count} notification(s) purged`,
+    );
+  }
+
+  async purge(now = new Date()): Promise<number> {
     const [read, releases] = await Promise.all([
       this.prisma.notification.deleteMany({
         where: { readAt: { lt: sinceDaysAgo(now, READ_RETENTION_DAYS) } },
@@ -1064,6 +1072,7 @@ export class NotificationService {
     const count = read.count + releases.count;
 
     if (count > 0) this.logger.log(`Purged ${count} notifications`);
+    return count;
   }
 
   /** Lets the account's other devices refresh their bell and badge. */

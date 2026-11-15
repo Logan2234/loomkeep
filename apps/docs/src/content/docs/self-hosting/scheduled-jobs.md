@@ -23,9 +23,9 @@ each job's recent runs and runs one by hand.
 | Update check             | 5:30 a.m.     | Reads the version published on GitHub, shown in Admin › Services. Turned off by `UPDATE_CHECK_ENABLED=false`.                  | `HEALTHCHECKS_UPDATE_CHECK_URL`                    |
 | API keys                 | 6 a.m.        | Warns a week before a key expires, and deletes keys unused for a year.                                                         | `HEALTHCHECKS_API_KEYS_MAINTENANCE_URL`            |
 | Reports digest           | 7 a.m.        | Emails administrators the pending moderation reports, if there are any.                                                        | `HEALTHCHECKS_REPORTS_DIGEST_URL`                  |
-| Security log clean-up    | 6 a.m.        | Deletes security log entries older than a year.                                                                                | —                                                  |
-| Invitations clean-up     | 6:30 a.m.     | Deletes invitations left unused for 30 days after they expired or were revoked.                                                | —                                                  |
-| Notifications clean-up   | 7 a.m.        | Deletes notifications read over 90 days ago, and new-release records once 30 days old.                                         | —                                                  |
+| Security log clean-up    | 6 a.m.        | Deletes security log entries older than a year, and sign-in codes and links that expired unused.                               | `HEALTHCHECKS_SECURITY_PURGE_URL`                  |
+| Invitations clean-up     | 6:30 a.m.     | Deletes invitations left unused for 30 days after they expired or were revoked.                                                | `HEALTHCHECKS_INVITATIONS_PURGE_URL`               |
+| Notifications clean-up   | 7 a.m.        | Deletes notifications read over 90 days ago, and new-release records once 30 days old.                                         | `HEALTHCHECKS_NOTIFICATIONS_PURGE_URL`             |
 
 To be alerted when a job stops running, see
 [Monitoring](/self-hosting/optional-services/monitoring/#scheduled-jobs).

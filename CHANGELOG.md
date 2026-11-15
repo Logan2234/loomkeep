@@ -35,6 +35,10 @@ history from before it was started.
   stay), picking up after the episode you've just seen, until every episode
   is seen again. A movie you've seen can go back to To watch from its "…"
   menu.
+- Admin › Jobs now lists the security log, invitations and notifications
+  clean-ups, with a run button and an optional Healthchecks.io variable each
+  (`HEALTHCHECKS_SECURITY_PURGE_URL`, `HEALTHCHECKS_INVITATIONS_PURGE_URL`,
+  `HEALTHCHECKS_NOTIFICATIONS_PURGE_URL`).
 
 ### Changed
 

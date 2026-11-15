@@ -3,6 +3,7 @@ import { JwtModule } from "@nestjs/jwt";
 import { ApiKeysModule } from "../api-keys/api-keys.module";
 import { EventsModule } from "../events/events.module";
 import { GamificationModule } from "../gamification/gamification.module";
+import { JobsModule } from "../jobs/jobs.module";
 import { MailModule } from "../mail/mail.module";
 import { AdminAlertModule } from "../notifications/admin-alert.module";
 import { NotificationModule } from "../notifications/notification.module";
@@ -31,6 +32,7 @@ import { WebauthnService } from "./webauthn.service";
     EventsModule,
     NotificationModule,
     AdminAlertModule,
+    JobsModule,
   ],
   controllers: [
     AuthController,
