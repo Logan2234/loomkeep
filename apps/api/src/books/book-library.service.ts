@@ -209,8 +209,8 @@ export class BookLibraryService {
     private readonly achievements: AchievementService,
     private readonly events: EventsGateway,
     private readonly lists: ListService,
-    private readonly sessionXp?: SessionXpService,
-    private readonly sagas?: BookSagaService,
+    private readonly sessionXp: SessionXpService,
+    private readonly sagas: BookSagaService,
   ) {}
 
   /**
@@ -251,7 +251,7 @@ export class BookLibraryService {
       where: { id: bookItemId },
       select: { seriesKey: true },
     });
-    if (!item?.seriesKey || !this.sagas) return;
+    if (!item?.seriesKey) return;
     const saga = await this.sagas.completed(userId, item.seriesKey);
     if (!saga) return;
 
@@ -755,10 +755,8 @@ export class BookLibraryService {
       ),
     );
 
-    if (this.sessionXp) {
-      for (const session of sessions) {
-        await this.sessionXp.refreshAfterDelete(userId, session.createdAt);
-      }
+    for (const session of sessions) {
+      await this.sessionXp.refreshAfterDelete(userId, session.createdAt);
     }
   }
 

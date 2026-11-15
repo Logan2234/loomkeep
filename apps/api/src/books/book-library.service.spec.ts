@@ -1,6 +1,12 @@
 import { vi } from "vitest";
 import type { PrismaService } from "../prisma/prisma.service";
-import { stubAchievements, stubEvents, stubXp } from "../test-utils/stubs";
+import {
+  stubAchievements,
+  stubEvents,
+  stubSagas,
+  stubSessionXp,
+  stubXp,
+} from "../test-utils/stubs";
 import type { AgeGateService } from "../users/age-gate.service";
 import type { BookItemService } from "./book-item.service";
 import { BookLibraryService } from "./book-library.service";
@@ -85,6 +91,7 @@ describe("BookLibraryService.deleteEntry", () => {
       stubEvents(),
       {} as import("../lists/list.service").ListService,
       { refreshAfterDelete } as never,
+      stubSagas(),
     );
 
     await service.deleteEntry("user-1", "entry-1");
@@ -127,6 +134,8 @@ describe("BookLibraryService.getPile", () => {
       stubAchievements(),
       stubEvents(),
       {} as import("../lists/list.service").ListService,
+      stubSessionXp(),
+      stubSagas(),
     );
 
     await service.getPile("user-1", { statuses: ["PAUSED"] });
@@ -204,6 +213,8 @@ describe("BookLibraryService — finishedAt sync", () => {
       stubAchievements(),
       stubEvents(),
       {} as import("../lists/list.service").ListService,
+      stubSessionXp(),
+      stubSagas(),
     );
 
     const result = await service.updateEntry("user-1", "e1", {
@@ -272,6 +283,8 @@ describe("BookLibraryService — finishedAt sync", () => {
       stubAchievements(),
       stubEvents(),
       {} as import("../lists/list.service").ListService,
+      stubSessionXp(),
+      stubSagas(),
     );
 
     const result = await service.updateEntry("user-1", "e1", {
@@ -324,6 +337,8 @@ describe("BookLibraryService reading goal", () => {
       stubAchievements(),
       stubEvents(),
       {} as import("../lists/list.service").ListService,
+      stubSessionXp(),
+      stubSagas(),
     );
   }
 
@@ -437,6 +452,8 @@ describe("BookLibraryService — XP wiring", () => {
       stubAchievements(),
       events,
       {} as import("../lists/list.service").ListService,
+      stubSessionXp(),
+      stubSagas(),
     );
 
     await service.upsertEntry("user-1", {

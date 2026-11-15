@@ -193,8 +193,8 @@ export class GameLibraryService {
     private readonly achievements: AchievementService,
     private readonly events: EventsGateway,
     private readonly lists: ListService,
-    private readonly sessionXp?: SessionXpService,
-    private readonly sagas?: GameSagaService,
+    private readonly sessionXp: SessionXpService,
+    private readonly sagas: GameSagaService,
   ) {}
 
   /**
@@ -225,7 +225,7 @@ export class GameLibraryService {
       where: { id: gameItemId },
       select: { sagaKey: true },
     });
-    if (!item?.sagaKey || !this.sagas) return;
+    if (!item?.sagaKey) return;
     const saga = await this.sagas.completed(userId, item.sagaKey);
     if (!saga) return;
 
@@ -755,10 +755,8 @@ export class GameLibraryService {
       ),
     );
 
-    if (this.sessionXp) {
-      for (const session of sessions) {
-        await this.sessionXp.refreshAfterDelete(userId, session.createdAt);
-      }
+    for (const session of sessions) {
+      await this.sessionXp.refreshAfterDelete(userId, session.createdAt);
     }
   }
 

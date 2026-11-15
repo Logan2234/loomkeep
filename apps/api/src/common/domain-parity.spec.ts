@@ -14,6 +14,7 @@ import { LibraryService } from "../library/library.service";
 import { MusicItemService } from "../music/music-item.service";
 import { MusicLibraryService } from "../music/music-library.service";
 import type { PrismaService } from "../prisma/prisma.service";
+import { stubSagas } from "../test-utils/stubs";
 
 /**
  * Parity across the four library domains. Each has its own services and
@@ -281,6 +282,7 @@ const DELETE_ENTRY: Record<
       unused,
       unused,
       sessionXp,
+      stubSagas(),
     ),
   BOOKS: (prisma, { xp, activity, sessionXp }) =>
     new BookLibraryService(
@@ -294,6 +296,7 @@ const DELETE_ENTRY: Record<
       unused,
       unused,
       sessionXp,
+      stubSagas(),
     ),
   MUSIC: (prisma, { xp, activity }) =>
     new MusicLibraryService(
