@@ -586,7 +586,11 @@ export class LibraryService {
             types.get(entry.id) !== MediaType.MOVIE
           ) {
             if (entry.status === EntryStatus.UP_TO_DATE) return false;
-            return this.watchAllAired(userId, entry.itemId);
+            return this.watchAllAired(
+              userId,
+              entry.itemId,
+              types.get(entry.id) as MediaType,
+            );
           }
 
           await this.updateEntry(userId, entry.id, {
@@ -630,22 +634,48 @@ export class LibraryService {
     return (await rows("recent")).filter(keep).map((row) => row.id);
   }
 
-  /** Every aired episode of every regular season watched (specials never count, as for progress). */
+  /**
+   * Every aired episode of every regular season watched (specials never count,
+   * as for progress), in one pass: one read, one insert, one XP and progress
+   * sync for the whole series. Going season by season through watchSeason()
+   * repeated all of that per season, which made a bulk "completed" over a
+   * selection of long series run past the proxy's timeout.
+   */
   private async watchAllAired(
     userId: string,
     mediaItemId: string,
+    type: MediaType,
   ): Promise<boolean> {
-    const seasons = await this.prisma.season.findMany({
-      where: { mediaItemId, number: { not: 0 }, episodes: { some: {} } },
-      orderBy: { number: "asc" },
-      select: { id: true },
+    const episodes = await this.prisma.episode.findMany({
+      where: { season: { mediaItemId, number: { gt: 0 } } },
+      select: { id: true, airDate: true },
     });
+    if (episodes.length === 0) return false;
 
-    for (const season of seasons) {
-      await this.watchSeason(userId, season.id);
-    }
+    const episodeIds = episodes.map((episode) => episode.id);
+    const previouslyWatchedIds = await this.watchedEpisodeIds(userId, {
+      episodeId: { in: episodeIds },
+    });
+    // Unreleased episodes (future airDate) are skipped, as watchSeason does.
+    const now = new Date();
+    const airedIds = episodes
+      .filter((episode) => !episode.airDate || episode.airDate <= now)
+      .map((episode) => episode.id);
 
-    return seasons.length > 0;
+    await this.markWatchedIfNew(
+      userId,
+      airedIds,
+      await this.rewatchStartedAt(userId, mediaItemId),
+    );
+    await this.syncFinishedAt(userId, mediaItemId, type);
+    await this.endFinishedRewatches(userId, [mediaItemId]);
+    await this.emitSeasonFinishedMilestones(
+      userId,
+      mediaItemId,
+      episodeIds,
+      previouslyWatchedIds,
+    );
+    return true;
   }
 
   /**

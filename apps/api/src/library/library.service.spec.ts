@@ -1174,7 +1174,14 @@ describe("LibraryService.getPile", () => {
 });
 
 describe("LibraryService.bulkUpdate", () => {
-  function serviceWith(entries: object[], seasons: object[]) {
+  type OnePass = {
+    markWatchedIfNew: (...args: unknown[]) => Promise<void>;
+    syncFinishedAt: (...args: unknown[]) => Promise<Date | null>;
+    endFinishedRewatches: (...args: unknown[]) => Promise<void>;
+    emitSeasonFinishedMilestones: (...args: unknown[]) => Promise<void>;
+  };
+
+  function serviceWith(entries: object[], episodes: object[]) {
     const prisma = {
       mediaItem: { findUnique: vi.fn().mockResolvedValue(null) },
       libraryEntry: {
@@ -1186,8 +1193,12 @@ describe("LibraryService.bulkUpdate", () => {
           )
           // the targeted entries themselves
           .mockResolvedValueOnce(entries),
+        // rewatchStartedAt
+        findUnique: vi.fn().mockResolvedValue({ rewatchStartedAt: null }),
       },
-      season: { findMany: vi.fn().mockResolvedValue(seasons) },
+      episode: { findMany: vi.fn().mockResolvedValue(episodes) },
+      // watchedEpisodeIds: nothing watched yet
+      episodeWatch: { findMany: vi.fn().mockResolvedValue([]) },
     } as unknown as PrismaService;
     const service = new LibraryService(
       prisma,
@@ -1203,10 +1214,26 @@ describe("LibraryService.bulkUpdate", () => {
     const updateEntry = vi
       .spyOn(service, "updateEntry")
       .mockResolvedValue({} as never);
-    const watchSeason = vi
-      .spyOn(service, "watchSeason")
+    const watchSeason = vi.spyOn(service, "watchSeason");
+    const internals = service as unknown as OnePass;
+    const markWatched = vi
+      .spyOn(internals, "markWatchedIfNew")
       .mockResolvedValue(undefined);
-    return { service, updateEntry, watchSeason };
+    const syncFinished = vi
+      .spyOn(internals, "syncFinishedAt")
+      .mockResolvedValue(null);
+    vi.spyOn(internals, "endFinishedRewatches").mockResolvedValue(undefined);
+    const milestones = vi
+      .spyOn(internals, "emitSeasonFinishedMilestones")
+      .mockResolvedValue(undefined);
+    return {
+      service,
+      updateEntry,
+      watchSeason,
+      markWatched,
+      syncFinished,
+      milestones,
+    };
   }
 
   const entry = (id: string, type: string, status: string) => ({
@@ -1218,10 +1245,24 @@ describe("LibraryService.bulkUpdate", () => {
     mediaItem: { type },
   });
 
-  it("completes a movie through its status, and a series by watching every aired season", async () => {
-    const { service, updateEntry, watchSeason } = serviceWith(
+  // Season by season, a long series cost a full watch-and-sync round per
+  // season: a selection of them ran past the proxy's timeout (audit
+  // 2026-11-14, PRF-02).
+  it("completes a movie through its status, and a series in one pass over its aired episodes", async () => {
+    const {
+      service,
+      updateEntry,
+      watchSeason,
+      markWatched,
+      syncFinished,
+      milestones,
+    } = serviceWith(
       [entry("movie", "MOVIE", "PLANNED"), entry("show", "SERIES", "WATCHING")],
-      [{ id: "s1" }, { id: "s2" }],
+      [
+        { id: "e1", airDate: new Date("2020-01-01T00:00:00Z") },
+        { id: "e2", airDate: null },
+        { id: "e3", airDate: new Date("2999-01-01T00:00:00Z") },
+      ],
     );
 
     const result = await service.bulkUpdate("user-1", {
@@ -1232,15 +1273,25 @@ describe("LibraryService.bulkUpdate", () => {
     expect(updateEntry).toHaveBeenCalledWith("user-1", "movie", {
       status: "COMPLETED",
     });
-    expect(watchSeason).toHaveBeenNthCalledWith(1, "user-1", "s1");
-    expect(watchSeason).toHaveBeenNthCalledWith(2, "user-1", "s2");
+    expect(watchSeason).not.toHaveBeenCalled();
+    // One mark for every aired episode, the future one left out.
+    expect(markWatched).toHaveBeenCalledOnce();
+    expect(markWatched).toHaveBeenCalledWith("user-1", ["e1", "e2"], null);
+    expect(syncFinished).toHaveBeenCalledOnce();
+    expect(syncFinished).toHaveBeenCalledWith("user-1", "show-item", "SERIES");
+    expect(milestones).toHaveBeenCalledWith(
+      "user-1",
+      "show-item",
+      ["e1", "e2", "e3"],
+      new Set(),
+    );
     expect(result).toEqual({ updated: 2, skipped: 0 });
   });
 
-  it("leaves a series already caught up alone", async () => {
-    const { service, watchSeason } = serviceWith(
-      [entry("show", "ANIME", "UP_TO_DATE")],
-      [{ id: "s1" }],
+  it("skips a series with no regular episode", async () => {
+    const { service, markWatched } = serviceWith(
+      [entry("show", "SERIES", "WATCHING")],
+      [],
     );
 
     const result = await service.bulkUpdate("user-1", {
@@ -1248,7 +1299,22 @@ describe("LibraryService.bulkUpdate", () => {
       status: "COMPLETED",
     });
 
-    expect(watchSeason).not.toHaveBeenCalled();
+    expect(markWatched).not.toHaveBeenCalled();
+    expect(result).toEqual({ updated: 0, skipped: 1 });
+  });
+
+  it("leaves a series already caught up alone", async () => {
+    const { service, markWatched } = serviceWith(
+      [entry("show", "ANIME", "UP_TO_DATE")],
+      [{ id: "e1", airDate: null }],
+    );
+
+    const result = await service.bulkUpdate("user-1", {
+      ids: ["show"],
+      status: "COMPLETED",
+    });
+
+    expect(markWatched).not.toHaveBeenCalled();
     expect(result).toEqual({ updated: 0, skipped: 1 });
   });
 });

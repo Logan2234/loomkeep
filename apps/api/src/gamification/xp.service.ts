@@ -86,13 +86,14 @@ export class XpService {
     amountOverride?: number,
     subject?: XpSubject,
   ): Promise<boolean> {
-    const credited = await this.creditEntry(
-      userId,
-      reason,
-      sourceId,
-      amountOverride,
-      subject ? new Map([[sourceId, subject]]) : undefined,
-    );
+    const credited =
+      (await this.creditEntry(
+        userId,
+        reason,
+        sourceId,
+        amountOverride,
+        subject ? new Map([[sourceId, subject]]) : undefined,
+      )) === "credited";
 
     if (credited) {
       await this.recomputeScore(userId);
@@ -173,8 +174,18 @@ export class XpService {
     let credited = false;
 
     for (const sourceId of sourceIds) {
-      if (await this.creditEntry(userId, reason, sourceId, undefined, subjects))
-        credited = true;
+      const outcome = await this.creditEntry(
+        userId,
+        reason,
+        sourceId,
+        undefined,
+        subjects,
+      );
+      // The cap holds for the rest of the batch too: marking a long series
+      // used to open a locked transaction per remaining episode just to be
+      // told so again.
+      if (outcome === "capped") break;
+      if (outcome === "credited") credited = true;
     }
 
     if (credited) await this.recomputeScore(userId);
@@ -182,8 +193,10 @@ export class XpService {
 
   /**
    * Writes one ledger row if the feature, the social gate and the daily cap
-   * all allow it. Returns whether a row was actually created — i.e. whether
-   * the caller owes a `recomputeScore`.
+   * all allow it. "credited" means a row was created — the caller owes a
+   * `recomputeScore`; "capped" that the day's cap is reached, for this source
+   * and any other of the same reason; "skipped" anything else (feature off,
+   * already credited).
    */
   private async creditEntry(
     userId: string,
@@ -191,15 +204,15 @@ export class XpService {
     sourceId: string,
     amountOverride?: number,
     subjects?: Map<string, XpSubject>,
-  ): Promise<boolean> {
-    if (!isGamificationEnabled(this.config)) return false;
+  ): Promise<"credited" | "capped" | "skipped"> {
+    if (!isGamificationEnabled(this.config)) return "skipped";
 
     const rule = XP_RULES[reason];
-    if (rule.socialGated && !isSocialEnabled(this.config)) return false;
+    if (rule.socialGated && !isSocialEnabled(this.config)) return "skipped";
     // ADMIN_ADJUSTMENT has no fixed amount; callers write its signed value
     // directly instead of using this registry-driven path.
     const amount = amountOverride ?? rule.amount;
-    if (amount === undefined) return false;
+    if (amount === undefined) return "skipped";
 
     const subject = (
       subjects ??
@@ -222,7 +235,7 @@ export class XpService {
       // the unique constraint is what makes it idempotent.
       if (cap === undefined) {
         await this.prisma.xpEntry.create({ data });
-        return true;
+        return "credited";
       }
 
       return await this.prisma.$transaction(async (tx) => {
@@ -233,10 +246,12 @@ export class XpService {
         // sources). Released on commit/rollback, hence _xact_.
         await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${userId}::text), hashtext(${reason}::text))`;
 
-        if (await this.dailyCapReached(tx, userId, reason, cap)) return false;
+        if (await this.dailyCapReached(tx, userId, reason, cap)) {
+          return "capped" as const;
+        }
 
         await tx.xpEntry.create({ data });
-        return true;
+        return "credited" as const;
       });
     } catch (err) {
       // A concurrent/retried award() on the same source hits the unique
@@ -245,7 +260,7 @@ export class XpService {
         this.logger.debug(
           `XP entry already exists for ${reason}/${sourceId} (user ${userId})`,
         );
-        return false;
+        return "skipped";
       }
 
       throw err;
