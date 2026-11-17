@@ -23,6 +23,8 @@ const PARAMS = {
 const EXCLUDED = {
   // TMDB and IGDB need API keys the ephemeral stack doesn't have.
   "/app/media/[type]/[id]": "TMDB key",
+  "/app/studios/[source]/[id]": "TMDB key",
+  "/app/networks/[source]/[id]": "TMDB key",
   "/app/games/[id]": "IGDB key",
   "/app/messages/[id]": "the seed has no conversation",
   "/app/settings/import/simkl/callback": "OAuth redirect target",

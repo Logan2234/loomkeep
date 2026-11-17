@@ -683,8 +683,21 @@
         newBadge={isFeatureNew("creator-pages")} />
     {/snippet}
     {#snippet studioNames()}{extras?.studios.join(", ")}{/snippet}
+    {#snippet networkNames()}
+      <CreatorNames
+        refs={extras?.networkRefs ?? []}
+        studio="NETWORK"
+        newBadge={isFeatureNew("studio-pages")} />
+    {/snippet}
+    {#snippet companyNames()}
+      <CreatorNames
+        refs={extras?.productionCompanyRefs ?? []}
+        studio="COMPANY"
+        newBadge={isFeatureNew("studio-pages") &&
+          (extras?.networkRefs.length ?? 0) === 0} />
+    {/snippet}
     {#snippet detailsCard()}
-      {#if extras && (extras.directors.length > 0 || extras.studios.length > 0 || extras.tags.length > 0 || extras.externalLinks.length > 0)}
+      {#if extras && (extras.directors.length > 0 || extras.studios.length > 0 || extras.networkRefs.length > 0 || extras.productionCompanyRefs.length > 0 || extras.tags.length > 0 || extras.externalLinks.length > 0)}
         <dl class="card divide-border divide-y">
           {#if extras.directors.length > 0}
             {@render detailRow(DIRECTOR_LABELS[detail.type], directorNames)}
@@ -694,6 +707,17 @@
               extras.studios.length > 1 ? m.media_studios() : m.media_studio(),
               studioNames,
             )}
+          {/if}
+          {#if extras.networkRefs.length > 0}
+            {@render detailRow(
+              extras.networkRefs.length > 1
+                ? m.creator_networks()
+                : m.creator_network(),
+              networkNames,
+            )}
+          {/if}
+          {#if extras.productionCompanyRefs.length > 0}
+            {@render detailRow(m.creator_production(), companyNames)}
           {/if}
           {#if extras.tags.length > 0}
             {@render detailRow(m.music_tags(), tagChips)}

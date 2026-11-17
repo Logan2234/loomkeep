@@ -1,10 +1,13 @@
 import type {
   CastDetailDto,
+  CreatorWorkDto,
   EpisodeMediaDto,
   MediaExtrasDto,
   MediaSagaDto,
+  PagedResult,
   PersonPageDto,
   SeasonImagesDto,
+  StudioPageDto,
   WatchProviderDto,
 } from "@loomkeep/shared";
 import {
@@ -13,6 +16,8 @@ import {
   MediaSummaryDto,
   MediaType,
   regionalLocale,
+  StudioKind,
+  StudioWorkOrder,
 } from "@loomkeep/shared";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
@@ -36,11 +41,14 @@ import {
   toMovieSummary,
   toPersonPage,
   toSeasonImages,
+  toStudioPage,
+  toStudioWork,
   toTvDetails,
   toTvSeason,
   toTvSummary,
   toWatchProviders,
   type TmdbCollection,
+  type TmdbDiscoverPage,
   type TmdbEpisodeMedia,
   type TmdbExtras,
   type TmdbFindResult,
@@ -49,12 +57,24 @@ import {
   type TmdbPersonDetails,
   type TmdbSeasonDetails,
   type TmdbSeasonImages,
+  type TmdbStudio,
   type TmdbTvDetails,
   type TmdbTvResult,
   type TmdbWatchProvider,
 } from "./tmdb.mapper";
 
 export const TMDB_API_URL = "https://api.themoviedb.org/3";
+
+// Discover's "popularity" follows this week's trend: an A24 page would open
+// on its latest releases. The vote count reads as how known a title is.
+const STUDIO_SORT: Record<StudioWorkOrder, Record<"movie" | "tv", string>> = {
+  known: { movie: "vote_count.desc", tv: "vote_count.desc" },
+  newest: { movie: "primary_release_date.desc", tv: "first_air_date.desc" },
+  oldest: { movie: "primary_release_date.asc", tv: "first_air_date.asc" },
+};
+// Discover serves no page past 500.
+const DISCOVER_MAX_PAGE = 500;
+const STUDIO_KNOWN_FOR = 4;
 
 // The provider lists barely move: a day-old copy spares two TMDB calls each
 // time someone opens their services settings.
@@ -513,6 +533,96 @@ export class TmdbProvider implements CatalogProvider {
     );
   }
 
+  /** A production company's or a network's identity, with how many titles each type has. */
+  async getStudioPage(
+    kind: StudioKind,
+    id: string,
+    lang?: string,
+  ): Promise<StudioPageDto> {
+    assertTmdbId(id);
+    const language = regionalLocale(lang);
+    const [studio, movies, series] = await Promise.all([
+      this.get<TmdbStudio>(
+        `/${kind === StudioKind.COMPANY ? "company" : "network"}/${id}`,
+        {},
+      ),
+      kind === StudioKind.COMPANY
+        ? this.discoverStudio(kind, id, MediaType.MOVIE, "known", 1, language)
+        : null,
+      this.discoverStudio(kind, id, MediaType.SERIES, "known", 1, language),
+    ]);
+    const today = utcDateKey(new Date());
+    const main =
+      (movies?.total_results ?? 0) >= series.total_results
+        ? { page: movies, type: MediaType.MOVIE }
+        : { page: series, type: MediaType.SERIES };
+
+    return toStudioPage(
+      kind,
+      studio,
+      {
+        movies: movies?.total_results ?? 0,
+        series: series.total_results,
+      },
+      (main.page?.results ?? [])
+        .slice(0, STUDIO_KNOWN_FOR)
+        .map((r) => toStudioWork(r, main.type, today)),
+    );
+  }
+
+  /** One page of a studio's films or series, 20 at a time as Discover serves them. */
+  async getStudioWorks(
+    kind: StudioKind,
+    id: string,
+    type: MediaType,
+    order: StudioWorkOrder,
+    page: number,
+    lang?: string,
+  ): Promise<PagedResult<CreatorWorkDto>> {
+    assertTmdbId(id);
+
+    // A network airs series only.
+    if (kind === StudioKind.NETWORK && type === MediaType.MOVIE) {
+      return { items: [], hasMore: false, total: 0 };
+    }
+
+    const data = await this.discoverStudio(
+      kind,
+      id,
+      type,
+      order,
+      Math.min(page, DISCOVER_MAX_PAGE),
+      regionalLocale(lang),
+    );
+    const today = utcDateKey(new Date());
+    return {
+      items: data.results.map((r) => toStudioWork(r, type, today)),
+      hasMore: data.page < Math.min(data.total_pages, DISCOVER_MAX_PAGE),
+      total: data.total_results,
+    };
+  }
+
+  private discoverStudio(
+    kind: StudioKind,
+    id: string,
+    type: MediaType,
+    order: StudioWorkOrder,
+    page: number,
+    language: string,
+  ) {
+    const media = type === MediaType.MOVIE ? "movie" : "tv";
+    return this.get<TmdbDiscoverPage<TmdbMovieResult & TmdbTvResult>>(
+      `/discover/${media}`,
+      {
+        [kind === StudioKind.COMPANY ? "with_companies" : "with_networks"]: id,
+        sort_by: STUDIO_SORT[order][media],
+        include_adult: "false",
+        page: String(page),
+        language,
+      },
+    );
+  }
+
   /** This week's trending films and series, adult titles left out. */
   async trendingPosters(): Promise<string[]> {
     const pages = await Promise.all(
@@ -573,4 +683,16 @@ function byRelease(
   if (!a.releaseDate) return 1;
   if (!b.releaseDate) return -1;
   return a.releaseDate < b.releaseDate ? -1 : 1;
+}
+
+/** An id from a page's URL, interpolated into a TMDB path: digits only. */
+function assertTmdbId(id: string): void {
+  if (!/^\d+$/.test(id)) {
+    throw new AppException(
+      HttpStatus.NOT_FOUND,
+      ErrorCode.CatalogStudioNotFound,
+      undefined,
+      `Not a TMDB id: ${id}`,
+    );
+  }
 }

@@ -213,6 +213,7 @@ export const ErrorCode = {
   CatalogMediaTypeRequired: "catalog.media_type_required",
   CatalogItemNotFound: "catalog.item_not_found",
   CatalogPersonNotFound: "catalog.person_not_found",
+  CatalogStudioNotFound: "catalog.studio_not_found",
   CatalogProviderUnavailable: "catalog.provider_unavailable",
   CatalogSearchQueryRequired: "catalog.search_query_required",
 

@@ -140,3 +140,43 @@ export interface PersonPageDto {
   /** Books left out for having too few editions, counted to point at the source. 0 for a TMDB person. */
   rareCount: number;
 }
+
+/** A production company, or a network that airs series. TMDB keeps them apart: their ids overlap. */
+export const StudioKind = {
+  COMPANY: "COMPANY",
+  NETWORK: "NETWORK",
+} as const;
+
+export type StudioKind = (typeof StudioKind)[keyof typeof StudioKind];
+
+/** How a studio's catalogue is sorted: "known" puts the most voted first. */
+export const StudioWorkOrder = {
+  KNOWN: "known",
+  NEWEST: "newest",
+  OLDEST: "oldest",
+} as const;
+
+export type StudioWorkOrder =
+  (typeof StudioWorkOrder)[keyof typeof StudioWorkOrder];
+
+/** A studio's page: who it is. Its catalogue comes page by page, apart. */
+export interface StudioPageDto {
+  source: CreatorSource;
+  kind: StudioKind;
+  id: string;
+  name: string;
+  logoUrl: string | null;
+  description: string | null;
+  /** "New York City, New York". */
+  headquarters: string | null;
+  /** ISO 3166-1 code ("US"). */
+  country: string | null;
+  homepage: string | null;
+  /** The company that owns it, with a page of its own. */
+  parent: CreatorRefDto | null;
+  /** Films credited to it (0 for a network). */
+  movieCount: number;
+  seriesCount: number;
+  /** Its most voted titles, for a peek. */
+  knownFor: CreatorWorkDto[];
+}

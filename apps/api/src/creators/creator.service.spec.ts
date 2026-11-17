@@ -52,7 +52,14 @@ function page(works: CreatorWorkDto[]): PersonPageDto {
 }
 
 function setup(person: PersonPageDto, allowAdult = false) {
-  const tmdb = { getPersonPage: vi.fn().mockResolvedValue(person) };
+  const tmdb = {
+    getPersonPage: vi.fn().mockResolvedValue(person),
+    getStudioWorks: vi.fn().mockResolvedValue({
+      items: [work({ sourceId: "438631" }), work({ sourceId: "7" })],
+      hasMore: true,
+      total: 177,
+    }),
+  };
   const library = {
     statusesBySourceId: vi.fn(
       async (_user: string, _source: string, type: MediaType) =>
@@ -172,5 +179,32 @@ describe("CreatorService.getPerson", () => {
     await expect(
       service.getPerson("u1", "anilist", "95185"),
     ).rejects.toMatchObject({ code: ErrorCode.CatalogNoPersonDetails });
+  });
+
+  it("adds the viewer's statuses to a studio's page of works, cached per page", async () => {
+    const { service, tmdb } = setup(page([]));
+    const query = { type: MediaType.MOVIE, order: "known" as const, page: 1 };
+
+    const result = await service.getStudioWorks(
+      "u1",
+      "tmdb",
+      "COMPANY",
+      "41077",
+      query,
+      "fr",
+    );
+    await service.getStudioWorks("u2", "tmdb", "COMPANY", "41077", query, "fr");
+    await service.getStudioWorks(
+      "u1",
+      "tmdb",
+      "COMPANY",
+      "41077",
+      { ...query, page: 2 },
+      "fr",
+    );
+
+    expect(result).toMatchObject({ hasMore: true, total: 177 });
+    expect(result.items.map((w) => w.status)).toEqual(["COMPLETED", null]);
+    expect(tmdb.getStudioWorks).toHaveBeenCalledTimes(2);
   });
 });
