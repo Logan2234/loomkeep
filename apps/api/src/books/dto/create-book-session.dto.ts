@@ -18,7 +18,7 @@ import {
 
 export class CreateBookSessionDto implements Contract {
   @IsInt()
-  @Min(1)
+  @Min(0)
   @Max(MAX_SESSION_DURATION_MINUTES)
   durationMinutes!: number;
 

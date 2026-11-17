@@ -9,20 +9,25 @@
   let {
     value = $bindable(),
     quickDurations,
+    optional = false,
     disabled = false,
     variant = "accent",
   }: {
     value: number;
     quickDurations: readonly number[];
+    /** Reading time can be left out: 0 shows as a dash instead of a duration. */
+    optional?: boolean;
     disabled?: boolean;
     variant?: "accent" | "neutral";
   } = $props();
 
+  const min = $derived(optional ? 0 : 1);
+
   function adjust(delta: number) {
-    const current = Number.isFinite(Number(value)) ? Number(value) : 1;
+    const current = Number.isFinite(Number(value)) ? Number(value) : min;
     value = Math.min(
       MAX_SESSION_DURATION_MINUTES,
-      Math.max(1, current + delta),
+      Math.max(min, current + delta),
     );
   }
 </script>
@@ -51,8 +56,9 @@
         <AnimatedNumberInput
           bind:value
           label={m.session_duration()}
-          min={1}
+          {min}
           max={MAX_SESSION_DURATION_MINUTES}
+          {optional}
           {disabled}
           class="h-16 w-32"
           numberClass="text-5xl" />

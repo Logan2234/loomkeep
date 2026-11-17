@@ -65,7 +65,7 @@
   const quickDurations = [15, 30, 45, 60] as const;
   const today = localDateInput();
   const reduced = prefersReducedMotion();
-  let durationMinutes = $state(30);
+  let durationMinutes = $state(0);
   let occurredOn = $state(today);
   let notes = $state("");
   let mode = $state<PageMode>("quantity");
@@ -317,7 +317,7 @@
   }
 
   function submit() {
-    if (!referencePages || durationMinutes < 1) return;
+    if (!referencePages) return;
     const cycleAction = !linkToReading
       ? ("HISTORY_ONLY" as const)
       : entry.status === "READ" || restartDropped
@@ -345,6 +345,7 @@
   }
 
   function openAdd() {
+    durationMinutes = 0;
     finishingTimer = false;
     linkToReading = true;
     restartDropped = false;
@@ -385,7 +386,6 @@
   }
 
   function saveEdit(id: string) {
-    if (editDuration < 1) return;
     const pageData: UpdateBookSessionDto =
       editMode === "quantity"
         ? {
@@ -585,6 +585,7 @@
         <SessionDurationPicker
           bind:value={durationMinutes}
           {quickDurations}
+          optional
           disabled={createMut.loading ||
             finishTimerMut.loading ||
             finishingTimer}
@@ -645,7 +646,6 @@
           disabled={!referencePages ||
             createMut.loading ||
             finishTimerMut.loading ||
-            durationMinutes < 1 ||
             !occurredOn ||
             (mode === "quantity"
               ? pagesRead < 1
@@ -804,8 +804,9 @@
                               <AnimatedNumberInput
                                 bind:value={editDuration}
                                 label={m.session_duration()}
-                                min={1}
+                                min={0}
                                 max={MAX_SESSION_DURATION_MINUTES}
+                                optional
                                 class="border-border bg-bg h-11 w-full"
                                 numberClass="text-base" />
                               <span
@@ -916,10 +917,12 @@
                           {/if}
                         </div>
                         <div class="flex items-start gap-2">
-                          <span
-                            class="font-display pt-0.5 text-sm font-bold tabular-nums">
-                            {formatSessionMinutes(session.durationMinutes)}
-                          </span>
+                          {#if session.durationMinutes > 0}
+                            <span
+                              class="font-display pt-0.5 text-sm font-bold tabular-nums">
+                              {formatSessionMinutes(session.durationMinutes)}
+                            </span>
+                          {/if}
                           <div
                             class="flex opacity-60 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100">
                             <button

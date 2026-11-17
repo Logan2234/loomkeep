@@ -17,7 +17,7 @@ import {
 export class UpdateBookSessionDto implements Contract {
   @IsOptional()
   @IsInt()
-  @Min(1)
+  @Min(0)
   @Max(MAX_SESSION_DURATION_MINUTES)
   durationMinutes?: number;
 
