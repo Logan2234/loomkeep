@@ -25,6 +25,9 @@ history from before it was started.
 
 ### Added
 
+- Studio and network pages: open a film's production company or a series'
+  network (A24, HBO…) to browse its catalogue, best known first, with your
+  status on each title.
 - Person pages: open a film's director, a series' creator or a cast member
   to see everything they've made, role by role, with your status on each
   title. Appearances on talk shows and in documentaries are listed apart. On

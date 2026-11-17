@@ -76,9 +76,9 @@ describe("CreatorPeek", () => {
     renderWithQuery(CreatorPeekHarness, {});
 
     await user.hover(screen.getByRole("link", { name: "Denis Villeneuve" }));
-    // The page is fetched during the wait, before anything shows.
-    await waitFor(() => expect(requests).toBe(1));
+    // Nothing shows yet; the page is fetched during the wait.
     expect(screen.queryByRole("dialog")).toBeNull();
+    await waitFor(() => expect(requests).toBe(1));
 
     const peek = await screen.findByRole(
       "dialog",

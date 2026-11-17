@@ -2,7 +2,11 @@ import type {
   BookStatus,
   CreatorWorkDto,
   EntryStatus,
+  PagedResult,
   PersonPageDto,
+  StudioKind,
+  StudioPageDto,
+  StudioWorkOrder,
 } from "@loomkeep/shared";
 import {
   CatalogSource,
@@ -26,9 +30,10 @@ const PAGE_CACHE_SIZE = 500;
 /** Creator pages: a person's works, each with the viewer's own status. */
 @Injectable()
 export class CreatorService {
-  private readonly people = new Map<
+  // Provider pages (people, studios, catalogue pages), oldest out first.
+  private readonly pages = new Map<
     string,
-    { fetchedAt: number; page: PersonPageDto }
+    { fetchedAt: number; value: unknown }
   >();
 
   constructor(
@@ -99,31 +104,88 @@ export class CreatorService {
     ]);
   }
 
-  private async cachedPerson(
+  private cachedPerson(
     source: CreatorSource,
     id: string,
     lang?: string,
   ): Promise<PersonPageDto> {
-    const key = `${source}:${id}:${lang ?? ""}`;
-    const cached = this.people.get(key);
-
-    if (cached && Date.now() - cached.fetchedAt < PAGE_TTL_MS) {
-      return cached.page;
-    }
-
-    const page =
+    return this.cached(`person:${source}:${id}:${lang ?? ""}`, () =>
       source === CreatorSource.OPEN_LIBRARY
-        ? await this.openLibrary.getAuthorPage(id, lang)
-        : await this.tmdb.getPersonPage(id, lang);
-    // Oldest entry out first (a Map iterates in insertion order).
-    this.people.delete(key);
-    this.people.set(key, { fetchedAt: Date.now(), page });
+        ? this.openLibrary.getAuthorPage(id, lang)
+        : this.tmdb.getPersonPage(id, lang),
+    );
+  }
 
-    if (this.people.size > PAGE_CACHE_SIZE) {
-      this.people.delete(this.people.keys().next().value!);
+  /** A studio's identity, its most known titles with the viewer's statuses. */
+  async getStudio(
+    userId: string,
+    source: CreatorSource,
+    kind: StudioKind,
+    id: string,
+    lang?: string,
+  ): Promise<StudioPageDto> {
+    assertStudioSource(source);
+    const page = await this.cached(`studio:${kind}:${id}:${lang ?? ""}`, () =>
+      this.tmdb.getStudioPage(kind, id, lang),
+    );
+    return {
+      ...page,
+      knownFor: await this.withMediaStatuses(userId, page.knownFor),
+    };
+  }
+
+  /** One page of a studio's films or series, with the viewer's statuses. */
+  async getStudioWorks(
+    userId: string,
+    source: CreatorSource,
+    kind: StudioKind,
+    id: string,
+    query: { type: MediaType; order: StudioWorkOrder; page: number },
+    lang?: string,
+  ): Promise<PagedResult<CreatorWorkDto>> {
+    assertStudioSource(source);
+    const { type, order, page } = query;
+    const result = await this.cached(
+      `works:${kind}:${id}:${type}:${order}:${page}:${lang ?? ""}`,
+      () => this.tmdb.getStudioWorks(kind, id, type, order, page, lang),
+    );
+    return {
+      ...result,
+      items: await this.withMediaStatuses(userId, result.items),
+    };
+  }
+
+  private async withMediaStatuses(
+    userId: string,
+    works: CreatorWorkDto[],
+  ): Promise<CreatorWorkDto[]> {
+    const idsOf = (type: MediaType) =>
+      works.filter((w) => w.type === type).map((w) => w.sourceId);
+    const [movies, series] = await Promise.all([
+      this.statuses(userId, MediaType.MOVIE, idsOf(MediaType.MOVIE)),
+      this.statuses(userId, MediaType.SERIES, idsOf(MediaType.SERIES)),
+    ]);
+    return works.map((work) => ({
+      ...work,
+      status:
+        (work.type === MediaType.MOVIE ? movies : series).get(work.sourceId) ??
+        null,
+    }));
+  }
+
+  private async cached<T>(key: string, load: () => Promise<T>): Promise<T> {
+    const hit = this.pages.get(key);
+    if (hit && Date.now() - hit.fetchedAt < PAGE_TTL_MS) return hit.value as T;
+
+    const value = await load();
+    this.pages.delete(key);
+    this.pages.set(key, { fetchedAt: Date.now(), value });
+
+    if (this.pages.size > PAGE_CACHE_SIZE) {
+      this.pages.delete(this.pages.keys().next().value!);
     }
 
-    return page;
+    return value;
   }
 }
 
@@ -144,4 +206,16 @@ function withStatuses(
       }))
       .filter((group) => group.works.length > 0),
   };
+}
+
+/** Production companies and networks come from TMDB only. */
+function assertStudioSource(source: CreatorSource): void {
+  if (source !== CreatorSource.TMDB) {
+    throw new AppException(
+      HttpStatus.BAD_REQUEST,
+      ErrorCode.CatalogNoPersonDetails,
+      { source },
+      `${source} has no studio page`,
+    );
+  }
 }

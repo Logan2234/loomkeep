@@ -54,6 +54,7 @@
   "apierr_catalog_media_type_required": "Il tipo di contenuto è obbligatorio.",
   "apierr_catalog_item_not_found": "Impossibile trovare questo elemento nel catalogo.",
   "apierr_catalog_person_not_found": "Impossibile trovare questa persona nel catalogo.",
+  "apierr_catalog_studio_not_found": "Impossibile trovare questo studio nel catalogo.",
   "apierr_catalog_provider_unavailable": "Il catalogo è temporaneamente non disponibile, riprova tra poco.",
   "apierr_catalog_search_query_required": "Serve un termine di ricerca.",
   "apierr_import_malformed_export": "Il file esportato non è leggibile o non è valido.",

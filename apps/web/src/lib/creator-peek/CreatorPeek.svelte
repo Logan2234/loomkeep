@@ -1,15 +1,16 @@
 <script lang="ts">
-  // The peek a steady hover on a person's name opens (see peek.svelte.ts):
-  // who they are and what they're known for, without leaving the page. It
-  // reads the person page's own query, so "See their page" opens it loaded.
+  // The peek a steady hover on a person's or a studio's name opens (see
+  // peek.svelte.ts): who they are and what they're known for, without
+  // leaving the page. It reads the page's own query, so "See their page"
+  // opens it loaded.
   import { afterNavigate } from "$app/navigation";
-  import { getPersonPage } from "#lib/api/client.js";
+  import { getPersonPage, getStudioPage } from "#lib/api/client.js";
   import { keys } from "#lib/api/keys.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
   import { TOOLTIP_Z_INDEX } from "#lib/components/overlay-layers.js";
   import Poster from "#lib/components/Poster.svelte";
-  import { creatorHref, workHref } from "#lib/creator-href.js";
-  import { joinMeta } from "#lib/format.js";
+  import { creatorHref, studioHref, workHref } from "#lib/creator-href.js";
+  import { formatRegion, joinMeta } from "#lib/format.js";
   import { lifeYears } from "#lib/life-years.js";
   import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
@@ -30,23 +31,66 @@
   const personQuery = createApiQuery(() => ({
     key: keys.creators.person(loading?.ref.source ?? "", loading?.ref.id ?? ""),
     fetch: () => getPersonPage(loading!.ref.source, loading!.ref.id),
-    enabled: !!loading && !!creatorHref(loading.ref),
+    enabled: !!loading && !loading.studio && !!creatorHref(loading.ref),
+  }));
+  const studioQuery = createApiQuery(() => ({
+    key: keys.creators.studio(
+      loading?.studio ?? "",
+      loading?.ref.source ?? "",
+      loading?.ref.id ?? "",
+    ),
+    fetch: () =>
+      getStudioPage(loading!.studio!, loading!.ref.source, loading!.ref.id),
+    enabled: !!loading?.studio && !!studioHref(loading.studio, loading.ref),
   }));
   const person = $derived(
-    personQuery.data?.id === shown?.ref.id ? personQuery.data : undefined,
+    !shown?.studio && personQuery.data?.id === shown?.ref.id
+      ? personQuery.data
+      : undefined,
   );
+  const studio = $derived(
+    shown?.studio && studioQuery.data?.id === shown.ref.id
+      ? studioQuery.data
+      : undefined,
+  );
+  const loaded = $derived(person ?? studio);
 
-  const href = $derived(shown ? creatorHref(shown.ref) : null);
-  const photo = $derived(person?.photoUrl ?? shown?.photoUrl ?? null);
+  const href = $derived(
+    shown
+      ? shown.studio
+        ? studioHref(shown.studio, shown.ref)
+        : creatorHref(shown.ref)
+      : null,
+  );
+  const photo = $derived(
+    studio ? studio.logoUrl : (person?.photoUrl ?? shown?.photoUrl ?? null),
+  );
+  const role = $derived(
+    shown?.studio === "NETWORK"
+      ? m.creator_studio_network()
+      : shown?.studio === "COMPANY"
+        ? m.creator_studio_company()
+        : shown?.role,
+  );
   const meta = $derived(
     person
       ? joinMeta(
           lifeYears(person.birthday, person.deathday),
           person.placeOfBirth,
         )
-      : null,
+      : studio
+        ? joinMeta(
+            studio.country ? formatRegion(studio.country) : null,
+            studio.movieCount
+              ? m.creator_count_movies({ count: studio.movieCount })
+              : null,
+            studio.seriesCount
+              ? m.creator_count_series({ count: studio.seriesCount })
+              : null,
+          )
+        : null,
   );
-  const works = $derived(person ? peekWorks(person) : []);
+  const works = $derived(person ? peekWorks(person) : (studio?.knownFor ?? []));
 
   let panelWidth = $state(0);
   let panelHeight = $state(0);
@@ -82,16 +126,29 @@
       : 'top'} left;"
     class="border-border bg-surface fixed w-[21rem] max-w-[calc(100vw-1rem)] rounded-xl border p-3.5 shadow-xl">
     <div class="grid grid-cols-[4rem_minmax(0,1fr)] items-start gap-3">
-      <div
-        class="bg-surface-2 aspect-2/3 overflow-hidden rounded-lg"
-        data-creator-portrait>
-        {#if photo}
-          <img src={photo} alt="" class="h-full w-full object-cover" />
-        {/if}
-      </div>
+      {#if shown.studio}
+        <!-- Logos are drawn for a light background, dark themes included. -->
+        <div
+          class="grid aspect-square place-items-center overflow-hidden rounded-lg bg-white p-1.5">
+          {#if photo}
+            <img
+              src={photo}
+              alt=""
+              class="max-h-full max-w-full object-contain" />
+          {/if}
+        </div>
+      {:else}
+        <div
+          class="bg-surface-2 aspect-2/3 overflow-hidden rounded-lg"
+          data-creator-portrait>
+          {#if photo}
+            <img src={photo} alt="" class="h-full w-full object-cover" />
+          {/if}
+        </div>
+      {/if}
       <div class="min-w-0">
-        {#if shown.role}
-          <p class="text-dim truncate text-xs">{shown.role}</p>
+        {#if role}
+          <p class="text-dim truncate text-xs">{role}</p>
         {/if}
         <p
           id="creator-peek-name"
@@ -104,9 +161,9 @@
       </div>
     </div>
 
-    {#if person?.description}
-      <p class="text-dim mt-3 line-clamp-3 text-sm">{person.description}</p>
-    {:else if !person}
+    {#if loaded?.description}
+      <p class="text-dim mt-3 line-clamp-3 text-sm">{loaded.description}</p>
+    {:else if !loaded}
       <div class="mt-3 flex flex-col gap-1.5" aria-hidden="true">
         <div class="skeleton h-3 w-full rounded"></div>
         <div class="skeleton h-3 w-5/6 rounded"></div>

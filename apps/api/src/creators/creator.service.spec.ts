@@ -52,7 +52,20 @@ function page(works: CreatorWorkDto[]): PersonPageDto {
 }
 
 function setup(person: PersonPageDto, allowAdult = false) {
-  const tmdb = { getPersonPage: vi.fn().mockResolvedValue(person) };
+  const tmdb = {
+    getPersonPage: vi.fn().mockResolvedValue(person),
+    getStudioPage: vi.fn().mockResolvedValue({
+      kind: "NETWORK",
+      id: "49",
+      name: "HBO",
+      knownFor: [work({ type: MediaType.SERIES, sourceId: "438631" })],
+    }),
+    getStudioWorks: vi.fn().mockResolvedValue({
+      items: [work({ sourceId: "438631" }), work({ sourceId: "7" })],
+      hasMore: true,
+      total: 177,
+    }),
+  };
   const library = {
     statusesBySourceId: vi.fn(
       async (_user: string, _source: string, type: MediaType) =>
@@ -171,6 +184,44 @@ describe("CreatorService.getPerson", () => {
 
     await expect(
       service.getPerson("u1", "anilist", "95185"),
+    ).rejects.toMatchObject({ code: ErrorCode.CatalogNoPersonDetails });
+  });
+
+  it("adds the viewer's statuses to a studio's page of works, cached per page", async () => {
+    const { service, tmdb } = setup(page([]));
+    const query = { type: MediaType.MOVIE, order: "known" as const, page: 1 };
+
+    const result = await service.getStudioWorks(
+      "u1",
+      "tmdb",
+      "COMPANY",
+      "41077",
+      query,
+      "fr",
+    );
+    await service.getStudioWorks("u2", "tmdb", "COMPANY", "41077", query, "fr");
+    await service.getStudioWorks(
+      "u1",
+      "tmdb",
+      "COMPANY",
+      "41077",
+      { ...query, page: 2 },
+      "fr",
+    );
+
+    expect(result).toMatchObject({ hasMore: true, total: 177 });
+    expect(result.items.map((w) => w.status)).toEqual(["COMPLETED", null]);
+    expect(tmdb.getStudioWorks).toHaveBeenCalledTimes(2);
+  });
+
+  it("gives a studio's best-known titles the viewer's statuses, and only from TMDB", async () => {
+    const { service } = setup(page([]));
+
+    const hbo = await service.getStudio("u1", "tmdb", "NETWORK", "49", "fr");
+
+    expect(hbo.knownFor.map((w) => w.status)).toEqual(["WATCHING"]);
+    await expect(
+      service.getStudio("u1", "anilist", "COMPANY", "21"),
     ).rejects.toMatchObject({ code: ErrorCode.CatalogNoPersonDetails });
   });
 });

@@ -2,6 +2,7 @@ import type {
   CreatorRefDto,
   CreatorSource,
   CreatorWorkDto,
+  StudioKind,
 } from "@loomkeep/shared";
 
 // The sources whose people have a page so far: AniList staff stay plain
@@ -18,6 +19,16 @@ export function creatorHref(
   return SOURCES_WITH_PERSON_PAGE.has(ref.source)
     ? `/app/people/${ref.source}/${encodeURIComponent(ref.id)}`
     : null;
+}
+
+/** A production company's or a network's page: TMDB keeps them apart. */
+export function studioHref(
+  kind: StudioKind,
+  ref: Pick<CreatorRefDto, "source" | "id">,
+): string | null {
+  if (ref.source !== "tmdb") return null;
+  const route = kind === "NETWORK" ? "networks" : "studios";
+  return `/app/${route}/tmdb/${encodeURIComponent(ref.id)}`;
 }
 
 /** The page of a work listed on a creator's page: a book's, or a film's or series'. */

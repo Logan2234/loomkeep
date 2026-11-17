@@ -263,6 +263,16 @@ export const keys = {
   creators: {
     person: (source: string, id: string) =>
       ["creators", "person", source, id] as const,
+    studio: (kind: string, source: string, id: string) =>
+      ["creators", "studio", kind, source, id] as const,
+    studioWorks: (
+      kind: string,
+      source: string,
+      id: string,
+      type: string,
+      order: string,
+    ) =>
+      ["creators", "studio", kind, source, id, "works", type, order] as const,
   },
   admin: {
     overview: () => ["admin", "overview"] as const,

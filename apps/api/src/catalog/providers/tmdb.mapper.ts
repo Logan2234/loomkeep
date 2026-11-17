@@ -9,6 +9,7 @@ import type {
   RatingDto,
   SagaMemberDto,
   SeasonImagesDto,
+  StudioPageDto,
   WatchProviderDto,
 } from "@loomkeep/shared";
 import {
@@ -19,6 +20,7 @@ import {
   Domain,
   MediaSource,
   MediaType,
+  StudioKind,
 } from "@loomkeep/shared";
 import type {
   ProviderExternalId,
@@ -39,6 +41,7 @@ const IMAGE_SIZE = {
   profile: "w185",
   profileLarge: "h632",
   logo: "w92",
+  logoLarge: "w300",
 } as const;
 
 function tmdbImage(
@@ -837,4 +840,70 @@ export function toWatchProviders(
       name: p.provider_name.trim(),
       logoUrl: p.logo_path ? tmdbImage(p.logo_path, IMAGE_SIZE.logo) : null,
     }));
+}
+
+/** `/company/{id}` or `/network/{id}`: the fields a studio page reads. */
+export interface TmdbStudio {
+  id: number;
+  name: string;
+  description?: string | null;
+  headquarters?: string | null;
+  homepage?: string | null;
+  origin_country?: string | null;
+  logo_path?: string | null;
+  parent_company?: { id: number; name: string } | null;
+}
+
+/** One `/discover` page. */
+export interface TmdbDiscoverPage<T> {
+  page: number;
+  results: T[];
+  total_pages: number;
+  total_results: number;
+}
+
+/** A title from a studio's catalogue, as a creator page lists it. */
+export function toStudioWork(
+  result: TmdbMovieResult | TmdbTvResult,
+  type: MediaType,
+  today: string,
+): CreatorWorkDto {
+  return toCreatorWork(
+    {
+      ...result,
+      media_type: type === MediaType.MOVIE ? "movie" : "tv",
+    } as TmdbCreditItem,
+    today,
+  );
+}
+
+export function toStudioPage(
+  kind: StudioKind,
+  studio: TmdbStudio,
+  counts: { movies: number; series: number },
+  knownFor: CreatorWorkDto[],
+): StudioPageDto {
+  return {
+    source: CreatorSource.TMDB,
+    kind,
+    id: String(studio.id),
+    name: studio.name,
+    logoUrl: studio.logo_path
+      ? tmdbImage(studio.logo_path, IMAGE_SIZE.logoLarge)
+      : null,
+    description: studio.description?.trim() || null,
+    headquarters: studio.headquarters?.trim() || null,
+    country: studio.origin_country || null,
+    homepage: studio.homepage?.trim() || null,
+    parent: studio.parent_company
+      ? {
+          source: CreatorSource.TMDB,
+          id: String(studio.parent_company.id),
+          name: studio.parent_company.name,
+        }
+      : null,
+    movieCount: counts.movies,
+    seriesCount: counts.series,
+    knownFor,
+  };
 }

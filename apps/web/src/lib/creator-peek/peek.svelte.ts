@@ -1,4 +1,4 @@
-import type { CreatorRefDto } from "@loomkeep/shared";
+import type { CreatorRefDto, StudioKind } from "@loomkeep/shared";
 import { PeekTimer } from "./peek-timer";
 
 export interface PeekTarget {
@@ -8,6 +8,8 @@ export interface PeekTarget {
   role?: string | null;
   /** Shown until the page's own photo arrives. */
   photoUrl?: string | null;
+  /** A production company or a network, rather than a person. */
+  studio?: StudioKind;
 }
 
 /** The one peek on screen, read by CreatorPeek (mounted once in the app layout). */

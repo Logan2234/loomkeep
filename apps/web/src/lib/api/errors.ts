@@ -125,6 +125,7 @@ const MESSAGES = {
     m.apierr_catalog_media_type_required(),
   [ErrorCode.CatalogItemNotFound]: () => m.apierr_catalog_item_not_found(),
   [ErrorCode.CatalogPersonNotFound]: () => m.apierr_catalog_person_not_found(),
+  [ErrorCode.CatalogStudioNotFound]: () => m.apierr_catalog_studio_not_found(),
   [ErrorCode.CatalogProviderUnavailable]: () =>
     m.apierr_catalog_provider_unavailable(),
   [ErrorCode.CatalogSearchQueryRequired]: () =>

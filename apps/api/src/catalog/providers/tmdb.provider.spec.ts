@@ -1141,4 +1141,114 @@ describe("TmdbProvider", () => {
       expect(global.fetch).toHaveBeenCalledTimes(2);
     });
   });
+
+  describe("studio pages", () => {
+    const movie = (id: number, title: string, votes: number) => ({
+      id,
+      title,
+      release_date: "2016-10-21",
+      vote_count: votes,
+    });
+
+    it("reads a company with its parent, its counts and its most voted titles", async () => {
+      const fetch = mockFetchByUrl([
+        [
+          "/company/3",
+          {
+            id: 3,
+            name: "Pixar",
+            headquarters: "Emeryville, California",
+            origin_country: "US",
+            logo_path: "/pixar.png",
+            description: "",
+            parent_company: { id: 2, name: "Walt Disney Pictures" },
+          },
+        ],
+        [
+          "/discover/movie",
+          {
+            page: 1,
+            total_pages: 2,
+            total_results: 30,
+            results: [movie(1, "Coco", 20000), movie(2, "Up", 19000)],
+          },
+        ],
+        [
+          "/discover/tv",
+          { page: 1, total_pages: 1, total_results: 2, results: [] },
+        ],
+      ]);
+
+      const page = await provider.getStudioPage("COMPANY", "3", "fr");
+
+      expect(page).toMatchObject({
+        kind: "COMPANY",
+        name: "Pixar",
+        logoUrl: "https://image.tmdb.org/t/p/w300/pixar.png",
+        description: null,
+        country: "US",
+        parent: { source: "tmdb", id: "2", name: "Walt Disney Pictures" },
+        movieCount: 30,
+        seriesCount: 2,
+      });
+      expect(page.knownFor.map((w) => w.title)).toEqual(["Coco", "Up"]);
+      const discover = fetch.mock.calls
+        .map(([url]) => String(url))
+        .find((url) => url.includes("/discover/movie"))!;
+      expect(discover).toContain("with_companies=3");
+      expect(discover).toContain("sort_by=vote_count.desc");
+    });
+
+    it("pages a network's series, newest first, and has no films for it", async () => {
+      const fetch = mockFetchByUrl({
+        "/network/49": { id: 49, name: "HBO" },
+        "/discover/tv": {
+          page: 2,
+          total_pages: 20,
+          total_results: 382,
+          results: [
+            { id: 1399, name: "Game of Thrones", first_air_date: "2011-04-17" },
+          ],
+        },
+      });
+
+      const works = await provider.getStudioWorks(
+        "NETWORK",
+        "49",
+        MediaType.SERIES,
+        "newest",
+        2,
+        "fr",
+      );
+      const films = await provider.getStudioWorks(
+        "NETWORK",
+        "49",
+        MediaType.MOVIE,
+        "known",
+        1,
+      );
+
+      expect(works).toMatchObject({ hasMore: true, total: 382 });
+      expect(works.items[0]).toMatchObject({
+        type: MediaType.SERIES,
+        sourceId: "1399",
+        year: 2011,
+      });
+      const url = String(fetch.mock.calls[0][0]);
+      expect(url).toContain("with_networks=49");
+      expect(url).toContain("sort_by=first_air_date.desc");
+      expect(url).toContain("page=2");
+      expect(films).toEqual({ items: [], hasMore: false, total: 0 });
+      expect(fetch).toHaveBeenCalledTimes(1);
+    });
+
+    it("never puts a non-numeric id into a TMDB path", async () => {
+      mockFetchByUrl({});
+
+      await expect(
+        provider.getStudioPage("COMPANY", "../account"),
+      ).rejects.toMatchObject({ code: ErrorCode.CatalogStudioNotFound });
+      expect(global.fetch).not.toHaveBeenCalled();
+    });
+  });
 });

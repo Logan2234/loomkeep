@@ -54,6 +54,7 @@
   "apierr_catalog_media_type_required": "Le type de média est requis.",
   "apierr_catalog_item_not_found": "Cet élément est introuvable dans le catalogue.",
   "apierr_catalog_person_not_found": "Cette personne est introuvable dans le catalogue.",
+  "apierr_catalog_studio_not_found": "Ce studio est introuvable dans le catalogue.",
   "apierr_catalog_provider_unavailable": "Le catalogue est momentanément indisponible, réessaie dans un instant.",
   "apierr_catalog_search_query_required": "Un terme de recherche est requis.",
   "apierr_import_malformed_export": "Le fichier exporté est illisible ou mal formé.",
