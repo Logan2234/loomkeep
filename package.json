@@ -59,7 +59,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
-    "@lhci/cli": "^0.16.0",
+    "@lhci/cli": "^0.16.1",
     "@stylistic/eslint-plugin": "^5.10.0",
     "@typescript/native": "npm:typescript@^7.0.2",
     "eslint": "^10.14.0",
@@ -67,7 +67,7 @@
     "eslint-plugin-prettier": "^5.5.7",
     "globals": "^17.14.0",
     "husky": "^9.1.7",
-    "knip": "^6.44.2",
+    "knip": "^6.45.0",
     "lint-staged": "^17.6.0",
     "prettier": "^3.9.10",
     "prettier-plugin-organize-imports": "^4.3.0",
