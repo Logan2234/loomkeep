@@ -269,6 +269,9 @@ describe("XpService.awardMany", () => {
     );
 
     expect(credited).toBe(cap);
+    // The first refusal ends the batch: no locked transaction per remaining
+    // episode of a long series (audit 2026-11-14, PRF-02).
+    expect(prisma.$transaction).toHaveBeenCalledTimes(cap + 1);
   });
 });
 

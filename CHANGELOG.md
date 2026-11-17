@@ -158,6 +158,10 @@ history from before it was started.
 - The release calendar shows the next six months of episodes, instead of
   stopping after 60 when you follow daily shows, and starts at midnight in
   your time zone rather than the server's.
+- When TMDB, IGDB, Open Library or MusicBrainz is down, you can still add
+  or rate a title someone already tracks: Loomkeep uses its saved copy.
+- Marking a selection of long series as completed at once no longer times
+  out: each series is now marked in one pass.
 
 ### Security
 

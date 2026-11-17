@@ -199,6 +199,100 @@ describe.each(Object.keys(FIRST_TRACK) as CacheDomain[])(
 );
 
 /**
+ * A tracked work whose cache is stale, and a provider that fails to answer:
+ * the call each domain makes when a user tracks or rates it again.
+ */
+const STALE_TRACK: Record<
+  CacheDomain,
+  {
+    externalIdModel: string;
+    itemKey: string;
+    track: (prisma: PrismaService, outage: Error) => Promise<unknown>;
+  }
+> = {
+  MEDIA: {
+    externalIdModel: "mediaExternalId",
+    itemKey: "mediaItem",
+    track: (prisma, outage) =>
+      new MediaItemService(
+        prisma,
+        { getDetails: vi.fn().mockRejectedValue(outage) } as never,
+        provider("ANILIST") as never,
+        jobRuns,
+        {} as never,
+      ).upsertFromSource("TMDB", "42", "MOVIE"),
+  },
+  GAMES: {
+    externalIdModel: "gameExternalId",
+    itemKey: "gameItem",
+    track: (prisma, outage) =>
+      new GameItemService(
+        prisma,
+        { getDetails: vi.fn().mockRejectedValue(outage) } as never,
+        jobRuns,
+        {} as never,
+      ).upsertFromSource("IGDB", "42"),
+  },
+  BOOKS: {
+    externalIdModel: "bookExternalId",
+    itemKey: "bookItem",
+    track: (prisma, outage) =>
+      new BookItemService(
+        prisma,
+        { getStoredDetails: vi.fn().mockRejectedValue(outage) } as never,
+        jobRuns,
+      ).upsertFromSource("OPEN_LIBRARY", "42"),
+  },
+  MUSIC: {
+    externalIdModel: "musicExternalId",
+    itemKey: "musicItem",
+    track: (prisma, outage) =>
+      new MusicItemService(prisma, {
+        getDetails: vi.fn().mockRejectedValue(outage),
+      } as never).upsertFromSource("MUSICBRAINZ", "42"),
+  },
+};
+
+// A provider outage used to fail tracking a work the cache already held,
+// as soon as its copy was over a day old (audit 2026-11-14, BUG-03).
+describe.each(Object.keys(STALE_TRACK) as CacheDomain[])(
+  "%s track of a stale cached work during a provider outage",
+  (domain) => {
+    it("serves the cached copy instead of failing", async () => {
+      const { externalIdModel, itemKey, track } = STALE_TRACK[domain];
+      const cached = {
+        id: "cached",
+        lastSyncedAt: new Date("2020-01-01T00:00:00Z"),
+        movieReleaseDates: [],
+      };
+      const prisma = prismaDouble({
+        [externalIdModel]: {
+          findUnique: vi.fn().mockResolvedValue({
+            [`${itemKey}Id`]: "cached",
+            [itemKey]: cached,
+          }),
+        },
+      });
+
+      await expect(track(prisma, new Error("provider down"))).resolves.toBe(
+        cached,
+      );
+    });
+
+    it("still fails for a work never cached", async () => {
+      const { externalIdModel, track } = STALE_TRACK[domain];
+      const prisma = prismaDouble({
+        [externalIdModel]: { findUnique: vi.fn().mockResolvedValue(null) },
+      });
+
+      await expect(track(prisma, new Error("provider down"))).rejects.toThrow(
+        "provider down",
+      );
+    });
+  },
+);
+
+/**
  * Every XP source (`XP_RULES[*].sourceType`) whose rows go away with a
  * library entry, per domain: deleting the entry must revoke each of them.
  */

@@ -3,7 +3,7 @@ import type {
   MusicSource,
   MusicSummaryDto,
 } from "@loomkeep/shared";
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 import type { MusicItem } from "@prisma/client";
 import { isCatalogFresh } from "../common/catalog-sync.util";
 import { isUniqueViolation } from "../common/prisma-error.util";
@@ -18,6 +18,8 @@ import { MusicBrainzProvider } from "./providers/musicbrainz.provider";
 
 @Injectable()
 export class MusicItemService {
+  private readonly logger = new Logger(MusicItemService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly musicBrainzProvider: MusicBrainzProvider,
@@ -75,7 +77,21 @@ export class MusicItemService {
       return existingRef.musicItem;
     }
 
-    const details = await this.providerFor().getDetails(sourceId);
+    let details: ProviderMusicDetails;
+
+    try {
+      details = await this.providerFor().getDetails(sourceId);
+    } catch (err) {
+      // A provider outage or rate limit mustn't block tracking a work the
+      // cache already holds: the stale copy serves until the next refresh.
+      if (!existingRef) throw err;
+      this.logger.warn(
+        `MusicBrainz ${sourceId} unavailable, serving the cached copy`,
+        err,
+      );
+      return existingRef.musicItem;
+    }
+
     return this.persistDetails(source, details);
   }
 
