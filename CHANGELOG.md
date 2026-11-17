@@ -56,6 +56,8 @@ history from before it was started.
 
 ### Changed
 
+- Reading sessions: the reading time is optional. Leave the duration empty
+  to log only the pages you read, when adding or editing a session.
 - Android app: 18+ films, anime and games show no poster, cover, backdrop
   or trailer, as Google Play requires. The website is unchanged.
 - Video page: a seen movie shows how many times you've watched it; a

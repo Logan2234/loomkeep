@@ -6,6 +6,7 @@
     label,
     min,
     max,
+    optional = false,
     disabled = false,
     class: className = "",
     numberClass = "text-5xl",
@@ -14,10 +15,16 @@
     label: string;
     min: number;
     max?: number;
+    /** Zero means "no value": a dash while idle, an empty field while focused. */
+    optional?: boolean;
     disabled?: boolean;
     class?: string;
     numberClass?: string;
   } = $props();
+
+  function draftFor(candidate: number) {
+    return optional && candidate === 0 ? "" : String(candidate);
+  }
 
   function normalizeValue(candidate: number) {
     const finiteValue = Number.isFinite(candidate) ? candidate : min;
@@ -28,19 +35,20 @@
   }
 
   let focused = $state(false);
-  let draft = $state(String(normalizeValue(value)));
+  let draft = $state(draftFor(normalizeValue(value)));
   let displayValue = $derived(normalizeValue(value));
+  let showDash = $derived(optional && displayValue === 0 && !focused);
 
   $effect(() => {
     if (!focused) {
       const normalized = normalizeValue(value);
       if (!Object.is(value, normalized)) value = normalized;
-      draft = String(normalized);
+      draft = draftFor(normalized);
     }
   });
 
   function beginEditing() {
-    draft = String(normalizeValue(value));
+    draft = draftFor(normalizeValue(value));
     focused = true;
   }
 
@@ -55,7 +63,7 @@
 
   function finishEditing() {
     value = normalizeValue(draft ? Number(draft) : min);
-    draft = String(value);
+    draft = draftFor(value);
     focused = false;
   }
 </script>
@@ -78,6 +86,10 @@
     aria-hidden="true"
     class="font-display text-fg pointer-events-none z-10 flex items-center justify-center px-2 leading-none font-extrabold tracking-tight tabular-nums transition-opacity [grid-area:1/1] {numberClass}"
     class:opacity-0={focused}>
-    <RollingNumber value={displayValue} />
+    {#if showDash}
+      <span class="text-dim">–</span>
+    {:else}
+      <RollingNumber value={displayValue} />
+    {/if}
   </span>
 </span>

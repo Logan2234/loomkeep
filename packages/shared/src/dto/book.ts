@@ -187,6 +187,7 @@ export interface BookSessionDto {
 }
 
 export interface CreateBookSessionDto {
+  /** 0 when the reader doesn't track their reading time. */
   durationMinutes: number;
   occurredAt: string;
   notes?: string | null;
