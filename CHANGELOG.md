@@ -13,6 +13,8 @@ history from before it was started.
 
 ## [Unreleased]
 
+## 1.14.0 — Person, author and studio pages, rewatching, and a reworked phone app
+
 ### Breaking changes
 
 - **Self-hosting over HTTPS without the HTTPS override: set
@@ -25,29 +27,28 @@ history from before it was started.
 
 ### Added
 
-- Studio and network pages: open a film's production company or a series'
-  network (A24, HBO…) to browse its catalogue, best known first, with your
-  status on each title.
 - Person pages: open a film's director, a series' creator or a cast member
   to see everything they've made, role by role, with your status on each
   title. Appearances on talk shows and in documentaries are listed apart. On
   a computer, resting the pointer on their name gives a quick look first.
 - Author pages: open a book's author to see their books, series first, the
   best known on top, with your reading status on each.
-- Admin › Users: the account panel shows the reason given when a deletion is
-  scheduled, and each library tile (movies, series, anime, games, books,
-  albums) opens the list of works behind its counter.
-- Messages on a phone: press and hold a conversation to mark it read, mute
-  it, pin it to the top, open the friend's profile or delete it from your
-  list (it comes back, history included, with the next message).
-- Same on a work's discussion: mark read, mute, pin, go to the title, or
-  stop following it until you write in it or someone mentions you.
+- Studio and network pages: open a film's production company or a series'
+  network (A24, HBO…) to browse its catalogue, best known first, with your
+  status on each title.
 - Rewatching: mark an episode of a show you've finished as seen again and
   Loomkeep asks whether you're rewatching it. If so, the show goes back to
   in progress and into To watch with its ticks cleared (rewatch counts
   stay), picking up after the episode you've just seen, until every episode
   is seen again. A movie you've seen can go back to To watch from its "…"
   menu.
+- Messages on a phone: press and hold a conversation, or a work's
+  discussion, to mark it read, mute it, pin it, open the profile or the
+  title, or remove it from your list (it comes back with the next message,
+  history included).
+- Admin › Users: the account panel shows the reason given when a deletion
+  is scheduled, and each library tile (movies, series, anime, games, books,
+  albums) opens the list of works behind its counter.
 - Admin › Jobs now lists the security log, invitations and notifications
   clean-ups, with a run button and an optional Healthchecks.io variable each
   (`HEALTHCHECKS_SECURITY_PURGE_URL`, `HEALTHCHECKS_INVITATIONS_PURGE_URL`,
@@ -59,89 +60,90 @@ history from before it was started.
 
 ### Changed
 
-- Reading sessions: the reading time is optional. Leave the duration empty
-  to log only the pages you read, when adding or editing a session.
-- Android app: 18+ films, anime and games show no poster, cover, backdrop
-  or trailer, as Google Play requires. The website is unchanged.
+- Phone navigation: a central Library tab fans out your domains, Alerts and
+  Messages move to a movable edge tab, and the menu opens by pulling the
+  bar up. The Profile tab shows your avatar.
+- Phone home: its own page, apart from the desktop grid — a poster shelf per
+  domain, then the week's releases, with your level and streak up top. Its
+  editor is a list: drag to reorder, add any widget, choose posters or rows.
+  A new account's home opens on one screen: find a title or import your
+  history.
+- Phone layout: pages open on a compact title bar (no back arrow on a tab's
+  own page), sections become filled blocks with their title above, and
+  subtitles that only repeated the page are gone. Empty screens show an
+  amber line drawing, one sentence and what to do next; small text no
+  longer drops below 11px.
+- Libraries: status pills on one sticky bar, everything else (favorites,
+  sort, saved views, display) in a single Filters panel with active filters
+  removable from the bar. Posters are borderless, three per row on a phone;
+  a long press opens favorite, status and review.
+- Video, game and book libraries show only what's still ahead (in progress,
+  to watch, paused, ghost…) until a status is picked: finished and dropped
+  titles appear once their own pill is selected, and their pills come last,
+  past a divider. Music still shows everything.
+- Video library: sorted by recent activity, a title not watched yet now sits
+  where it was added among the series you're watching, instead of after all
+  of them.
+- Sagas view: the search sits beside the Works/Sagas switch as in the works
+  view, and type and sort move into the Filters panel.
+- Game, book and album pages take the video page's layout: full-width image
+  header, the same sticky action bar (with the discussion), then the
+  tracking, with the details in a side column on desktop. Sessions show as
+  one progress line with the session button and timer; the week, totals and
+  history open in "My sessions".
+- Title pages: the tagline and ratings stay readable on a bright backdrop,
+  and the trailer button moves to the top corner.
 - Video page: a seen movie shows how many times you've watched it; a
   finished title no longer offers "Drop", and a dropped title never started
   offers "Put back in To watch" instead of "Resume".
-
-- Video library: sorted by recent activity, a title not watched yet (a
-  planned movie) now sits where it was added among the series you're
-  watching, instead of after all of them.
-- Video, game and book libraries: the status pills of what shows by default
-  come first, then, past a divider, Finished and Dropped.
-- Video, game and book libraries now show only what's still ahead (in
-  progress, to watch, paused, ghost…) until a status is picked: finished and
-  dropped titles appear once their own pill is selected. Music still shows
-  everything.
-- Sagas view: the search sits beside the Works/Sagas switch as in the works
-  view, and type and sort move into the same "Filters" panel.
-- Self-hosting: the nightly achievements sweep now covers accounts active
-  in the last two days, and every account on Sundays.
-- Self-hosting: the games and books catalogue refreshes ask much less of
-  IGDB and Open Library.
-- Self-hosting: an ended or canceled series is refreshed once a week
-  instead of every day.
-- Landing page: a questions section answers what people ask before signing
-  up (what if the project stops, imports, ads, servers, phone, deleting an
-  account).
-- Docs: Guide › Your data explains how to have an account deleted when you
-  can't sign in anymore.
-- Landing page: a clearer promise under the title, "free · no ads · full
-  export" next to the main button, and shorter, plainer section texts.
-- Onboarding: albums join the welcome screen, and release alerts are
-  described as what they are, a digest at the pace you choose. An empty
-  library now also offers to import your history.
-- Game, book and album pages take the video page's layout: full-width image
-  header, the same sticky action bar (with the discussion), then the
-  tracking. Sessions show as one progress line with the session button and
-  timer; the week, totals and history open in "My sessions".
-- Android app: a larger system font now grows the text without swelling
-  bars and spacing; tab labels stop at 130% and page titles wrap instead of
-  being cut.
+- Reading sessions: the reading time is optional. Leave the duration empty
+  to log only the pages you read, when adding or editing a session.
 - Profile: counters on one line (comments dropped), labelled Edit and Share
   buttons, and "Member since" moved to the bottom of the page.
 - Settings › Visibility: who sees each domain's library and activity is one
   table, with an "All domains" row that sets a whole column at once.
-- Title pages: the tagline and ratings stay readable on a bright backdrop,
-  and the trailer button moves to the top corner.
-- GitHub releases are named `X.Y.Z`; the CHANGELOG heading's subtitle opens
-  the notes.
-- Settings › Security: the app lock now sits above "Go further".
-- Android app lock: a redrawn lock screen, touch the fingerprint to unlock.
-- Phone navigation: a central Library tab fans out your domains, Alerts and
-  Messages move to a movable edge tab, and the menu opens by pulling the bar up.
-- Libraries: status pills on one sticky bar, everything else (favorites,
-  sort, saved views, display) in a single Filters panel; active filters stay
-  removable from the bar.
-- Libraries: borderless posters, three per row on a phone (two or three, small
-  or large on desktop); a long press opens favorite, status and review.
 - First-run welcome: full screen on phone and desktop, swipeable steps, a new
-  optional profile step (photo, username, visibility), streaming services and
-  notifications that ask the device's permission, and a membership card that
-  flies into your avatar as the home lands. Settings › Help can replay it.
-- The phone bar's Profile tab shows your avatar; pins are drawn as a pushpin.
+  optional profile step (photo, username, visibility), streaming services
+  and notifications that ask the device's permission, and a membership card
+  that flies into your avatar as the home lands. Settings › Help can replay
+  it. Albums join the intro, and release alerts are described as the digest
+  they are. An empty library also offers to import your history.
 - After sign-up, "Check your email" sits on the poster wall with a sealed
   envelope, opens your webmail (Gmail, Outlook…) in one tap, and turns to
   "Address confirmed" by itself once the link is opened, on any device.
-- Phone layout: pages open on a compact title bar (no back arrow on a tab's
-  own page), sections become filled blocks with their title above, and
-  subtitles that only repeated the page are gone.
-- Empty screens show an amber line drawing, one sentence and what to do
-  next, instead of a dashed box; small text no longer drops below 11px.
-- Phone home: its own page, apart from the desktop grid — a poster shelf per
-  domain, then the week's releases, with your level and streak up top. Its
-  editor is a list: drag to reorder, add any widget, choose posters or rows.
-- A new account's phone home opens on one screen: find a title or import
-  your history.
+- Android app: 18+ films, anime and games show no poster, cover, backdrop
+  or trailer, as Google Play requires. The website is unchanged.
+- Android app: a larger system font now grows the text without swelling
+  bars and spacing; tab labels stop at 130% and page titles wrap instead of
+  being cut.
+- Android app lock: a redrawn lock screen, touch the fingerprint to unlock,
+  and its setting now sits above "Go further" in Settings › Security.
+- Landing page: a clearer promise under the title, "free · no ads · full
+  export" next to the main button, shorter, plainer section texts, and a
+  questions section answering what people ask before signing up.
+- Wording: the footer no longer promises an instant account deletion (it is
+  final after 14 days), settings drop "instance" and environment-variable
+  jargon, and push notifications and the welcome email read more plainly.
+- Docs: a home that leads with the hosted service, and Guide › Your data
+  explains how to have an account deleted when you can't sign in anymore.
+- Self-hosting: the nightly achievements sweep now covers accounts active
+  in the last two days, and every account on Sundays.
+- Self-hosting: the games and books catalogue refreshes ask much less of
+  IGDB and Open Library, and an ended or canceled series is refreshed once a
+  week instead of every day.
+- GitHub releases are named `X.Y.Z`; the CHANGELOG heading's subtitle opens
+  the notes.
 
 ### Fixed
 
 - The open notifications panel no longer refreshes itself non-stop.
 - The home's "To watch" strip no longer scrolls a few pixels vertically.
 - A slow IGDB answer no longer fails the whole games catalogue refresh.
+- The catalogue refresh no longer stalls behind titles a provider stopped
+  serving, and a refresh where every title failed shows as failed in
+  Admin › Jobs instead of "Nothing to refresh".
+- When TMDB, IGDB, Open Library or MusicBrainz is down, you can still add
+  or rate a title someone already tracks: Loomkeep uses its saved copy.
 - A review or list set to public on a private profile is visible to friends
   again, as a friends-only one is; strangers still don't see it.
 - Passkeys created or used in the Android app are no longer rejected with
@@ -155,16 +157,11 @@ history from before it was started.
   instead of always in French.
 - Unticking an episode, or removing a show, no longer takes the "season
   completed" XP away from everyone else who finished that season.
-- The catalogue refresh no longer stalls behind titles a provider stopped
-  serving, and a refresh where every title failed shows as failed in
-  Admin › Jobs instead of "Nothing to refresh".
 - A dropped connection, a busy server or an update in progress no longer
   signs you out: only an expired or revoked session does.
 - The release calendar shows the next six months of episodes, instead of
   stopping after 60 when you follow daily shows, and starts at midnight in
   your time zone rather than the server's.
-- When TMDB, IGDB, Open Library or MusicBrainz is down, you can still add
-  or rate a title someone already tracks: Loomkeep uses its saved copy.
 - Marking a selection of long series as completed at once no longer times
   out: each series is now marked in one pass.
 
