@@ -54,6 +54,12 @@ function page(works: CreatorWorkDto[]): PersonPageDto {
 function setup(person: PersonPageDto, allowAdult = false) {
   const tmdb = {
     getPersonPage: vi.fn().mockResolvedValue(person),
+    getStudioPage: vi.fn().mockResolvedValue({
+      kind: "NETWORK",
+      id: "49",
+      name: "HBO",
+      knownFor: [work({ type: MediaType.SERIES, sourceId: "438631" })],
+    }),
     getStudioWorks: vi.fn().mockResolvedValue({
       items: [work({ sourceId: "438631" }), work({ sourceId: "7" })],
       hasMore: true,
@@ -206,5 +212,16 @@ describe("CreatorService.getPerson", () => {
     expect(result).toMatchObject({ hasMore: true, total: 177 });
     expect(result.items.map((w) => w.status)).toEqual(["COMPLETED", null]);
     expect(tmdb.getStudioWorks).toHaveBeenCalledTimes(2);
+  });
+
+  it("gives a studio's best-known titles the viewer's statuses, and only from TMDB", async () => {
+    const { service } = setup(page([]));
+
+    const hbo = await service.getStudio("u1", "tmdb", "NETWORK", "49", "fr");
+
+    expect(hbo.knownFor.map((w) => w.status)).toEqual(["WATCHING"]);
+    await expect(
+      service.getStudio("u1", "anilist", "COMPANY", "21"),
+    ).rejects.toMatchObject({ code: ErrorCode.CatalogNoPersonDetails });
   });
 });
