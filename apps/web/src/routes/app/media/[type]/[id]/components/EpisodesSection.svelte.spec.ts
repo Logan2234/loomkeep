@@ -287,7 +287,7 @@ describe("EpisodesSection", () => {
   it("shows when an episode airs instead of letting it be marked", async () => {
     const upcoming = season(1, [1], 2);
     upcoming.episodes[1].airDate = inDays(5);
-    const countdown = upcomingLabel(inDays(5), new Date(), false)!;
+    const countdown = upcomingLabel(inDays(5), new Date())!;
     const { user } = renderSection([upcoming]);
     // Up to date with what has aired, so no season opens on its own.
     await openSeason(user);

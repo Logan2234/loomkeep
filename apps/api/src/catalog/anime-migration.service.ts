@@ -321,7 +321,7 @@ export class AnimeMigrationService implements OnApplicationBootstrap {
         : { reason: `override: ${mapping.reason}`, candidates: [] };
     }
 
-    const titles = [item.title, item.originalTitle];
+    const titles = [item.title];
     const found = await this.search(titles);
 
     if (item.format === "MOVIE") {
@@ -469,7 +469,6 @@ export class AnimeMigrationService implements OnApplicationBootstrap {
       anilistUrl: `https://anilist.co/anime/${anilistId}`,
       mediaItemId: item.id,
       title: item.title,
-      originalTitle: item.originalTitle,
       format: item.format,
       status: item.status,
       startDate: item.releaseDate?.toISOString().slice(0, 10) ?? null,
@@ -690,6 +689,7 @@ export class AnimeMigrationService implements OnApplicationBootstrap {
     });
 
     for (const review of reviews) {
+      if (!review.userId) continue;
       const clash = await tx.review.count({
         where: { targetType: "MEDIA", targetId: to, userId: review.userId },
       });
@@ -737,7 +737,7 @@ export class AnimeMigrationService implements OnApplicationBootstrap {
         where: {
           targetType,
           targetId: to,
-          userId: { in: reviews.map((r) => r.userId) },
+          userId: { in: reviews.flatMap((r) => (r.userId ? [r.userId] : [])) },
         },
       });
 

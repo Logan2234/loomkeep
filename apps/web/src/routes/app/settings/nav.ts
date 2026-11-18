@@ -813,7 +813,6 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
         keywords: [
           "sources",
           "tmdb",
-          "anilist",
           "igdb",
           "open library",
           "musicbrainz",

@@ -25,7 +25,7 @@ export class MyAnimeListMatchResolver implements MediaImportMatchResolver {
         (s) =>
           s.type === "ANIME" &&
           (norm(s.title) === title ||
-            (s.originalTitle !== null && norm(s.originalTitle) === title)),
+            (!!s.originalTitle && norm(s.originalTitle) === title)),
       );
       return match ? toMatch(match) : null;
     } catch {

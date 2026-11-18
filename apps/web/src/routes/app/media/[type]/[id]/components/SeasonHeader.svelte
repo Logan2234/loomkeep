@@ -90,7 +90,7 @@
       {#if season.airDate}
         <span>
           {m.media_season_premiere({
-            date: airDateLabel(season.airDate, false, true),
+            date: airDateLabel(season.airDate),
           })}
         </span>
       {/if}
