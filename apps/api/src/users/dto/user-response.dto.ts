@@ -1,4 +1,5 @@
 import type {
+  AcquisitionSource,
   AlertPrefs,
   DigestCadence,
   Domain,
@@ -138,6 +139,12 @@ export class UserResponseDto implements UserDto {
    * @example "2026-03-14T09:26:53.000Z"
    */
   onboardedAt!: string | null;
+
+  /**
+   * How the user heard of Loomkeep, if they said.
+   * @example "REDDIT"
+   */
+  acquisitionSource!: AcquisitionSource | null;
 
   /**
    * Avatar image, if one was uploaded.

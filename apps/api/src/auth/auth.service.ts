@@ -1254,6 +1254,7 @@ export function toUserDto(user: User): UserDto {
     createdAt: user.createdAt.toISOString(),
     avatarUrl: avatarUrl(user),
     onboardedAt: user.onboardedAt?.toISOString() ?? null,
+    acquisitionSource: user.acquisitionSource as UserDto["acquisitionSource"],
     acceptedTermsVersion: user.acceptedTermsVersion,
     mfaTotpEnabled: user.mfaTotpEnabled,
     mfaEmailEnabled: user.mfaEmailEnabled,

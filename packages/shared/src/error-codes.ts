@@ -237,6 +237,10 @@ export const ErrorCode = {
   /** The link in the "deletion scheduled" email is unknown, used, or the account is gone. */
   UserDeletionCancelLinkInvalid: "user.deletion_cancel_link_invalid",
   UserDeletionNotScheduled: "user.deletion_not_scheduled",
+  /** The answer is written once and never replaced. */
+  UserAcquisitionSourceAlreadySet: "user.acquisition_source_already_set",
+  /** The instance doesn't ask (`askAcquisitionSource` off). */
+  UserAcquisitionSourceDisabled: "user.acquisition_source_disabled",
 
   // import
   ImportSimklConnectionFailed: "import.simkl_connection_failed",

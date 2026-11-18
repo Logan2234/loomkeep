@@ -11,6 +11,7 @@ export const STORAGE_KEYS = {
   lastKnownPrefix: "lk-last-known-",
   reviewDraftPrefix: "lk-review-draft-",
   onboardingStep: "lk-onboarding-step",
+  acquisitionSourceOrder: "lk-acquisition-source-order",
   dismissedNews: "lk-news-banner-dismissed",
   reauthMethod: "lk-reauth-method",
   passkeySuggested: "lk-passkey-suggested",

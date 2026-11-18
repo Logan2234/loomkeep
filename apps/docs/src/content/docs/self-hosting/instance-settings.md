@@ -7,15 +7,16 @@ description: What's open to every account on your instance, set from Admin › I
 use. Changes apply the next time each visitor loads the app; no restart, no
 redeploy.
 
-| Setting           | Default | What it does                                                                                       |
-| ----------------- | ------- | -------------------------------------------------------------------------------------------------- |
-| Social            | off     | Follows, friends, activity feed, shared lists and other people's reviews.                          |
-| Messages          | off     | Private messages between friends (needs Social). Stored unencrypted in your database.              |
-| Gamification      | off     | XP, levels, achievements and leaderboard.                                                          |
-| Open registration | on      | When off, only an [invitation](/self-hosting/administration/#invitations) lets someone sign up.    |
-| Public API        | on      | Personal API keys and `/api/v1`. When off, the API answers `api.disabled`; existing keys are kept. |
-| Free limit        | 60      | Public API requests per minute and per account.                                                    |
-| Premium limit     | 300     | The same for premium accounts, once premium is offered.                                            |
+| Setting             | Default | What it does                                                                                       |
+| ------------------- | ------- | -------------------------------------------------------------------------------------------------- |
+| Social              | off     | Follows, friends, activity feed, shared lists and other people's reviews.                          |
+| Messages            | off     | Private messages between friends (needs Social). Stored unencrypted in your database.              |
+| Gamification        | off     | XP, levels, achievements and leaderboard.                                                          |
+| Open registration   | on      | When off, only an [invitation](/self-hosting/administration/#invitations) lets someone sign up.    |
+| Public API          | on      | Personal API keys and `/api/v1`. When off, the API answers `api.disabled`; existing keys are kept. |
+| Free limit          | 60      | Public API requests per minute and per account.                                                    |
+| Premium limit       | 300     | The same for premium accounts, once premium is offered.                                            |
+| How you heard of us | off     | An optional "How did you hear of Loomkeep?" at the end of onboarding, answers in Admin › Stats.    |
 
 A family instance often closes registration once everyone has an account,
 and leaves social on so lists can be shared.
@@ -27,16 +28,17 @@ variable that is set **wins**: the admin page then shows the setting as
 locked ("Set by …"). Leave them commented out to manage everything from the
 page.
 
-| Setting           | Variable                 |
-| ----------------- | ------------------------ |
-| Social            | `SOCIAL_ENABLED`         |
-| Messages          | `CHAT_ENABLED`           |
-| Gamification      | `GAMIFICATION_ENABLED`   |
-| Open registration | `REGISTRATION_ENABLED`   |
-| Public API        | `PUBLIC_API_ENABLED`     |
-| Free limit        | `API_RATE_LIMIT_FREE`    |
-| Premium limit     | `API_RATE_LIMIT_PREMIUM` |
-| Update check      | `UPDATE_CHECK_ENABLED`   |
+| Setting             | Variable                 |
+| ------------------- | ------------------------ |
+| Social              | `SOCIAL_ENABLED`         |
+| Messages            | `CHAT_ENABLED`           |
+| Gamification        | `GAMIFICATION_ENABLED`   |
+| Open registration   | `REGISTRATION_ENABLED`   |
+| Public API          | `PUBLIC_API_ENABLED`     |
+| Free limit          | `API_RATE_LIMIT_FREE`    |
+| Premium limit       | `API_RATE_LIMIT_PREMIUM` |
+| Update check        | `UPDATE_CHECK_ENABLED`   |
+| How you heard of us | `ASK_ACQUISITION_SOURCE` |
 
 The first time the instance starts with this page, its values are taken from
 these variables. After that, remove a variable from `.env` to unlock its

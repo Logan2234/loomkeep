@@ -1,10 +1,16 @@
 import { auth } from "#lib/auth.svelte.js";
+import { appConfig } from "#lib/config.svelte.js";
 import { STORAGE_KEYS } from "#lib/constants/storage-keys.js";
 import { onboardingReplay } from "#lib/onboarding-replay.svelte.js";
 import { m } from "#lib/paraglide/messages.js";
 import { apiUrl, server } from "#lib/test/msw.js";
 import { renderWithQuery } from "#lib/test/render.js";
-import { DigestCadence, Domain, type UserDto } from "@loomkeep/shared";
+import {
+  AcquisitionSource,
+  DigestCadence,
+  Domain,
+  type UserDto,
+} from "@loomkeep/shared";
 import { fireEvent, screen } from "@testing-library/svelte";
 import { http, HttpResponse } from "msw";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -50,6 +56,7 @@ afterEach(() => {
   sessionStorage.clear();
   auth.user = null;
   onboardingReplay.active = false;
+  appConfig.askAcquisitionSource = false;
 });
 
 describe("onboarding storage", () => {
@@ -146,5 +153,101 @@ describe("profile step", () => {
         screen.getByRole("progressbar").getAttribute("aria-valuenow"),
       ).toBe("4"),
     );
+  });
+});
+
+describe("how did you hear of us", () => {
+  function openDoneStep(user: Partial<UserDto> = {}) {
+    stubSideRequests();
+    auth.user = { ...USER, ...user };
+    sessionStorage.setItem(STORAGE_KEYS.onboardingStep, "4");
+    renderWithQuery(OnboardingWizard, {});
+  }
+
+  function stubAnswer() {
+    const answered = vi.fn();
+    server.use(
+      http.post(apiUrl("/users/me/acquisition-source"), async ({ request }) => {
+        const body = (await request.json()) as { source: string };
+        answered(body);
+        return HttpResponse.json(
+          { ...USER, acquisitionSource: body.source },
+          { status: 201 },
+        );
+      }),
+    );
+    return answered;
+  }
+
+  it("saves the source on tap, then thanks", async () => {
+    appConfig.askAcquisitionSource = true;
+    const answered = stubAnswer();
+    openDoneStep();
+
+    await fireEvent.click(
+      screen.getByRole("button", { name: m.onboarding_acquisition_reddit() }),
+    );
+
+    await screen.findByText(m.onboarding_acquisition_thanks());
+    expect(answered).toHaveBeenCalledWith({ source: AcquisitionSource.REDDIT });
+  });
+
+  it("still thanks after stepping back and returning", async () => {
+    appConfig.askAcquisitionSource = true;
+    const answered = stubAnswer();
+    openDoneStep();
+
+    await fireEvent.click(
+      screen.getByRole("button", { name: m.onboarding_acquisition_reddit() }),
+    );
+    await screen.findByText(m.onboarding_acquisition_thanks());
+    const [back] = screen.getAllByRole("button", { name: m.common_previous() });
+    await fireEvent.click(back);
+    const [next] = screen.getAllByRole("button", { name: m.common_next() });
+    await fireEvent.click(next);
+
+    await screen.findByText(m.onboarding_acquisition_thanks());
+    expect(
+      screen.queryByRole("button", { name: m.onboarding_acquisition_reddit() }),
+    ).toBeNull();
+    expect(answered).toHaveBeenCalledTimes(1);
+  });
+
+  it("waits for the text before sending Other", async () => {
+    appConfig.askAcquisitionSource = true;
+    const answered = stubAnswer();
+    openDoneStep();
+
+    await fireEvent.click(
+      screen.getByRole("button", { name: m.common_other() }),
+    );
+    expect(answered).not.toHaveBeenCalled();
+    await fireEvent.input(
+      screen.getByLabelText(m.onboarding_acquisition_other_label()),
+      { target: { value: "A podcast" } },
+    );
+    await fireEvent.click(
+      screen.getByRole("button", { name: m.common_send() }),
+    );
+
+    await screen.findByText(m.onboarding_acquisition_thanks());
+    expect(answered).toHaveBeenCalledWith({
+      source: AcquisitionSource.OTHER,
+      other: "A podcast",
+    });
+  });
+
+  it.each([
+    ["the instance doesn't ask", false, false, null],
+    ["replaying the tour", true, true, null],
+    ["already answered", true, false, AcquisitionSource.FRIEND],
+  ])("stays hidden when %s", (_, ask, replay, acquisitionSource) => {
+    appConfig.askAcquisitionSource = ask;
+    onboardingReplay.active = replay;
+    openDoneStep({ acquisitionSource });
+
+    expect(
+      screen.queryByRole("heading", { name: m.onboarding_acquisition_title() }),
+    ).toBeNull();
   });
 });

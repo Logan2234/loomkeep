@@ -319,6 +319,8 @@ export interface DataExportAccountRecord {
   lastActiveAt: string | null;
   suspendedUntil: string | null;
   equippedBadgeKeys: string[];
+  /** The free text given with the `OTHER` acquisition source. */
+  acquisitionSourceOther: string | null;
   avatar: { mimeType: string; base64: string } | null;
   /** An email change asked for and not confirmed yet. */
   pendingEmailChange: { newEmail: string; expiresAt: string } | null;

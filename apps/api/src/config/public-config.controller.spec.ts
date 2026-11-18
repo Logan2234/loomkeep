@@ -32,6 +32,14 @@ describe("PublicConfigController", () => {
     const unset = makeController({});
     await expect(unset.controller.get()).resolves.toMatchObject({
       publicApiEnabled: true,
+      askAcquisitionSource: false,
+    });
+  });
+
+  it('asks the acquisition source only when ASK_ACQUISITION_SOURCE is "true"', async () => {
+    const on = makeController({ ASK_ACQUISITION_SOURCE: "true" });
+    await expect(on.controller.get()).resolves.toMatchObject({
+      askAcquisitionSource: true,
     });
   });
 
@@ -44,6 +52,7 @@ describe("PublicConfigController", () => {
       gamificationEnabled: false,
       registrationEnabled: true,
       publicApiEnabled: true,
+      askAcquisitionSource: false,
       erdEnabled: false,
       adminMfaEnforced: false,
       version: "9.9.9",
@@ -61,6 +70,7 @@ describe("PublicConfigController", () => {
       gamificationEnabled: true,
       registrationEnabled: true,
       publicApiEnabled: true,
+      askAcquisitionSource: false,
       erdEnabled: false,
       adminMfaEnforced: false,
       version: "9.9.9",
@@ -78,6 +88,7 @@ describe("PublicConfigController", () => {
       gamificationEnabled: false,
       registrationEnabled: true,
       publicApiEnabled: true,
+      askAcquisitionSource: false,
       erdEnabled: false,
       adminMfaEnforced: false,
       version: "9.9.9",
@@ -95,6 +106,7 @@ describe("PublicConfigController", () => {
       gamificationEnabled: false,
       registrationEnabled: true,
       publicApiEnabled: true,
+      askAcquisitionSource: false,
       erdEnabled: false,
       adminMfaEnforced: false,
       version: "9.9.9",
@@ -112,6 +124,7 @@ describe("PublicConfigController", () => {
       gamificationEnabled: false,
       registrationEnabled: false,
       publicApiEnabled: true,
+      askAcquisitionSource: false,
       erdEnabled: false,
       adminMfaEnforced: false,
       version: "9.9.9",
@@ -129,6 +142,7 @@ describe("PublicConfigController", () => {
       gamificationEnabled: false,
       registrationEnabled: true,
       publicApiEnabled: true,
+      askAcquisitionSource: false,
       erdEnabled: false,
       adminMfaEnforced: false,
       version: "9.9.9",
@@ -146,6 +160,7 @@ describe("PublicConfigController", () => {
       gamificationEnabled: false,
       registrationEnabled: true,
       publicApiEnabled: true,
+      askAcquisitionSource: false,
       erdEnabled: true,
       adminMfaEnforced: false,
       version: "9.9.9",
@@ -163,6 +178,7 @@ describe("PublicConfigController", () => {
       gamificationEnabled: false,
       registrationEnabled: true,
       publicApiEnabled: true,
+      askAcquisitionSource: false,
       erdEnabled: false,
       adminMfaEnforced: true,
       version: "9.9.9",
@@ -198,6 +214,7 @@ describe("PublicConfigController", () => {
       gamificationEnabled: false,
       registrationEnabled: true,
       publicApiEnabled: true,
+      askAcquisitionSource: false,
       erdEnabled: false,
       adminMfaEnforced: false,
       version: "9.9.9",

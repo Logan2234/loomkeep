@@ -1,6 +1,7 @@
 const NEW_BADGE_DAYS = 21;
 
 const SHIPPED = {
+  "acquisition-source": "2026-11-18",
   "studio-pages": "2026-11-17",
   "creator-pages": "2026-11-10",
   rewatch: "2026-11-09",

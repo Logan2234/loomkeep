@@ -1,4 +1,5 @@
 import type {
+  AcquisitionSource,
   AdminAccountsSectionDto,
   AdminNewAccountsTrendDto,
   Locale,
@@ -24,6 +25,8 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 
 const DORMANT_AFTER_MS = DORMANT_AFTER_DAYS * DAY_MS;
 
+const RECENT_OTHER_ACQUISITION_LIMIT = 10;
+
 /**
  * "Comptes & engagement" section of /admin/stats.
  *
@@ -48,6 +51,7 @@ export class AdminAccountsStatsService {
       age,
       byLocale,
       departures,
+      acquisition,
     ] = await Promise.all([
       this.prisma.user.count(),
       this.getNewAccountsTrend(DEFAULT_PERIOD, now),
@@ -58,6 +62,7 @@ export class AdminAccountsStatsService {
       this.ageStats(now),
       this.localeStats(),
       this.departures(now),
+      this.acquisition(),
     ]);
 
     return {
@@ -72,6 +77,7 @@ export class AdminAccountsStatsService {
       byLocale,
       departureReasons: departures.reasons,
       departures: departures.total,
+      acquisition,
     };
   }
 
@@ -233,6 +239,43 @@ export class AdminAccountsStatsService {
           r.reason === null ? [] : [{ reason: r.reason, count: r._count._all }],
         )
         .sort((a, b) => b.count - a.count),
+    };
+  }
+
+  /**
+   * No answer timestamp is stored: the question comes at the end of
+   * onboarding, so the account's creation date stands in for it.
+   */
+  private async acquisition(): Promise<AdminAccountsSectionDto["acquisition"]> {
+    const [rows, recentOther] = await Promise.all([
+      this.prisma.user.groupBy({
+        by: ["acquisitionSource"],
+        where: { acquisitionSource: { not: null } },
+        _count: { _all: true },
+      }),
+      this.prisma.user.findMany({
+        where: { acquisitionSourceOther: { not: null } },
+        orderBy: { createdAt: "desc" },
+        take: RECENT_OTHER_ACQUISITION_LIMIT,
+        select: { acquisitionSourceOther: true },
+      }),
+    ]);
+    return {
+      bySource: rows
+        .flatMap((r) =>
+          r.acquisitionSource === null
+            ? []
+            : [
+                {
+                  source: r.acquisitionSource as AcquisitionSource,
+                  count: r._count._all,
+                },
+              ],
+        )
+        .sort((a, b) => b.count - a.count),
+      recentOther: recentOther.flatMap((u) =>
+        u.acquisitionSourceOther === null ? [] : [u.acquisitionSourceOther],
+      ),
     };
   }
 
