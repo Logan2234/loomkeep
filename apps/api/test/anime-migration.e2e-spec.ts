@@ -1,5 +1,5 @@
 import type { INestApplication } from "@nestjs/common";
-import { mkdtemp, readFile } from "node:fs/promises";
+import { mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import request from "supertest";
@@ -97,6 +97,7 @@ describe("Anime migration (e2e)", () => {
   let userId: string;
   let frierenId: string;
   let yourNameId: string;
+  let prologueId: string;
 
   beforeAll(async () => {
     let http: App;
@@ -172,6 +173,38 @@ describe("Anime migration (e2e)", () => {
       include: { seasons: { include: { episodes: true } } },
     });
     yourNameId = yourName.id;
+
+    // A title no TMDB search finds: left for the report, then settled by hand.
+    const prologue = await prisma.mediaItem.create({
+      data: {
+        type: "ANIME",
+        canonicalSource: "ANILIST",
+        title: "Sousou no Frieren: First Steps",
+        format: "TV",
+        releaseDate: day("2023-09-29"),
+        externalIds: {
+          create: { source: "ANILIST", externalId: "154587", type: "ANIME" },
+        },
+        seasons: {
+          create: { number: 1, episodes: { create: { number: 1 } } },
+        },
+      },
+      include: { seasons: { include: { episodes: true } } },
+    });
+    prologueId = prologue.id;
+    await prisma.libraryEntry.create({
+      data: { userId, mediaItemId: prologue.id, status: "COMPLETED" },
+    });
+    await prisma.episodeWatch.create({
+      data: {
+        userId,
+        episodeId: prologue.seasons[0].episodes[0].id,
+        watchedAt: new Date("2023-10-01T20:00:00Z"),
+      },
+    });
+    await prisma.review.create({
+      data: { userId, targetType: "MEDIA", targetId: prologue.id, rating: 7 },
+    });
     await prisma.libraryEntry.create({
       data: { userId, mediaItemId: yourName.id, status: "COMPLETED" },
     });
@@ -194,13 +227,18 @@ describe("Anime migration (e2e)", () => {
     const report = JSON.parse(await readFile(file, "utf8"));
 
     expect(report.summary).toMatchObject({
-      anilistWorks: 2,
+      anilistWorks: 3,
       placeable: 2,
-      unresolved: 0,
+      unresolved: 1,
+    });
+    expect(report.unresolved[0]).toMatchObject({
+      anilistId: "154587",
+      reason: "no TMDB anime with a matching title",
+      reviews: [{ userId, rating: 7, text: null }],
     });
     await expect(
       prisma.mediaItem.count({ where: { canonicalSource: "ANILIST" } }),
-    ).resolves.toBe(2);
+    ).resolves.toBe(3);
   });
 
   it("moves a cour onto the episodes TMDB files it under", async () => {
@@ -213,10 +251,9 @@ describe("Anime migration (e2e)", () => {
     ).resolves.toBe(0);
 
     const entry = await prisma.libraryEntry.findFirstOrThrow({
-      where: { userId, mediaItem: { type: "ANIME" } },
+      where: { userId, mediaItem: { type: "ANIME", canonicalSource: "TMDB" } },
       include: { mediaItem: { include: { externalIds: true } } },
     });
-    expect(entry.mediaItem.canonicalSource).toBe("TMDB");
     expect(entry.watchedEpisodes).toBe(2);
     expect(
       entry.mediaItem.externalIds.map((e) => [e.source, e.externalId]),
@@ -252,6 +289,44 @@ describe("Anime migration (e2e)", () => {
 
     expect(entry.status).toBe("COMPLETED");
     expect(entry.mediaItem.title).toBe("Your Name.");
+    await expect(progressDrift(prisma)).resolves.toMatchObject({
+      entries: 0,
+      media: 0,
+    });
+  });
+
+  it("settles a work by hand on the next run, merging it into the show", async () => {
+    const dir = join(process.env.BACKUP_DIR!, "anime-migration");
+    await writeFile(
+      join(dir, "anime-migration-overrides.json"),
+      JSON.stringify({
+        "154587": { tmdbId: "209867", type: "ANIME", season: 1, episode: 1 },
+      }),
+    );
+
+    await app.get(AnimeMigrationService).run("apply");
+
+    await expect(
+      prisma.mediaItem.count({ where: { id: prologueId } }),
+    ).resolves.toBe(0);
+    const entries = await prisma.libraryEntry.findMany({
+      where: { userId, mediaItem: { type: "ANIME" } },
+    });
+    // One entry for the show: the finished first cour doesn't finish it.
+    expect(entries).toHaveLength(1);
+    expect(entries[0]).toMatchObject({
+      status: "WATCHING",
+      watchedEpisodes: 3,
+      finishedAt: null,
+    });
+
+    // Both works were reviewed: the first cour's review becomes its season's.
+    const season = await prisma.season.findFirstOrThrow({
+      where: { mediaItemId: entries[0].mediaItemId, number: 1 },
+    });
+    await expect(
+      prisma.review.findFirst({ where: { userId, rating: 7 } }),
+    ).resolves.toMatchObject({ targetType: "SEASON", targetId: season.id });
     await expect(progressDrift(prisma)).resolves.toMatchObject({
       entries: 0,
       media: 0,
