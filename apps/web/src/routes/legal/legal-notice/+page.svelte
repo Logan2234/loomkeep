@@ -16,7 +16,7 @@
   </header>
 
   <article class="legal-document">
-    <p><em>Dernière mise à jour : 09/08/2026</em></p>
+    <p><em>Dernière mise à jour : 19/11/2026</em></p>
     <h2>Éditeur</h2>
     <p>
       Le site et le service Loomkeep, accessibles notamment à l'adresse
@@ -91,7 +91,6 @@
     </p>
     <ul>
       <li>The Movie Database (TMDB) ;</li>
-      <li>AniList ;</li>
       <li>OMDb ;</li>
       <li>IGDB ;</li>
       <li>Open Library ;</li>

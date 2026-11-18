@@ -1,6 +1,6 @@
 import { CatalogSource, MediaType } from "@loomkeep/shared";
 import { vi } from "vitest";
-import { AnilistMatchResolver } from "./anilist-match-resolver";
+import { MyAnimeListMatchResolver } from "./myanimelist-match-resolver";
 import { parseMyAnimeListXml } from "./myanimelist.parser";
 import { MyAnimeListImportSource } from "./myanimelist.source";
 
@@ -80,24 +80,32 @@ function makeSource() {
   const mediaItemService = {
     upsertFromSource: vi.fn().mockResolvedValue({ id: "media-1" }),
   };
-  const anilist = {
-    getSummaryByMalId: vi.fn().mockImplementation(async (id: string) => ({
-      source: CatalogSource.ANILIST,
-      sourceId: `anilist-${id}`,
-      type: MediaType.ANIME,
-      title: `AniList ${id}`,
-      year: 2026,
-      posterUrl: null,
-    })),
+  // TMDB knows every series under its MAL title, and no film.
+  const tmdb = {
+    search: vi.fn().mockImplementation(async (query: string) =>
+      query.includes("Movie")
+        ? []
+        : [
+            {
+              source: CatalogSource.TMDB,
+              sourceId: `tmdb-${query}`,
+              type: MediaType.ANIME,
+              title: query,
+              originalTitle: null,
+              year: 2026,
+              posterUrl: null,
+            },
+          ],
+    ),
   };
   const reviews = { setRating: vi.fn() };
   const source = new MyAnimeListImportSource(
     prisma as never,
     mediaItemService as never,
-    new AnilistMatchResolver(anilist as never),
+    new MyAnimeListMatchResolver(tmdb as never),
     reviews as never,
   );
-  return { source, prisma, mediaItemService, anilist, reviews };
+  return { source, prisma, mediaItemService, tmdb, reviews };
 }
 
 describe("MyAnimeList import", () => {
@@ -139,13 +147,16 @@ describe("MyAnimeList import", () => {
     ).toThrow(/anime exports/i);
   });
 
-  it("resolves and writes only through AniList, keeping imported episode dates null", async () => {
-    const { source, prisma, mediaItemService, anilist, reviews } = makeSource();
+  it("matches by title on TMDB's anime, keeping imported episode dates null", async () => {
+    const { source, prisma, mediaItemService, tmdb, reviews } = makeSource();
     const parsed = source.parseInput(EXPORT);
     const progress = { setTotal: vi.fn(), tick: vi.fn() };
     const plan = await source.buildPlan("u1", parsed, progress);
 
-    expect(anilist.getSummaryByMalId).toHaveBeenCalledWith("136");
+    expect(tmdb.search).toHaveBeenCalledWith(
+      "Hunter x Hunter",
+      MediaType.ANIME,
+    );
     expect(plan.searchMediaType).toBe(MediaType.ANIME);
     expect(plan.groups.flatMap((group) => group.items)).toHaveLength(3);
 
@@ -163,8 +174,8 @@ describe("MyAnimeList import", () => {
     );
 
     expect(mediaItemService.upsertFromSource).toHaveBeenCalledWith(
-      CatalogSource.ANILIST,
-      "anilist-52991",
+      CatalogSource.TMDB,
+      "tmdb-Sousou no Frieren",
       MediaType.ANIME,
     );
     expect(
@@ -187,7 +198,43 @@ describe("MyAnimeList import", () => {
     expect(reviews.setRating).not.toHaveBeenCalled();
   });
 
-  it("rejects a manual match outside AniList", async () => {
+  it("brings a hand-matched entry in without guessing its episodes", async () => {
+    const { source, prisma, mediaItemService } = makeSource();
+    const parsed = source.parseInput(EXPORT);
+    const progress = { setTotal: vi.fn(), tick: vi.fn() };
+    const plan = await source.buildPlan("u1", parsed, progress);
+
+    await source.commit(
+      "u1",
+      parsed,
+      plan,
+      {
+        include: new Set(["anilist:136"]),
+        statuses: new Map(),
+        overrides: new Map([
+          [
+            "anilist:136",
+            {
+              source: CatalogSource.TMDB,
+              sourceId: "46298",
+              type: MediaType.ANIME,
+            },
+          ],
+        ]),
+        overwrite: false,
+      },
+      progress,
+    );
+
+    expect(mediaItemService.upsertFromSource).toHaveBeenCalledWith(
+      CatalogSource.TMDB,
+      "46298",
+      MediaType.ANIME,
+    );
+    expect(prisma.episodeWatch.createMany).not.toHaveBeenCalled();
+  });
+
+  it("rejects a manual match that isn't a TMDB anime", async () => {
     const { source, mediaItemService } = makeSource();
     const parsed = source.parseInput(EXPORT);
     const progress = { setTotal: vi.fn(), tick: vi.fn() };

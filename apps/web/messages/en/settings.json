@@ -83,7 +83,6 @@
   "settings_datasources_body": "Catalogs queried live, each under its own license.",
   "settings_datasources_openlibrary_notice": "Book data provided by Open Library (Internet Archive) — catalogue data licensed CC0.",
   "settings_datasources_omdb_notice": "IMDb, Rotten Tomatoes and Metacritic scores provided by OMDb, under a Creative Commons BY-NC 4.0 license.",
-  "settings_datasources_anilist_notice": "Anime data provided by AniList.",
   "settings_datasources_igdb_notice": "Video game data provided by IGDB.",
   "settings_datasources_musicbrainz_notice": "Music data provided by MusicBrainz — core data under CC0, the rest under CC BY-NC-SA 3.0.",
   "settings_export_body": "A JSON file with your profile, library and history.",

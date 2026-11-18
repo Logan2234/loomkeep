@@ -39,8 +39,8 @@ and your keys live there, and point the addresses at the NAS: see
 
 ## Network
 
-- **Outgoing**: the server reaches the catalogues (TMDB, AniList, IGDB, Open
-  Library, MusicBrainz) live on every search, and the GitHub Container
+- **Outgoing**: the server reaches the catalogues (TMDB, IGDB, Open Library,
+  MusicBrainz) live on every search, and the GitHub Container
   Registry for updates.
 - **Incoming**: ports 8080 and 3000 on a home network, or 80 and 443 with
   [a domain and HTTPS](/self-hosting/https/).

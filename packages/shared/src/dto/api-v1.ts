@@ -35,7 +35,7 @@ export interface ApiV1WorkDto {
   /** Book authors or album artists; empty for video and games. */
   creators: string[];
   coverUrl: string | null;
-  /** The catalogue the work comes from (TMDB, ANILIST, IGDB…) and its id there. */
+  /** The catalogue the work comes from (TMDB, IGDB…) and its id there. */
   source: string;
   sourceId: string;
   /** The work's page in the Loomkeep web app. */

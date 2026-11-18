@@ -40,7 +40,7 @@ export async function addWorkToLibrary(
   if (media) {
     const type = media[1].toUpperCase() as MediaType;
     await upsertLibraryEntry({
-      source: type === "ANIME" ? "ANILIST" : "TMDB",
+      source: "TMDB",
       sourceId: media[2],
       type,
       status: "PLANNED",

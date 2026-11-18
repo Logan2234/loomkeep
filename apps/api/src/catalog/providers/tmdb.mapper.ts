@@ -62,6 +62,8 @@ export interface TmdbMovieResult {
   release_date?: string;
   poster_path?: string | null;
   adult?: boolean;
+  genre_ids?: number[];
+  original_language?: string;
 }
 
 export interface TmdbTvResult {
@@ -70,6 +72,11 @@ export interface TmdbTvResult {
   original_name?: string;
   first_air_date?: string;
   poster_path?: string | null;
+  // Search and /find results carry genre ids, details carry genre objects.
+  genre_ids?: number[];
+  genres?: { id?: number; name: string }[];
+  original_language?: string;
+  origin_country?: string[];
 }
 
 interface TmdbExternalIds {
@@ -97,7 +104,6 @@ export interface TmdbCollection {
 export interface TmdbTvDetails extends TmdbTvResult {
   overview?: string | null;
   backdrop_path?: string | null;
-  genres?: { name: string }[];
   status?: string | null;
   // TMDB reports per-episode runtimes as an array (usually one value).
   episode_run_time?: number[];
@@ -287,11 +293,32 @@ export function toMovieSagaMember(
   };
 }
 
+const TMDB_ANIMATION_GENRE_ID = 16;
+
+/**
+ * TMDB has no notion of anime: a Japanese animation is one, the rule Trakt
+ * also applies. A show TMDB later reclassifies changes type on its next
+ * refresh (MediaItemService.upsertFromSource).
+ */
+export function isTmdbAnime(work: {
+  genre_ids?: number[];
+  genres?: { id?: number }[];
+  original_language?: string;
+  origin_country?: string[];
+}): boolean {
+  const genreIds = work.genre_ids ?? work.genres?.map((g) => g.id) ?? [];
+  return (
+    genreIds.includes(TMDB_ANIMATION_GENRE_ID) &&
+    (work.original_language === "ja" ||
+      (work.origin_country ?? []).includes("JP"))
+  );
+}
+
 export function toTvSummary(tv: TmdbTvResult): MediaSummaryDto {
   return {
     source: CatalogSource.TMDB,
     sourceId: String(tv.id),
-    type: MediaType.SERIES,
+    type: isTmdbAnime(tv) ? MediaType.ANIME : MediaType.SERIES,
     title: tv.name,
     originalTitle: tv.original_name ?? null,
     year: tv.first_air_date ? Number(tv.first_air_date.slice(0, 4)) : null,
@@ -710,8 +737,7 @@ function creditKind(
       : documentary;
 
     if (asOneself) {
-      if (work.type === MediaType.SERIES)
-        return CreatorCreditKind.TV_APPEARANCE;
+      if (work.type !== MediaType.MOVIE) return CreatorCreditKind.TV_APPEARANCE;
       return documentary
         ? CreatorCreditKind.DOCUMENTARY
         : CreatorCreditKind.CAMEO;

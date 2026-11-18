@@ -1,8 +1,6 @@
-import type { CatalogSource, MediaSagaDto, MediaType } from "@loomkeep/shared";
+import type { MediaSagaDto, MediaType } from "@loomkeep/shared";
 import { Injectable } from "@nestjs/common";
-import type { ExternalSource as DbExternalSource } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
-import { AnilistProvider } from "./providers/anilist.provider";
 import { TmdbProvider } from "./providers/tmdb.provider";
 
 // Same freshness as a cached MediaItem (see MediaItemService.refresh).
@@ -10,11 +8,10 @@ const SAGA_TTL_MS = 24 * 60 * 60 * 1000;
 const MAX_CACHED_WORKS = 5000;
 
 /**
- * Reads the saga a film or an anime belongs to — its TMDB collection, or its
- * AniList main line — and keeps the ones with a tracked work in the
- * database. Walking an AniList franchise takes several throttled requests,
- * so a saga, once read, is also kept a day in memory for every one of its
- * works: the media page and the refresh job then share a single walk.
+ * Reads the saga a film belongs to — its TMDB collection — and keeps the
+ * ones with a tracked work in the database. A saga, once read, is also kept
+ * a day in memory for every one of its works: the media page and the refresh
+ * job then share a single read.
  */
 @Injectable()
 export class SagaSyncService {
@@ -26,7 +23,6 @@ export class SagaSyncService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly tmdb: TmdbProvider,
-    private readonly anilist: AnilistProvider,
   ) {}
 
   /** The saga as the source shows it now, in the language asked for. */
@@ -35,11 +31,9 @@ export class SagaSyncService {
     sourceId: string,
     lang?: string,
   ): Promise<MediaSagaDto | null> {
-    if (type === "SERIES") return null;
+    if (type !== "MOVIE") return null;
 
-    // AniList titles don't depend on the language asked for.
-    const langKey = type === "ANIME" ? "" : (lang ?? "");
-    const keyOf = (id: string) => `${type}:${id}:${langKey}`;
+    const keyOf = (id: string) => `${type}:${id}:${lang ?? ""}`;
 
     const cached = this.cache.get(keyOf(sourceId));
 
@@ -47,10 +41,7 @@ export class SagaSyncService {
       return cached.saga;
     }
 
-    const saga =
-      type === "ANIME"
-        ? await this.anilist.getSaga(sourceId)
-        : await this.tmdb.getSaga(sourceId, lang);
+    const saga = await this.tmdb.getSaga(sourceId, lang);
 
     this.remember(
       saga ? saga.members.map((m) => m.sourceId) : [sourceId],
@@ -127,7 +118,7 @@ export class SagaSyncService {
       where: {
         externalIds: {
           some: {
-            source: sourceOf(type),
+            source: "TMDB",
             type,
             externalId: { in: sourceIds },
           },
@@ -144,7 +135,7 @@ export class SagaSyncService {
     const tracked = await this.prisma.mediaItem.count({
       where: {
         externalIds: {
-          some: { source: sourceOf(type), type, externalId: { in: ids } },
+          some: { source: "TMDB", type, externalId: { in: ids } },
         },
       },
     });
@@ -165,7 +156,7 @@ export class SagaSyncService {
       }),
       ...saga.members.map((member, position) => {
         const fields = {
-          source: sourceOf(type),
+          source: "TMDB" as const,
           type,
           position,
           title: member.title,
@@ -197,9 +188,4 @@ export class SagaSyncService {
 
     await this.rememberMembership(type, ids, saga.key);
   }
-}
-
-function sourceOf(type: MediaType): DbExternalSource {
-  const source: CatalogSource = type === "ANIME" ? "ANILIST" : "TMDB";
-  return source as DbExternalSource;
 }

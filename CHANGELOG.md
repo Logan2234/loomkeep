@@ -13,6 +13,18 @@ history from before it was started.
 
 ## [Unreleased]
 
+### Breaking changes
+
+- **Anime come from TMDB now, not AniList.** To move the anime already
+  tracked, start the API once with `ANIME_MIGRATION=dry-run`, read the
+  report written to `BACKUP_DIR/anime-migration`, then once with
+  `ANIME_MIGRATION=apply`, and unset it. The public API no longer returns
+  `ANILIST` works.
+
+- Anime come from TMDB: one entry per show instead of one per season, in
+  your language, with no more rate-limit failures. Sagas are for films only.
+- The AniList import is off until it can read AniList's data export; the
+  MyAnimeList import matches titles on TMDB.
 - Administrators get an alert (email, push optional) when someone's import
   fails, with a link to the failed imports in Admin › Imports.
 - An optional "How did you hear about Loomkeep?" at the end of the welcome

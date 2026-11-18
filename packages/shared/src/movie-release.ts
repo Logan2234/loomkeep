@@ -59,13 +59,22 @@ export function movieReleaseInfo(
   };
 }
 
+// TMDB's statuses for a show with no episode out yet, and AniList's, still
+// held by the anime the AniList migration has not moved yet.
+const UNAIRED_STATUSES = new Set([
+  "Planned",
+  "In Production",
+  "Pilot",
+  "NOT_YET_RELEASED",
+]);
+
 /**
- * An announced anime that hasn't started airing yet (AniList's own status).
- * Like an unreleased film, it can be followed — shown as upcoming — but not
- * completed, rated or reviewed until it airs.
+ * An announced anime that hasn't started airing yet. Like an unreleased
+ * film, it can be followed — shown as upcoming — but not completed, rated or
+ * reviewed until it airs.
  */
 export function isAnimeUnaired(status: string | null | undefined): boolean {
-  return status === "NOT_YET_RELEASED";
+  return !!status && UNAIRED_STATUSES.has(status);
 }
 
 /** A caller may supply its local day; API callers default to the UTC day. */

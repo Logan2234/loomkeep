@@ -83,7 +83,6 @@ describe("LandingFooter catalogue attribution", () => {
 
   it.each([
     ["TMDB", "https://www.themoviedb.org/"],
-    ["AniList", "https://anilist.co/"],
     ["IGDB", "https://www.igdb.com/"],
     ["Open Library", "https://openlibrary.org/"],
     ["MusicBrainz", "https://musicbrainz.org/"],

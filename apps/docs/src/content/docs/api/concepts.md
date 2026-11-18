@@ -14,8 +14,8 @@ API only returns the enabled ones, and asking for a disabled one with
 
 A **work** is a title from a catalogue: a film, a series, a game, a book, an
 album. Its `id` is Loomkeep's own and the same for every account; `source`
-and `sourceId` say which catalogue it comes from (TMDB, AniList, IGDB, Open
-Library or MusicBrainz) and its id there, so you can match it elsewhere.
+and `sourceId` say which catalogue it comes from (TMDB, IGDB, Open Library
+or MusicBrainz) and its id there, so you can match it elsewhere.
 
 A **library entry** is your relation to a work: its status, rating, notes,
 dates and progress. `GET /v1/library` lists entries, each carrying its work.

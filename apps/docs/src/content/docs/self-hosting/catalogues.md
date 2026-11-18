@@ -8,8 +8,7 @@ tracks it. Each catalogue has its own access rules:
 
 | Catalogue / feature   | Variables                                  | Needed for                                             |
 | --------------------- | ------------------------------------------ | ------------------------------------------------------ |
-| TMDB                  | `TMDB_API_TOKEN`                           | **Required**: films and series.                        |
-| AniList               | —                                          | Anime. No key.                                         |
+| TMDB                  | `TMDB_API_TOKEN`                           | **Required**: films, series and anime.                 |
 | IGDB (through Twitch) | `TWITCH_CLIENT_ID`, `TWITCH_CLIENT_SECRET` | Games. Without it, the games domain finds nothing.     |
 | Open Library          | — (`API_CONTACT` recommended)              | Books. No key.                                         |
 | MusicBrainz           | — (`API_CONTACT` recommended)              | Music. No key.                                         |

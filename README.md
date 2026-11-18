@@ -34,12 +34,12 @@
 
 ## What it does
 
-- **Six kinds of media, one library**: films, series and anime from TMDB and
-  AniList, games from IGDB, books from Open Library, music from MusicBrainz.
+- **Six kinds of media, one library**: films, series and anime from TMDB,
+  games from IGDB, books from Open Library, music from MusicBrainz.
 - **Every viewing counts**: each episode, rewatch, play session and reread
   is kept and dated, for a real history and honest stats.
 - **Bring your history**: imports from TV Time, Trakt, Simkl, Letterboxd,
-  IMDb, MyAnimeList, AniList, Steam, Goodreads, StoryGraph and Babelio.
+  IMDb, MyAnimeList, Steam, Goodreads, StoryGraph and Babelio.
 - **Yours to script**: a read-only public API with personal keys, and
   calendar and feed links.
 - **Yours to host**: the same code as loomkeep.app, in two Docker images.

@@ -16,7 +16,7 @@
   </header>
 
   <article class="legal-document">
-    <p><em>Dernière mise à jour : 28/10/2026</em></p>
+    <p><em>Dernière mise à jour : 19/11/2026</em></p>
     <p>
       La présente politique explique comment Loomkeep traite les données
       personnelles des utilisateurs de l'instance officielle accessible à
@@ -338,7 +338,6 @@
     </p>
     <ul>
       <li>TMDB ;</li>
-      <li>AniList ;</li>
       <li>OMDb ;</li>
       <li>IGDB ;</li>
       <li>Open Library ;</li>

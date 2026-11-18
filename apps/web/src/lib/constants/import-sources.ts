@@ -69,7 +69,9 @@ export const IMPORTS_DEFINITION = {
     guide: `${DOCS_URL}/guide/imports/myanimelist/`,
   },
   anilist: {
-    comingSoon: false,
+    // Back once it reads AniList's data export: its API may not feed a
+    // tracker like this one.
+    comingSoon: true,
     domain: Domain.MEDIA,
     label: IMPORT_SOURCE_NAMES.anilist,
     description: m.import_source_anilist_description(),
@@ -79,7 +81,6 @@ export const IMPORTS_DEFINITION = {
       placeholder: m.import_source_anilist_placeholder(),
     },
     noun: { one: m.library_title_one(), many: m.library_title_many() },
-    newBadgeKey: "anilist-import",
     guide: `${DOCS_URL}/guide/imports/anilist/`,
   },
   simkl: {

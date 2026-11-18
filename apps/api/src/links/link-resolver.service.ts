@@ -6,12 +6,12 @@ import {
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { OpenLibraryProvider } from "../books/providers/open-library.provider";
-import { AnilistProvider } from "../catalog/providers/anilist.provider";
 import { TmdbProvider } from "../catalog/providers/tmdb.provider";
 import { AppException } from "../common/app.exception";
 import { webOrigins } from "../common/web-origin.util";
 import { IgdbProvider } from "../games/providers/igdb.provider";
 import { MusicBrainzProvider } from "../music/providers/musicbrainz.provider";
+import { PrismaService } from "../prisma/prisma.service";
 import { type CatalogLink, parseCatalogLink } from "./link-parser";
 
 // The hosted instance: its links open on a self-hosted one too.
@@ -44,15 +44,17 @@ const musicHref = (releaseGroupId: string): ResolvedLinkDto => ({
 /**
  * Turns a link shared from another app (UX-05) into the Loomkeep page for the
  * same work. Links whose id is already Loomkeep's own route id map directly;
- * the others (IMDb, MyAnimeList, Steam, IGDB slugs, Open Library editions and
- * ISBNs, MusicBrainz releases) cost one provider lookup.
+ * the others (IMDb, Steam, IGDB slugs, Open Library editions and ISBNs,
+ * MusicBrainz releases) cost one provider lookup. An AniList link opens the
+ * anime only when a work moved off AniList kept that id; a MyAnimeList one
+ * is no longer recognized.
  */
 @Injectable()
 export class LinkResolverService {
   constructor(
     private readonly config: ConfigService,
+    private readonly prisma: PrismaService,
     private readonly tmdb: TmdbProvider,
-    private readonly anilist: AnilistProvider,
     private readonly igdb: IgdbProvider,
     private readonly openLibrary: OpenLibraryProvider,
     private readonly musicBrainz: MusicBrainzProvider,
@@ -109,8 +111,29 @@ export class LinkResolverService {
           domain: Domain.MEDIA,
           href: `/app/media/${link.type.toLowerCase()}/${link.id}`,
         };
-      case "anilist":
-        return { domain: Domain.MEDIA, href: `/app/media/anime/${link.id}` };
+
+      case "anilist": {
+        const media = await this.prisma.mediaItem.findFirst({
+          where: {
+            canonicalSource: "TMDB",
+            externalIds: { some: { source: "ANILIST", externalId: link.id } },
+          },
+          select: {
+            type: true,
+            externalIds: {
+              where: { source: "TMDB" },
+              select: { externalId: true },
+            },
+          },
+        });
+        const tmdbId = media?.externalIds[0]?.externalId;
+        return tmdbId
+          ? {
+              domain: Domain.MEDIA,
+              href: `/app/media/${media.type.toLowerCase()}/${tmdbId}`,
+            }
+          : null;
+      }
 
       case "imdb": {
         const media =
@@ -119,10 +142,8 @@ export class LinkResolverService {
         return media ? mediaHref(media) : null;
       }
 
-      case "myanimelist": {
-        const media = await this.anilist.getSummaryByMalId(link.id);
-        return media ? mediaHref(media) : null;
-      }
+      case "myanimelist":
+        return null;
 
       case "igdb": {
         const id = await this.igdb.gameIdForSlug(link.slug);

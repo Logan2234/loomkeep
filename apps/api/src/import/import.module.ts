@@ -15,14 +15,13 @@ import { ImportAlertService } from "./import-alert.service";
 import { ImportJobService } from "./import-job.service";
 import { IMPORT_SOURCES, type ImportReq } from "./import-source";
 import { ImportController } from "./import.controller";
-import { AnilistImportSource } from "./sources/anilist/anilist.source";
 import { BabelioImportSource } from "./sources/books/babelio.source";
 import { GoodreadsImportSource } from "./sources/books/goodreads.source";
 import { StoryGraphImportSource } from "./sources/books/storygraph.source";
 import { ImdbImportSource } from "./sources/imdb/imdb.source";
 import { LetterboxdImportSource } from "./sources/letterboxd/letterboxd.source";
 import { MediaMatchResolver } from "./sources/media/media-match-resolver";
-import { AnilistMatchResolver } from "./sources/myanimelist/anilist-match-resolver";
+import { MyAnimeListMatchResolver } from "./sources/myanimelist/myanimelist-match-resolver";
 import { MyAnimeListImportSource } from "./sources/myanimelist/myanimelist.source";
 import { SimklImportSource } from "./sources/simkl/simkl.source";
 import { SteamImportSource } from "./sources/steam/steam.source";
@@ -57,12 +56,11 @@ import { TvTimeImportSource } from "./sources/tvtime/tvtime.source";
     ImportJobService,
     ImportAlertService,
     MediaMatchResolver,
-    AnilistMatchResolver,
+    MyAnimeListMatchResolver,
     TvTimeImportSource,
     TraktImportSource,
     SimklImportSource,
     MyAnimeListImportSource,
-    AnilistImportSource,
     LetterboxdImportSource,
     ImdbImportSource,
     StoryGraphImportSource,
@@ -77,7 +75,6 @@ import { TvTimeImportSource } from "./sources/tvtime/tvtime.source";
         TraktImportSource,
         SimklImportSource,
         MyAnimeListImportSource,
-        AnilistImportSource,
         LetterboxdImportSource,
         ImdbImportSource,
         StoryGraphImportSource,

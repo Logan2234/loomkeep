@@ -7,14 +7,7 @@ import type { MediaItemService } from "./media-item.service";
 const user = { sub: "user-1" } as never;
 
 describe("CatalogController.search", () => {
-  function makeController(opts: { tmdbSearch: Mock; anilistSearch: Mock }) {
-    const mediaItemService = {
-      providerFor: vi.fn((source: string) =>
-        source === "TMDB"
-          ? { search: opts.tmdbSearch }
-          : { search: opts.anilistSearch },
-      ),
-    } as unknown as MediaItemService;
+  function makeController(searchPage: Mock) {
     const ageGate = {
       allowsAdultContent: vi.fn().mockResolvedValue(true),
     } as unknown as AgeGateService;
@@ -22,36 +15,32 @@ describe("CatalogController.search", () => {
       assertEnabled: vi.fn().mockResolvedValue(undefined),
     } as unknown as DomainGateService;
 
-    return new CatalogController(
-      mediaItemService,
-      ageGate,
-      domainGate,
-      {} as never,
-    );
+    return new CatalogController({} as MediaItemService, ageGate, domainGate, {
+      searchPage,
+    } as never);
   }
 
-  it("degrades to the other source's results when one provider rejects", async () => {
-    const anilistResults = [{ id: "a1", title: "Anilist Show" }];
-    const controller = makeController({
-      tmdbSearch: vi.fn().mockRejectedValue(new Error("TMDB is down")),
-      anilistSearch: vi.fn().mockResolvedValue(anilistResults),
-    });
+  it("answers an empty page rather than failing when TMDB is down", async () => {
+    const controller = makeController(
+      vi.fn().mockRejectedValue(new Error("TMDB is down")),
+    );
 
     const result = await controller.search(user, { q: "show" } as never);
 
-    expect(result.items).toEqual(
-      expect.arrayContaining([expect.objectContaining({ id: "a1" })]),
-    );
+    expect(result).toEqual({ items: [], hasMore: false });
   });
 
-  it("merges both sources' results when both succeed", async () => {
-    const controller = makeController({
-      tmdbSearch: vi.fn().mockResolvedValue([{ id: "t1", title: "Movie" }]),
-      anilistSearch: vi.fn().mockResolvedValue([{ id: "a1", title: "Anime" }]),
-    });
+  it("keeps paging while TMDB has results the anime filter left out", async () => {
+    const searchPage = vi.fn().mockResolvedValue({ items: [], hasMore: true });
+    const controller = makeController(searchPage);
 
-    const result = await controller.search(user, { q: "x" } as never);
+    const result = await controller.search(user, {
+      q: "x",
+      type: "ANIME",
+      page: 2,
+    } as never);
 
-    expect(result.items).toHaveLength(2);
+    expect(searchPage).toHaveBeenCalledWith("x", "ANIME", 2, undefined);
+    expect(result.hasMore).toBe(true);
   });
 });

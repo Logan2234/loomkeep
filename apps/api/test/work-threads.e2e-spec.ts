@@ -39,7 +39,7 @@ describe("Work threads (e2e)", () => {
       .put("/api/library")
       .set("Cookie", session[key])
       .send({
-        source: "ANILIST",
+        source: "TMDB",
         sourceId: "4242",
         type: "ANIME",
         status: "WATCHING",

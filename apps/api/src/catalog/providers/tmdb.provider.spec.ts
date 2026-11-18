@@ -104,6 +104,69 @@ describe("TmdbProvider", () => {
     expect(results[1].title).toBe("Breaking Bad");
   });
 
+  describe("anime", () => {
+    const frieren = {
+      id: 209867,
+      name: "Frieren: Beyond Journey's End",
+      genre_ids: [16, 10759],
+      original_language: "ja",
+      origin_country: ["JP"],
+    };
+    const arcane = {
+      id: 94605,
+      name: "Arcane",
+      genre_ids: [16, 10765],
+      original_language: "en",
+      origin_country: ["US"],
+    };
+    const yourName = {
+      id: 372058,
+      title: "Your Name.",
+      genre_ids: [16, 10749],
+      original_language: "ja",
+    };
+    const heat = {
+      id: 949,
+      title: "Heat",
+      genre_ids: [80],
+      original_language: "en",
+    };
+
+    beforeEach(() => {
+      mockFetchByUrl({
+        "/search/movie": { results: [yourName, heat] },
+        "/search/tv": { results: [frieren, arcane] },
+      });
+    });
+
+    it("files a Japanese animation as an anime, any other show as a series", async () => {
+      const results = await provider.search("anything");
+
+      expect(results.map((r) => [r.title, r.type])).toEqual([
+        ["Your Name.", MediaType.MOVIE],
+        ["Heat", MediaType.MOVIE],
+        ["Frieren: Beyond Journey's End", MediaType.ANIME],
+        ["Arcane", MediaType.SERIES],
+      ]);
+    });
+
+    it("keeps the anime series and films alone under the anime filter", async () => {
+      const page = await provider.searchPage("anything", MediaType.ANIME);
+
+      expect(page.items.map((r) => [r.title, r.type])).toEqual([
+        ["Your Name.", MediaType.MOVIE],
+        ["Frieren: Beyond Journey's End", MediaType.ANIME],
+      ]);
+      expect(page.hasMore).toBe(true);
+    });
+
+    it("leaves the anime out of the series filter", async () => {
+      const page = await provider.searchPage("anything", MediaType.SERIES);
+
+      expect(page.items.map((r) => r.title)).toEqual(["Arcane"]);
+    });
+  });
+
   it("maps movie details with external IDs and no seasons", async () => {
     mockFetchByUrl({ "/movie/27205": fixture("tmdb-movie-details.json") });
 

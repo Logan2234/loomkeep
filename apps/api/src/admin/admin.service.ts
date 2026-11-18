@@ -12,7 +12,6 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { OPEN_LIBRARY_API_URL } from "../books/providers/open-library.provider";
 import { OMDB_URL } from "../catalog/omdb.service";
-import { ANILIST_GRAPHQL_URL } from "../catalog/providers/anilist.provider";
 import { TMDB_API_URL } from "../catalog/providers/tmdb.provider";
 import { startOfUtcDay, startOfUtcMonth } from "../common/date.util";
 import { identifyingUserAgent } from "../common/http.util";
@@ -104,21 +103,6 @@ export class AdminService {
           }),
       },
       {
-        // Keyless fallback: search still works for anime without any credentials.
-        key: "anilist",
-        label: "AniList",
-        area: "Vidéo",
-        required: true,
-        envKeys: [],
-        probe: (signal) =>
-          this.ping(ANILIST_GRAPHQL_URL, {
-            signal,
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ query: "{__typename}" }),
-          }),
-      },
-      {
         key: "omdb",
         label: "OMDb (notes)",
         area: "Vidéo",
@@ -184,7 +168,7 @@ export class AdminService {
         quotaLimit: { max: PROVIDER_DAILY_QUOTAS.simkl, window: "day" },
       },
       {
-        // Keyless (like AniList), but the sole book source — so it's required
+        // Keyless, but the sole book source — so it's required
         // for the Livres area even though there's no key to be missing.
         key: "openLibrary",
         label: "Open Library",
@@ -204,7 +188,7 @@ export class AdminService {
         // User-Agent and reasonable batching instead of enforcing a ceiling.
       },
       {
-        // Keyless (like AniList), but the sole music source — so it's required
+        // Keyless, but the sole music source — so it's required
         // for the Musique area even though there's no key to be missing.
         key: "musicbrainz",
         label: "MusicBrainz",

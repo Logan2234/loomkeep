@@ -526,7 +526,7 @@ describe("EpisodesSection", () => {
     });
     expect(link.getAttribute("href")).toBe("https://cr.example/2");
     expect(
-      within(panel()).getByText(m.media_episode_no_synopsis_anime()),
+      within(panel()).getByText(m.media_episode_no_synopsis()),
     ).toBeTruthy();
   });
 

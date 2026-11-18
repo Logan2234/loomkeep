@@ -825,9 +825,8 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
           {
             id: "datasource-tmdb",
             label: "TMDB",
-            keywords: ["movies", "series"],
+            keywords: ["movies", "series", "anime"],
           },
-          { id: "datasource-anilist", label: "AniList", keywords: ["anime"] },
           {
             id: "datasource-omdb",
             label: "OMDb",

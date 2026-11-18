@@ -33,8 +33,8 @@ order: newest first, best rated first, A to Z for titles. `asc` reverses it.
 Film and series titles follow the account's language (Settings ›
 Appearance), or `?lang=` (`en`, `fr`, `it`) on any endpoint that returns
 works. A title nobody has opened in that language yet stays in English.
-Anime keep their AniList title, and games, books and albums their
-catalogue's single title. Any other `lang` is a `400`.
+Anime follow it too, coming from TMDB like series. Games, books and albums
+keep their catalogue's single title. Any other `lang` is a `400`.
 
 ## CORS
 

@@ -2,7 +2,6 @@
   import { page } from "$app/state";
   import ProviderMark from "#lib/components/ProviderMark.svelte";
   import {
-    ANILIST_API,
     IGDB_API,
     MUSICBRAINZ_API,
     OMDB_API,
@@ -27,12 +26,6 @@
       name: "TMDB",
       href: TMDB_API,
       notice: m.datasource_tmdb_notice(),
-    },
-    {
-      brand: "anilist",
-      name: "AniList",
-      href: ANILIST_API,
-      notice: m.settings_datasources_anilist_notice(),
     },
     {
       brand: "omdb",

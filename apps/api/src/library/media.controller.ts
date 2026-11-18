@@ -20,8 +20,8 @@ import { SagaService } from "./saga.service";
 
 /**
  * Unified media page, addressed by catalogue identity (`type` + source `id`).
- * `type` determines the source (MOVIE/SERIES → TMDB, ANIME → AniList), so no
- * source segment is needed in the URL. Works whether or not the media is in the
+ * Every type is a TMDB id (`type` tells a film from a show), so no source
+ * segment is needed in the URL. Works whether or not the media is in the
  * user's library.
  */
 @Controller("media")
