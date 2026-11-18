@@ -301,6 +301,15 @@ export const ALERTS = {
     mailTemplate: "jobAlert",
     audience: "admins",
   },
+  // Every import that fails while being applied — not its analysis, which
+  // only rejects a malformed export.
+  ADMIN_IMPORT_FAILED: {
+    group: AlertGroup.ADMIN,
+    email: "on",
+    push: "off",
+    mailTemplate: "importAlert",
+    audience: "admins",
+  },
   ADMIN_QUOTA: {
     group: AlertGroup.ADMIN,
     email: "on",

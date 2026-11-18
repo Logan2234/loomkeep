@@ -38,6 +38,7 @@ import { XpService } from "../gamification/xp.service";
 import { notificationCopy } from "../notifications/notification-copy";
 import { NotificationService } from "../notifications/notification.service";
 import { PrismaService } from "../prisma/prisma.service";
+import { ImportAlertService } from "./import-alert.service";
 import {
   IMPORT_SOURCES,
   type CommitDecisions,
@@ -92,6 +93,7 @@ export class ImportJobService {
     private readonly achievements: AchievementService,
     private readonly events: EventsGateway,
     private readonly notifications: NotificationService,
+    private readonly importAlerts: ImportAlertService,
   ) {
     this.sources = new Map(sources.map((s) => [s.id, s]));
   }
@@ -583,7 +585,12 @@ export class ImportJobService {
       this.emitProgress(job);
     }
 
-    if (job.kind === "commit") await this.notifyIfAway(job);
+    if (job.kind !== "commit") return;
+    await this.notifyIfAway(job);
+
+    if (job.status === "failed") {
+      await this.importAlerts.importFailed(job.sourceId, job.error ?? "");
+    }
   }
 
   /**

@@ -13,6 +13,9 @@ history from before it was started.
 
 ## [Unreleased]
 
+- Administrators get an alert (email, push optional) when someone's import
+  fails, with a link to the failed imports in Admin › Imports.
+
 ### Fixed
 
 - Large AniList imports no longer fail halfway with a rate-limit error:
