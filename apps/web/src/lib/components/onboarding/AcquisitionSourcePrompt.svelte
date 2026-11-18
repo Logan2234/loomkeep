@@ -12,6 +12,7 @@
   } from "#lib/local-storage.js";
   import { prefersReducedMotion } from "#lib/motion.js";
   import { tapFeedback } from "#lib/native/haptics.js";
+  import { auth } from "#lib/auth.svelte.js";
   import { m } from "#lib/paraglide/messages.js";
   import {
     ACQUISITION_SOURCE_OTHER_MAX_LENGTH,
@@ -57,7 +58,7 @@
 </script>
 
 <section class="mt-6 max-w-xl" aria-labelledby="acquisition-title">
-  {#if saveMut.data}
+  {#if auth.user?.acquisitionSource}
     <p
       class="text-dim flex items-center gap-2 text-sm"
       role="status"

@@ -18,6 +18,7 @@ import type {
   ReauthRequestDto,
   RegisterRequestDto,
   ScheduleAccountDeletionRequestDto,
+  SetAcquisitionSourceRequestDto,
   UpdateUsernameRequestDto,
   UpdateUserRequestDto,
   UploadAvatarRequestDto,
@@ -220,14 +221,15 @@ export async function completeOnboarding(): Promise<UserDto> {
   return user;
 }
 
-// Leaves auth.user alone: the onboarding prompt keeps showing its thanks.
-export function setAcquisitionSource(
+export async function setAcquisitionSource(
   body: SetAcquisitionSourceRequestDto,
 ): Promise<UserDto> {
-  return typedRequest("/users/me/acquisition-source", {
+  const user = await typedRequest("/users/me/acquisition-source", {
     method: "POST",
     body,
   });
+  auth.user = user;
+  return user;
 }
 
 export async function acceptTerms(): Promise<UserDto> {

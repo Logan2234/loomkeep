@@ -168,8 +168,12 @@ describe("how did you hear of us", () => {
     const answered = vi.fn();
     server.use(
       http.post(apiUrl("/users/me/acquisition-source"), async ({ request }) => {
-        answered(await request.json());
-        return HttpResponse.json(USER, { status: 201 });
+        const body = (await request.json()) as { source: string };
+        answered(body);
+        return HttpResponse.json(
+          { ...USER, acquisitionSource: body.source },
+          { status: 201 },
+        );
       }),
     );
     return answered;
@@ -186,6 +190,27 @@ describe("how did you hear of us", () => {
 
     await screen.findByText(m.onboarding_acquisition_thanks());
     expect(answered).toHaveBeenCalledWith({ source: AcquisitionSource.REDDIT });
+  });
+
+  it("still thanks after stepping back and returning", async () => {
+    appConfig.askAcquisitionSource = true;
+    const answered = stubAnswer();
+    openDoneStep();
+
+    await fireEvent.click(
+      screen.getByRole("button", { name: m.onboarding_acquisition_reddit() }),
+    );
+    await screen.findByText(m.onboarding_acquisition_thanks());
+    const [back] = screen.getAllByRole("button", { name: m.common_previous() });
+    await fireEvent.click(back);
+    const [next] = screen.getAllByRole("button", { name: m.common_next() });
+    await fireEvent.click(next);
+
+    await screen.findByText(m.onboarding_acquisition_thanks());
+    expect(
+      screen.queryByRole("button", { name: m.onboarding_acquisition_reddit() }),
+    ).toBeNull();
+    expect(answered).toHaveBeenCalledTimes(1);
   });
 
   it("waits for the text before sending Other", async () => {

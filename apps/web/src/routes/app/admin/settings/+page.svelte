@@ -12,9 +12,11 @@
   import Banner from "#lib/components/Banner.svelte";
   import CardRowSkeleton from "#lib/components/CardRowSkeleton.svelte";
   import Icon from "#lib/components/Icon.svelte";
+  import NewBadge from "#lib/components/NewBadge.svelte";
   import PageHeader from "#lib/components/PageHeader.svelte";
   import Switch from "#lib/components/Switch.svelte";
   import { DOCS_URL } from "#lib/constants/external-links.js";
+  import { isFeatureNew, type FeatureBadgeKey } from "#lib/feature-badges.js";
   import { m } from "#lib/paraglide/messages.js";
   import { toast } from "#lib/toast.svelte.js";
   import {
@@ -56,7 +58,12 @@
     },
   }));
 
-  const FEATURES: { key: ToggleKey; label: string; hint: string }[] = [
+  const FEATURES: {
+    key: ToggleKey;
+    label: string;
+    hint: string;
+    badge?: FeatureBadgeKey;
+  }[] = [
     {
       key: "socialEnabled",
       label: m.common_social(),
@@ -86,6 +93,7 @@
       key: "askAcquisitionSource",
       label: m.admin_settings_acquisition(),
       hint: m.admin_settings_acquisition_hint(),
+      badge: "acquisition-source",
     },
   ];
   const LIMITS: { key: LimitKey; label: string }[] = [
@@ -117,10 +125,18 @@
   {/if}
 {/snippet}
 
-{#snippet toggleRow(key: ToggleKey, label: string, hint: string)}
+{#snippet toggleRow(
+  key: ToggleKey,
+  label: string,
+  hint: string,
+  badge?: FeatureBadgeKey,
+)}
   <div class="flex items-start gap-4 p-4">
     <div class="min-w-0 flex-1">
-      <p class="font-semibold">{label}</p>
+      <p class="font-semibold">
+        {label}
+        {#if badge && isFeatureNew(badge)}<NewBadge />{/if}
+      </p>
       <p class="text-dim text-sm">{hint}</p>
       {@render locked(key)}
     </div>
@@ -170,7 +186,12 @@
       </div>
       <div class="card divide-border divide-y overflow-hidden">
         {#each FEATURES as feature (feature.key)}
-          {@render toggleRow(feature.key, feature.label, feature.hint)}
+          {@render toggleRow(
+            feature.key,
+            feature.label,
+            feature.hint,
+            feature.badge,
+          )}
         {/each}
       </div>
     </section>
