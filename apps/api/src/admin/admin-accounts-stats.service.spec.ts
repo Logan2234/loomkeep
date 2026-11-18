@@ -112,3 +112,36 @@ describe("AdminAccountsStatsService departures", () => {
     ]);
   });
 });
+
+describe("AdminAccountsStatsService acquisition", () => {
+  it("ranks the answers and lists the latest free texts", async () => {
+    const { service, prisma } = make();
+    (prisma.user.groupBy as Mock).mockImplementation(({ by }) =>
+      Promise.resolve(
+        by[0] === "acquisitionSource"
+          ? [
+              { acquisitionSource: "REDDIT", _count: { _all: 2 } },
+              { acquisitionSource: "FRIEND", _count: { _all: 5 } },
+            ]
+          : [],
+      ),
+    );
+    (prisma.user.findMany as Mock).mockImplementation(({ where }) =>
+      Promise.resolve(
+        where?.acquisitionSourceOther
+          ? [{ acquisitionSourceOther: "A podcast" }]
+          : [],
+      ),
+    );
+
+    const stats = await service.getStats();
+
+    expect(stats.acquisition).toEqual({
+      bySource: [
+        { source: "FRIEND", count: 5 },
+        { source: "REDDIT", count: 2 },
+      ],
+      recentOther: ["A podcast"],
+    });
+  });
+});

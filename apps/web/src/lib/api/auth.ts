@@ -18,6 +18,7 @@ import type {
   ReauthRequestDto,
   RegisterRequestDto,
   ScheduleAccountDeletionRequestDto,
+  SetAcquisitionSourceRequestDto,
   UpdateUsernameRequestDto,
   UpdateUserRequestDto,
   UploadAvatarRequestDto,
@@ -215,6 +216,17 @@ export async function updateMe(body: UpdateUserRequestDto): Promise<UserDto> {
 export async function completeOnboarding(): Promise<UserDto> {
   const user = await typedRequest("/users/me/complete-onboarding", {
     method: "POST",
+  });
+  auth.user = user;
+  return user;
+}
+
+export async function setAcquisitionSource(
+  body: SetAcquisitionSourceRequestDto,
+): Promise<UserDto> {
+  const user = await typedRequest("/users/me/acquisition-source", {
+    method: "POST",
+    body,
   });
   auth.user = user;
   return user;

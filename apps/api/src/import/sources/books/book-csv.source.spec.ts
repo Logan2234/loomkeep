@@ -92,6 +92,7 @@ function setup(
       isOnline: vi.fn().mockResolvedValue(true),
     } as never, // EventsGateway stub
     { create: vi.fn() } as never, // NotificationService stub
+    { importFailed: vi.fn() } as never, // ImportAlertService stub
   );
   return { service, bookItemService, upsert, createMany, deleteMany, reviews };
 }

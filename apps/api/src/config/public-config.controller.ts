@@ -33,6 +33,10 @@ export class PublicConfigController {
       gamificationEnabled: isGamificationEnabled(this.config),
       registrationEnabled: isRegistrationEnabled(this.config),
       publicApiEnabled: instanceSetting(this.config, "publicApiEnabled"),
+      askAcquisitionSource: instanceSetting(
+        this.config,
+        "askAcquisitionSource",
+      ),
       erdEnabled: this.config.get<string>("NODE_ENV") === "development",
       adminMfaEnforced: isHardened((key) => this.config.get<string>(key)),
       version,

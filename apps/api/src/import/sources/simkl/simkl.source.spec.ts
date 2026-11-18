@@ -72,6 +72,7 @@ function makeService(env: Record<string, string> = {}) {
       isOnline: vi.fn().mockResolvedValue(true),
     } as never, // EventsGateway stub
     { create: vi.fn() } as never, // NotificationService stub
+    { importFailed: vi.fn() } as never, // ImportAlertService stub
   );
   return { prisma, mediaItemService, tmdb, service };
 }

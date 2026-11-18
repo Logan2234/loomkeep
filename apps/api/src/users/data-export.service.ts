@@ -401,6 +401,7 @@ export class DataExportService {
         lastActiveAt: user.lastActiveAt?.toISOString() ?? null,
         suspendedUntil: user.suspendedUntil?.toISOString() ?? null,
         equippedBadgeKeys: user.equippedBadgeKeys ?? [],
+        acquisitionSourceOther: user.acquisitionSourceOther,
         avatar:
           user.avatar && user.avatarMimeType
             ? {

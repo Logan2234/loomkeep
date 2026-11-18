@@ -1,5 +1,6 @@
 import type {
   AccountDeletionReason,
+  AcquisitionSource,
   AdminAccountsSectionDto,
   AdminAgeBucketDto,
   AdminCohortRowDto,
@@ -57,6 +58,16 @@ class AdminDepartureReasonCountResponseDto {
   count!: number;
 }
 
+class AdminAcquisitionSourceCountResponseDto {
+  source!: AcquisitionSource;
+  count!: number;
+}
+
+class AdminAcquisitionStatsResponseDto {
+  bySource!: AdminAcquisitionSourceCountResponseDto[];
+  recentOther!: string[];
+}
+
 export class AdminAccountsSectionResponseDto implements AdminAccountsSectionDto {
   generatedAt!: string;
   total!: number;
@@ -69,4 +80,5 @@ export class AdminAccountsSectionResponseDto implements AdminAccountsSectionDto 
   byLocale!: AdminLocaleCountResponseDto[];
   departureReasons!: AdminDepartureReasonCountResponseDto[];
   departures!: number;
+  acquisition!: AdminAcquisitionStatsResponseDto;
 }

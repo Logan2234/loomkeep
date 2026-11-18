@@ -10,6 +10,7 @@ export type AdminAlertKey = Extract<
   AlertKey,
   | "ADMIN_REPORTS_PENDING"
   | "ADMIN_JOB_FAILED"
+  | "ADMIN_IMPORT_FAILED"
   | "ADMIN_QUOTA"
   | "ADMIN_NEW_USER"
   | "ADMIN_UPDATE_AVAILABLE"

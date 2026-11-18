@@ -267,6 +267,10 @@ const MESSAGES = {
     m.apierr_user_deletion_cancel_link_invalid(),
   [ErrorCode.UserDeletionNotScheduled]: () =>
     m.apierr_user_deletion_not_scheduled(),
+  [ErrorCode.UserAcquisitionSourceAlreadySet]: () =>
+    m.apierr_user_acquisition_source_already_set(),
+  [ErrorCode.UserAcquisitionSourceDisabled]: () =>
+    m.apierr_user_acquisition_source_disabled(),
   [ErrorCode.UserAvatarTooLarge]: () => m.apierr_user_avatar_too_large(),
   [ErrorCode.UserAvatarInvalidType]: () => m.apierr_user_avatar_invalid_type(),
   [ErrorCode.ImportSimklConnectionFailed]: () =>

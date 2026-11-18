@@ -142,6 +142,10 @@ const COPY = {
         title: "Tâche planifiée rétablie",
         body: `« ${job} » fonctionne de nouveau.`,
       }),
+      importFailed: (source: string) => ({
+        title: "Import en échec",
+        body: `Un import ${source} a échoué.`,
+      }),
       quota: (provider: string, percent: number) => ({
         title: "Quota d'un catalogue",
         body: `${provider} a atteint ${percent} % de son quota du jour.`,
@@ -293,6 +297,10 @@ const COPY = {
       jobRecovered: (job: string) => ({
         title: "Scheduled job back",
         body: `“${job}” works again.`,
+      }),
+      importFailed: (source: string) => ({
+        title: "Import failed",
+        body: `A ${source} import failed.`,
       }),
       quota: (provider: string, percent: number) => ({
         title: "Catalogue quota",
@@ -449,6 +457,10 @@ const COPY = {
         title: "Attività pianificata ripristinata",
         body: `“${job}” funziona di nuovo.`,
       }),
+      importFailed: (source: string) => ({
+        title: "Importazione non riuscita",
+        body: `Un'importazione ${source} non è riuscita.`,
+      }),
       quota: (provider: string, percent: number) => ({
         title: "Quota di un catalogo",
         body: `${provider} ha raggiunto il ${percent}% della quota giornaliera.`,
@@ -554,6 +566,7 @@ export interface NotificationCopy {
     reportsPending: (count: number) => PushText;
     jobFailed: (job: string) => PushText;
     jobRecovered: (job: string) => PushText;
+    importFailed: (source: string) => PushText;
     quota: (provider: string, percent: number) => PushText;
     newUser: (name: string) => PushText;
     updateAvailable: (version: string) => PushText;

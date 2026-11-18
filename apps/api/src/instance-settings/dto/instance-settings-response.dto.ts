@@ -13,6 +13,7 @@ class InstanceSettingsValuesResponseDto implements InstanceSettingsValues {
   apiRateLimitFree!: number;
   apiRateLimitPremium!: number;
   updateCheckEnabled!: boolean;
+  askAcquisitionSource!: boolean;
 }
 
 class InstanceSettingsLocksResponseDto implements Partial<
@@ -26,6 +27,7 @@ class InstanceSettingsLocksResponseDto implements Partial<
   apiRateLimitFree?: string;
   apiRateLimitPremium?: string;
   updateCheckEnabled?: string;
+  askAcquisitionSource?: string;
 }
 
 export class InstanceSettingsResponseDto implements InstanceSettingsDto {

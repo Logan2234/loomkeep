@@ -36,6 +36,13 @@ export interface QuotaAlert {
 }
 
 /** A scheduled job that started failing (`error` set) or succeeded again (`error: null`). */
+export interface ImportAlert {
+  /** Display name of the import source ("Letterboxd"). */
+  source: string;
+  /** First line of the error message. */
+  error: string;
+}
+
 export interface JobAlert {
   jobKey: string;
   /** First line of the error message; null once the job has recovered. */
@@ -454,6 +461,19 @@ export class MailService {
           jobKey: v.jobKey,
           error: v.status === "SUCCESS" ? null : v.error,
         }),
+    },
+    importAlert: {
+      label: "Import en échec (admins)",
+      fields: [
+        { key: "source", label: "Source", default: "Letterboxd" },
+        {
+          key: "error",
+          label: "Erreur",
+          default: "TMDB request failed with status 503",
+        },
+      ],
+      build: (locale, v) =>
+        this.buildImportAlert(locale, { source: v.source, error: v.error }),
     },
     reportsDigest: {
       label: "Digest des signalements",
@@ -1180,6 +1200,18 @@ export class MailService {
     });
   }
 
+  /** Tells an admin that someone's import failed while being applied. */
+  async sendImportAlert(
+    recipient: MailRecipient,
+    alert: ImportAlert,
+  ): Promise<void> {
+    const locale = resolveCopyLocale(recipient.locale);
+    await this.send({
+      to: recipient.email,
+      ...this.buildImportAlert(locale, alert),
+    });
+  }
+
   /**
    * warns an inactive account it will be deleted on `deletionDate`
    * (the account-preservation notice required before InactiveAccountService's
@@ -1285,6 +1317,24 @@ export class MailService {
          ${failed ? `<p><code>${escapeHtml(alert.error ?? "")}</code></p><p>${escapeHtml(copy.onlyOnce)}</p>` : ""}
          ${this.button(url, copy.button)}`,
         { template: "jobAlert", footer: { type: "admin" } },
+      ),
+    };
+  }
+
+  private buildImportAlert(locale: Locale, alert: ImportAlert): TemplateBody {
+    const copy = MAIL_COPY[resolveCopyLocale(locale)].importAlert;
+    const url = `${this.webOrigin}/app/admin/imports?status=FAILURE`;
+    const sentence = copy.intro(alert.source);
+    return {
+      subject: `[Admin] ${copy.subject(alert.source)}`,
+      text: [sentence, alert.error, url].join("\n\n"),
+      html: this.wrapEmail(
+        locale,
+        copy.heading,
+        `<p>${escapeHtml(sentence)}</p>
+         <p><code>${escapeHtml(alert.error)}</code></p>
+         ${this.button(url, copy.button)}`,
+        { template: "importAlert", footer: { type: "admin" } },
       ),
     };
   }

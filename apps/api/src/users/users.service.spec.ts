@@ -882,3 +882,83 @@ describe("UsersService.getMyEntitlement", () => {
     });
   });
 });
+
+describe("UsersService — setAcquisitionSource", () => {
+  const userId = "user-1";
+  let updateMany: Mock;
+
+  function makeService(env: Record<string, string>) {
+    updateMany = vi.fn().mockResolvedValue({ count: 1 });
+    const service = new UsersService(
+      { user: { updateMany } } as unknown as PrismaService,
+      {} as unknown as MailService,
+      {} as unknown as SecurityEventService,
+      {} as unknown as DataExportService,
+      {} as unknown as CsvExportService,
+      { get: (key: string) => env[key] } as unknown as ConfigService,
+      {} as unknown as HibpService,
+      {} as unknown as EntitlementService,
+      {} as unknown as ProfileService,
+      {} as unknown as XpService,
+      {} as unknown as EventsGateway,
+      {} as unknown as ApiKeysService,
+    );
+    vi.spyOn(service, "getMe").mockResolvedValue({} as never);
+    return service;
+  }
+
+  it("writes the answer only while none is stored", async () => {
+    const service = makeService({ ASK_ACQUISITION_SOURCE: "true" });
+
+    await service.setAcquisitionSource(userId, { source: "REDDIT" });
+
+    expect(updateMany).toHaveBeenCalledWith({
+      where: { id: userId, acquisitionSource: null },
+      data: { acquisitionSource: "REDDIT", acquisitionSourceOther: null },
+    });
+  });
+
+  it("never replaces an existing answer", async () => {
+    const service = makeService({ ASK_ACQUISITION_SOURCE: "true" });
+    updateMany.mockResolvedValueOnce({ count: 0 });
+
+    await expect(
+      service.setAcquisitionSource(userId, { source: "FRIEND" }),
+    ).rejects.toMatchObject({
+      code: ErrorCode.UserAcquisitionSourceAlreadySet,
+    });
+  });
+
+  it("keeps the trimmed free text with OTHER, null when blank", async () => {
+    const service = makeService({ ASK_ACQUISITION_SOURCE: "true" });
+
+    await service.setAcquisitionSource(userId, {
+      source: "OTHER",
+      other: "  A podcast ",
+    });
+    await service.setAcquisitionSource(userId, { source: "OTHER", other: " " });
+
+    expect(updateMany.mock.calls.map(([arg]) => arg.data)).toEqual([
+      { acquisitionSource: "OTHER", acquisitionSourceOther: "A podcast" },
+      { acquisitionSource: "OTHER", acquisitionSourceOther: null },
+    ]);
+  });
+
+  it("refuses free text with any source but OTHER", async () => {
+    const service = makeService({ ASK_ACQUISITION_SOURCE: "true" });
+
+    await expect(
+      service.setAcquisitionSource(userId, { source: "REDDIT", other: "hi" }),
+    ).rejects.toMatchObject({ code: ErrorCode.ValidationFailed });
+    expect(updateMany).not.toHaveBeenCalled();
+  });
+
+  it("refuses when the instance doesn't ask", async () => {
+    const service = makeService({ ASK_ACQUISITION_SOURCE: "false" });
+
+    await expect(
+      service.setAcquisitionSource(userId, { source: "REDDIT" }),
+    ).rejects.toMatchObject({ code: ErrorCode.UserAcquisitionSourceDisabled });
+    expect(updateMany).not.toHaveBeenCalled();
+  });
+});

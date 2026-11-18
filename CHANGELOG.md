@@ -13,6 +13,12 @@ history from before it was started.
 
 ## [Unreleased]
 
+- Administrators get an alert (email, push optional) when someone's import
+  fails, with a link to the failed imports in Admin › Imports.
+- An optional "How did you hear about Loomkeep?" at the end of the welcome
+  tour, with the answers in Admin › Stats. Off by default: turn it on in
+  Admin › Instance settings or with `ASK_ACQUISITION_SOURCE=true`.
+
 ## 1.14.0 — Person, author and studio pages, rewatching, and a reworked phone app
 
 ### Breaking changes
