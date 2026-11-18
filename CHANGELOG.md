@@ -13,6 +13,15 @@ history from before it was started.
 
 ## [Unreleased]
 
+### Breaking changes
+
+- **Self-hosting: your instance now tells loomkeep.app it exists.** The
+  daily update check asks loomkeep.app for the latest version and sends a
+  random instance id and the version, nothing else, so self-hosted instances
+  can be counted. To opt out, set `TELEMETRY_ENABLED=false` or turn off
+  Admin › Instance settings › Count this instance. Details:
+  [Telemetry](https://docs.loomkeep.app/self-hosting/telemetry/).
+
 - Administrators get an alert (email, push optional) when someone's import
   fails, with a link to the failed imports in Admin › Imports.
 - An optional "How did you hear about Loomkeep?" at the end of the welcome

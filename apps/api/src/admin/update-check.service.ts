@@ -2,9 +2,12 @@ import type { AdminUpdateStatusDto } from "@loomkeep/shared";
 import { Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { Cron } from "@nestjs/schedule";
+import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { HTTP_TIMEOUT_MS } from "../common/http.util";
+import { isHostedOrigin } from "../common/instance-defaults";
+import { primaryWebOrigin } from "../common/web-origin.util";
 import { instanceSetting } from "../instance-settings/instance-settings.store";
 import { JOB_KEYS } from "../jobs/job-keys";
 import { JobRunService } from "../jobs/job-run.service";
@@ -17,6 +20,10 @@ import { PrismaService } from "../prisma/prisma.service";
 // `docker compose pull` would bring.
 export const LATEST_PACKAGE_URL =
   "https://raw.githubusercontent.com/Logan2234/loomkeep/main/package.json";
+
+// Received by InstancePingController on the hosted instance, which answers
+// the latest version: LATEST_PACKAGE_URL is only the fallback when it can't.
+export const INSTANCE_PING_URL = "https://loomkeep.app/api/instances/ping";
 
 const VERSION = /^\d+\.\d+\.\d+$/;
 
@@ -34,9 +41,12 @@ export function isNewerVersion(candidate: string, current: string): boolean {
 }
 
 /**
- * Tells self-hosters a newer Loomkeep exists: one GET of a public file a day,
- * nothing about the instance sent along. Admins are emailed once per new
- * version (`ADMIN_UPDATE_AVAILABLE`, off by default).
+ * Tells self-hosters a newer Loomkeep exists, once a day. With
+ * `telemetryEnabled` the question goes to the hosted instance along with a
+ * random instance id and the running version, nothing else, which is how
+ * self-hosted instances are counted; without it, it's one GET of a public
+ * file. Admins are emailed once per new version (`ADMIN_UPDATE_AVAILABLE`,
+ * off by default).
  */
 @Injectable()
 export class UpdateCheckService {
@@ -60,7 +70,7 @@ export class UpdateCheckService {
         !status.enabled
           ? "Update check turned off"
           : status.lastCheckFailed
-            ? "Could not reach GitHub"
+            ? "Could not fetch the latest version"
             : status.updateAvailable
               ? `${status.latestVersion} available (running ${status.currentVersion})`
               : `Up to date (${status.currentVersion})`,
@@ -139,6 +149,71 @@ export class UpdateCheckService {
   }
 
   private async fetchLatestVersion(): Promise<string | null> {
+    if (this.sendsTelemetry()) {
+      const answered = await this.ping();
+      if (answered !== null) return answered;
+    }
+
+    return this.readPublishedVersion();
+  }
+
+  /**
+   * Never from the hosted instance (it receives the pings) nor from a dev or
+   * test run, which would otherwise be counted as self-hosted instances.
+   */
+  private sendsTelemetry(): boolean {
+    const nodeEnv = this.config.get<string>("NODE_ENV");
+    return (
+      instanceSetting(this.config, "telemetryEnabled") &&
+      nodeEnv !== "development" &&
+      nodeEnv !== "test" &&
+      !isHostedOrigin(primaryWebOrigin(this.config.get<string>("WEB_ORIGIN")))
+    );
+  }
+
+  private async ping(): Promise<string | null> {
+    try {
+      const response = await fetch(INSTANCE_PING_URL, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          instanceId: await this.instanceId(),
+          version: await this.readCurrentVersion(),
+        }),
+        signal: AbortSignal.timeout(HTTP_TIMEOUT_MS),
+      });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const { latestVersion } = (await response.json()) as {
+        latestVersion?: unknown;
+      };
+
+      if (typeof latestVersion !== "string" || !VERSION.test(latestVersion)) {
+        throw new Error("no x.y.z version in the answer");
+      }
+
+      return latestVersion;
+    } catch (err) {
+      this.logger.warn(
+        `Instance ping failed, falling back to GitHub: ${err instanceof Error ? err.message : "unknown error"}`,
+      );
+      return null;
+    }
+  }
+
+  private async instanceId(): Promise<string> {
+    const row = await this.prisma.updateCheck.findUnique({ where: { id: 1 } });
+    if (row?.instanceId) return row.instanceId;
+
+    const instanceId = randomUUID();
+    await this.prisma.updateCheck.upsert({
+      where: { id: 1 },
+      create: { id: 1, instanceId },
+      update: { instanceId },
+    });
+    return instanceId;
+  }
+
+  private async readPublishedVersion(): Promise<string | null> {
     try {
       const response = await fetch(LATEST_PACKAGE_URL, {
         signal: AbortSignal.timeout(HTTP_TIMEOUT_MS),

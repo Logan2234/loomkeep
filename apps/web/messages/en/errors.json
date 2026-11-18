@@ -112,6 +112,7 @@
   "apierr_admin_backup_not_orphan": "This file is already linked to a registered backup.",
   "apierr_admin_misconfigured": "This feature isn't configured on this server.",
   "apierr_admin_unauthorized": "Unauthorized.",
+  "apierr_admin_instance_pings_not_received": "This instance doesn't count self-hosted instances.",
   "apierr_comment_unknown_target_type": "Unknown comment target type.",
   "apierr_comment_parent_not_found": "This parent comment could not be found.",
   "apierr_comment_not_found": "This comment could not be found.",

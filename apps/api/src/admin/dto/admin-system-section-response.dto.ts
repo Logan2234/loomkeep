@@ -1,5 +1,7 @@
 import type {
   AdminProviderCallsDto,
+  AdminSelfHostedInstancesDto,
+  AdminSelfHostedVersionDto,
   AdminSystemSectionDto,
 } from "@loomkeep/shared";
 
@@ -22,8 +24,19 @@ class AdminOpsSignalsResponseDto {
   lastBackup!: AdminBackupSummaryResponseDto | null;
 }
 
+class AdminSelfHostedVersionResponseDto implements AdminSelfHostedVersionDto {
+  version!: string;
+  instances!: number;
+}
+
+class AdminSelfHostedInstancesResponseDto implements AdminSelfHostedInstancesDto {
+  active30d!: number;
+  versions!: AdminSelfHostedVersionResponseDto[];
+}
+
 export class AdminSystemSectionResponseDto implements AdminSystemSectionDto {
   generatedAt!: string;
   providerCalls!: AdminProviderCallsResponseDto[];
   ops!: AdminOpsSignalsResponseDto;
+  selfHostedInstances!: AdminSelfHostedInstancesResponseDto | null;
 }

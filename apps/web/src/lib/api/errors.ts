@@ -150,6 +150,8 @@ const MESSAGES = {
   [ErrorCode.AdminBackupNotOrphan]: () => m.apierr_admin_backup_not_orphan(),
   [ErrorCode.AdminMisconfigured]: () => m.apierr_admin_misconfigured(),
   [ErrorCode.AdminUnauthorized]: () => m.apierr_admin_unauthorized(),
+  [ErrorCode.AdminInstancePingsNotReceived]: () =>
+    m.apierr_admin_instance_pings_not_received(),
   [ErrorCode.AdminInvitationNotFound]: () =>
     m.apierr_admin_invitation_not_found(),
   [ErrorCode.AdminInvitationEmailRegistered]: () =>

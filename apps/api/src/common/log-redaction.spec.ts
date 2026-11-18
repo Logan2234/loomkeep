@@ -58,6 +58,31 @@ describe("request logging", () => {
     expect(logged.url).toBe("/api/library/calendar.ics?token=[redacted]");
   });
 
+  it("keeps no trace of a self-hosted instance's address on its ping", () => {
+    const serialize = options.serializers?.req as (
+      req: Record<string, unknown>,
+    ) => Record<string, unknown>;
+
+    const logged = serialize({
+      id: 1,
+      method: "POST",
+      url: "/api/instances/ping",
+      remoteAddress: "203.0.113.7",
+      remotePort: 51234,
+      headers: {
+        "x-forwarded-for": "203.0.113.7",
+        "cf-connecting-ip": "203.0.113.7",
+      },
+    });
+
+    expect(JSON.stringify(logged)).not.toContain("203.0.113.7");
+    expect(logged).toEqual({
+      id: 1,
+      method: "POST",
+      url: "/api/instances/ping",
+    });
+  });
+
   it("keeps the token out of the one-line request message", () => {
     const req = { method: "GET", url: feedUrl } as IncomingMessage;
     const res = { statusCode: 200 } as ServerResponse;

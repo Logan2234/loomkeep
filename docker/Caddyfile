@@ -46,6 +46,11 @@
 		}
 	}
 
+	# Self-hosted instances' daily ping (the API's InstancePingController):
+	# the docs promise their IP is kept nowhere, this log included.
+	@instancePing path /api/instances/ping
+	log_skip @instancePing
+
 	header {
 		Strict-Transport-Security "max-age=31536000; includeSubDomains"
 		X-Content-Type-Options "nosniff"

@@ -57,6 +57,7 @@ const SHIPPED = {
   "update-check": "2026-10-21",
   "newsletter-preview": "2026-10-21",
   "admin-import-alert": "2026-11-18",
+  "instance-count": "2026-11-19",
 };
 
 export type FeatureBadgeKey = keyof typeof SHIPPED;

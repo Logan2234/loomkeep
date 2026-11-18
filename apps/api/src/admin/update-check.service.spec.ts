@@ -9,6 +9,7 @@ import type { MailService } from "../mail/mail.service";
 import type { AdminAlertService } from "../notifications/admin-alert.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import {
+  INSTANCE_PING_URL,
   isNewerVersion,
   LATEST_PACKAGE_URL,
   UpdateCheckService,
@@ -20,7 +21,10 @@ const { version: CURRENT } = JSON.parse(
 const [major, minor] = CURRENT.split(".").map(Number);
 const NEWER = `${major}.${minor + 1}.0`;
 
-function make(row: Record<string, unknown> | null = null) {
+function make(
+  row: Record<string, unknown> | null = null,
+  env: Record<string, string> = {},
+) {
   let stored = row;
   const prisma = {
     updateCheck: {
@@ -40,7 +44,7 @@ function make(row: Record<string, unknown> | null = null) {
   } as unknown as AdminAlertService;
   const service = new UpdateCheckService(
     prisma,
-    { get: () => undefined } as unknown as ConfigService,
+    { get: (key: string) => env[key] } as unknown as ConfigService,
     {} as MailService,
     adminAlerts,
     {} as JobRunService,
@@ -70,8 +74,31 @@ describe("isNewerVersion", () => {
   });
 });
 
+/** The hosted instance answering the ping, GitHub answering the fallback. */
+function serve({ ping, published }: { ping?: string; published: string }) {
+  const fetchMock = vi.fn(async (url: string) => {
+    if (url === INSTANCE_PING_URL) {
+      if (ping === undefined) throw new Error("offline");
+      return { ok: true, json: async () => ({ latestVersion: ping }) };
+    }
+
+    return { ok: true, json: async () => ({ version: published }) };
+  });
+  vi.stubGlobal("fetch", fetchMock);
+  return fetchMock;
+}
+
+function pingCalls(fetchMock: Mock) {
+  return fetchMock.mock.calls.filter(([url]) => url === INSTANCE_PING_URL);
+}
+
 describe("UpdateCheckService.check", () => {
-  beforeEach(() => setStoredInstanceSettings(DEFAULT_INSTANCE_SETTINGS));
+  beforeEach(() =>
+    setStoredInstanceSettings({
+      ...DEFAULT_INSTANCE_SETTINGS,
+      telemetryEnabled: false,
+    }),
+  );
   afterEach(() => vi.unstubAllGlobals());
 
   it("reads the version on main and flags a newer one", async () => {
@@ -142,5 +169,89 @@ describe("UpdateCheckService.check", () => {
 
     await expect(service.check()).resolves.toMatchObject({ enabled: false });
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+});
+
+describe("UpdateCheckService.check with telemetry", () => {
+  beforeEach(() => setStoredInstanceSettings(DEFAULT_INSTANCE_SETTINGS));
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("sends only a random id and the version, and takes the answer as the latest version", async () => {
+    const fetchMock = serve({ ping: NEWER, published: CURRENT });
+    const { service } = make();
+
+    await expect(service.check()).resolves.toMatchObject({
+      latestVersion: NEWER,
+      lastCheckFailed: false,
+    });
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const [[url, init]] = fetchMock.mock.calls as unknown as [
+      [string, RequestInit],
+    ];
+    expect(url).toBe(INSTANCE_PING_URL);
+    expect(init.method).toBe("POST");
+    const body = JSON.parse(init.body as string) as Record<string, unknown>;
+    expect(Object.keys(body).sort()).toEqual(["instanceId", "version"]);
+    expect(body.version).toBe(CURRENT);
+    expect(body.instanceId).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
+    );
+  });
+
+  it("keeps the same instance id from one check to the next", async () => {
+    const fetchMock = serve({ ping: CURRENT, published: CURRENT });
+    const { service } = make();
+
+    await service.check();
+    await service.check();
+
+    const ids = pingCalls(fetchMock).map(
+      ([, init]) => JSON.parse((init as RequestInit).body as string).instanceId,
+    );
+    expect(ids).toHaveLength(2);
+    expect(ids[0]).toBe(ids[1]);
+  });
+
+  it("falls back to the version on GitHub when the hosted instance can't answer", async () => {
+    const fetchMock = serve({ published: NEWER });
+    const { service } = make();
+
+    await expect(service.check()).resolves.toMatchObject({
+      latestVersion: NEWER,
+      lastCheckFailed: false,
+    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      LATEST_PACKAGE_URL,
+      expect.anything(),
+    );
+  });
+
+  it.each([
+    ["the hosted instance", { WEB_ORIGIN: "https://loomkeep.app" }],
+    ["a dev run", { NODE_ENV: "development" }],
+    ["a test run", { NODE_ENV: "test" }],
+  ])("never pings from %s", async (_, env) => {
+    const fetchMock = serve({ ping: CURRENT, published: NEWER });
+    const { service } = make(null, env);
+
+    await expect(service.check()).resolves.toMatchObject({
+      latestVersion: NEWER,
+    });
+    expect(pingCalls(fetchMock)).toHaveLength(0);
+  });
+
+  it("sends nothing at all once the update check is off", async () => {
+    const fetchMock = serve({ ping: CURRENT, published: CURRENT });
+    setStoredInstanceSettings({
+      ...DEFAULT_INSTANCE_SETTINGS,
+      updateCheckEnabled: false,
+    });
+    const { service, prisma } = make();
+
+    await service.check();
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(prisma.updateCheck.upsert).not.toHaveBeenCalled();
   });
 });

@@ -112,6 +112,7 @@
   "apierr_admin_backup_not_orphan": "Ce fichier est déjà lié à une sauvegarde enregistrée.",
   "apierr_admin_misconfigured": "Cette fonctionnalité n'est pas configurée sur ce serveur.",
   "apierr_admin_unauthorized": "Accès non autorisé.",
+  "apierr_admin_instance_pings_not_received": "Cette instance ne compte pas les instances auto-hébergées.",
   "apierr_comment_unknown_target_type": "Type de contenu commenté inconnu.",
   "apierr_comment_parent_not_found": "Ce commentaire parent est introuvable.",
   "apierr_comment_not_found": "Ce commentaire est introuvable.",

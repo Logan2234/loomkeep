@@ -104,7 +104,7 @@ export interface SchemaGraphResponseDto {
 
 /** Admin › Services' "a newer version exists" card. */
 export interface AdminUpdateStatusDto {
-  /** Whether the instance checks GitHub for a newer version (`updateCheckEnabled`). */
+  /** Whether the instance checks for a newer version (`updateCheckEnabled`). */
   enabled: boolean;
   currentVersion: string;
   /** Newest version published on `main`, null before any successful check. */
@@ -112,6 +112,6 @@ export interface AdminUpdateStatusDto {
   updateAvailable: boolean;
   /** Last successful check (ISO 8601), null before any. */
   checkedAt: string | null;
-  /** Whether the last attempt failed (network, GitHub down); the previous result stays. */
+  /** Whether the last attempt failed (network, source down); the previous result stays. */
   lastCheckFailed: boolean;
 }

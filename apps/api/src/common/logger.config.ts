@@ -1,6 +1,11 @@
 import type { Params } from "nestjs-pino";
 import { redactQuery, redactUrl } from "./log-redaction";
 
+// Self-hosted instances' pings (InstancePingController): the docs promise
+// their IP is kept nowhere, and it sits in remoteAddress and in the
+// forwarding headers alike.
+const INSTANCE_PING_PATH = "/api/instances/ping";
+
 const isDev = process.env.NODE_ENV === "development";
 
 export const loggerOptions: Params = {
@@ -32,11 +37,14 @@ export const loggerOptions: Params = {
     // Feed and unsubscribe links carry their secret in `?token=` (a calendar
     // app can't send a header): out of the URL and the parsed query alike.
     serializers: {
-      req: (req: Record<string, unknown>) => ({
-        ...req,
-        url: redactUrl(req.url as string | undefined),
-        query: redactQuery(req.query),
-      }),
+      req: (req: Record<string, unknown>) =>
+        (req.url as string | undefined)?.startsWith(INSTANCE_PING_PATH)
+          ? { id: req.id, method: req.method, url: req.url }
+          : {
+              ...req,
+              url: redactUrl(req.url as string | undefined),
+              query: redactQuery(req.query),
+            },
     },
     customLogLevel: (_req, res, err) => {
       if (err || res.statusCode >= 500) return "error";
