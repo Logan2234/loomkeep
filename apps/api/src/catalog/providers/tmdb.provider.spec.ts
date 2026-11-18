@@ -1,4 +1,9 @@
-import { ErrorCode, MediaSource, MediaType } from "@loomkeep/shared";
+import {
+  ErrorCode,
+  MediaSource,
+  MediaType,
+  PREMIERE_NETWORKS,
+} from "@loomkeep/shared";
 import { ConfigService } from "@nestjs/config";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -1139,6 +1144,91 @@ describe("TmdbProvider", () => {
 
       expect(providers.map((p) => p.id)).toEqual([8, 2, 381]);
       expect(global.fetch).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe("listPremieres", () => {
+    const show = (
+      id: number,
+      name: string,
+      first_air_date: string,
+      extra: Record<string, unknown> = {},
+    ) => ({
+      id,
+      name,
+      original_name: name,
+      first_air_date,
+      poster_path: `/p${id}.jpg`,
+      backdrop_path: null,
+      origin_country: ["US"],
+      genre_ids: [18],
+      popularity: 5,
+      overview: "",
+      ...extra,
+    });
+    const page = (results: unknown[]) => ({
+      page: 1,
+      results,
+      total_pages: 1,
+      total_results: results.length,
+    });
+    const now = new Date("2026-11-15T10:00:00Z");
+
+    it("merges every network's premieres soonest first, each series once, and caches them", async () => {
+      const fetchMock = mockFetchByUrl([
+        [
+          "with_networks=213&",
+          page([
+            show(2, "The Altruists", "2026-11-19", { popularity: 9 }),
+            show(3, "Shared", "2026-11-20"),
+          ]),
+        ],
+        [
+          "with_networks=290&",
+          page([
+            show(1, "La Comtesse de Monte-Cristo", "2026-11-16", {
+              origin_country: ["FR"],
+              overview: "  Une vengeance.  ",
+            }),
+            show(3, "Shared", "2026-11-20"),
+            show(4, "No poster", "2026-11-17", { poster_path: null }),
+            show(5, "地雷グリコ", "2026-11-18", {
+              origin_country: ["JP"],
+              genre_ids: [16, 18],
+            }),
+          ]),
+        ],
+        ["/discover/tv", page([])],
+      ]);
+
+      const premieres = await provider.listPremieres("fr", now);
+      await provider.listPremieres("fr", now);
+
+      expect(premieres.map((p) => [p.title, p.networkName])).toEqual([
+        ["La Comtesse de Monte-Cristo", "TF1"],
+        ["The Altruists", "Netflix"],
+        ["Shared", "Netflix"],
+      ]);
+      expect(premieres[0]).toMatchObject({
+        sourceId: "1",
+        originalTitle: null,
+        overview: "Une vengeance.",
+        originCountries: ["FR"],
+      });
+      expect(premieres[1].overview).toBeNull();
+      expect(fetchMock).toHaveBeenCalledTimes(PREMIERE_NETWORKS.length);
+    });
+
+    it("asks for fiction premiering from yesterday to eight weeks out", async () => {
+      const fetchMock = mockFetchByUrl({ "/discover/tv": page([]) });
+
+      await provider.listPremieres("fr", now);
+
+      const url = new URL(String(fetchMock.mock.calls[0][0]));
+      expect(url.searchParams.get("first_air_date.gte")).toBe("2026-11-14");
+      expect(url.searchParams.get("first_air_date.lte")).toBe("2027-01-11");
+      expect(url.searchParams.get("with_type")).toBe("2|4");
+      expect(url.searchParams.get("language")).toBe("fr-FR");
     });
   });
 

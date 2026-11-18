@@ -1,0 +1,516 @@
+<script lang="ts">
+  import { MEDIA_TYPE_LABEL } from "#lib/constants/media-types.js";
+
+  import { type SelectOption } from "#lib/types/select-option.js";
+  import { auth } from "#lib/auth.svelte.js";
+  import { orderedDomains } from "#lib/domain-availability.js";
+
+  import {
+    getCalendar,
+    updateGameEntry,
+    updateLibraryEntry,
+  } from "#lib/api/client.js";
+  import { keys } from "#lib/api/keys.js";
+  import { createApiMutation } from "#lib/api/mutation.svelte.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
+  import {
+    calendarCode,
+    calendarHref,
+    calendarItemId,
+    calendarPoster,
+    calendarTitle,
+    isReleaseReminder,
+  } from "#lib/calendar-entry.js";
+  import Banner from "#lib/components/Banner.svelte";
+  import CardRowSkeleton from "#lib/components/CardRowSkeleton.svelte";
+  import EmptyState from "#lib/components/EmptyState.svelte";
+  import Poster from "#lib/components/Poster.svelte";
+  import { formatDate } from "#lib/format.js";
+  import { layout } from "#lib/layout.svelte.js";
+  import { m } from "#lib/paraglide/messages.js";
+  import type { CalendarEntryDto } from "@loomkeep/shared";
+  import { useQueryClient } from "@tanstack/svelte-query";
+  import { SvelteSet } from "svelte/reactivity";
+  import {
+    type CalendarDay,
+    type CalendarFilter,
+    calendarBand,
+    groupByDay,
+    matchesFilter,
+    matchesFilters,
+    WEEK_DAYS,
+  } from "../calendar-days";
+  import AlertBellButton from "./AlertBellButton.svelte";
+
+  const calendarQuery = createApiQuery(() => ({
+    key: keys.calendar.upcoming(),
+    fetch: getCalendar,
+  }));
+  const entries = $derived(calendarQuery.data ?? []);
+  const loading = $derived(calendarQuery.loading);
+  const error = $derived(calendarQuery.error);
+
+  const queryClient = useQueryClient();
+
+  // Muting is per show, not per episode: flipping one row flips every
+  // upcoming episode of that series, since they all share the entry.
+  const alertsMut = createApiMutation(() => ({
+    mutate: (args: {
+      entryId: string;
+      muted: boolean;
+      title: string;
+      movie: boolean;
+      game: boolean;
+    }) =>
+      args.game
+        ? updateGameEntry(args.entryId, {
+            releaseAlertsEnabled: !args.muted,
+          }).then(() => undefined)
+        : updateLibraryEntry(
+            args.entryId,
+            args.movie
+              ? { movieReleaseAlertsEnabled: !args.muted }
+              : { episodeAlertsMuted: args.muted },
+          ).then(() => undefined),
+    onSuccess: (_, { entryId, muted }) =>
+      queryClient.setQueryData<CalendarEntryDto[]>(
+        keys.calendar.upcoming(),
+        (prev) =>
+          prev?.map((e) =>
+            e.entryId === entryId ? { ...e, episodeAlertsMuted: muted } : e,
+          ),
+      ),
+    successToast: (_, { muted, title, movie, game }) =>
+      movie || game
+        ? muted
+          ? m.media_movie_reminder_disabled_toast()
+          : game
+            ? m.game_release_reminder_enabled_toast()
+            : m.media_movie_reminder_enabled_toast()
+        : muted
+          ? m.media_episode_alerts_muted_toast({ title })
+          : m.media_episode_alerts_unmuted_toast({ title }),
+    errorToast: true,
+  }));
+
+  function toggleAlerts(e: CalendarEntryDto) {
+    alertsMut.mutate({
+      entryId: e.entryId,
+      muted: !e.episodeAlertsMuted,
+      title: calendarTitle(e),
+      movie: e.mediaItem?.type === "MOVIE",
+      game: !!e.game,
+    });
+  }
+
+  const filters = new SvelteSet<CalendarFilter>();
+
+  function toggleFilter(f: CalendarFilter) {
+    if (filters.has(f)) filters.delete(f);
+    else filters.add(f);
+  }
+
+  // Each chip counts shows, not episodes: the same series airing three times
+  // this week is still one series to follow (or to mute).
+  function showCount(f: CalendarFilter): number {
+    return new Set(
+      entries.filter((e) => matchesFilter(e, f)).map((e) => e.entryId),
+    ).size;
+  }
+
+  const videoChips = $derived<SelectOption<CalendarFilter>[]>([
+    {
+      value: "series",
+      label: `${m.calendar_filter_series()} (${showCount("series")})`,
+    },
+    {
+      value: "anime",
+      label: `${m.calendar_filter_anime()} (${showCount("anime")})`,
+    },
+    {
+      value: "movie",
+      label: `${m.media_movie()} (${showCount("movie")})`,
+    },
+  ]);
+  const filterChips = $derived<SelectOption<CalendarFilter>[]>([
+    ...orderedDomains(auth.user?.domainOrder).flatMap(
+      (domain): SelectOption<CalendarFilter>[] => {
+        if (domain === "MEDIA") return videoChips;
+        if (domain === "GAMES" && showCount("game") > 0) {
+          return [
+            {
+              value: "game",
+              label: `${m.common_Games()} (${showCount("game")})`,
+            },
+          ];
+        }
+        return [];
+      },
+    ),
+    {
+      value: "muted",
+      label: `${m.calendar_alerts_muted()} (${showCount("muted")})`,
+    },
+  ]);
+
+  const days = $derived(
+    groupByDay(entries.filter((e) => matchesFilters(e, filters))),
+  );
+  const hasAny = $derived(days.some((d) => d.items.length > 0));
+  // The strip keeps the whole week; the list below only what airs.
+  const airingDays = $derived(days.filter((d) => d.items.length > 0));
+
+  let shownDay = $state<string | null>(null);
+  let dayList = $state<HTMLElement | null>(null);
+
+  // Lights up the day being read in the strip. The margins leave a band under
+  // the sticky strip: whichever day crosses it is the one on screen.
+  $effect(() => {
+    void airingDays;
+    if (!dayList || typeof IntersectionObserver === "undefined") return;
+    const observer = new IntersectionObserver(
+      (sections) => {
+        for (const section of sections) {
+          if (section.isIntersecting) shownDay = section.target.id;
+        }
+      },
+      { rootMargin: "-25% 0px -65% 0px" },
+    );
+    for (const section of dayList.querySelectorAll("section")) {
+      observer.observe(section);
+    }
+    return () => observer.disconnect();
+  });
+
+  const WEEKDAY_LONG_OPTIONS: Intl.DateTimeFormatOptions = { weekday: "long" };
+  const WEEKDAY_SHORT_OPTIONS: Intl.DateTimeFormatOptions = {
+    weekday: "short",
+  };
+  const DAY_LABEL_OPTIONS: Intl.DateTimeFormatOptions = {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+  };
+
+  function relativeLabel(day: CalendarDay): string {
+    if (day.offset === 0) return m.common_today();
+    if (day.offset === 1) return m.common_tomorrow();
+    const w = formatDate(day.date, WEEKDAY_LONG_OPTIONS);
+    return w.charAt(0).toUpperCase() + w.slice(1);
+  }
+
+  function stripLabel(day: CalendarDay): string {
+    const label = `${relativeLabel(day)}, ${formatDate(day.date, DAY_LABEL_OPTIONS)}`;
+    const count = day.items.length;
+    if (count === 0) return m.calendar_strip_none({ day: label });
+    if (count === 1) return m.calendar_strip_one({ day: label });
+    return m.calendar_strip_many({ day: label, count });
+  }
+
+  const dayId = (day: CalendarDay) => `calendar-${day.key}`;
+
+  const code = calendarCode;
+  const href = calendarHref;
+  const rowKey = (e: CalendarEntryDto) => calendarItemId(e) + code(e);
+
+  const TIME_OPTIONS: Intl.DateTimeFormatOptions = {
+    hour: "2-digit",
+    minute: "2-digit",
+  };
+
+  /** Only an anime's air date is a broadcast time (AniList's schedule): TMDB
+   * dates a day, a film or a game its release. */
+  const airTime = (e: CalendarEntryDto) =>
+    e.mediaItem?.type === "ANIME" ? formatDate(e.airDate, TIME_OPTIONS) : null;
+</script>
+
+{#snippet badges(e: CalendarEntryDto, behind: boolean)}
+  <span
+    class="border-border text-dim shrink-0 rounded-full border px-2 py-0.5 text-[0.65rem] font-semibold">
+    {e.mediaItem ? MEDIA_TYPE_LABEL[e.mediaItem.type] : m.game_type()}
+  </span>
+  {#if behind && e.episodesBehind > 0}
+    <span
+      class="border-accent/40 text-accent shrink-0 rounded-full border px-2 py-0.5 font-mono text-[0.65rem]">
+      {m.calendar_behind({ count: e.episodesBehind })}
+    </span>
+  {/if}
+{/snippet}
+
+{#if error}
+  <Banner variant="error">{error}</Banner>
+{:else if loading}
+  <CardRowSkeleton count={5} />
+{:else if entries.length === 0}
+  <EmptyState art="calendar">{m.calendar_no_episodes()}</EmptyState>
+{:else}
+  <div
+    class="mb-5 flex flex-wrap gap-2"
+    role="group"
+    aria-label={m.calendar_filter_label()}>
+    {#each filterChips as chip (chip.value)}
+      <button
+        type="button"
+        class="chip {filters.has(chip.value) ? 'chip-on' : ''}"
+        aria-pressed={filters.has(chip.value)}
+        onclick={() => toggleFilter(chip.value)}>
+        {chip.label}
+      </button>
+    {/each}
+  </div>
+
+  <div>
+    {#if !hasAny}
+      <EmptyState>{m.calendar_filter_empty()}</EmptyState>
+    {:else}
+      <nav
+        aria-label={m.calendar_week_strip()}
+        class="bg-bg top-[calc(env(safe-area-inset-top)+3rem)] z-20 -mx-5 mb-8 grid grid-cols-7 gap-1.5 px-5 py-2 max-md:sticky sm:gap-2 md:mx-0 md:px-0 md:py-0">
+        {#each days.slice(0, WEEK_DAYS) as day (day.key)}
+          <!-- A day with nothing has no section to jump to. -->
+          <svelte:element
+            this={day.items.length > 0 ? "a" : "div"}
+            href={day.items.length > 0 ? `#${dayId(day)}` : undefined}
+            role={day.items.length > 0 ? undefined : "img"}
+            aria-label={stripLabel(day)}
+            class="flex flex-col items-center gap-0.5 rounded-xl border py-2 transition-colors duration-150 sm:gap-1 sm:py-3 {shownDay ===
+              dayId(day) ||
+            (shownDay === null && day.offset === 0)
+              ? 'border-accent bg-surface-2'
+              : 'border-border'} {day.items.length > 0
+              ? '[@media(hover:hover)]:hover:border-dim'
+              : 'opacity-50'}">
+            <span
+              class="text-micro font-semibold tracking-wide uppercase sm:text-xs {day.offset ===
+              0
+                ? 'text-accent'
+                : 'text-dim'}">
+              {formatDate(day.date, WEEKDAY_SHORT_OPTIONS).replace(".", "")}
+            </span>
+            <span class="font-mono text-base font-bold sm:text-xl">
+              {day.date.getDate()}
+            </span>
+            <span class="text-dim text-micro font-mono sm:text-xs">
+              {#if day.items.length > 0}
+                <!-- A phone's tile only has room for the number. -->
+                <span class="sm:hidden">{day.items.length}</span>
+                <span class="hidden sm:inline">
+                  {day.items.length === 1
+                    ? m.calendar_strip_count_one()
+                    : m.calendar_strip_count_many({
+                        count: day.items.length,
+                      })}
+                </span>
+              {:else}
+                —
+              {/if}
+            </span>
+          </svelte:element>
+        {/each}
+      </nav>
+
+      <div bind:this={dayList} class="flex flex-col gap-6 md:gap-3">
+        {#each airingDays as day, i (day.key)}
+          {@const band = calendarBand(day.offset)}
+          {#if band !== "week" && (i === 0 || calendarBand(airingDays[i - 1].offset) !== band)}
+            <div class="flex items-center gap-3 pt-3">
+              <span class="timecode text-xs tracking-widest uppercase">
+                {band === "nextWeek"
+                  ? m.calendar_next_week()
+                  : m.calendar_later()}
+              </span>
+              <div class="bg-border h-px flex-1"></div>
+            </div>
+          {/if}
+          <section
+            id={dayId(day)}
+            aria-labelledby="{dayId(day)}-title"
+            class="scroll-mt-36 md:grid md:scroll-mt-6 md:grid-cols-[8rem_minmax(0,1fr)] md:gap-6 md:py-2">
+            <div
+              class="border-border mb-3 flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b pb-2 md:mb-0 md:flex-col md:gap-0.5 md:border-0 md:pt-2 md:pb-0">
+              <!-- "Tonight" is when episodes air; a film or a game is out all day. -->
+              {#if day.offset === 0 && day.items.some((e) => !isReleaseReminder(e))}
+                <span
+                  class="bg-accent text-accent-fg self-center rounded px-2 py-0.5 font-mono text-xs font-bold tracking-wider uppercase md:mb-1.5 md:self-start">
+                  {m.calendar_tonight()}
+                </span>
+              {/if}
+              <h2
+                id="{dayId(day)}-title"
+                class="font-display text-lg font-bold {day.offset === 0
+                  ? 'text-accent'
+                  : ''}">
+                {relativeLabel(day)}
+              </h2>
+              <span class="timecode text-sm">
+                {formatDate(day.date, DAY_LABEL_OPTIONS)}
+              </span>
+            </div>
+            <!-- The desktop keeps its cards; a phone gets one row per
+                 release, today's too. -->
+            {#if layout.compact}
+              <!-- Every release one row high, today's too: the time on the
+                   right, the backlog under the episode, a muted work dimmed. -->
+              <div class="flex flex-col">
+                {#each day.items as e (rowKey(e))}
+                  {@const time = airTime(e)}
+                  <!-- The bell sits beside the row's link, not inside it:
+                       a click on it mutes, never opens the page. -->
+                  <div
+                    class="border-border flex min-h-19 items-center gap-2 border-b py-2.5 transition-opacity duration-150 {e.episodeAlertsMuted
+                      ? 'opacity-55'
+                      : ''}">
+                    <a
+                      href={href(e)}
+                      class="group flex min-w-0 flex-1 items-center gap-3">
+                      <div class="w-12 shrink-0 overflow-hidden rounded-md">
+                        <Poster
+                          src={calendarPoster(e)}
+                          title={calendarTitle(e)}
+                          alt="" />
+                      </div>
+                      <div class="flex min-w-0 flex-1 flex-col gap-1">
+                        <div class="flex min-w-0 items-center gap-1.5">
+                          <p
+                            class="font-display group-hover:text-accent truncate font-semibold transition-colors duration-150">
+                            {calendarTitle(e)}
+                          </p>
+                          {@render badges(e, false)}
+                        </div>
+                        <p class="timecode truncate text-xs">
+                          {code(e)}{#if e.episodeTitle}
+                            <span class="text-dim font-sans"
+                              >&nbsp;· {e.episodeTitle}</span
+                            >{/if}
+                        </p>
+                        {#if e.episodeAlertsMuted}
+                          <p class="text-dim truncate text-xs">
+                            {m.calendar_alerts_muted()}
+                          </p>
+                        {:else if e.episodesBehind > 0}
+                          <p class="text-accent truncate text-xs">
+                            {e.episodesBehind === 1
+                              ? m.calendar_catch_up_one()
+                              : m.calendar_catch_up({
+                                  count: e.episodesBehind,
+                                })}
+                          </p>
+                        {/if}
+                      </div>
+                      {#if time}
+                        <span class="timecode text-dim shrink-0 text-xs"
+                          >{time}</span>
+                      {/if}
+                    </a>
+                    <AlertBellButton
+                      movie={isReleaseReminder(e)}
+                      title={calendarTitle(e)}
+                      muted={e.episodeAlertsMuted}
+                      disabled={alertsMut.loading}
+                      onToggle={() => toggleAlerts(e)} />
+                  </div>
+                {/each}
+              </div>
+            {:else}
+              {#if day.offset === 0}
+                <div class="grid gap-3 sm:grid-cols-2">
+                  {#each day.items as e (rowKey(e))}
+                    <!-- The bell sits beside the card's link, not inside it:
+                         a click on it mutes, never opens the page. -->
+                    <article
+                      class="card [@media(hover:hover)]:has-[a:hover]:border-accent relative flex overflow-hidden transition-[border-color]">
+                      <a href={href(e)} class="flex min-w-0 flex-1">
+                        <div
+                          class="w-28 shrink-0 transition-opacity {e.episodeAlertsMuted
+                            ? 'opacity-50'
+                            : ''}">
+                          <Poster
+                            src={calendarPoster(e)}
+                            title={calendarTitle(e)}
+                            alt="" />
+                        </div>
+                        <div
+                          class="flex min-w-0 flex-1 flex-col gap-1.5 py-3.5 pr-14 pl-4">
+                          <span class="timecode text-accent text-sm">
+                            {code(e)}
+                          </span>
+                          <h3
+                            class="font-display line-clamp-2 text-lg leading-snug font-bold">
+                            {calendarTitle(e)}
+                          </h3>
+                          {#if e.episodeTitle}
+                            <p class="text-dim line-clamp-2 text-sm">
+                              {e.episodeTitle}
+                            </p>
+                          {/if}
+                          <div class="mt-auto flex flex-wrap gap-1.5 pt-1">
+                            {@render badges(e, true)}
+                          </div>
+                        </div>
+                      </a>
+                      <div class="absolute top-3 right-3">
+                        <AlertBellButton
+                          movie={isReleaseReminder(e)}
+                          title={calendarTitle(e)}
+                          muted={e.episodeAlertsMuted}
+                          disabled={alertsMut.loading}
+                          onToggle={() => toggleAlerts(e)} />
+                      </div>
+                    </article>
+                  {/each}
+                </div>
+              {:else}
+                <div class="flex flex-col gap-2.5">
+                  {#each day.items as e (rowKey(e))}
+                    <div
+                      class="card [@media(hover:hover)]:has-[a:hover]:border-accent flex items-center gap-3 p-3 transition-[border-color] sm:gap-4">
+                      <a
+                        href={href(e)}
+                        class="flex min-w-0 flex-1 items-center gap-4">
+                        <div
+                          class="w-12 shrink-0 overflow-hidden rounded-md transition-opacity {e.episodeAlertsMuted
+                            ? 'opacity-50'
+                            : ''}">
+                          <Poster
+                            src={calendarPoster(e)}
+                            title={calendarTitle(e)}
+                            alt="" />
+                        </div>
+                        <div class="min-w-0 flex-1">
+                          <div
+                            class="flex flex-wrap items-center gap-x-2 gap-y-1">
+                            <p
+                              class="font-display max-w-full truncate font-semibold">
+                              {calendarTitle(e)}
+                            </p>
+                            {@render badges(e, true)}
+                          </div>
+                          <p class="timecode mt-0.5 truncate text-sm">
+                            {code(e)}{#if e.episodeTitle}
+                              &nbsp;· {e.episodeTitle}{/if}
+                          </p>
+                        </div>
+                      </a>
+                      {#if e.episodeAlertsMuted}
+                        <span
+                          class="text-dim hidden shrink-0 text-xs sm:inline">
+                          {m.calendar_alerts_muted()}
+                        </span>
+                      {/if}
+                      <AlertBellButton
+                        movie={isReleaseReminder(e)}
+                        title={calendarTitle(e)}
+                        muted={e.episodeAlertsMuted}
+                        disabled={alertsMut.loading}
+                        onToggle={() => toggleAlerts(e)} />
+                    </div>
+                  {/each}
+                </div>
+              {/if}
+            {/if}
+          </section>
+        {/each}
+      </div>
+    {/if}
+  </div>
+{/if}

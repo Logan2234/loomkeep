@@ -13,6 +13,9 @@ history from before it was started.
 
 ## [Unreleased]
 
+- Calendar › Premieres: the series starting over the next eight weeks on the
+  main streamers and channels, week by week, with this week's headliner and a
+  "My services" filter.
 - Administrators get an alert (email, push optional) when someone's import
   fails, with a link to the failed imports in Admin › Imports.
 - An optional "How did you hear about Loomkeep?" at the end of the welcome
