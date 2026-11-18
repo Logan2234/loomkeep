@@ -113,6 +113,7 @@ describe("ImportJobService translatable failures", () => {
         stubAchievements(),
         stubEvents(),
         stubNotifications(),
+        stubImportAlerts(),
       );
       const started = await service.startAnalyze("u1", "steam", { input: "" });
       await vi.waitFor(() => {

@@ -119,6 +119,7 @@ function build(over: Partial<Mocks> = {}): {
       isOnline: vi.fn().mockResolvedValue(true),
     } as never, // EventsGateway stub
     { create: vi.fn() } as never, // NotificationService stub
+    { importFailed: vi.fn() } as never, // ImportAlertService stub
   );
   return { service, mocks };
 }
