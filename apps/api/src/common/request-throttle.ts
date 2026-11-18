@@ -11,9 +11,14 @@ import { sleep } from "./async.util";
  * same amount and then fire together, which is the one case the throttle
  * exists for. MusicBrainz's 1 req/s in particular is a hard rule, enforced
  * with temporary bans.
+ *
+ * {@link pauseFor} holds every queued call back once a provider has banned
+ * the instance for a while: a request sent during the ban only fails, and
+ * can prolong it.
  */
 export class RequestThrottle {
   private lastRequestAt = 0;
+  private pausedUntil = 0;
   private queue: Promise<void> = Promise.resolve();
 
   constructor(private readonly intervalMs: number) {}
@@ -23,12 +28,26 @@ export class RequestThrottle {
     return this.queue;
   }
 
+  /** No call goes out for the next `ms` (a pause never shortens). */
+  pauseFor(ms: number): void {
+    this.pausedUntil = Math.max(this.pausedUntil, Date.now() + ms);
+  }
+
+  /** How long the current pause still runs, 0 when there is none. */
+  remainingPauseMs(): number {
+    return Math.max(0, this.pausedUntil - Date.now());
+  }
+
   /** Only ever runs one at a time, so this read-sleep-write is atomic. */
   private async takeTurn(): Promise<void> {
-    const elapsed = Date.now() - this.lastRequestAt;
+    const now = Date.now();
+    const readyAt = Math.max(
+      this.lastRequestAt + this.intervalMs,
+      this.pausedUntil,
+    );
 
-    if (elapsed < this.intervalMs) {
-      await sleep(this.intervalMs - elapsed);
+    if (readyAt > now) {
+      await sleep(readyAt - now);
     }
 
     this.lastRequestAt = Date.now();

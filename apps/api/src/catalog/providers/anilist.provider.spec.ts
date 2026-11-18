@@ -2,8 +2,14 @@ import { MediaSource, MediaType } from "@loomkeep/shared";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { vi } from "vitest";
+import { runPatiently } from "../../common/patient-context";
 import type { QuotaTrackerService } from "../../common/quota-tracker.service";
 import { AnilistProvider } from "./anilist.provider";
+
+// A ban is a minute long: tests don't actually wait it out.
+vi.mock("../../common/async.util", () => ({
+  sleep: vi.fn(() => Promise.resolve()),
+}));
 
 const FIXTURES = join(__dirname, "..", "..", "..", "test", "fixtures");
 
@@ -264,6 +270,42 @@ describe("AnilistProvider", () => {
     await expect(provider.search("Frieren")).rejects.toThrow();
     // A single attempt: the 60s Retry-After blows past maxRetryDelayMs, so
     // the call gives up rather than retrying.
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("waits out a ban in background work, then retries", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response("{}", { status: 429, headers: { "Retry-After": "60" } }),
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify(fixture("anilist-search.json")), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }),
+      );
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    const results = await runPatiently(() => provider.search("Frieren"));
+
+    expect(results.length).toBeGreaterThan(0);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("doesn't call AniList during a ban unless it may wait", async () => {
+    // Frozen clock: the ban the first call triggers is still running.
+    vi.spyOn(Date, "now").mockReturnValue(1_000_000);
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response("{}", { status: 429, headers: { "Retry-After": "60" } }),
+    );
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    await expect(provider.search("Frieren")).rejects.toThrow();
+    await expect(provider.search("Frieren")).rejects.toThrow(
+      "rate-limiting",
+    );
+
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
@@ -828,6 +870,30 @@ describe("AnilistProvider", () => {
       expect(
         customLists.map((l) => [l.name, l.entries.map((e) => e.media.id)]),
       ).toEqual([["Comfy", [1, 3]]]);
+      expect(fetch).toHaveBeenCalledTimes(2);
+    });
+
+    it("waits out a ban mid-list in background work", async () => {
+      const fetch = vi
+        .fn()
+        .mockResolvedValueOnce(respond(429, {}))
+        .mockResolvedValueOnce(
+          respond(200, {
+            data: {
+              MediaListCollection: {
+                hasNextChunk: false,
+                lists: [list([1])],
+              },
+            },
+          }),
+        );
+      global.fetch = fetch as typeof global.fetch;
+
+      const { entries } = await runPatiently(() =>
+        provider.getUserAnimeList("Josh"),
+      );
+
+      expect(entries.map((e) => e.media.id)).toEqual([1]);
       expect(fetch).toHaveBeenCalledTimes(2);
     });
 

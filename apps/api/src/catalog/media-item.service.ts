@@ -33,13 +33,13 @@ import { SagaSyncService } from "./saga-sync.service";
 
 // Upper bound on how many stale media items one cron execution refreshes.
 // The cron runs every 6h; at this cap and the concurrency below, a full
-// batch (even at the ~1req/s TMDB/AniList throttle floor) finishes well
+// batch (even at AniList's ~2s throttle floor) finishes well
 // within that window with headroom to spare, instead of an unbounded run
 // growing without limit as the tracked catalog grows.
 const MAX_REFRESHED_PER_RUN = 500;
 
 // Low concurrency on purpose: AniList already serializes every call behind
-// its own shared per-instance throttle (RequestThrottle, 700ms min interval —
+// its own shared per-instance throttle (RequestThrottle, ~2s min interval —
 // see anilist.provider.ts), so raising this only queues more requests behind
 // that same throttle without finishing the batch any faster. It just lets a
 // few independent media items overlap their network latency instead of

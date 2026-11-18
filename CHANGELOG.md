@@ -13,6 +13,12 @@ history from before it was started.
 
 ## [Unreleased]
 
+### Fixed
+
+- Large AniList imports no longer fail halfway with a rate-limit error:
+  Loomkeep now stays under AniList's current limit and, during an import,
+  waits out a temporary block instead of giving up.
+
 ## 1.14.0 — Person, author and studio pages, rewatching, and a reworked phone app
 
 ### Breaking changes

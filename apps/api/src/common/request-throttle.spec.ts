@@ -73,4 +73,28 @@ describe("RequestThrottle", () => {
 
     expect(sleepSpy).not.toHaveBeenCalled();
   });
+
+  it("holds every call back until a pause is over", async () => {
+    let now = 0;
+    vi.spyOn(Date, "now").mockImplementation(() => now);
+    const throttle = new RequestThrottle(1000);
+
+    await throttle.wait();
+    now = 5000;
+    throttle.pauseFor(60_000);
+    // A shorter pause never cuts the longer one short.
+    throttle.pauseFor(1000);
+    expect(throttle.remainingPauseMs()).toBe(60_000);
+
+    const sleepSpy = vi.spyOn(global, "setTimeout").mockImplementation(((
+      fn: () => void,
+    ) => {
+      fn();
+      return 0 as unknown as NodeJS.Timeout;
+    }) as unknown as typeof setTimeout);
+
+    await throttle.wait();
+
+    expect(sleepSpy).toHaveBeenCalledWith(expect.any(Function), 60_000);
+  });
 });

@@ -12,6 +12,7 @@ import {
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { AppException } from "../../common/app.exception";
 import { fetchJson, HTTP_TIMEOUT_MS } from "../../common/http.util";
+import { isPatient } from "../../common/patient-context";
 import { QuotaTrackerService } from "../../common/quota-tracker.service";
 import { RequestThrottle } from "../../common/request-throttle";
 import {
@@ -30,16 +31,25 @@ import type { CatalogProvider, ProviderMediaDetails } from "./provider.types";
 
 export const ANILIST_GRAPHQL_URL = "https://graphql.anilist.co";
 
-// AniList caps usage at 90 requests/minute and imposes a full minute's
-// timeout on the offending IP if that's exceeded — steeper than a plain
-// slow-down. Spacing calls out (shared instance-wide, same model as
-// MusicBrainz) keeps normal usage well clear of that ceiling.
-const MIN_REQUEST_INTERVAL_MS = 700;
+// AniList normally allows 90 requests/minute, but has run "degraded" at 30
+// for a long while (docs.anilist.co/guide/rate-limiting), and going over
+// costs the whole IP a minute-long ban. Spacing calls out (shared
+// instance-wide, same model as MusicBrainz) keeps every caller together just
+// under 30 a minute.
+const MIN_REQUEST_INTERVAL_MS = 2_100;
 
-// If a 429 still happens (e.g. the ban was already triggered by something
-// else sharing this IP), don't wait out a minute-long Retry-After inline —
-// fail fast so the user gets a clean error instead of a client-side timeout.
+// How long AniList bans an IP that went over: a 429 pauses the throttle at
+// least this long, whatever Retry-After says (or doesn't).
+const RATE_LIMIT_BAN_MS = 60_000;
+
+// Someone waiting on a page doesn't wait out a ban — they get a clean error
+// instead of a client-side timeout. Background work (an import) does, see
+// runPatiently().
 const MAX_RETRY_DELAY_MS = 2_000;
+const PATIENT_MAX_RETRY_DELAY_MS = RATE_LIMIT_BAN_MS + 30_000;
+
+// Attempts at one chunk of a user's list when an import hits a ban.
+const USER_LIST_CHUNK_ATTEMPTS = 3;
 
 const SEARCH_QUERY = `
   query ($search: String, $page: Int) {
@@ -455,29 +465,37 @@ export class AnilistProvider implements CatalogProvider {
       | { name: string; isCustomList: boolean; entries: AnilistListEntry[] }[]
       | null;
   }> {
-    await this.throttle.wait();
-    this.quota.record("anilist");
-
     let response: Response;
 
-    try {
-      response = await fetch(ANILIST_GRAPHQL_URL, {
-        signal: AbortSignal.timeout(HTTP_TIMEOUT_MS),
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-        body: JSON.stringify({
-          query: USER_LIST_QUERY,
-          variables: { userName, chunk },
-        }),
-      });
-    } catch {
-      throw new AppException(
-        HttpStatus.BAD_GATEWAY,
-        ErrorCode.ImportSourceUnavailable,
-      );
+    for (let attempt = 1; ; attempt++) {
+      await this.takeTurn();
+      this.quota.record("anilist");
+
+      try {
+        response = await fetch(ANILIST_GRAPHQL_URL, {
+          signal: AbortSignal.timeout(HTTP_TIMEOUT_MS),
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+          body: JSON.stringify({
+            query: USER_LIST_QUERY,
+            variables: { userName, chunk },
+          }),
+        });
+      } catch {
+        throw new AppException(
+          HttpStatus.BAD_GATEWAY,
+          ErrorCode.ImportSourceUnavailable,
+        );
+      }
+
+      if (response.status !== 429) break;
+
+      this.rateLimited(Number(response.headers.get("Retry-After")) * 1000);
+      // The next turn waits the ban out; only an import is that patient.
+      if (!isPatient() || attempt >= USER_LIST_CHUNK_ATTEMPTS) break;
     }
 
     const body = (await response.json().catch(() => null)) as {
@@ -608,11 +626,35 @@ export class AnilistProvider implements CatalogProvider {
     return toCastDetail(staff);
   }
 
+  /**
+   * Waits for this instance's turn at AniList. During a ban, only background
+   * work queues behind it: anyone else fails at once, without a request
+   * that could only fail too.
+   */
+  private async takeTurn(): Promise<void> {
+    if (!isPatient() && this.throttle.remainingPauseMs() > MAX_RETRY_DELAY_MS) {
+      throw new AppException(
+        HttpStatus.BAD_GATEWAY,
+        ErrorCode.CatalogProviderUnavailable,
+        undefined,
+        "AniList is rate-limiting this instance",
+      );
+    }
+
+    await this.throttle.wait();
+  }
+
+  /** A 429: nobody calls AniList again before the ban is over. */
+  private rateLimited(retryAfterMs: number): void {
+    this.throttle.pauseFor(
+      Math.max(Number.isFinite(retryAfterMs) ? retryAfterMs : 0, RATE_LIMIT_BAN_MS),
+    );
+  }
+
   private async query<T>(
     query: string,
     variables: Record<string, unknown>,
   ): Promise<T> {
-    await this.throttle.wait();
     const body = await fetchJson<{
       data?: T;
       errors?: { message: string }[];
@@ -629,8 +671,13 @@ export class AnilistProvider implements CatalogProvider {
       {
         sourceLabel: "AniList",
         notFoundMessage: "Media not found on AniList",
-        maxRetryDelayMs: MAX_RETRY_DELAY_MS,
+        maxRetryDelayMs: isPatient()
+          ? PATIENT_MAX_RETRY_DELAY_MS
+          : MAX_RETRY_DELAY_MS,
+        // Retries too wait their turn, and the end of a ban.
+        beforeAttempt: () => this.takeTurn(),
         onAttempt: () => this.quota.record("anilist"),
+        onRateLimited: (delayMs) => this.rateLimited(delayMs),
       },
     );
 

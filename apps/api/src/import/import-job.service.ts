@@ -28,6 +28,7 @@ import { ConfigService } from "@nestjs/config";
 import { randomUUID } from "node:crypto";
 import { AppException } from "../common/app.exception";
 import { toPagedResult, type ParsedPage } from "../common/pagination.util";
+import { runPatiently } from "../common/patient-context";
 import { EntitlementService } from "../entitlements/entitlement.service";
 import { EventsGateway } from "../events/events.gateway";
 import { AchievementService } from "../gamification/achievements/achievement.service";
@@ -557,7 +558,9 @@ export class ImportJobService {
 
   private async run(job: JobRecord, work: () => Promise<void>): Promise<void> {
     try {
-      await work();
+      // A job runs in the background: a rate-limited catalogue holds it
+      // until the ban is over rather than failing a long import halfway.
+      await runPatiently(work);
       job.status = "completed";
     } catch (error) {
       job.status = "failed";

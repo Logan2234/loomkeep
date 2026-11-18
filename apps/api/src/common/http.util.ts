@@ -38,6 +38,8 @@ const MAX_ATTEMPTS = 3;
  * `fetchJson()` call, which would undercount a call retried on 429/5xx.
  * `beforeAttempt` waits for a provider's throttle before counting a request;
  * `isRetryable` overrides the default HTTP retry policy for that provider.
+ * `onRateLimited` hears every 429 with the delay it asked for, retried or
+ * not — how a provider pauses its throttle for everyone during a ban.
  */
 export async function fetchJson<T>(
   url: string | URL,
@@ -49,6 +51,7 @@ export async function fetchJson<T>(
     onAttempt?: () => void;
     beforeAttempt?: () => Promise<void>;
     isRetryable?: (status: number) => boolean;
+    onRateLimited?: (delayMs: number) => void;
   },
 ): Promise<T> {
   let lastStatus = 0;
@@ -94,6 +97,12 @@ export async function fetchJson<T>(
     const transient = opts.isRetryable
       ? opts.isRetryable(response.status)
       : response.status === 429 || response.status >= 500;
+
+    if (response.status === 429) {
+      opts.onRateLimited?.(
+        retryDelayMs(response.headers.get("Retry-After"), attempt),
+      );
+    }
 
     if (transient && attempt < MAX_ATTEMPTS) {
       const delay = retryDelayMs(response.headers.get("Retry-After"), attempt);
