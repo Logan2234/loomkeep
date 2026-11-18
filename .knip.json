@@ -3,14 +3,15 @@
   "ignore": [".github/pa11y/sarif-reporter.js"],
   "workspaces": {
     ".": {
-      "entry": [".github/lighthouse/*.cjs"],
-      "ignoreDependencies": ["rxjs"]
+      "entry": [".github/lighthouse/*.cjs"]
     },
     "apps/api": {
       "entry": ["src/main.ts", "test/**/*.e2e-spec.ts"],
       "ignoreDependencies": ["pino-pretty"]
     },
-    "apps/web": {},
+    "apps/web": {
+      "ignoreDependencies": ["$app"]
+    },
     "apps/mobile": {
       "entry": ["scripts/*.mjs"],
       "ignoreDependencies": ["@capacitor/push-notifications"]
