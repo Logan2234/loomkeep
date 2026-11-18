@@ -99,6 +99,7 @@
   "admin_accounts_delta_week": "cette semaine",
   "admin_accounts_delta_year": "cette année",
   "admin_accounts_domain_one": "1 domaine",
+  "admin_accounts_domains_none": "Aucun domaine pour l'instant",
   "admin_accounts_domains_many": "{count} domaines",
   "admin_accounts_health_dormant": "Dormants > {days} j",
   "admin_accounts_health_sessions": "Sessions actives",

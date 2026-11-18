@@ -17,6 +17,7 @@
     type TrendPeriod,
   } from "@loomkeep/shared";
   import CohortTable from "./CohortTable.svelte";
+  import { enabledDomainsLabel } from "./enabled-domains-label";
   import TrendPeriodCard from "./TrendPeriodCard.svelte";
 
   let { stats }: { stats: AdminAccountsSectionDto } = $props();
@@ -30,10 +31,7 @@
 
   const domainItems = $derived(
     stats.byEnabledDomainCount.map((b) => ({
-      label:
-        b.domains > 1
-          ? m.admin_accounts_domains_many({ count: b.domains })
-          : m.admin_accounts_domain_one(),
+      label: enabledDomainsLabel(b.domains),
       value: b.accounts,
     })),
   );
