@@ -13,6 +13,9 @@ history from before it was started.
 
 ## [Unreleased]
 
+- Administrators get an alert (email, push optional) when someone's import
+  fails, with a link to the failed imports in Admin › Imports.
+
 ## 1.14.0 — Person, author and studio pages, rewatching, and a reworked phone app
 
 ### Breaking changes

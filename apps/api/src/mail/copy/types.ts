@@ -69,6 +69,12 @@ export interface MailCopy {
     onlyOnce: string;
     button: string;
   };
+  importAlert: {
+    subject: (source: string) => string;
+    heading: string;
+    intro: (source: string) => string;
+    button: string;
+  };
   moderation: {
     comment: ModerationVariant;
     message: ModerationVariant;

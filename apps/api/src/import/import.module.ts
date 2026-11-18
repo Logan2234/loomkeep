@@ -6,9 +6,12 @@ import { EventsModule } from "../events/events.module";
 import { GamesModule } from "../games/games.module";
 import { GamificationModule } from "../gamification/gamification.module";
 import { ListsModule } from "../lists/list.module";
+import { MailModule } from "../mail/mail.module";
+import { AdminAlertModule } from "../notifications/admin-alert.module";
 import { NotificationModule } from "../notifications/notification.module";
 import { ReviewsModule } from "../reviews/reviews.module";
 import { UsersModule } from "../users/users.module";
+import { ImportAlertService } from "./import-alert.service";
 import { ImportJobService } from "./import-job.service";
 import { IMPORT_SOURCES, type ImportReq } from "./import-source";
 import { ImportController } from "./import.controller";
@@ -45,11 +48,14 @@ import { TvTimeImportSource } from "./sources/tvtime/tvtime.source";
     EventsModule,
     NotificationModule,
     ListsModule,
+    MailModule,
+    AdminAlertModule,
   ],
   controllers: [ImportController],
   exports: [ImportJobService],
   providers: [
     ImportJobService,
+    ImportAlertService,
     MediaMatchResolver,
     AnilistMatchResolver,
     TvTimeImportSource,
