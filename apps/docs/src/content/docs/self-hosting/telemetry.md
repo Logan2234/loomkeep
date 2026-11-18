@@ -10,7 +10,8 @@ question.
 
 ## What is sent
 
-Once a day, at 5:30 a.m. server time, one `POST` to
+Once a day, at 5:30 a.m. server time, and whenever an administrator clicks
+**Check now** in Admin › Services, one `POST` to
 `https://loomkeep.app/api/instances/ping` with:
 
 | Field        | Example                                | What it is                                                                                                         |
@@ -23,8 +24,8 @@ answer is the latest version, shown in **Admin › Services**.
 
 ## What is kept
 
-loomkeep.app keeps, for each id, the version and the first and last day it
-was seen. It counts the ids seen in the last 30 days, by version, and
+loomkeep.app keeps, for each id, the version and when it was first and last
+seen. It counts the ids seen in the last 30 days, by version, and
 deletes an id once it hasn't been seen for 90 days.
 
 Your IP address isn't stored: neither in the database nor in the API's or
