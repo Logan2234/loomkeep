@@ -269,6 +269,11 @@
           label: m.settings_alert_admin_reports_pending(),
         },
         { key: "ADMIN_JOB_FAILED", label: m.settings_alert_admin_job_failed() },
+        {
+          key: "ADMIN_IMPORT_FAILED",
+          label: m.settings_alert_admin_import_failed(),
+          newBadgeKey: "admin-import-alert",
+        },
         { key: "ADMIN_QUOTA", label: m.settings_alert_admin_quota() },
         { key: "ADMIN_NEW_USER", label: m.settings_alert_admin_new_user() },
         {

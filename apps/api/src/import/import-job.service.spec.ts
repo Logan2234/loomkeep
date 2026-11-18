@@ -8,11 +8,18 @@ import type { EntitlementService } from "../entitlements/entitlement.service";
 import type { NotificationService } from "../notifications/notification.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import { stubAchievements, stubEvents, stubXp } from "../test-utils/stubs";
+import type { ImportAlertService } from "./import-alert.service";
 import { ImportJobService } from "./import-job.service";
 import type { ImportReq } from "./import-source";
 
 function stubNotifications(): NotificationService {
   return { create: vi.fn() } as unknown as NotificationService;
+}
+
+function stubImportAlerts(): ImportAlertService {
+  return {
+    importFailed: vi.fn().mockResolvedValue(undefined),
+  } as unknown as ImportAlertService;
 }
 
 function fakeSource(id: ImportSource, requiredEnvKeys?: string[]): ImportReq {
@@ -55,6 +62,7 @@ describe("ImportJobService translatable failures", () => {
       stubAchievements(),
       stubEvents(),
       stubNotifications(),
+      stubImportAlerts(),
     );
 
     const analysis = await service.startAnalyze("u1", "steam", { input: "" });
@@ -135,6 +143,7 @@ describe("ImportJobService.getAvailability", () => {
       stubAchievements(),
       stubEvents(),
       stubNotifications(),
+      stubImportAlerts(),
     );
 
     const availability = service.getAvailability();
@@ -170,6 +179,7 @@ describe("ImportJobService.startAnalyze — premium gating", () => {
       stubAchievements(),
       stubEvents(),
       stubNotifications(),
+      stubImportAlerts(),
     );
     return { service, prisma };
   }
@@ -226,6 +236,7 @@ describe("ImportJobService.startAnalyze — premium gating", () => {
       stubAchievements(),
       stubEvents(),
       stubNotifications(),
+      stubImportAlerts(),
     );
 
     await service.startAnalyze("u1", "tvtime", { input: "" });
@@ -254,6 +265,7 @@ describe("ImportJobService.getQuota", () => {
       stubAchievements(),
       stubEvents(),
       stubNotifications(),
+      stubImportAlerts(),
     );
 
     await expect(service.getQuota("u1")).resolves.toEqual({
@@ -278,6 +290,7 @@ describe("ImportJobService.commit — IMPORT_COMPLETED", () => {
     const xp = stubXp();
     const events = stubEvents(online);
     const notifications = stubNotifications();
+    const importAlerts = stubImportAlerts();
     const service = new ImportJobService(
       [source],
       prisma,
@@ -289,8 +302,16 @@ describe("ImportJobService.commit — IMPORT_COMPLETED", () => {
       stubAchievements(),
       events,
       notifications,
+      importAlerts,
     );
-    return { service, xp, events, importRunCreate, notifications };
+    return {
+      service,
+      xp,
+      events,
+      importRunCreate,
+      notifications,
+      importAlerts,
+    };
   }
 
   // commit() only accepts a jobId that already has an analyzed plan attached
@@ -441,6 +462,35 @@ describe("ImportJobService.commit — IMPORT_COMPLETED", () => {
     );
   });
 
+  it("alerts the administrators when a commit fails", async () => {
+    const { service, importAlerts } = makeCommitService(async () => {
+      throw new Error("TMDB request failed\nstack…");
+    });
+    seedAnalyzedJob(service, "analyzed-1");
+
+    service.commit("u1", "tvtime", "analyzed-1", { include: [] } as never);
+
+    await vi.waitFor(() =>
+      expect(importAlerts.importFailed).toHaveBeenCalledWith(
+        "tvtime",
+        "TMDB request failed\nstack…",
+      ),
+    );
+  });
+
+  it("leaves the administrators alone when a commit succeeds", async () => {
+    const { service, events, importAlerts } = makeCommitService(async () => ({
+      overwrite: false,
+      tiles: [],
+    }));
+    seedAnalyzedJob(service, "analyzed-1");
+
+    service.commit("u1", "tvtime", "analyzed-1", { include: [] } as never);
+
+    await vi.waitFor(() => expect(events.isOnline).toHaveBeenCalled());
+    expect(importAlerts.importFailed).not.toHaveBeenCalled();
+  });
+
   it("pushes a final live progress update to the job's owner once it settles", async () => {
     const { service, events } = makeCommitService(async () => ({
       overwrite: false,
@@ -564,6 +614,7 @@ describe("ImportJobService — retained payloads", () => {
       stubAchievements(),
       stubEvents(),
       stubNotifications(),
+      stubImportAlerts(),
     );
   }
 
@@ -682,6 +733,7 @@ describe("ImportJobService.getLastRun", () => {
       stubAchievements(),
       stubEvents(),
       stubNotifications(),
+      stubImportAlerts(),
     );
   }
 
@@ -744,6 +796,7 @@ describe("ImportJobService.getHistory", () => {
       stubAchievements(),
       stubEvents(),
       stubNotifications(),
+      stubImportAlerts(),
     );
 
     await expect(

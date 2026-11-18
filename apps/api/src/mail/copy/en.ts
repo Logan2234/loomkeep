@@ -34,6 +34,7 @@ export const EN_COPY: MailCopy = {
     updateAvailable: "A new version of Loomkeep is available.",
     pausedReminder: "Shows, books or games are waiting where you left them.",
     accountDeleted: "Your Loomkeep account deletion is confirmed.",
+    importAlert: "An import failed on your instance.",
     adminNewUser: "A new account was created on your instance.",
     inactivityWarning:
       "Check the scheduled deletion date and sign in to keep your account.",
@@ -319,6 +320,12 @@ export const EN_COPY: MailCopy = {
       "Your Loomkeep account hadn't been used for three years: as announced, it was deleted along with your library.",
     outro:
       "Thanks for using Loomkeep. You can create a new account whenever you like.",
+  },
+  importAlert: {
+    subject: (source) => `${source} import failed`,
+    heading: "Import failed",
+    intro: (source) => `A ${source} import failed on your instance.`,
+    button: "See imports",
   },
   adminNewUser: {
     subject: (name) => `New account: ${name}`,
