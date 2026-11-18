@@ -647,7 +647,10 @@ export class AnilistProvider implements CatalogProvider {
   /** A 429: nobody calls AniList again before the ban is over. */
   private rateLimited(retryAfterMs: number): void {
     this.throttle.pauseFor(
-      Math.max(Number.isFinite(retryAfterMs) ? retryAfterMs : 0, RATE_LIMIT_BAN_MS),
+      Math.max(
+        Number.isFinite(retryAfterMs) ? retryAfterMs : 0,
+        RATE_LIMIT_BAN_MS,
+      ),
     );
   }
 

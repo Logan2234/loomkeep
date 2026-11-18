@@ -296,15 +296,15 @@ describe("AnilistProvider", () => {
   it("doesn't call AniList during a ban unless it may wait", async () => {
     // Frozen clock: the ban the first call triggers is still running.
     vi.spyOn(Date, "now").mockReturnValue(1_000_000);
-    const fetchMock = vi.fn().mockResolvedValue(
-      new Response("{}", { status: 429, headers: { "Retry-After": "60" } }),
-    );
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(
+        new Response("{}", { status: 429, headers: { "Retry-After": "60" } }),
+      );
     global.fetch = fetchMock as unknown as typeof fetch;
 
     await expect(provider.search("Frieren")).rejects.toThrow();
-    await expect(provider.search("Frieren")).rejects.toThrow(
-      "rate-limiting",
-    );
+    await expect(provider.search("Frieren")).rejects.toThrow("rate-limiting");
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
