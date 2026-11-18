@@ -1,10 +1,13 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
   "ignore": [".github/pa11y/sarif-reporter.js"],
+  "ignoreIssues": {
+    "apps/web/tsconfig.json": ["unlisted"],
+    "apps/web/src/service-worker/tsconfig.json": ["unlisted"]
+  },
   "workspaces": {
     ".": {
-      "entry": [".github/lighthouse/*.cjs"],
-      "ignoreDependencies": ["rxjs"]
+      "entry": [".github/lighthouse/*.cjs"]
     },
     "apps/api": {
       "entry": ["src/main.ts", "test/**/*.e2e-spec.ts"],
