@@ -300,14 +300,16 @@ describe("calendar page", () => {
     const user = userEvent.setup();
 
     await user.click(
-      await screen.findByRole("tab", { name: m.calendar_view_premieres() }),
+      await screen.findByRole("tab", {
+        name: new RegExp(m.calendar_view_premieres()),
+      }),
     );
 
     expect(goto).toHaveBeenCalledWith("?view=premieres");
     await screen.findByText(m.calendar_premieres_empty());
     expect(
       screen
-        .getByRole("tab", { name: m.calendar_view_premieres() })
+        .getByRole("tab", { name: new RegExp(m.calendar_view_premieres()) })
         .getAttribute("aria-selected"),
     ).toBe("true");
   });

@@ -14,7 +14,6 @@
   import { isFeatureNew } from "#lib/feature-badges.js";
   import { layout } from "#lib/layout.svelte.js";
   import { m } from "#lib/paraglide/messages.js";
-  import { type SelectOption } from "#lib/types/select-option.js";
   import MyCalendarView from "./components/MyCalendarView.svelte";
   import PremieresView from "./components/PremieresView.svelte";
 
@@ -26,9 +25,13 @@
   // Both views live on this one page, so switching slides the tab's underline
   // and cross-fades the content; the query keeps a view linkable.
   type View = "mine" | "premieres";
-  const viewTabs: SelectOption<View>[] = [
+  const viewTabs: { value: View; label: string; isNew?: boolean }[] = [
     { value: "mine", label: m.calendar_view_mine() },
-    { value: "premieres", label: m.calendar_view_premieres() },
+    {
+      value: "premieres",
+      label: m.calendar_view_premieres(),
+      isNew: isFeatureNew("premieres"),
+    },
   ];
   const view = $derived<View>(
     page.url.searchParams.get("view") === "premieres" ? "premieres" : "mine",
@@ -47,7 +50,7 @@
       backOnPhoneOnly
       icon="calendar"
       title={m.common_calendar()}
-      isNew={isFeatureNew("calendar-redesign") || isFeatureNew("premieres")}>
+      isNew={isFeatureNew("calendar-redesign")}>
       {#snippet actions()}
         {#if !layout.compact}
           {#snippet calendarButton()}

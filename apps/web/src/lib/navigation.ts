@@ -108,6 +108,7 @@ const NAVIGATION: NavSection[] = [
         icon: "calendar",
         anyDomain: [Domain.MEDIA, Domain.GAMES],
         match: (p) => p.startsWith("/app/calendar"),
+        newBadgeKey: "premieres",
       },
       {
         href: "/app/stats",
@@ -349,6 +350,7 @@ const MOBILE_DESTINATIONS: Record<MobileNavId, MobileDestination> = {
     anyDomain: [Domain.MEDIA, Domain.GAMES],
     hint: m.nav_menu_calendar_hint,
     match: (p) => p.startsWith("/app/calendar"),
+    newBadgeKey: "premieres",
   },
   stats: {
     id: "stats",
