@@ -13,6 +13,10 @@ history from before it was started.
 
 ## [Unreleased]
 
+- An optional "How did you hear about Loomkeep?" at the end of the welcome
+  tour, with the answers in Admin › Stats. Off by default: turn it on in
+  Admin › Instance settings or with `ASK_ACQUISITION_SOURCE=true`.
+
 ## 1.14.0 — Person, author and studio pages, rewatching, and a reworked phone app
 
 ### Breaking changes

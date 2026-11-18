@@ -38,4 +38,8 @@ export class UpdateInstanceSettingsRequestDto implements UpdateInstanceSettingsD
   @IsOptional()
   @IsBoolean()
   updateCheckEnabled?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  askAcquisitionSource?: boolean;
 }

@@ -1,5 +1,6 @@
 import type { AlertPrefs } from "../alerts";
 import {
+  AcquisitionSource,
   DigestCadence,
   Domain,
   ListVisibility,
@@ -13,6 +14,7 @@ import type { HomeLayoutDto, HomePhoneLayoutDto } from "./home-layout";
 
 export const USER_LIMITS = { displayName: 50, username: 50, bio: 500 } as const;
 export const WEBAUTHN_NAME_MAX_LENGTH = 60;
+export const ACQUISITION_SOURCE_OTHER_MAX_LENGTH = 80;
 export const AVATAR_MIME_TYPES = [
   "image/png",
   "image/jpeg",
@@ -73,6 +75,8 @@ export interface UserDto {
    * instead of the app chrome.
    */
   onboardedAt: string | null;
+  /** How the user heard of Loomkeep, null until answered. Written once. */
+  acquisitionSource: AcquisitionSource | null;
   /**
    * Path (relative to the API base) to the uploaded profile picture, or null
    * if the user hasn't set one — the client falls back to the generated
@@ -180,6 +184,12 @@ export interface UpdateUserRequestDto {
 export interface UpdateUsernameRequestDto {
   /** Must be unique account-wide. */
   username: string;
+}
+
+export interface SetAcquisitionSourceRequestDto {
+  source: AcquisitionSource;
+  /** Free text, only with `OTHER`. */
+  other?: string;
 }
 
 export interface UsernameAvailabilityDto {

@@ -6,6 +6,7 @@ export class PublicConfigResponseDto implements PublicConfigDto {
   gamificationEnabled!: boolean;
   registrationEnabled!: boolean;
   publicApiEnabled!: boolean;
+  askAcquisitionSource!: boolean;
   erdEnabled!: boolean;
   adminMfaEnforced!: boolean;
   version!: string;

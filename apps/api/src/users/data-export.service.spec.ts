@@ -393,6 +393,8 @@ describe("DataExportService.buildExport", () => {
         avatar: Buffer.from("png-bytes"),
         avatarMimeType: "image/png",
         equippedBadgeKeys: ["first_review"],
+        acquisitionSource: "OTHER",
+        acquisitionSourceOther: "A podcast",
       }),
     );
     (prisma.libraryEntry.findMany as Mock).mockResolvedValue([
@@ -456,7 +458,9 @@ describe("DataExportService.buildExport", () => {
     const data = await service.buildExport("user-1");
 
     expect(data.library[0].replays).toEqual(["2026-03-01T20:00:00.000Z"]);
+    expect(data.account.acquisitionSource).toBe("OTHER");
     expect(data.accountRecord).toMatchObject({
+      acquisitionSourceOther: "A podcast",
       termsAcceptedAt: "2026-01-01T00:00:00.000Z",
       ageCertifiedAt: "2026-01-01T00:00:00.000Z",
       equippedBadgeKeys: ["first_review"],

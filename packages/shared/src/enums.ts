@@ -460,6 +460,27 @@ export type AccountDeletionReason =
   (typeof AccountDeletionReason)[keyof typeof AccountDeletionReason];
 
 /**
+ * How someone heard of Loomkeep, asked once at the end of onboarding when the
+ * instance's `askAcquisitionSource` setting is on.
+ */
+export const AcquisitionSource = {
+  FRIEND: "FRIEND",
+  REDDIT: "REDDIT",
+  SEARCH_ENGINE: "SEARCH_ENGINE",
+  YOUTUBE: "YOUTUBE",
+  TIKTOK_INSTAGRAM: "TIKTOK_INSTAGRAM",
+  X_BLUESKY_MASTODON: "X_BLUESKY_MASTODON",
+  DISCORD: "DISCORD",
+  ALTERNATIVETO_PRODUCTHUNT: "ALTERNATIVETO_PRODUCTHUNT",
+  SELFHOSTED_COMMUNITY: "SELFHOSTED_COMMUNITY",
+  ARTICLE_BLOG: "ARTICLE_BLOG",
+  OTHER: "OTHER",
+} as const;
+
+export type AcquisitionSource =
+  (typeof AcquisitionSource)[keyof typeof AcquisitionSource];
+
+/**
  * Who may see a given passive-content facet — the "authorization" layer.
  * Ordered NONE < FRIENDS < PUBLIC; the effective audience is capped by
  * ProfileAccess (a PRIVATE profile tops out at FRIENDS).

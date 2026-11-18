@@ -220,6 +220,16 @@ export async function completeOnboarding(): Promise<UserDto> {
   return user;
 }
 
+// Leaves auth.user alone: the onboarding prompt keeps showing its thanks.
+export function setAcquisitionSource(
+  body: SetAcquisitionSourceRequestDto,
+): Promise<UserDto> {
+  return typedRequest("/users/me/acquisition-source", {
+    method: "POST",
+    body,
+  });
+}
+
 export async function acceptTerms(): Promise<UserDto> {
   const user = await typedRequest("/users/me/accept-terms", {
     method: "POST",

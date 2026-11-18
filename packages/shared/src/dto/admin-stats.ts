@@ -3,6 +3,7 @@ import type { Locale } from "../locale";
 
 import type {
   AccountDeletionReason,
+  AcquisitionSource,
   ProfileAccess,
   ReportCategory,
 } from "../enums";
@@ -100,6 +101,14 @@ export interface AdminAccountsSectionDto {
   departureReasons: AdminDepartureReasonCountDto[];
   /** Accounts self-deleted in the last 12 months, with or without a reason. */
   departures: number;
+  acquisition: AdminAcquisitionStatsDto;
+}
+
+interface AdminAcquisitionStatsDto {
+  /** Descending by count. */
+  bySource: { source: AcquisitionSource; count: number }[];
+  /** Latest free texts given with `OTHER`, newest accounts first. */
+  recentOther: string[];
 }
 
 interface AdminDepartureReasonCountDto {

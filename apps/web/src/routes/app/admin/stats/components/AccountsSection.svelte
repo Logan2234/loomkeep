@@ -7,6 +7,7 @@
   import RankBars from "#lib/components/stats/RankBars.svelte";
   import StatFigure from "#lib/components/stats/StatFigure.svelte";
   import { formatNumber, formatPercent, formatLanguage } from "#lib/format.js";
+  import { ACQUISITION_SOURCE_LABELS } from "#lib/constants/acquisition-sources.js";
   import { DELETION_REASON_LABELS } from "#lib/constants/deletion-reasons.js";
   import { m } from "#lib/paraglide/messages.js";
   import {
@@ -100,6 +101,16 @@
   );
   const departureAnswers = $derived(
     stats.departureReasons.reduce((sum, r) => sum + r.count, 0),
+  );
+
+  const acquisitionItems = $derived(
+    stats.acquisition.bySource.map((s) => ({
+      label: ACQUISITION_SOURCE_LABELS[s.source](),
+      value: s.count,
+    })),
+  );
+  const acquisitionAnswers = $derived(
+    stats.acquisition.bySource.reduce((sum, s) => sum + s.count, 0),
   );
 </script>
 
@@ -209,6 +220,32 @@
       <RankBars items={departureItems} />
     {:else}
       <p class="text-dim text-sm">{m.admin_accounts_departures_empty()}</p>
+    {/if}
+  </div>
+
+  <div class="card p-4">
+    <h3 class="font-display text-[0.9375rem] font-bold">
+      {m.admin_accounts_acquisition_title()}
+    </h3>
+    <p class="text-dim mt-0.5 mb-3.5 text-xs">
+      {m.admin_accounts_acquisition_desc({
+        answers: formatNumber(acquisitionAnswers),
+      })}
+    </p>
+    {#if acquisitionItems.length}
+      <RankBars items={acquisitionItems} initialCount={6} />
+    {:else}
+      <p class="text-dim text-sm">{m.admin_accounts_acquisition_empty()}</p>
+    {/if}
+    {#if stats.acquisition.recentOther.length}
+      <h4 class="mt-4 mb-1.5 text-xs font-semibold">
+        {m.admin_accounts_acquisition_other_title()}
+      </h4>
+      <ul class="text-dim flex flex-col gap-1.5 text-sm">
+        {#each stats.acquisition.recentOther as text, i (i)}
+          <li class="border-border border-l-2 pl-2 break-words">{text}</li>
+        {/each}
+      </ul>
     {/if}
   </div>
 </div>

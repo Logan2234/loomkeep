@@ -79,6 +79,12 @@ export class DataExportAccountRecordResponseDto implements DataExportAccountReco
    */
   equippedBadgeKeys!: string[];
 
+  /**
+   * What was written after picking "Other" for how you heard of Loomkeep.
+   * @example "A podcast"
+   */
+  acquisitionSourceOther!: string | null;
+
   /** The profile photo, when one was uploaded. */
   avatar!: DataExportAvatarResponseDto | null;
 

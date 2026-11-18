@@ -15,6 +15,7 @@ export async function initConfig(): Promise<void> {
     appConfig.gamificationEnabled = config.gamificationEnabled;
     appConfig.registrationEnabled = config.registrationEnabled;
     appConfig.publicApiEnabled = config.publicApiEnabled;
+    appConfig.askAcquisitionSource = config.askAcquisitionSource;
     appConfig.erdEnabled = config.erdEnabled;
     appConfig.adminMfaEnforced = config.adminMfaEnforced;
     appConfig.version = config.version;
@@ -26,6 +27,7 @@ export async function initConfig(): Promise<void> {
     appConfig.gamificationEnabled = false;
     appConfig.registrationEnabled = false;
     appConfig.publicApiEnabled = false;
+    appConfig.askAcquisitionSource = false;
     appConfig.erdEnabled = false;
     appConfig.adminMfaEnforced = true;
     appConfig.version = "";

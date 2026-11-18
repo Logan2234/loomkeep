@@ -1,4 +1,5 @@
 import {
+  AcquisitionSource,
   Domain,
   ErrorCode,
   HOME_GRID_COLUMNS,
@@ -28,6 +29,7 @@ import { parseEnumParam } from "../common/parse-enum-param.util";
 import { EntitlementService } from "../entitlements/entitlement.service";
 import { EventsGateway } from "../events/events.gateway";
 import { XpService } from "../gamification/xp.service";
+import { instanceSetting } from "../instance-settings/instance-settings.store";
 import { MailService } from "../mail/mail.service";
 import {
   mergeAlertPrefs,
@@ -51,6 +53,7 @@ import type {
   HomeLayoutBody,
   HomePhoneLayoutBody,
 } from "./dto/home-layout.dto";
+import type { SetAcquisitionSourceDto } from "./dto/set-acquisition-source.dto";
 import type { UpdateUserDto } from "./dto/update-user.dto";
 import type { UpdateUsernameDto } from "./dto/update-username.dto";
 import type { UploadAvatarDto } from "./dto/upload-avatar.dto";
@@ -244,6 +247,43 @@ export class UsersService {
    */
   async getMyEntitlement(userId: string): Promise<EntitlementDto> {
     return { isPremium: await this.entitlements.hasPremium(userId) };
+  }
+
+  /** Written once: an answer already given is never replaced. */
+  async setAcquisitionSource(
+    userId: string,
+    { source, other }: SetAcquisitionSourceDto,
+  ): Promise<UserDto> {
+    if (!instanceSetting(this.config, "askAcquisitionSource")) {
+      throw new AppException(
+        HttpStatus.FORBIDDEN,
+        ErrorCode.UserAcquisitionSourceDisabled,
+      );
+    }
+
+    if (other !== undefined && source !== AcquisitionSource.OTHER) {
+      throw new AppException(
+        HttpStatus.BAD_REQUEST,
+        ErrorCode.ValidationFailed,
+      );
+    }
+
+    const { count } = await this.prisma.user.updateMany({
+      where: { id: userId, acquisitionSource: null },
+      data: {
+        acquisitionSource: source,
+        acquisitionSourceOther: other?.trim() || null,
+      },
+    });
+
+    if (count === 0) {
+      throw new AppException(
+        HttpStatus.CONFLICT,
+        ErrorCode.UserAcquisitionSourceAlreadySet,
+      );
+    }
+
+    return this.getMe(userId);
   }
 
   async completeOnboarding(userId: string): Promise<UserDto> {

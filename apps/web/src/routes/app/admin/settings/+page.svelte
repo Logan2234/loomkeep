@@ -31,6 +31,7 @@
     | "registrationEnabled"
     | "publicApiEnabled"
     | "updateCheckEnabled"
+    | "askAcquisitionSource"
   >;
   type LimitKey = Extract<
     InstanceSettingKey,
@@ -80,6 +81,11 @@
       key: "updateCheckEnabled",
       label: m.admin_settings_update_check(),
       hint: m.admin_settings_update_check_hint(),
+    },
+    {
+      key: "askAcquisitionSource",
+      label: m.admin_settings_acquisition(),
+      hint: m.admin_settings_acquisition_hint(),
     },
   ];
   const LIMITS: { key: LimitKey; label: string }[] = [

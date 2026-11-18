@@ -51,6 +51,7 @@ import { UserDataExportResponseDto } from "./dto/data-export/user-data-export-re
 import { EntitlementResponseDto } from "./dto/entitlement-response.dto";
 import { HomeLayoutBody, HomePhoneLayoutBody } from "./dto/home-layout.dto";
 import { MigrationExportResponseDto } from "./dto/migration-export-response.dto";
+import { SetAcquisitionSourceDto } from "./dto/set-acquisition-source.dto";
 import { UpdateUserDto } from "./dto/update-user.dto";
 import { UpdateUsernameDto } from "./dto/update-username.dto";
 import { UploadAvatarDto } from "./dto/upload-avatar.dto";
@@ -234,6 +235,16 @@ export class UsersController {
   @ApiCreatedResponse({ type: UserResponseDto })
   completeOnboarding(@CurrentUser() payload: JwtPayload): Promise<UserDto> {
     return this.users.completeOnboarding(payload.sub);
+  }
+
+  /** "How did you hear of Loomkeep?", answered once at the end of onboarding. */
+  @Post("me/acquisition-source")
+  @ApiCreatedResponse({ type: UserResponseDto })
+  setAcquisitionSource(
+    @CurrentUser() payload: JwtPayload,
+    @Body() dto: SetAcquisitionSourceDto,
+  ): Promise<UserDto> {
+    return this.users.setAcquisitionSource(payload.sub, dto);
   }
 
   /**

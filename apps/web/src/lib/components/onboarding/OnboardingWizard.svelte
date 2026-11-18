@@ -68,6 +68,7 @@
   import Switch from "../Switch.svelte";
   import ThemePreview from "../ThemePreview.svelte";
   import Wizard from "../Wizard.svelte";
+  import AcquisitionSourcePrompt from "./AcquisitionSourcePrompt.svelte";
   import { deriveStepViews, stepLabel } from "./onboarding-checklist";
 
   const PICKABLE_DOMAINS: { id: Domain; example: () => string }[] = [
@@ -502,6 +503,14 @@
       );
     return list;
   });
+
+  // Read once: the prompt stays up to show its thanks after answering.
+  const answeredAcquisition = !!auth.user?.acquisitionSource;
+  const askAcquisition = $derived(
+    appConfig.askAcquisitionSource &&
+      !onboardingReplay.active &&
+      !answeredAcquisition,
+  );
 
   const additionalAction = $derived(
     stepId === "done"
@@ -1026,6 +1035,9 @@
         </section>
       {/if}
     </div>
+    {#if askAcquisition}
+      <AcquisitionSourcePrompt />
+    {/if}
   {/if}
 </Wizard>
 
