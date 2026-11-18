@@ -37,6 +37,7 @@ export const FR_COPY: MailCopy = {
     pausedReminder:
       "Des séries, livres ou jeux t’attendent là où tu les as laissés.",
     accountDeleted: "La suppression de ton compte Loomkeep est confirmée.",
+    importAlert: "Un import a échoué sur ton instance.",
     adminNewUser: "Un nouveau compte a été créé sur ton instance.",
     inactivityWarning:
       "Consulte la date de suppression prévue et reconnecte-toi pour conserver ton compte.",
@@ -325,6 +326,12 @@ export const FR_COPY: MailCopy = {
       "Ton compte Loomkeep n'avait pas servi depuis trois ans : comme annoncé, il a été supprimé avec ta bibliothèque.",
     outro:
       "Merci d'avoir utilisé Loomkeep. Tu peux recréer un compte quand tu veux.",
+  },
+  importAlert: {
+    subject: (source) => `Import ${source} en échec`,
+    heading: "Import en échec",
+    intro: (source) => `Un import ${source} a échoué sur ton instance.`,
+    button: "Voir les imports",
   },
   adminNewUser: {
     subject: (name) => `Nouvelle inscription : ${name}`,

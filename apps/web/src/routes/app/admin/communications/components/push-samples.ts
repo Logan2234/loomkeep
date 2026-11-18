@@ -25,6 +25,7 @@ const LABELS: Partial<Record<AlertKey, () => string>> = {
   PAUSED_REMINDER: m.settings_alert_paused_reminder,
   ADMIN_REPORTS_PENDING: m.settings_alert_admin_reports_pending,
   ADMIN_JOB_FAILED: m.settings_alert_admin_job_failed,
+  ADMIN_IMPORT_FAILED: m.settings_alert_admin_import_failed,
   ADMIN_QUOTA: m.settings_alert_admin_quota,
   ADMIN_NEW_USER: m.settings_alert_admin_new_user,
   ADMIN_UPDATE_AVAILABLE: m.settings_alert_admin_update_available,

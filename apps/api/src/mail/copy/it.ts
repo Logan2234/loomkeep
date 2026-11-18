@@ -40,6 +40,7 @@ export const IT_COPY: MailCopy = {
     updateAvailable: "È disponibile una nuova versione di Loomkeep.",
     pausedReminder: "Serie, libri o giochi ti aspettano dove li hai lasciati.",
     accountDeleted: "L’eliminazione del tuo account Loomkeep è confermata.",
+    importAlert: "Un'importazione non è riuscita sulla tua istanza.",
     adminNewUser: "È stato creato un nuovo account sulla tua istanza.",
     inactivityWarning:
       "Controlla la data di eliminazione prevista e accedi per conservare l’account.",
@@ -326,6 +327,13 @@ export const IT_COPY: MailCopy = {
       "Il tuo account Loomkeep non veniva usato da tre anni: come annunciato, è stato eliminato insieme alla tua libreria.",
     outro:
       "Grazie per aver usato Loomkeep. Puoi creare un nuovo account quando vuoi.",
+  },
+  importAlert: {
+    subject: (source) => `Importazione ${source} non riuscita`,
+    heading: "Importazione non riuscita",
+    intro: (source) =>
+      `Un'importazione ${source} non è riuscita sulla tua istanza.`,
+    button: "Vedi le importazioni",
   },
   adminNewUser: {
     subject: (name) => `Nuova iscrizione: ${name}`,

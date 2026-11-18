@@ -151,6 +151,10 @@ const SAMPLES: Partial<
     ...copy.adminAlerts.jobFailed("release-scan"),
     url: "/app/admin/jobs",
   }),
+  ADMIN_IMPORT_FAILED: (copy) => ({
+    ...copy.adminAlerts.importFailed("Letterboxd"),
+    url: "/app/admin/imports?status=FAILURE",
+  }),
   ADMIN_QUOTA: (copy) => ({
     ...copy.adminAlerts.quota("TMDB", 90),
     url: "/app/admin/services",

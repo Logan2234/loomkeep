@@ -47,6 +47,7 @@
   "admin_template_quota_alert": "Alerte de quota fournisseur",
   "admin_template_job_alert": "Alerte de job",
   "admin_template_job": "Job",
+  "admin_template_import_alert": "Alerte d'import",
   "admin_template_provider": "Fournisseur",
   "admin_template_calls_today": "Appels du jour",
   "admin_template_daily_quota": "Quota quotidien",

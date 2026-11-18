@@ -807,6 +807,7 @@ describe("MailService template gallery", () => {
       for (const key of [
         "quotaAlert",
         "jobAlert",
+        "importAlert",
         "reportsDigest",
         "adminNewUser",
       ]) {

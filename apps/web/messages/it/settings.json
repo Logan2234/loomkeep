@@ -480,6 +480,7 @@
   "settings_alert_review_votes_hint": "Quando una tua recensione raggiunge {count} voti positivi, non a ogni voto.",
   "settings_alert_admin_reports_pending": "Segnalazioni in attesa",
   "settings_alert_admin_job_failed": "Attività pianificata non riuscita",
+  "settings_alert_admin_import_failed": "Importazione non riuscita",
   "settings_alert_admin_quota": "Quota di un catalogo",
   "settings_alert_admin_new_user": "Nuova iscrizione",
   "settings_communications_push_elsewhere_one": "Il push arriva su 1 altro dispositivo, non su questo.",
