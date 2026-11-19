@@ -102,6 +102,22 @@ export interface SchemaGraphResponseDto {
   erd: string | null;
 }
 
+/**
+ * A self-hosted instance's daily telemetry ping, sent with its update check
+ * to the hosted instance: nothing else is ever sent.
+ */
+export interface InstancePingDto {
+  /** Random UUID v4 the instance generated for itself. */
+  instanceId: string;
+  /** Running version, x.y.z. */
+  version: string;
+}
+
+export interface InstancePingResultDto {
+  /** Latest published version, x.y.z. */
+  latestVersion: string;
+}
+
 /** Admin › Services' "a newer version exists" card. */
 export interface AdminUpdateStatusDto {
   /** Whether the instance checks for a newer version (`updateCheckEnabled`). */

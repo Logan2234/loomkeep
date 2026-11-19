@@ -1,4 +1,8 @@
-import type { AdminUpdateStatusDto } from "@loomkeep/shared";
+import type {
+  AdminUpdateStatusDto,
+  InstancePingDto,
+  InstancePingResultDto,
+} from "@loomkeep/shared";
 import { Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { Cron } from "@nestjs/schedule";
@@ -179,13 +183,13 @@ export class UpdateCheckService {
         body: JSON.stringify({
           instanceId: await this.instanceId(),
           version: await this.readCurrentVersion(),
-        }),
+        } satisfies InstancePingDto),
         signal: AbortSignal.timeout(HTTP_TIMEOUT_MS),
       });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      const { latestVersion } = (await response.json()) as {
-        latestVersion?: unknown;
-      };
+      const { latestVersion } = (await response.json()) as Partial<
+        Record<keyof InstancePingResultDto, unknown>
+      >;
 
       if (typeof latestVersion !== "string" || !VERSION.test(latestVersion)) {
         throw new Error("no x.y.z version in the answer");
