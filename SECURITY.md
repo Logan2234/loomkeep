@@ -10,9 +10,10 @@ as something every self-hoster's data depends on.
 
 ## Supported versions
 
-No tagged releases exist yet (see `CHANGELOG.md`/`CLAUDE.md` for the
-versioning convention) — only the `main` branch is supported. Always
-self-host from the latest `main`.
+Only the latest release is supported: the newest version in
+`CHANGELOG.md`, published as a GitHub release with its Docker images and
+Android app. Security fixes ship in the next release, so keep a self-hosted
+instance on the latest one.
 
 ## Rotating secrets
 
