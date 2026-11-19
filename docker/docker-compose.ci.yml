@@ -23,3 +23,5 @@ services:
   api:
     environment:
       WEB_ORIGIN: http://localhost:18080
+      # A fresh database each run: every ping would count a new instance.
+      TELEMETRY_ENABLED: "false"

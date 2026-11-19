@@ -31,6 +31,8 @@ export {
 export { JobDto, JobListResponseDto, JobRunDto, JobStatus } from "./admin-jobs";
 export {
   AdminUpdateStatusDto,
+  InstancePingDto,
+  InstancePingResultDto,
   LicenseStatusDto,
   QuotaWindow,
   SchemaGraphResponseDto,

@@ -112,6 +112,7 @@
   "apierr_admin_backup_not_orphan": "Questo file è già collegato a un backup registrato.",
   "apierr_admin_misconfigured": "Questa funzione non è configurata su questo server.",
   "apierr_admin_unauthorized": "Non autorizzato.",
+  "apierr_admin_instance_pings_not_received": "Questa istanza non conta le istanze self-hosted.",
   "apierr_comment_unknown_target_type": "Tipo di destinazione del commento sconosciuto.",
   "apierr_comment_parent_not_found": "Impossibile trovare il commento a cui rispondi.",
   "apierr_comment_not_found": "Impossibile trovare questo commento.",

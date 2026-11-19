@@ -20,6 +20,12 @@ history from before it was started.
   report written to `BACKUP_DIR/anime-migration`, then once with
   `ANIME_MIGRATION=apply`, and unset it. The public API no longer returns
   `ANILIST` works.
+- **Self-hosting: your instance now tells loomkeep.app it exists.** The
+  daily update check asks loomkeep.app for the latest version and sends a
+  random instance id and the version, nothing else, so self-hosted instances
+  can be counted. To opt out, set `TELEMETRY_ENABLED=false` or turn off
+  Admin › Instance settings › Count this instance. Details:
+  [Telemetry](https://docs.loomkeep.app/self-hosting/telemetry/).
 
 - Anime come from TMDB: one entry per show instead of one per season, in
   your language, with no more rate-limit failures. Sagas are for films only.

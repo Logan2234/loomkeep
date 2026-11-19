@@ -278,9 +278,23 @@ interface AdminOpsSignalsDto {
   lastBackup: AdminBackupSummaryDto | null;
 }
 
+export interface AdminSelfHostedVersionDto {
+  version: string;
+  instances: number;
+}
+
+/** Self-hosted instances that pinged the hosted instance in the last 30 days. */
+export interface AdminSelfHostedInstancesDto {
+  active30d: number;
+  /** Descending by instances. */
+  versions: AdminSelfHostedVersionDto[];
+}
+
 export interface AdminSystemSectionDto {
   generatedAt: string;
   /** Descending by calls. */
   providerCalls: AdminProviderCallsDto[];
   ops: AdminOpsSignalsDto;
+  /** Null everywhere but the hosted instance, the only one receiving pings. */
+  selfHostedInstances: AdminSelfHostedInstancesDto | null;
 }

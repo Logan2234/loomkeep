@@ -63,6 +63,13 @@ lists the values `.env` needs; the rest of the
 on your own domain, backups, upgrades and the optional services (monitoring,
 error tracking, single sign-on…).
 
+### Telemetry
+
+Once a day, an instance sends loomkeep.app a random id and its version,
+nothing else, to count how many instances run; no IP address is kept.
+`TELEMETRY_ENABLED=false` turns it off. What is sent and kept:
+[Telemetry](https://docs.loomkeep.app/self-hosting/telemetry/).
+
 ## Contribute
 
 Ideas and bugs in the app go on [feedback.loomkeep.app](https://feedback.loomkeep.app);

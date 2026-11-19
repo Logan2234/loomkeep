@@ -5,6 +5,7 @@ import { sinceDaysAgo, startOfUtcDay } from "../common/date.util";
 import { PrismaService } from "../prisma/prisma.service";
 import { providerCallRows } from "./admin-system-stats.util";
 import { AdminService } from "./admin.service";
+import { InstancePingService } from "./instance-ping.service";
 
 /**
  * "Système" section of /admin/stats: what the instance costs to run. Every
@@ -16,19 +17,22 @@ export class AdminSystemStatsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly admin: AdminService,
+    private readonly instancePings: InstancePingService,
   ) {}
 
   async getStats(): Promise<AdminSystemSectionDto> {
     const now = new Date();
-    const [providerCalls, ops] = await Promise.all([
+    const [providerCalls, ops, selfHostedInstances] = await Promise.all([
       this.providerCalls(now),
       this.ops(now),
+      this.instancePings.summary(),
     ]);
 
     return {
       generatedAt: now.toISOString(),
       providerCalls,
       ops,
+      selfHostedInstances,
     };
   }
 

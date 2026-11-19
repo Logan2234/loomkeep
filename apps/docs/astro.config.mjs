@@ -164,6 +164,7 @@ export default defineConfig({
                     "self-hosting/opening-up",
                     "self-hosting/administration",
                     "self-hosting/scheduled-jobs",
+                    "self-hosting/telemetry",
                     "self-hosting/upgrades-and-backups",
                     "self-hosting/premium",
                     "self-hosting/troubleshooting",
