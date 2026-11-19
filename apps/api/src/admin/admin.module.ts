@@ -5,6 +5,7 @@ import { BooksModule } from "../books/books.module";
 import { CatalogModule } from "../catalog/catalog.module";
 import { ChatModule } from "../chat/chat.module";
 import { CommentsModule } from "../comments/comments.module";
+import { EventsModule } from "../events/events.module";
 import { GamesModule } from "../games/games.module";
 import { GamificationModule } from "../gamification/gamification.module";
 import { ImportModule } from "../import/import.module";
@@ -65,6 +66,7 @@ import { UpdateCheckService } from "./update-check.service";
     ReportsModule,
     CommentsModule,
     ChatModule,
+    EventsModule,
     ReviewsModule,
     SocialModule,
     ListsModule,

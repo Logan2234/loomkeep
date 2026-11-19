@@ -449,6 +449,19 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     return sockets.length > 0;
   }
 
+  /** Distinct accounts holding at least one open socket right now. */
+  async connectedUserCount(): Promise<number> {
+    const sockets = await this.server.fetchSockets();
+    const userIds = new Set<string>();
+
+    for (const socket of sockets) {
+      const userId = socket.data.userId as string | undefined;
+      if (userId) userIds.add(userId);
+    }
+
+    return userIds.size;
+  }
+
   emitReportsCount(): void {
     this.server.to(ADMIN_REPORTS_ROOM).emit(RealtimeEvent.REPORTS_COUNT);
   }

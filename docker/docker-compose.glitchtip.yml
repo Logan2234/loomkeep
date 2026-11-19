@@ -4,8 +4,8 @@
 #
 #   docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.glitchtip.yml up -d --build
 #
-# Runs in `SERVER_ROLE: all_in_one` mode (web + Celery worker + beat in one
-# container) — low-traffic single/few-user instance, not worth splitting.
+# A single container runs everything (since 7.0, one process serves HTTP, the
+# task worker and the scheduler; scale by adding replicas, not needed here).
 # Keeps its own dedicated Valkey (unrelated to Postgres sharing).
 #
 # Config values reference: https://glitchtip.com/documentation/install
@@ -44,12 +44,11 @@ services:
     logging: *glitchtip-logging
 
   glitchtip:
-    image: glitchtip/glitchtip:6.2.6
+    image: glitchtip/glitchtip:7.0.0
     restart: unless-stopped
     logging: *glitchtip-logging
     environment:
       <<: *glitchtip-environment
-      SERVER_ROLE: all_in_one
       ENABLE_ORGANIZATION_CREATION: false
       ENABLE_USER_REGISTRATION: false
 
