@@ -6,6 +6,7 @@ import type {
   MediaExtrasDto,
   MediaSummaryDto,
   PersonPageDto,
+  PremiereDto,
   RatingDto,
   SagaMemberDto,
   SeasonImagesDto,
@@ -931,5 +932,47 @@ export function toStudioPage(
     movieCount: counts.movies,
     seriesCount: counts.series,
     knownFor,
+  };
+}
+
+/** A `/discover/tv` result, with the fields a premiere reads. */
+export interface TmdbPremiereResult extends TmdbTvResult {
+  overview?: string | null;
+  backdrop_path?: string | null;
+  origin_country?: string[];
+  genre_ids?: number[];
+  popularity?: number;
+}
+
+/**
+ * A premiere as the DTO carries it, or null for one the calendar leaves out:
+ * no poster or date to show, or an anime (the premieres are series).
+ */
+export function toPremiere(
+  result: TmdbPremiereResult,
+  network: { id: number; name: string },
+): PremiereDto | null {
+  const countries = result.origin_country ?? [];
+  if (!result.poster_path || !result.first_air_date) return null;
+
+  if (isTmdbAnime(result)) return null;
+
+  return {
+    sourceId: String(result.id),
+    title: result.name,
+    originalTitle:
+      result.original_name && result.original_name !== result.name
+        ? result.original_name
+        : null,
+    firstAirDate: result.first_air_date,
+    networkId: network.id,
+    networkName: network.name,
+    originCountries: countries,
+    overview: result.overview?.trim() || null,
+    posterUrl: tmdbPosterUrl(result.poster_path),
+    backdropUrl: result.backdrop_path
+      ? tmdbImage(result.backdrop_path, IMAGE_SIZE.backdrop)
+      : null,
+    popularity: result.popularity ?? 0,
   };
 }

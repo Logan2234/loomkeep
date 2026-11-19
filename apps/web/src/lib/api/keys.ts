@@ -77,6 +77,7 @@ export const keys = {
   },
   calendar: {
     upcoming: () => ["calendar", "upcoming"] as const,
+    premieres: () => ["calendar", "premieres"] as const,
   },
   import: {
     availability: () => ["import", "availability"] as const,

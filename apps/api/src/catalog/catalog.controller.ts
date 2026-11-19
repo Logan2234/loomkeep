@@ -6,6 +6,7 @@ import {
   ErrorCode,
   MediaExtrasDto,
   MediaType,
+  PremiereDto,
   SearchResponseDto,
   SeasonImagesDto,
   WatchProviderCatalogDto,
@@ -33,6 +34,7 @@ import { CastDetailResponseDto } from "./dto/cast-detail-response.dto";
 import { EpisodeMediaResponseDto } from "./dto/episode-media-response.dto";
 import { MediaExtrasResponseDto } from "./dto/media-extras-response.dto";
 import { MediaSummaryResponseDto } from "./dto/media-summary-response.dto";
+import { PremiereResponseDto } from "./dto/premiere-response.dto";
 import { SearchQueryDto } from "./dto/search-query.dto";
 import { SeasonImagesResponseDto } from "./dto/season-images-response.dto";
 import { WatchProviderCatalogResponseDto } from "./dto/watch-provider-catalog-response.dto";
@@ -67,6 +69,21 @@ export class CatalogController {
       this.tmdb.listWatchProviders(resolved),
     ]);
     return { region: resolved, regions, providers };
+  }
+
+  /**
+   * Series premiering over the next eight weeks on the networks the calendar
+   * follows (`PREMIERE_NETWORKS`), soonest first. Shared by every user
+   * reading the same language, so cached for the instance.
+   */
+  @Get("premieres")
+  @ApiOkResponse({ type: [PremiereResponseDto] })
+  async getPremieres(
+    @CurrentUser() user: JwtPayload,
+    @Query("lang") lang?: string,
+  ): Promise<PremiereDto[]> {
+    await this.domainGate.assertEnabled(user.sub, Domain.MEDIA);
+    return this.tmdb.listPremieres(safeLang(lang));
   }
 
   /**

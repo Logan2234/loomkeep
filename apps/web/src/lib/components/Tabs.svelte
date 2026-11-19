@@ -8,6 +8,7 @@
   import { layout } from "#lib/layout.svelte.js";
   import { prefersReducedMotion } from "#lib/motion.js";
   import { adjacentTab, listenTabSwipe } from "#lib/tab-swipe.js";
+  import NewBadge from "./NewBadge.svelte";
 
   let {
     tabs,
@@ -18,7 +19,12 @@
     class: className = "",
     swipe = true,
   }: {
-    tabs: (SelectOption<T> & { disabled?: boolean; disabledReason?: string })[];
+    tabs: (SelectOption<T> & {
+      disabled?: boolean;
+      disabledReason?: string;
+      /** A "Nouveau" pill after the label, see feature-badges.ts. */
+      isNew?: boolean;
+    })[];
     current: T;
     onSelect: (value: T) => void;
     /** Accessible name of the tab list. */
@@ -134,6 +140,9 @@
         : 'text-dim'}"
       onclick={() => onSelect(tab.value)}>
       {tab.label}
+      {#if tab.isNew}
+        <span class="ml-1"><NewBadge /></span>
+      {/if}
     </button>
   {/each}
 

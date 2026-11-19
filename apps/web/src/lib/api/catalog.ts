@@ -47,6 +47,10 @@ export const getSeasonImages = (sourceId: string, season: number) =>
     query: { lang: getLocale() },
   });
 
+/** Series premiering over the next eight weeks, soonest first. */
+export const getPremieres = () =>
+  typedRequest("/catalog/premieres", { query: { lang: getLocale() } });
+
 export const getWatchProviderCatalog = (region: string | undefined) =>
   typedRequest("/catalog/watch-providers", { query: { region } });
 

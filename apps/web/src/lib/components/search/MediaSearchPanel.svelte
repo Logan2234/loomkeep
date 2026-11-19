@@ -3,11 +3,7 @@
 
   import { MEDIA_TYPE_LABEL } from "#lib/constants/media-types.js";
 
-  import {
-    listTrackedMedia,
-    searchCatalog,
-    upsertLibraryEntry,
-  } from "#lib/api/client.js";
+  import { searchCatalog, upsertLibraryEntry } from "#lib/api/client.js";
   import { createApiInfiniteQuery } from "#lib/api/infinite-query.svelte.js";
   import { keys } from "#lib/api/keys.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
@@ -20,6 +16,7 @@
   import { debounce, SEARCH_DEBOUNCE_MS } from "#lib/debounce.js";
   import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
+  import { fetchTrackedMedia, trackKey } from "#lib/tracked-media.js";
   import type {
     EntryStatus,
     MediaSummaryDto,
@@ -106,17 +103,9 @@
 
   // Titles already in the library, keyed by catalogue identity, so results can
   // be flagged (and their current status shown) instead of looking already-new.
-  const trackKey = (t: MediaType, sourceId: string) => `${t}:${sourceId}`;
-
   const trackedQuery = createApiQuery(() => ({
     key: keys.library.tracked(),
-    fetch: async () =>
-      new Map<string, EntryStatus>(
-        (await listTrackedMedia()).map((e) => [
-          trackKey(e.type, e.sourceId),
-          e.status,
-        ]),
-      ),
+    fetch: fetchTrackedMedia,
   }));
   // A failed library load only costs the "already added" flag; ignore it
   // rather than surfacing an error for a secondary, non-essential lookup.

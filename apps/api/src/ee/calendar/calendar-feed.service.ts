@@ -8,6 +8,7 @@ import {
 } from "@loomkeep/shared";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
+import { TmdbProvider } from "../../catalog/providers/tmdb.provider";
 import { resolveWatchRegion } from "../../catalog/watch-region.util";
 import { AppException } from "../../common/app.exception";
 import {
@@ -23,7 +24,7 @@ import { CalendarService } from "../../library/calendar.service";
 import { notificationCopy } from "../../notifications/notification-copy";
 import { PrismaService } from "../../prisma/prisma.service";
 import type { ReleaseFeed, ReleaseFeedEntry } from "./feed.util";
-import { buildCalendarIcs } from "./ics.util";
+import { buildCalendarIcs, buildPremieresIcs } from "./ics.util";
 
 /** How far back the release feed looks, in days. */
 const RELEASES_WINDOW_DAYS = 30;
@@ -48,6 +49,12 @@ const FEED_COPY = {
   },
 } satisfies Record<CopyLocale, { title: string; description: string }>;
 
+const PREMIERES_CALENDAR_NAME = {
+  fr: "Loomkeep · Premières",
+  en: "Loomkeep · Premieres",
+  it: "Loomkeep · Prime visioni",
+} satisfies Record<CopyLocale, string>;
+
 /**
  * The release calendar as an `.ics` subscription, and the episodes already
  * out as an RSS/Atom feed, both fed through the same per-user token so
@@ -61,6 +68,7 @@ export class CalendarFeedService {
     private readonly entitlements: EntitlementService,
     private readonly calendar: CalendarService,
     private readonly config: ConfigService,
+    private readonly tmdb: TmdbProvider,
   ) {}
 
   /** The calendar for the account holding `token`, or null if none does. */
@@ -69,6 +77,21 @@ export class CalendarFeedService {
     return user
       ? buildCalendarIcs(await this.calendar.getCalendar(user.id))
       : null;
+  }
+
+  /**
+   * The series premiering over the next eight weeks, as the calendar's
+   * Premieres tab lists them, in the language of the account holding `token`.
+   */
+  async getPremieresIcs(token: string): Promise<string | null> {
+    const user = await this.premiumUserForToken(token);
+    if (!user) return null;
+
+    const locale = resolveCopyLocale(user.locale);
+    return buildPremieresIcs(await this.tmdb.listPremieres(locale), {
+      name: PREMIERES_CALENDAR_NAME[locale],
+      webOrigin: primaryWebOrigin(this.config.get<string>("WEB_ORIGIN")),
+    });
   }
 
   /**

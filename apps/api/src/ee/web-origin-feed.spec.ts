@@ -46,6 +46,7 @@ describe("feed links with a trailing slash in WEB_ORIGIN", () => {
       entitlements as never,
       null!,
       config as never,
+      null!,
     ).getReleasesFeed("token");
     expect(feed?.entries[0].link).toBe(
       "https://example.com/app/media/series/123",

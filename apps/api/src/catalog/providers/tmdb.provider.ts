@@ -6,6 +6,8 @@ import type {
   MediaSagaDto,
   PagedResult,
   PersonPageDto,
+  PremiereDto,
+  PremiereNetwork,
   SeasonImagesDto,
   StudioPageDto,
   WatchProviderDto,
@@ -15,6 +17,7 @@ import {
   ErrorCode,
   MediaSummaryDto,
   MediaType,
+  PREMIERE_NETWORKS,
   regionalLocale,
   StudioKind,
   StudioWorkOrder,
@@ -41,6 +44,7 @@ import {
   toMovieSagaMember,
   toMovieSummary,
   toPersonPage,
+  toPremiere,
   toSeasonImages,
   toStudioPage,
   toStudioWork,
@@ -56,6 +60,7 @@ import {
   type TmdbMovieDetails,
   type TmdbMovieResult,
   type TmdbPersonDetails,
+  type TmdbPremiereResult,
   type TmdbSeasonDetails,
   type TmdbSeasonImages,
   type TmdbStudio,
@@ -82,6 +87,13 @@ const STUDIO_KNOWN_FOR = 4;
 const WATCH_LIST_TTL_MS = 24 * 60 * 60 * 1000;
 
 const GALLERY_TTL_MS = 6 * 60 * 60 * 1000;
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+// Eight weeks of premieres; TMDB dates the further ones as they get announced.
+const PREMIERE_DAYS = 57;
+const PREMIERE_TTL_MS = 6 * 60 * 60 * 1000;
+// A network airs a few premieres a week: three pages of 20 cover eight weeks.
+const PREMIERE_MAX_PAGES = 3;
 const GALLERY_CACHE_SIZE = 500;
 
 // The Academy's definition of a short film.
@@ -107,6 +119,10 @@ export class TmdbProvider implements CatalogProvider {
   >();
 
   private watchRegions: { fetchedAt: number; codes: string[] } | null = null;
+  private readonly premieres = new Map<
+    string,
+    { fetchedAt: number; items: PremiereDto[] }
+  >();
 
   constructor(
     private readonly configService: ConfigService,
@@ -644,6 +660,87 @@ export class TmdbProvider implements CatalogProvider {
         language,
       },
     );
+  }
+
+  /**
+   * Series whose first episode airs from yesterday (the viewer's day may
+   * still be UTC's previous one) to eight weeks out, soonest first. The list
+   * is the same for everyone reading a language, so it is shared and cached.
+   */
+  async listPremieres(lang?: string, now = new Date()): Promise<PremiereDto[]> {
+    const language = regionalLocale(lang);
+    const from = utcDateKey(new Date(now.getTime() - DAY_MS));
+    const key = `${language}|${from}`;
+    const cached = this.premieres.get(key);
+
+    if (cached && now.getTime() - cached.fetchedAt < PREMIERE_TTL_MS) {
+      return cached.items;
+    }
+
+    const to = utcDateKey(new Date(now.getTime() + PREMIERE_DAYS * DAY_MS));
+    const perNetwork = await Promise.all(
+      PREMIERE_NETWORKS.map((network) =>
+        this.discoverPremieres(network, from, to, language),
+      ),
+    );
+    // A series on two listed networks keeps the first one of the list,
+    // which puts the worldwide streamers ahead of their partners.
+    const seen = new Set<string>();
+    const items = perNetwork
+      .flat()
+      .filter((p) => !seen.has(p.sourceId) && seen.add(p.sourceId))
+      .sort(
+        (a, b) =>
+          a.firstAirDate.localeCompare(b.firstAirDate) ||
+          b.popularity - a.popularity,
+      );
+
+    // Yesterday's lists are stale for good: drop them rather than let the
+    // map grow by one key per day and language.
+    for (const [k, entry] of this.premieres) {
+      if (now.getTime() - entry.fetchedAt >= PREMIERE_TTL_MS) {
+        this.premieres.delete(k);
+      }
+    }
+
+    this.premieres.set(key, { fetchedAt: now.getTime(), items });
+    return items;
+  }
+
+  private async discoverPremieres(
+    network: PremiereNetwork,
+    from: string,
+    to: string,
+    language: string,
+  ): Promise<PremiereDto[]> {
+    const premieres: PremiereDto[] = [];
+
+    for (let page = 1; page <= PREMIERE_MAX_PAGES; page++) {
+      const data = await this.get<TmdbDiscoverPage<TmdbPremiereResult>>(
+        "/discover/tv",
+        {
+          with_networks: String(network.id),
+          "first_air_date.gte": from,
+          "first_air_date.lte": to,
+          // Scripted and miniseries: no talk, news nor reality shows.
+          with_type: "2|4",
+          sort_by: "first_air_date.asc",
+          include_adult: "false",
+          include_null_first_air_dates: "false",
+          language,
+          page: String(page),
+        },
+      );
+
+      for (const result of data.results) {
+        const premiere = toPremiere(result, network);
+        if (premiere) premieres.push(premiere);
+      }
+
+      if (page >= data.total_pages) break;
+    }
+
+    return premieres;
   }
 
   /** This week's trending films and series, adult titles left out. */
