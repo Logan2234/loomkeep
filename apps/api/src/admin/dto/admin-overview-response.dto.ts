@@ -2,7 +2,8 @@ import type { AdminOverviewDto } from "@loomkeep/shared";
 
 export class AdminOverviewResponseDto implements AdminOverviewDto {
   accounts!: number;
-  newAccountsThisWeek!: number;
+  newAccountsLast7Days!: number;
+  connectedNow!: number;
   accountsWithPush!: number;
   pushDevices!: number;
   cachedItems!: number;

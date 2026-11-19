@@ -248,7 +248,12 @@ describe("AdminUsersController.listUsers", () => {
           AND: [{ OR: [{ mfaTotpEnabled: true }, { mfaEmailEnabled: true }] }],
           notifyNewsletter: true,
           pushSubscriptions: { some: {} },
-          refreshTokens: { some: { expiresAt: { gt: expect.any(Date) } } },
+          refreshTokens: {
+            some: {
+              expiresAt: { gt: expect.any(Date) },
+              lastUsedAt: { gte: expect.any(Date) },
+            },
+          },
         }),
       }),
     );
@@ -280,7 +285,12 @@ describe("AdminUsersController.listUsers", () => {
           mfaEmailEnabled: false,
           notifyNewsletter: false,
           pushSubscriptions: { none: {} },
-          refreshTokens: { none: { expiresAt: { gt: expect.any(Date) } } },
+          refreshTokens: {
+            none: {
+              expiresAt: { gt: expect.any(Date) },
+              lastUsedAt: { gte: expect.any(Date) },
+            },
+          },
         },
       }),
     );
