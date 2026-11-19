@@ -1,3 +1,4 @@
+import { Logger } from "@nestjs/common";
 import { vi, type Mock } from "vitest";
 import type { AgeGateService } from "../users/age-gate.service";
 import type { DomainGateService } from "../users/domain-gate.service";
@@ -42,6 +43,24 @@ describe("CatalogController.search", () => {
     expect(result.items).toEqual(
       expect.arrayContaining([expect.objectContaining({ id: "a1" })]),
     );
+  });
+
+  it("logs a provider failure instead of passing it off as no results", async () => {
+    const warn = vi
+      .spyOn(Logger.prototype, "warn")
+      .mockImplementation(() => {});
+    const controller = makeController({
+      tmdbSearch: vi.fn().mockRejectedValue(new Error("TMDB is down")),
+      anilistSearch: vi.fn().mockResolvedValue([]),
+    });
+
+    await controller.search(user, { q: "show" } as never);
+
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining("TMDB"),
+      expect.any(Error),
+    );
+    warn.mockRestore();
   });
 
   it("merges both sources' results when both succeed", async () => {

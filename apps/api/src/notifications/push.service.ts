@@ -9,6 +9,8 @@ import { FcmClient, type FcmMessage } from "./fcm.client";
 import { type PushAction, signAction } from "./notification-action";
 import { isAllowedPushEndpoint } from "./push-endpoint.validator";
 
+const WEB_PUSH_TIMEOUT_MS = 10_000;
+
 export interface PushPayload {
   title: string;
   body: string;
@@ -221,6 +223,9 @@ export class PushService {
               keys: { p256dh: sub.p256dh ?? "", auth: sub.auth ?? "" },
             },
             body,
+            // Sends run inside the request that triggered them (a comment, a
+            // follow): a push service that never answers mustn't hang it.
+            { timeout: WEB_PUSH_TIMEOUT_MS },
           );
           return { userAgent: sub.userAgent, ok: true };
         } catch (err) {

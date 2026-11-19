@@ -168,6 +168,46 @@ describe("PushService.sendToUserDetailed", () => {
   });
 });
 
+describe("PushService delivery timeout", () => {
+  it("gives the push service a bounded time to answer", async () => {
+    process.env.VAPID_PUBLIC_KEY = VAPID_KEYS.publicKey;
+    process.env.VAPID_PRIVATE_KEY = VAPID_KEYS.privateKey;
+    process.env.VAPID_SUBJECT = "mailto:admin@example.com";
+    const send = vi
+      .spyOn(webpush, "sendNotification")
+      .mockResolvedValue({} as never);
+    const prisma = {
+      pushSubscription: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            id: "sub1",
+            endpoint: ALLOWED_ENDPOINT,
+            p256dh: "p",
+            auth: "a",
+            userAgent: "Chrome",
+          },
+        ]),
+      },
+    } as unknown as PrismaService;
+
+    await new PushService(prisma).sendToUser("u1", {
+      title: "t",
+      body: "b",
+      url: "/app",
+      group: AlertGroup.ACTIVITY,
+    });
+
+    expect(send.mock.calls[0][2]).toEqual(
+      expect.objectContaining({ timeout: expect.any(Number) }),
+    );
+
+    send.mockRestore();
+    delete process.env.VAPID_PUBLIC_KEY;
+    delete process.env.VAPID_PRIVATE_KEY;
+    delete process.env.VAPID_SUBJECT;
+  });
+});
+
 describe("PushService app badge", () => {
   it("sends the app icon's badge count along with the push", async () => {
     process.env.VAPID_PUBLIC_KEY = VAPID_KEYS.publicKey;

@@ -98,13 +98,21 @@ export class NotificationDigestService {
 
     let sent = 0;
 
+    // Each user and each channel fails on its own: a failed email used to
+    // skip the same user's push digest too.
     for (const user of users) {
-      try {
-        sent += await this.deliverChannel(user, "email", user.notifyEmail);
-        sent += await this.deliverChannel(user, "push", user.notifyPush);
-      } catch (err) {
-        // One user's failure must not abort the batch.
-        this.logger.error(`Digest failed for user ${user.id}`, err);
+      for (const [channel, cadence] of [
+        ["email", user.notifyEmail],
+        ["push", user.notifyPush],
+      ] as const) {
+        try {
+          sent += await this.deliverChannel(user, channel, cadence);
+        } catch (err) {
+          this.logger.error(
+            `${channel} digest failed for user ${user.id}`,
+            err,
+          );
+        }
       }
     }
 
@@ -165,10 +173,10 @@ export class NotificationDigestService {
     });
     if (pending.length === 0) return 0;
 
-    // Shows the user muted are filtered here rather than at scan time: their
-    // rows are still marked digested below, so an episode that aired while
-    // muted never resurfaces once the user unmutes.
-    const muted = await this.mutedEpisodeIds(user.id, pending);
+    // Shows the user muted, dropped or removed are filtered here rather than
+    // at scan time: their rows are still marked digested below, so an episode
+    // that aired meanwhile never resurfaces once the show is back.
+    const muted = await this.suppressedEpisodeIds(user.id, pending);
     const movieIds = pending.flatMap((n) =>
       n.dedupeKey?.startsWith("movie:") ? [n.dedupeKey.slice(6)] : [],
     );
@@ -239,7 +247,7 @@ export class NotificationDigestService {
         period,
       );
     } else {
-      await this.push.sendToUser(user.id, {
+      const outcomes = await this.push.sendToUserDetailed(user.id, {
         title: "Loomkeep",
         body: pushBody(
           user.locale,
@@ -254,6 +262,10 @@ export class NotificationDigestService {
         url: items.length === 1 ? items[0].url : "/app/calendar",
         group: AlertGroup.RELEASES,
       });
+      // Every device failed (push service down): keep the rows for the next
+      // digest instead of marking episodes nobody was told about as sent. No
+      // device at all is another matter: nothing will ever take them.
+      if (outcomes.length > 0 && !outcomes.some((o) => o.ok)) return 0;
     }
 
     await markDigested();
@@ -261,8 +273,11 @@ export class NotificationDigestService {
     return 1;
   }
 
-  /** Episode ids, among these rows, of shows the user muted episode alerts for. */
-  private async mutedEpisodeIds(
+  /**
+   * Episode ids, among these rows, the user mustn't be told about: shows they
+   * muted episode alerts for, dropped, or no longer have in their library.
+   */
+  private async suppressedEpisodeIds(
     userId: string,
     rows: { dedupeKey: string | null }[],
   ): Promise<Set<string | null>> {
@@ -275,7 +290,17 @@ export class NotificationDigestService {
         },
         season: {
           mediaItem: {
-            entries: { some: { userId, episodeAlertsMuted: true } },
+            OR: [
+              {
+                entries: {
+                  some: {
+                    userId,
+                    OR: [{ episodeAlertsMuted: true }, { status: "DROPPED" }],
+                  },
+                },
+              },
+              { entries: { none: { userId } } },
+            ],
           },
         },
       },

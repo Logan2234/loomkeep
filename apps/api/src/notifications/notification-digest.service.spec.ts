@@ -67,7 +67,11 @@ function makeService(opts: {
         .mockResolvedValue(mutedEpisodeIds.map((id) => ({ id }))),
     },
   } as unknown as PrismaService;
-  const push = { sendToUser: vi.fn() } as unknown as PushService;
+  const push = {
+    sendToUserDetailed: vi
+      .fn()
+      .mockResolvedValue([{ userAgent: "Chrome", ok: true }]),
+  } as unknown as PushService;
   const mail = { sendEpisodeDigest: vi.fn() } as unknown as MailService;
   const entitlements = {
     isEffectivelyPremium: vi.fn().mockResolvedValue(isPremium),
@@ -184,7 +188,7 @@ describe("NotificationDigestService.runDigests", () => {
     const sent = await service.runDigests();
 
     expect(sent).toBe(1);
-    expect(push.sendToUser).toHaveBeenCalledWith(
+    expect(push.sendToUserDetailed).toHaveBeenCalledWith(
       "u1",
       expect.objectContaining({
         title: "Loomkeep",
@@ -206,7 +210,7 @@ describe("NotificationDigestService.runDigests", () => {
     });
     await service.runDigests();
 
-    expect(push.sendToUser).toHaveBeenCalledWith(
+    expect(push.sendToUserDetailed).toHaveBeenCalledWith(
       "u1",
       expect.objectContaining({ body: "New episode of Severance, out today." }),
     );
@@ -230,7 +234,7 @@ describe("NotificationDigestService.runDigests", () => {
     });
     await service.runDigests();
 
-    expect(push.sendToUser).toHaveBeenCalledWith(
+    expect(push.sendToUserDetailed).toHaveBeenCalledWith(
       "u1",
       expect.objectContaining({
         body: "2 new episodes of Severance, out in the last 7 days.",
@@ -345,6 +349,71 @@ describe("NotificationDigestService.runDigests", () => {
     expect(prisma.notification.updateMany).toHaveBeenCalledWith({
       where: { id: { in: ["n1"] } },
       data: { emailDigestedAt: monday9amParis },
+    });
+
+    vi.useRealTimers();
+  });
+
+  it("still pushes the digest when its email fails", async () => {
+    const monday9amParis = new Date("2026-08-24T07:00:00.000Z");
+    vi.useFakeTimers().setSystemTime(monday9amParis);
+
+    const { service, mail, push } = makeService({
+      notifyEmail: DigestCadence.WEEKLY,
+      notifyPush: DigestCadence.WEEKLY,
+    });
+    (mail.sendEpisodeDigest as ReturnType<typeof vi.fn>).mockRejectedValue(
+      new Error("SMTP unavailable"),
+    );
+
+    await expect(service.runDigests()).resolves.toBe(1);
+    expect(push.sendToUserDetailed).toHaveBeenCalledOnce();
+
+    vi.useRealTimers();
+  });
+
+  it("keeps the rows pending when no device received the push digest", async () => {
+    const day18hParis = new Date("2026-08-25T16:00:00.000Z");
+    vi.useFakeTimers().setSystemTime(day18hParis);
+
+    const { service, push, prisma } = makeService({
+      notifyEmail: DigestCadence.DISABLED,
+      notifyPush: DigestCadence.DAILY,
+      isPremium: true,
+    });
+    (push.sendToUserDetailed as ReturnType<typeof vi.fn>).mockResolvedValue([
+      { userAgent: "Chrome", ok: false, error: "HTTP 500" },
+    ]);
+
+    await expect(service.runDigests()).resolves.toBe(0);
+    expect(prisma.notification.updateMany).not.toHaveBeenCalled();
+
+    vi.useRealTimers();
+  });
+
+  it("leaves out episodes of shows dropped or no longer in the library", async () => {
+    const monday9amParis = new Date("2026-08-24T07:00:00.000Z");
+    vi.useFakeTimers().setSystemTime(monday9amParis);
+
+    const { service, prisma } = makeService({
+      notifyEmail: DigestCadence.WEEKLY,
+    });
+    await service.runDigests();
+
+    const [[query]] = (prisma.episode.findMany as ReturnType<typeof vi.fn>).mock
+      .calls;
+    expect(query.where.season.mediaItem).toEqual({
+      OR: [
+        {
+          entries: {
+            some: {
+              userId: "u1",
+              OR: [{ episodeAlertsMuted: true }, { status: "DROPPED" }],
+            },
+          },
+        },
+        { entries: { none: { userId: "u1" } } },
+      ],
     });
 
     vi.useRealTimers();

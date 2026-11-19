@@ -37,12 +37,14 @@
 		output stdout
 		# Feed and unsubscribe links carry their secret in `?token=` (a
 		# calendar app can't send a header), so it never reaches Loki. Caddy
-		# already leaves Cookie and Authorization out of its logs.
+		# already leaves Cookie and Authorization out of its logs, but not the
+		# Android widgets' token, which can write.
 		format filter {
 			wrap json
 			request>uri query {
 				replace token REDACTED
 			}
+			request>headers>X-Widget-Token delete
 		}
 	}
 

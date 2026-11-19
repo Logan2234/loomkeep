@@ -105,7 +105,12 @@ export class BookItemService {
 
   /** Free-text catalogue search. `lang`: the signed-in user's locale, when known. */
   async search(query: string, lang?: string): Promise<BookSummaryDto[]> {
-    return this.openLibraryProvider.search(query, lang).catch(() => []);
+    // An outage reads as "no results" to the user; the log is how an operator
+    // tells the two apart.
+    return this.openLibraryProvider.search(query, lang).catch((err) => {
+      this.logger.warn("Open Library search failed", err);
+      return [];
+    });
   }
 
   /**

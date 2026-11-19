@@ -43,12 +43,11 @@ REVIEWED event must also pass the review's own audience, since it carries
 the rating.
 
 `Report` is a polymorphic moderation target (`ReportTargetType`:
-COMMENT/REVIEW/USER/LIST) feeding the admin `/admin/reports` queue. Only
-`POST /comments/:id/report` exists today, so COMMENT is the only kind a user
-can actually file; `ReportService.resolveTarget` already handles USER and
-LIST too (so the admin queue can render them), modelled ahead of a future
-"report a profile/list" entry point with no schema change. REVIEW has
-neither a create path nor a `resolveTarget` case yet.
+COMMENT/REVIEW/USER/LIST/MESSAGE) feeding the admin `/admin/reports` queue.
+Each kind has its own entry point — `POST /comments/:id/report`,
+`POST /reviews/:reviewId/report`, `POST /social/users/:username/report`,
+`POST /lists/:id/report` and `POST /chat/messages/:id/report` — and
+`ReportService.resolveTarget` renders all five in the admin queue.
 
 ## GHOST / Figurant mode
 
