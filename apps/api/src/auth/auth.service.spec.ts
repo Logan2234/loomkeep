@@ -141,6 +141,7 @@ function makeService(adminEmail?: string, registrationEnabled?: string) {
     sendPasswordChanged: vi.fn(),
     sendNewDeviceLogin: vi.fn(),
     sendMfaEmailCode: vi.fn(),
+    isConfigured: vi.fn().mockReturnValue(false),
   } as unknown as MailService;
 
   const security = {
@@ -857,6 +858,50 @@ describe("AuthService admin bootstrap (ADMIN_EMAIL)", () => {
       }),
     );
     expect(result.user.role).toBe("USER");
+  });
+
+  it("does not promote an unverified address when the instance can send email", async () => {
+    const { service, prisma, mail } = makeService("alice@example.com");
+    (mail.isConfigured as Mock).mockReturnValue(true);
+    const passwordHash = await bcrypt.hash("correct-password", 4);
+    const user = makeUser({ passwordHash, role: "USER", emailVerified: false });
+    (prisma.user.findFirst as Mock).mockResolvedValue(user);
+
+    const result = asAuthResult(
+      await service.login({
+        identifier: "alice@example.com",
+        password: "correct-password",
+      }),
+    );
+
+    expect(prisma.user.update).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ role: expect.anything() }),
+      }),
+    );
+    expect(result.user.role).toBe("USER");
+  });
+
+  it("promotes the verified address when the instance can send email", async () => {
+    const { service, prisma, mail } = makeService("alice@example.com");
+    (mail.isConfigured as Mock).mockReturnValue(true);
+    const passwordHash = await bcrypt.hash("correct-password", 4);
+    const user = makeUser({ passwordHash, role: "USER", emailVerified: true });
+    (prisma.user.findFirst as Mock).mockResolvedValue(user);
+    (prisma.user.update as Mock).mockImplementation(
+      async ({ data }: { data: Partial<User> }) =>
+        makeUser({ ...user, ...data }),
+    );
+
+    await service.login({
+      identifier: "alice@example.com",
+      password: "correct-password",
+    });
+
+    expect(prisma.user.update).toHaveBeenCalledWith({
+      where: { id: user.id },
+      data: { role: "ADMIN" },
+    });
   });
 
   it("does nothing when ADMIN_EMAIL is unset (hosted mode)", async () => {
