@@ -787,7 +787,10 @@ export class NotificationService {
       select: { id: true, data: true, readAt: true },
     });
 
-    if (!existing) return this.create(input);
+    if (!existing) {
+      await this.create(input);
+      return;
+    }
 
     if (existing.readAt) {
       await this.prisma.notification.update({
