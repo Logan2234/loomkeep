@@ -2,7 +2,9 @@ import { m } from "#lib/paraglide/messages.js";
 
 export const DARK_THEME = {
   mode: "dark" as const,
-  label: m.common_theme_dark(),
+  get label() {
+    return m.common_theme_dark();
+  },
   bg: "#0c0d10",
   surface: "#15171c",
   line: "#2a2e38",
@@ -11,7 +13,9 @@ export const DARK_THEME = {
 
 export const LIGHT_THEME = {
   mode: "light" as const,
-  label: m.common_theme_light(),
+  get label() {
+    return m.common_theme_light();
+  },
   bg: "#f2ebdc",
   surface: "#ffffff",
   line: "#d9cba9",
@@ -20,7 +24,13 @@ export const LIGHT_THEME = {
 
 export const THEME_DEFINITIONS = [
   // Drawn from the two below, split along a diagonal.
-  { ...DARK_THEME, mode: "system" as const, label: m.common_system() },
+  {
+    ...DARK_THEME,
+    mode: "system" as const,
+    get label() {
+      return m.common_system();
+    },
+  },
   DARK_THEME,
   LIGHT_THEME,
 ];

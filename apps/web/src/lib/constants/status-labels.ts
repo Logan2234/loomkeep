@@ -13,38 +13,69 @@ export const MEDIA_STATUS_META: Record<
   EntryStatus,
   { label: string; cls: string }
 > = {
-  PLANNED: { label: m.media_status_planned(), cls: "bg-surface-2 text-dim" },
+  PLANNED: {
+    get label() {
+      return m.media_status_planned();
+    },
+    cls: "bg-surface-2 text-dim",
+  },
   WATCHING: {
-    label: m.library_status_in_progress(),
+    get label() {
+      return m.library_status_in_progress();
+    },
     cls: "bg-accent text-accent-fg",
   },
   UP_TO_DATE: {
-    label: m.media_status_caught_up(),
+    get label() {
+      return m.media_status_caught_up();
+    },
     cls: "border border-success text-success",
   },
   COMPLETED: {
-    label: m.library_status_completed(),
+    get label() {
+      return m.library_status_completed();
+    },
     cls: "bg-success/15 text-success",
   },
   DROPPED: {
-    label: m.library_status_dropped(),
+    get label() {
+      return m.library_status_dropped();
+    },
     cls: "border border-danger text-danger",
   },
 };
 
 export const MEDIA_STATUS_DESC: Record<EntryStatus, string> = {
-  PLANNED: m.media_status_planned_hint(),
-  WATCHING: m.media_status_watching_hint(),
-  UP_TO_DATE: m.media_status_caught_up_hint(),
-  COMPLETED: m.media_status_completed_hint(),
-  DROPPED: m.library_status_dropped_description(),
+  get PLANNED() {
+    return m.media_status_planned_hint();
+  },
+  get WATCHING() {
+    return m.media_status_watching_hint();
+  },
+  get UP_TO_DATE() {
+    return m.media_status_caught_up_hint();
+  },
+  get COMPLETED() {
+    return m.media_status_completed_hint();
+  },
+  get DROPPED() {
+    return m.library_status_dropped_description();
+  },
 };
 
 export const BOOK_STATUS_LABELS: Record<BookStatus, string> = {
-  TO_READ: m.book_status_to_read(),
-  READING: m.book_status_reading(),
-  READ: m.book_status_read(),
-  DROPPED: m.library_status_dropped(),
+  get TO_READ() {
+    return m.book_status_to_read();
+  },
+  get READING() {
+    return m.book_status_reading();
+  },
+  get READ() {
+    return m.book_status_read();
+  },
+  get DROPPED() {
+    return m.library_status_dropped();
+  },
 };
 
 export const BOOK_STATUS_ORDER: BookStatus[] = [
@@ -58,20 +89,45 @@ export const BOOK_STATUS_META: Record<
   BookStatus,
   { label: string; cls: string }
 > = {
-  TO_READ: { label: m.book_status_to_read(), cls: "bg-surface-2 text-dim" },
-  READING: { label: m.book_status_reading(), cls: "bg-accent text-accent-fg" },
-  READ: { label: m.book_status_read(), cls: "bg-success/15 text-success" },
+  TO_READ: {
+    get label() {
+      return m.book_status_to_read();
+    },
+    cls: "bg-surface-2 text-dim",
+  },
+  READING: {
+    get label() {
+      return m.book_status_reading();
+    },
+    cls: "bg-accent text-accent-fg",
+  },
+  READ: {
+    get label() {
+      return m.book_status_read();
+    },
+    cls: "bg-success/15 text-success",
+  },
   DROPPED: {
-    label: m.library_status_dropped(),
+    get label() {
+      return m.library_status_dropped();
+    },
     cls: "border border-danger text-danger",
   },
 };
 
 export const BOOK_STATUS_DESC: Record<BookStatus, string> = {
-  TO_READ: m.library_status_backlog_description(),
-  READING: m.book_status_reading_description(),
-  READ: m.book_status_read_description(),
-  DROPPED: m.library_status_dropped_description(),
+  get TO_READ() {
+    return m.library_status_backlog_description();
+  },
+  get READING() {
+    return m.book_status_reading_description();
+  },
+  get READ() {
+    return m.book_status_read_description();
+  },
+  get DROPPED() {
+    return m.library_status_dropped_description();
+  },
 };
 
 export const BOOK_STATUS_SEG_ACTIVE: Record<BookStatus, string> = {
@@ -82,10 +138,18 @@ export const BOOK_STATUS_SEG_ACTIVE: Record<BookStatus, string> = {
 };
 
 export const GAME_STATUS_LABELS: Record<GameStatus, string> = {
-  BACKLOG: m.game_status_backlog(),
-  PLAYING: m.game_status_playing(),
-  COMPLETED: m.library_status_completed(),
-  DROPPED: m.library_status_dropped(),
+  get BACKLOG() {
+    return m.game_status_backlog();
+  },
+  get PLAYING() {
+    return m.game_status_playing();
+  },
+  get COMPLETED() {
+    return m.library_status_completed();
+  },
+  get DROPPED() {
+    return m.library_status_dropped();
+  },
 };
 
 export const GAME_STATUS_ORDER: GameStatus[] = [
@@ -99,23 +163,45 @@ export const GAME_STATUS_META: Record<
   GameStatus,
   { label: string; cls: string }
 > = {
-  BACKLOG: { label: m.game_status_backlog(), cls: "bg-surface-2 text-dim" },
-  PLAYING: { label: m.game_status_playing(), cls: "bg-accent text-accent-fg" },
+  BACKLOG: {
+    get label() {
+      return m.game_status_backlog();
+    },
+    cls: "bg-surface-2 text-dim",
+  },
+  PLAYING: {
+    get label() {
+      return m.game_status_playing();
+    },
+    cls: "bg-accent text-accent-fg",
+  },
   COMPLETED: {
-    label: m.library_status_completed(),
+    get label() {
+      return m.library_status_completed();
+    },
     cls: "bg-success/15 text-success",
   },
   DROPPED: {
-    label: m.library_status_dropped(),
+    get label() {
+      return m.library_status_dropped();
+    },
     cls: "border border-danger text-danger",
   },
 };
 
 export const GAME_STATUS_DESC: Record<GameStatus, string> = {
-  BACKLOG: m.library_status_backlog_description(),
-  PLAYING: m.game_status_playing_description(),
-  COMPLETED: m.game_status_completed_description(),
-  DROPPED: m.library_status_dropped_description(),
+  get BACKLOG() {
+    return m.library_status_backlog_description();
+  },
+  get PLAYING() {
+    return m.game_status_playing_description();
+  },
+  get COMPLETED() {
+    return m.game_status_completed_description();
+  },
+  get DROPPED() {
+    return m.library_status_dropped_description();
+  },
 };
 
 export const GAME_STATUS_SEG_ACTIVE: Record<GameStatus, string> = {
@@ -126,8 +212,12 @@ export const GAME_STATUS_SEG_ACTIVE: Record<GameStatus, string> = {
 };
 
 export const MUSIC_STATUS_LABELS: Record<MusicStatus, string> = {
-  TO_LISTEN: m.music_status_to_listen(),
-  LISTENED: m.music_status_listened(),
+  get TO_LISTEN() {
+    return m.music_status_to_listen();
+  },
+  get LISTENED() {
+    return m.music_status_listened();
+  },
 };
 
 export const MUSIC_STATUS_ORDER: MusicStatus[] = ["TO_LISTEN", "LISTENED"];
@@ -137,18 +227,26 @@ export const MUSIC_STATUS_META: Record<
   { label: string; cls: string }
 > = {
   TO_LISTEN: {
-    label: m.music_status_to_listen(),
+    get label() {
+      return m.music_status_to_listen();
+    },
     cls: "bg-surface-2 text-dim",
   },
   LISTENED: {
-    label: m.music_status_listened(),
+    get label() {
+      return m.music_status_listened();
+    },
     cls: "bg-success/15 text-success",
   },
 };
 
 export const MUSIC_STATUS_DESC: Record<MusicStatus, string> = {
-  TO_LISTEN: m.music_status_to_listen_description(),
-  LISTENED: m.music_status_listened_description(),
+  get TO_LISTEN() {
+    return m.music_status_to_listen_description();
+  },
+  get LISTENED() {
+    return m.music_status_listened_description();
+  },
 };
 
 export const MUSIC_STATUS_SEG_ACTIVE: Record<MusicStatus, string> = {

@@ -67,43 +67,59 @@ export interface SettingsGroupDef {
 export const SETTINGS_GROUPS: SettingsGroupDef[] = [
   {
     id: "account",
-    label: m.common_account(),
+    get label() {
+      return m.common_account();
+    },
     sections: [
       {
         slug: "security",
-        label: m.settings_nav_identifiers(),
+        get label() {
+          return m.settings_nav_identifiers();
+        },
         icon: "shield",
-        description: m.settings_identifiers_description(),
+        get description() {
+          return m.settings_identifiers_description();
+        },
         keywords: ["securite", "security", "compte", "account", "login"],
         legacyHash: "securite",
         entries: [
           {
             id: "username",
-            label: m.common_username(),
+            get label() {
+              return m.common_username();
+            },
             keywords: ["pseudo", "handle", "identifiant"],
           },
           {
             id: "email",
-            label: m.common_email(),
+            get label() {
+              return m.common_email();
+            },
             keywords: ["mail", "adresse", "verification"],
           },
           {
             id: "password",
-            label: m.common_password(),
+            get label() {
+              return m.common_password();
+            },
             keywords: ["password", "mot de passe", "motdepasse"],
           },
         ],
       },
       {
         slug: "two-factor-authentication",
-        label: m.settings_section_mfa(),
+        get label() {
+          return m.settings_section_mfa();
+        },
         icon: "lock",
         keywords: ["2fa", "mfa", "totp", "otp", "authenticator"],
         legacyHash: "mfa",
         entries: [
           {
             id: "mfa-totp",
-            label: m.auth_mfa_totp_label(),
+            get label() {
+              return m.auth_mfa_totp_label();
+            },
             keywords: [
               "totp",
               "authenticator",
@@ -115,12 +131,16 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
           },
           {
             id: "mfa-email",
-            label: m.auth_mfa_email_label(),
+            get label() {
+              return m.auth_mfa_email_label();
+            },
             keywords: ["code", "otp", "email verification", "one time code"],
           },
           {
             id: "mfa-webauthn",
-            label: m.common_security_key(),
+            get label() {
+              return m.common_security_key();
+            },
             keywords: [
               "webauthn",
               "passkey",
@@ -133,7 +153,9 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
           },
           {
             id: "mfa-passwordless",
-            label: m.settings_mfa_passwordless_label(),
+            get label() {
+              return m.settings_mfa_passwordless_label();
+            },
             keywords: [
               "passwordless",
               "sans mot de passe",
@@ -143,33 +165,43 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
           },
           {
             id: "mfa-recovery",
-            label: m.settings_mfa_recovery_title(),
+            get label() {
+              return m.settings_mfa_recovery_title();
+            },
             keywords: ["recovery", "secours", "backup", "restore", "codes"],
           },
         ],
       },
       {
         slug: "integrations",
-        label: m.settings_integrations_title(),
+        get label() {
+          return m.settings_integrations_title();
+        },
         icon: "key",
         keywords: ["api", "token", "jeton", "integration", "script"],
         newBadgeKey: "integrations",
         entries: [
           {
             id: "api-keys",
-            label: m.settings_api_keys_title(),
+            get label() {
+              return m.settings_api_keys_title();
+            },
             keywords: ["api key", "cle", "token", "bearer"],
           },
           {
             id: "subscription-links",
-            label: m.settings_subscription_links_title(),
+            get label() {
+              return m.settings_subscription_links_title();
+            },
             keywords: ["ics", "calendrier", "calendar", "atom", "rss", "flux"],
           },
         ],
       },
       {
         slug: "delete-account",
-        label: m.settings_delete_account_button(),
+        get label() {
+          return m.settings_delete_account_button();
+        },
         icon: "trash",
         keywords: ["danger", "delete", "supprimer", "rgpd", "fermer"],
         danger: true,
@@ -180,11 +212,15 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
   },
   {
     id: "privacy",
-    label: m.common_privacy(),
+    get label() {
+      return m.common_privacy();
+    },
     sections: [
       {
         slug: "privacy",
-        label: m.settings_profile_visibility(),
+        get label() {
+          return m.settings_profile_visibility();
+        },
         icon: "eye",
         keywords: ["privacy", "public", "prive", "fantome", "ghost"],
         social: true,
@@ -193,7 +229,9 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
         entries: [
           {
             id: "profile-access",
-            label: m.settings_privacy_profile_label(),
+            get label() {
+              return m.settings_privacy_profile_label();
+            },
             keywords: [
               "profile access",
               "public",
@@ -206,7 +244,9 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
           },
           {
             id: "review-visibility",
-            label: m.settings_privacy_default_reviews(),
+            get label() {
+              return m.settings_privacy_default_reviews();
+            },
             keywords: [
               "avis",
               "notes",
@@ -221,7 +261,9 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
           },
           {
             id: "list-visibility",
-            label: m.settings_privacy_default_lists(),
+            get label() {
+              return m.settings_privacy_default_lists();
+            },
             keywords: [
               "listes",
               "lists",
@@ -235,7 +277,9 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
           },
           {
             id: "hide-progression",
-            label: m.settings_hide_progression(),
+            get label() {
+              return m.settings_hide_progression();
+            },
             keywords: [
               "progression",
               "avancement",
@@ -247,17 +291,23 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
           },
           {
             id: "chat-presence",
-            label: m.settings_chat_presence(),
+            get label() {
+              return m.settings_chat_presence();
+            },
             keywords: ["messages", "chat", "en ligne", "online", "presence"],
           },
           {
             id: "chat-read-receipts",
-            label: m.settings_chat_read_receipts(),
+            get label() {
+              return m.settings_chat_read_receipts();
+            },
             keywords: ["messages", "chat", "vu", "lu", "read", "seen"],
           },
           {
             id: "chat-share-providers",
-            label: m.settings_chat_share_providers(),
+            get label() {
+              return m.settings_chat_share_providers();
+            },
             keywords: [
               "messages",
               "chat",
@@ -272,24 +322,32 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
       },
       {
         slug: "content",
-        label: m.settings_section_content(),
+        get label() {
+          return m.settings_section_content();
+        },
         icon: "eye-off",
         keywords: ["contenu", "content", "age"],
         legacyHash: "contenu",
         entries: [
           {
             id: "birthdate",
-            label: m.common_birthdate(),
+            get label() {
+              return m.common_birthdate();
+            },
             keywords: ["naissance", "birthday", "age", "date"],
           },
           {
             id: "adult-content",
-            label: m.settings_adult_content_label(),
+            get label() {
+              return m.settings_adult_content_label();
+            },
             keywords: ["adulte", "adult", "18", "nsfw", "hentai"],
           },
           {
             id: "spoiler-sensitivity",
-            label: m.settings_spoiler_sensitivity_label(),
+            get label() {
+              return m.settings_spoiler_sensitivity_label();
+            },
             keywords: [
               "spoiler",
               "spoilers",
@@ -306,7 +364,9 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
       },
       {
         slug: "blocked-users",
-        label: m.settings_blocked_users_title(),
+        get label() {
+          return m.settings_blocked_users_title();
+        },
         icon: "users",
         keywords: [
           "blocked",
@@ -323,7 +383,9 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
         entries: [
           {
             id: "blocked-users-list",
-            label: m.settings_blocked_users_title(),
+            get label() {
+              return m.settings_blocked_users_title();
+            },
             keywords: [
               "blocked",
               "block",
@@ -340,11 +402,15 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
   },
   {
     id: "app",
-    label: m.settings_nav_group_app(),
+    get label() {
+      return m.settings_nav_group_app();
+    },
     sections: [
       {
         slug: "appearance",
-        label: m.settings_appearance_title(),
+        get label() {
+          return m.settings_appearance_title();
+        },
         icon: "sun",
         keywords: ["apparence", "appearance", "ui"],
         legacyHash: "apparence",
@@ -352,7 +418,9 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
         entries: [
           {
             id: "home-layout",
-            label: m.settings_home_layout_title(),
+            get label() {
+              return m.settings_home_layout_title();
+            },
             keywords: [
               "accueil",
               "home",
@@ -369,12 +437,16 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
           },
           {
             id: "theme",
-            label: m.common_theme(),
+            get label() {
+              return m.common_theme();
+            },
             keywords: ["theme", "sombre", "clair", "dark", "light", "mode"],
           },
           {
             id: "language",
-            label: m.common_language(),
+            get label() {
+              return m.common_language();
+            },
             keywords: [
               "langue",
               "language",
@@ -386,7 +458,9 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
           },
           {
             id: "accessibility",
-            label: m.settings_accessibility_title(),
+            get label() {
+              return m.settings_accessibility_title();
+            },
             keywords: [
               "accessibility",
               "accessibilite",
@@ -401,7 +475,9 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
           },
           {
             id: "nav-style",
-            label: m.settings_nav_style_label(),
+            get label() {
+              return m.settings_nav_style_label();
+            },
             keywords: [
               "navigation",
               "rail",
@@ -414,7 +490,9 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
           },
           {
             id: "mobile-nav",
-            label: m.settings_mobile_nav_bar_label(),
+            get label() {
+              return m.settings_mobile_nav_bar_label();
+            },
             compactOnly: true,
             keywords: [
               "raccourcis",
@@ -439,9 +517,13 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
       },
       {
         slug: "domains",
-        label: m.common_domains(),
+        get label() {
+          return m.common_domains();
+        },
         icon: "library",
-        description: m.settings_domains_description(),
+        get description() {
+          return m.settings_domains_description();
+        },
         keywords: [
           "domaines",
           "domains",
@@ -455,41 +537,57 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
         entries: [
           {
             id: "domain-media",
-            label: m.common_Media(),
+            get label() {
+              return m.common_Media();
+            },
             keywords: ["video", "movies", "films", "series", "anime", "tv"],
           },
           {
             id: "domain-games",
-            label: m.common_Games(),
+            get label() {
+              return m.common_Games();
+            },
             keywords: ["games", "game", "gaming", "jeux"],
           },
           {
             id: "domain-books",
-            label: m.common_Books(),
+            get label() {
+              return m.common_Books();
+            },
             keywords: ["books", "book", "livres", "reading"],
           },
           {
             id: "domain-music",
-            label: m.common_Music(),
+            get label() {
+              return m.common_Music();
+            },
             keywords: ["music", "musique", "albums", "artists"],
           },
           {
             id: "domain-podcasts",
-            label: m.common_Podcasts(),
+            get label() {
+              return m.common_Podcasts();
+            },
             keywords: ["podcast", "podcasts", "episodes"],
           },
           {
             id: "domain-boardgames",
-            label: m.common_Boardgames(),
+            get label() {
+              return m.common_Boardgames();
+            },
             keywords: ["board game", "boardgames", "jeu de societe"],
           },
         ],
       },
       {
         slug: "streaming",
-        label: m.settings_streaming_title(),
+        get label() {
+          return m.settings_streaming_title();
+        },
         icon: "tv",
-        description: m.settings_streaming_description(),
+        get description() {
+          return m.settings_streaming_description();
+        },
         keywords: [
           "streaming",
           "services",
@@ -504,19 +602,25 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
         entries: [
           {
             id: "streaming-region",
-            label: m.settings_streaming_region_label(),
+            get label() {
+              return m.settings_streaming_region_label();
+            },
             keywords: ["pays", "country", "region"],
           },
           {
             id: "streaming-services",
-            label: m.settings_streaming_title(),
+            get label() {
+              return m.settings_streaming_title();
+            },
             keywords: ["netflix", "canal", "disney", "prime", "crunchyroll"],
           },
         ],
       },
       {
         slug: "communications",
-        label: m.settings_section_communications(),
+        get label() {
+          return m.settings_section_communications();
+        },
         icon: "bell",
         keywords: ["notifications", "emails", "alertes", "cloche", "push"],
         newBadgeKey: "alert-settings",
@@ -524,12 +628,16 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
         entries: [
           {
             id: "timezone",
-            label: m.common_timezone(),
+            get label() {
+              return m.common_timezone();
+            },
             keywords: ["fuseau", "timezone", "heure", "horaire", "utc"],
           },
           {
             id: "email-digest",
-            label: m.common_email(),
+            get label() {
+              return m.common_email();
+            },
             keywords: [
               "resume",
               "digest",
@@ -544,12 +652,16 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
           },
           {
             id: "push",
-            label: m.common_push_notifications(),
+            get label() {
+              return m.common_push_notifications();
+            },
             keywords: ["push", "alerte", "notification", "appareil"],
           },
           {
             id: "push-digest",
-            label: m.settings_communications_releases_title(),
+            get label() {
+              return m.settings_communications_releases_title();
+            },
             keywords: [
               "push",
               "episodes",
@@ -569,17 +681,23 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
           },
           {
             id: "activity-alerts",
-            label: m.common_activity(),
+            get label() {
+              return m.common_activity();
+            },
             keywords: ["reponses", "mentions", "abonnes", "listes", "import"],
           },
           {
             id: "admin-alerts",
-            label: m.settings_communications_admin_title(),
+            get label() {
+              return m.settings_communications_admin_title();
+            },
             keywords: ["signalements", "taches", "quota", "inscription"],
           },
           {
             id: "newsletter",
-            label: m.common_newsletter(),
+            get label() {
+              return m.common_newsletter();
+            },
             keywords: ["newsletter", "nouveautes", "release"],
           },
         ],
@@ -588,11 +706,15 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
   },
   {
     id: "data",
-    label: m.settings_nav_group_data(),
+    get label() {
+      return m.settings_nav_group_data();
+    },
     sections: [
       {
         slug: "import",
-        label: m.common_import(),
+        get label() {
+          return m.common_import();
+        },
         icon: "download",
         keywords: [
           "import",
@@ -622,7 +744,9 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
         entries: [
           {
             id: "import-history",
-            label: m.settings_import_history_title(),
+            get label() {
+              return m.settings_import_history_title();
+            },
             keywords: [
               "history",
               "historique",
@@ -633,23 +757,33 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
           },
           ...Object.entries(IMPORTS_DEFINITION).map(([id, source]) => ({
             id: `import-source-${id}`,
-            label: source.label,
-            keywords: [id, source.label, source.description],
+            get label() {
+              return source.label;
+            },
+            get keywords() {
+              return [id, source.label, source.description];
+            },
           })),
         ],
       },
       {
         slug: "export",
-        label: m.common_export(),
+        get label() {
+          return m.common_export();
+        },
         icon: "archive",
-        description: m.settings_export_body(),
+        get description() {
+          return m.settings_export_body();
+        },
         keywords: ["export", "json", "csv", "telecharger", "download", "rgpd"],
         legacyHash: "export",
         newBadgeKey: "migration-export",
         entries: [
           {
             id: "export-json",
-            label: m.settings_export_json_title(),
+            get label() {
+              return m.settings_export_json_title();
+            },
             keywords: ["json", "full export", "backup", "data copy"],
           },
           {
@@ -666,7 +800,9 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
           },
           {
             id: "export-services",
-            label: m.settings_export_services_title(),
+            get label() {
+              return m.settings_export_services_title();
+            },
             keywords: ["letterboxd", "goodreads", "storygraph", "migrate"],
           },
         ],
@@ -675,11 +811,15 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
   },
   {
     id: "loomkeep",
-    label: m.common_loomkeep(),
+    get label() {
+      return m.common_loomkeep();
+    },
     sections: [
       {
         slug: "help",
-        label: `${m.common_help()} & ${m.common_feedback()}`,
+        get label() {
+          return `${m.common_help()} & ${m.common_feedback()}`;
+        },
         icon: "question",
         keywords: [
           "aide",
@@ -695,52 +835,72 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
         entries: [
           {
             id: "help-idea",
-            label: m.common_suggest_idea(),
+            get label() {
+              return m.common_suggest_idea();
+            },
             keywords: ["feature", "idee"],
           },
           {
             id: "help-bug",
-            label: m.common_report_bug(),
+            get label() {
+              return m.common_report_bug();
+            },
             keywords: ["bug", "probleme"],
           },
           {
             id: "help-roadmap",
-            label: m.settings_help_roadmap(),
+            get label() {
+              return m.settings_help_roadmap();
+            },
             keywords: ["roadmap"],
           },
           {
             id: "help-changelog",
-            label: m.settings_help_changelog(),
+            get label() {
+              return m.settings_help_changelog();
+            },
             keywords: ["changelog"],
           },
           {
             id: "help-docs",
-            label: m.settings_help_docs(),
+            get label() {
+              return m.settings_help_docs();
+            },
             keywords: ["documentation", "docs", "guide", "api", "self-host"],
           },
           {
             id: "help-faq",
-            label: m.settings_help_faq(),
+            get label() {
+              return m.settings_help_faq();
+            },
             keywords: ["faq", "questions"],
           },
           {
             id: "help-status",
-            label: m.settings_help_status(),
+            get label() {
+              return m.settings_help_status();
+            },
             keywords: ["status", "statut", "uptime", "panne", "outage"],
           },
           {
             id: "help-chat",
-            label: m.settings_help_chat_title(),
+            get label() {
+              return m.settings_help_chat_title();
+            },
             keywords: ["chat", "developer", "message", "contact"],
           },
           {
             id: "feedback-widget",
-            label: m.settings_feedback_widget(),
+            get label() {
+              return m.settings_feedback_widget();
+            },
             keywords: ["avis", "feedback", "quackback", "bouton", "launcher"],
           },
           {
             id: "help-onboarding",
-            label: m.settings_help_onboarding_title(),
+            get label() {
+              return m.settings_help_onboarding_title();
+            },
             keywords: [
               "onboarding",
               "bienvenue",
@@ -751,7 +911,9 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
           },
           {
             id: "help-shortcuts",
-            label: m.settings_shortcuts_title(),
+            get label() {
+              return m.settings_shortcuts_title();
+            },
             keywords: [
               "shortcuts",
               "raccourcis",
@@ -767,9 +929,13 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
       },
       {
         slug: "support",
-        label: m.settings_section_support(),
+        get label() {
+          return m.settings_section_support();
+        },
         icon: "sparkles",
-        description: m.settings_support_body(),
+        get description() {
+          return m.settings_support_body();
+        },
         keywords: [
           "don",
           "donate",
@@ -807,9 +973,13 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
       },
       {
         slug: "data-sources",
-        label: m.settings_datasources_title(),
+        get label() {
+          return m.settings_datasources_title();
+        },
         icon: "database",
-        description: m.settings_datasources_body(),
+        get description() {
+          return m.settings_datasources_body();
+        },
         keywords: [
           "sources",
           "tmdb",
@@ -858,23 +1028,31 @@ export const SETTINGS_SECTIONS: SettingsSectionDef[] = SETTINGS_GROUPS.flatMap(
 const SETTINGS_SUBPAGES: SettingsSectionDef[] = [
   {
     slug: "security/devices",
-    label: m.settings_sessions_title(),
+    get label() {
+      return m.settings_sessions_title();
+    },
     icon: "monitor",
     parent: "security",
     keywords: ["sessions", "devices", "deconnecter", "logout"],
     entries: [
       {
         id: "sessions-revoke-all",
-        label: m.settings_sessions_disconnect_all(),
+        get label() {
+          return m.settings_sessions_disconnect_all();
+        },
         keywords: ["revoke", "deconnexion"],
       },
     ],
   },
   {
     slug: "security/activity",
-    label: m.settings_activity_title(),
+    get label() {
+      return m.settings_activity_title();
+    },
     icon: "activity",
-    description: m.settings_activity_subtitle(),
+    get description() {
+      return m.settings_activity_subtitle();
+    },
     parent: "security",
     keywords: [
       "activite",

@@ -24,7 +24,9 @@ export const DOMAINS: Record<
       return m.common_Media();
     },
     icon: "tv",
-    searchHint: m.search_domain_media(),
+    get searchHint() {
+      return m.search_domain_media();
+    },
     accent: "var(--stat-media)",
   },
   [Domain.GAMES]: {
@@ -33,7 +35,9 @@ export const DOMAINS: Record<
       return m.common_Games();
     },
     icon: "gamepad",
-    searchHint: m.search_domain_games(),
+    get searchHint() {
+      return m.search_domain_games();
+    },
     accent: "var(--stat-games)",
   },
   [Domain.BOOKS]: {
@@ -42,7 +46,9 @@ export const DOMAINS: Record<
       return m.common_Books();
     },
     icon: "book",
-    searchHint: m.search_domain_books(),
+    get searchHint() {
+      return m.search_domain_books();
+    },
     accent: "var(--stat-books)",
   },
   [Domain.MUSIC]: {
@@ -51,7 +57,9 @@ export const DOMAINS: Record<
       return m.common_Music();
     },
     icon: "music",
-    searchHint: m.search_domain_music(),
+    get searchHint() {
+      return m.search_domain_music();
+    },
     accent: "var(--stat-music)",
   },
   [Domain.PODCASTS]: {
@@ -61,7 +69,9 @@ export const DOMAINS: Record<
     },
     icon: "podcast",
     comingSoon: true,
-    searchHint: m.search_domain_podcasts(),
+    get searchHint() {
+      return m.search_domain_podcasts();
+    },
     accent: "var(--dim)",
   },
   [Domain.BOARDGAMES]: {
@@ -71,7 +81,9 @@ export const DOMAINS: Record<
     },
     icon: "boardgame",
     comingSoon: true,
-    searchHint: m.search_domain_boardgames(),
+    get searchHint() {
+      return m.search_domain_boardgames();
+    },
     accent: "var(--dim)",
   },
 };

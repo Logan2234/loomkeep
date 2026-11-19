@@ -36,6 +36,12 @@ history from before it was started.
 - Premium: subscribe to the series premieres from "Add to my calendar", with
   the same personal link as the release calendar.
 
+### Fixed
+
+- Opening Loomkeep on a new device no longer shows statuses, menus and
+  settings labels in the browser's language next to the rest of the app in
+  your account's.
+
 ## 1.14.0 — Person, author and studio pages, rewatching, and a reworked phone app
 
 ### Breaking changes
