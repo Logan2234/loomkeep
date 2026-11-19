@@ -4,21 +4,15 @@ import { sveltekit } from "@sveltejs/kit/vite";
 import tailwindcss from "@tailwindcss/vite";
 import { defineConfig } from "vite";
 
-export default defineConfig(({ command }) => ({
+export default defineConfig(() => ({
   server: { host: true, allowedHosts: ["dev.loomkeep.app"] },
   clearScreen: false,
   plugins: [
     tailwindcss(),
-    // Keep existing routes without locale prefixes. Explicit choices win,
-    // then browser preferences, with English as the base-locale fallback.
-    paraglideVitePlugin({
-      project: "./project.inlang",
-      outdir: "./src/lib/paraglide",
-      strategy: ["cookie", "preferredLanguage", "baseLocale"],
-      // One module per locale in dev: one per message meant thousands of
-      // unbundled requests on every reload. The build keeps per-message modules, which tree-shake.
-      outputStructure:
-        command === "serve" ? "locale-modules" : "message-modules",    }),
+    // Options in project.inlang/paraglide.config.js. Messages are served by
+    // the plugin ("virtual-modules", Vite's default) rather than written one
+    // file each: few requests in dev, per-message tree-shaking in the build.
+    paraglideVitePlugin({ project: "./project.inlang" }),
     sveltekit({
       compilerOptions: {
         // Force runes mode for the project, except for libraries. Can be removed in svelte 6.

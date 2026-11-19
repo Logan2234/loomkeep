@@ -1,4 +1,3 @@
-import { recordFrom } from "#lib/object.js";
 import { m } from "#lib/paraglide/messages.js";
 import { type SelectOption } from "#lib/types/select-option.js";
 import type {
@@ -11,9 +10,15 @@ import type {
 } from "@loomkeep/shared";
 
 export const REPORT_STATUS_LABELS: Record<ReportStatus, string> = {
-  PENDING: m.common_pending(),
-  RESOLVED: m.report_status_resolved(),
-  DISMISSED: m.report_status_dismissed(),
+  get PENDING() {
+    return m.common_pending();
+  },
+  get RESOLVED() {
+    return m.report_status_resolved();
+  },
+  get DISMISSED() {
+    return m.report_status_dismissed();
+  },
 };
 
 export const REPORT_STATUS_COLORS: Record<ReportStatus, string> = {
@@ -40,69 +45,183 @@ export const REPORT_CATEGORY_ORDER: ReportCategory[] = [
 ];
 
 export const REPORT_CATEGORY_LABELS: Record<ReportCategory, string> = {
-  SPAM: m.report_category_spam(),
-  ILLEGAL_CONTENT: m.report_category_illegal(),
-  HARASSMENT: m.report_category_harassment(),
-  HATE_SPEECH: m.report_category_hate(),
-  SEXUAL_CONTENT: m.report_category_sexual(),
-  VIOLENCE: m.report_category_violence(),
-  MINOR_ENDANGERMENT: m.report_category_minor(),
-  SPOILER: m.report_category_spoiler(),
-  IMPERSONATION: m.report_category_impersonation(),
-  MISINFORMATION: m.report_category_misinformation(),
-  STOLEN_CONTENT: m.report_category_stolen(),
-  MISLEADING_REVIEW: m.report_category_misleading_review(),
-  NONCOMPLIANT_ACCOUNT: m.report_category_noncompliant(),
-  OTHER: m.common_other(),
+  get SPAM() {
+    return m.report_category_spam();
+  },
+  get ILLEGAL_CONTENT() {
+    return m.report_category_illegal();
+  },
+  get HARASSMENT() {
+    return m.report_category_harassment();
+  },
+  get HATE_SPEECH() {
+    return m.report_category_hate();
+  },
+  get SEXUAL_CONTENT() {
+    return m.report_category_sexual();
+  },
+  get VIOLENCE() {
+    return m.report_category_violence();
+  },
+  get MINOR_ENDANGERMENT() {
+    return m.report_category_minor();
+  },
+  get SPOILER() {
+    return m.report_category_spoiler();
+  },
+  get IMPERSONATION() {
+    return m.report_category_impersonation();
+  },
+  get MISINFORMATION() {
+    return m.report_category_misinformation();
+  },
+  get STOLEN_CONTENT() {
+    return m.report_category_stolen();
+  },
+  get MISLEADING_REVIEW() {
+    return m.report_category_misleading_review();
+  },
+  get NONCOMPLIANT_ACCOUNT() {
+    return m.report_category_noncompliant();
+  },
+  get OTHER() {
+    return m.common_other();
+  },
 };
 
 export const REPORT_CATEGORY_HINTS: Record<ReportCategory, string> = {
-  SPAM: m.report_hint_spam(),
-  ILLEGAL_CONTENT: m.report_hint_illegal(),
-  HARASSMENT: m.report_hint_harassment(),
-  HATE_SPEECH: m.report_hint_hate(),
-  SEXUAL_CONTENT: m.report_sexual_explicit(),
-  VIOLENCE: m.report_hint_violence(),
-  MINOR_ENDANGERMENT: m.report_hint_minor(),
-  SPOILER: m.report_hint_spoiler(),
-  IMPERSONATION: m.report_hint_impersonation(),
-  MISINFORMATION: m.report_false_information(),
-  STOLEN_CONTENT: m.report_hint_stolen(),
-  MISLEADING_REVIEW: m.report_hint_misleading_review(),
-  NONCOMPLIANT_ACCOUNT: m.report_hint_noncompliant(),
-  OTHER: m.report_hint_other(),
+  get SPAM() {
+    return m.report_hint_spam();
+  },
+  get ILLEGAL_CONTENT() {
+    return m.report_hint_illegal();
+  },
+  get HARASSMENT() {
+    return m.report_hint_harassment();
+  },
+  get HATE_SPEECH() {
+    return m.report_hint_hate();
+  },
+  get SEXUAL_CONTENT() {
+    return m.report_sexual_explicit();
+  },
+  get VIOLENCE() {
+    return m.report_hint_violence();
+  },
+  get MINOR_ENDANGERMENT() {
+    return m.report_hint_minor();
+  },
+  get SPOILER() {
+    return m.report_hint_spoiler();
+  },
+  get IMPERSONATION() {
+    return m.report_hint_impersonation();
+  },
+  get MISINFORMATION() {
+    return m.report_false_information();
+  },
+  get STOLEN_CONTENT() {
+    return m.report_hint_stolen();
+  },
+  get MISLEADING_REVIEW() {
+    return m.report_hint_misleading_review();
+  },
+  get NONCOMPLIANT_ACCOUNT() {
+    return m.report_hint_noncompliant();
+  },
+  get OTHER() {
+    return m.report_hint_other();
+  },
 };
 
 export const REPORT_MOTIF_LABELS: Record<ReportMotif, string> = {
-  SPAM_PROMOTIONAL: m.report_motif_spam_promotional(),
-  SPAM_SUSPICIOUS_LINK: m.report_motif_spam_link(),
-  SPAM_REPEATED: m.report_motif_spam_repeated(),
-  ILLEGAL_PIRACY_LINK: m.report_motif_illegal_link(),
-  ILLEGAL_TERRORISM: m.report_motif_illegal_terrorism(),
-  ILLEGAL_DEFAMATION: m.report_motif_illegal_defamation(),
-  ILLEGAL_OTHER: m.report_motif_illegal_other(),
-  HARASSMENT_INSULTS: m.report_motif_harassment_insults(),
-  HARASSMENT_THREATS: m.report_motif_harassment_threats(),
-  HARASSMENT_STALKING: m.report_motif_harassment_stalking(),
-  HARASSMENT_DOXXING: m.report_motif_harassment_doxxing(),
-  HATE_RACISM: m.report_motif_hate_racism(),
-  HATE_SEXISM_LGBTQ: m.report_motif_hate_sexism_lgbtq(),
-  HATE_OTHER: m.report_motif_hate_other(),
-  SEXUAL_EXPLICIT: m.report_sexual_explicit(),
-  VIOLENCE_GRAPHIC: m.report_motif_violence_graphic(),
-  MINOR_ENDANGERMENT_CONTENT: m.report_motif_minor_content(),
-  MINOR_ENDANGERMENT_SOLICITATION: m.report_motif_minor_solicitation(),
-  SPOILER_UNTAGGED: m.report_motif_spoiler(),
-  IMPERSONATION_REAL_PERSON: m.report_motif_impersonation_person(),
-  MISINFORMATION_FALSE_FACT: m.report_false_information(),
-  STOLEN_CONTENT_PLAGIARIZED: m.report_motif_stolen(),
-  STOLEN_CONTENT_IMAGE: m.report_motif_stolen_image(),
-  MISLEADING_REVIEW_MANIPULATION: m.report_motif_misleading_review(),
-  MISLEADING_REVIEW_OFF_TOPIC: m.report_motif_misleading_off_topic(),
-  ACCOUNT_BOT: m.report_motif_account_bot(),
-  ACCOUNT_UNDERAGE: m.report_motif_account_underage(),
-  ACCOUNT_BAN_EVASION: m.report_motif_account_ban_evasion(),
-  ACCOUNT_MANIPULATION: m.report_motif_account_manipulation(),
+  get SPAM_PROMOTIONAL() {
+    return m.report_motif_spam_promotional();
+  },
+  get SPAM_SUSPICIOUS_LINK() {
+    return m.report_motif_spam_link();
+  },
+  get SPAM_REPEATED() {
+    return m.report_motif_spam_repeated();
+  },
+  get ILLEGAL_PIRACY_LINK() {
+    return m.report_motif_illegal_link();
+  },
+  get ILLEGAL_TERRORISM() {
+    return m.report_motif_illegal_terrorism();
+  },
+  get ILLEGAL_DEFAMATION() {
+    return m.report_motif_illegal_defamation();
+  },
+  get ILLEGAL_OTHER() {
+    return m.report_motif_illegal_other();
+  },
+  get HARASSMENT_INSULTS() {
+    return m.report_motif_harassment_insults();
+  },
+  get HARASSMENT_THREATS() {
+    return m.report_motif_harassment_threats();
+  },
+  get HARASSMENT_STALKING() {
+    return m.report_motif_harassment_stalking();
+  },
+  get HARASSMENT_DOXXING() {
+    return m.report_motif_harassment_doxxing();
+  },
+  get HATE_RACISM() {
+    return m.report_motif_hate_racism();
+  },
+  get HATE_SEXISM_LGBTQ() {
+    return m.report_motif_hate_sexism_lgbtq();
+  },
+  get HATE_OTHER() {
+    return m.report_motif_hate_other();
+  },
+  get SEXUAL_EXPLICIT() {
+    return m.report_sexual_explicit();
+  },
+  get VIOLENCE_GRAPHIC() {
+    return m.report_motif_violence_graphic();
+  },
+  get MINOR_ENDANGERMENT_CONTENT() {
+    return m.report_motif_minor_content();
+  },
+  get MINOR_ENDANGERMENT_SOLICITATION() {
+    return m.report_motif_minor_solicitation();
+  },
+  get SPOILER_UNTAGGED() {
+    return m.report_motif_spoiler();
+  },
+  get IMPERSONATION_REAL_PERSON() {
+    return m.report_motif_impersonation_person();
+  },
+  get MISINFORMATION_FALSE_FACT() {
+    return m.report_false_information();
+  },
+  get STOLEN_CONTENT_PLAGIARIZED() {
+    return m.report_motif_stolen();
+  },
+  get STOLEN_CONTENT_IMAGE() {
+    return m.report_motif_stolen_image();
+  },
+  get MISLEADING_REVIEW_MANIPULATION() {
+    return m.report_motif_misleading_review();
+  },
+  get MISLEADING_REVIEW_OFF_TOPIC() {
+    return m.report_motif_misleading_off_topic();
+  },
+  get ACCOUNT_BOT() {
+    return m.report_motif_account_bot();
+  },
+  get ACCOUNT_UNDERAGE() {
+    return m.report_motif_account_underage();
+  },
+  get ACCOUNT_BAN_EVASION() {
+    return m.report_motif_account_ban_evasion();
+  },
+  get ACCOUNT_MANIPULATION() {
+    return m.report_motif_account_manipulation();
+  },
 };
 
 /** The "what's wrong?" step of a profile report, in display order. */
@@ -111,41 +230,81 @@ export const REPORT_PROFILE_PARTS: (SelectOption<ReportProfilePart> & {
 })[] = [
   {
     value: "NAME",
-    label: m.common_name(),
-    hint: m.report_part_name_hint(),
+    get label() {
+      return m.common_name();
+    },
+    get hint() {
+      return m.report_part_name_hint();
+    },
   },
   {
     value: "PHOTO",
-    label: m.report_part_photo(),
-    hint: m.report_part_photo_hint(),
+    get label() {
+      return m.report_part_photo();
+    },
+    get hint() {
+      return m.report_part_photo_hint();
+    },
   },
-  { value: "BIO", label: m.common_bio(), hint: m.report_part_bio_hint() },
+  {
+    value: "BIO",
+    get label() {
+      return m.common_bio();
+    },
+    get hint() {
+      return m.report_part_bio_hint();
+    },
+  },
   {
     value: "BEHAVIOUR",
-    label: m.report_part_behaviour(),
-    hint: m.report_part_behaviour_hint(),
+    get label() {
+      return m.report_part_behaviour();
+    },
+    get hint() {
+      return m.report_part_behaviour_hint();
+    },
   },
 ];
 
-export const REPORT_PROFILE_PART_LABELS = recordFrom(
-  REPORT_PROFILE_PARTS.map((part) => part.value),
-  (_, index) => REPORT_PROFILE_PARTS[index].label,
+// Getters, so each label follows the locale it is read in.
+export const REPORT_PROFILE_PART_LABELS = Object.defineProperties(
+  {} as Record<ReportProfilePart, string>,
+  Object.fromEntries(
+    REPORT_PROFILE_PARTS.map((part) => [
+      part.value,
+      { enumerable: true, get: () => part.label },
+    ]),
+  ),
 );
 
 export const REPORT_TARGET_LABELS: Record<ReportTargetType, string> = {
-  COMMENT: m.report_target_comment(),
-  REVIEW: m.report_target_review(),
-  USER: m.report_target_user(),
-  LIST: m.report_target_list(),
-  MESSAGE: m.report_target_message(),
+  get COMMENT() {
+    return m.report_target_comment();
+  },
+  get REVIEW() {
+    return m.report_target_review();
+  },
+  get USER() {
+    return m.report_target_user();
+  },
+  get LIST() {
+    return m.report_target_list();
+  },
+  get MESSAGE() {
+    return m.report_target_message();
+  },
 };
 
 export const MODERATION_LEGAL_BASIS_LABELS: Record<
   ModerationLegalBasis,
   string
 > = {
-  ILLEGAL_CONTENT: m.moderation_basis_illegal(),
-  TOS_BREACH: m.moderation_basis_terms(),
+  get ILLEGAL_CONTENT() {
+    return m.moderation_basis_illegal();
+  },
+  get TOS_BREACH() {
+    return m.moderation_basis_terms();
+  },
 };
 
 /**

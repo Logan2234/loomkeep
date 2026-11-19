@@ -17,13 +17,19 @@ const messages = m as unknown as Record<string, (() => string) | undefined>;
 /** The name is shared by every tier of a family (`gamification_cinephile_name`). */
 export function achievementName(entry: AchievementDto): string {
   if (entry.key === null) return m.gamification_secret_locked_name();
-  const root = entry.tierOf ?? entry.key;
-  return messages[`gamification_${root}_name`]?.() ?? root;
+  return achievementNameByKey(entry.tierOf ?? entry.key);
+}
+
+/** For a family key (a tier's `tierOf`), or a key without tiers. */
+export function achievementNameByKey(key: string): string {
+  // eslint-disable-next-line paraglide/no-dynamic-message-access -- see above
+  return messages[`gamification_${key}_name`]?.() ?? key;
 }
 
 /** The description is per tier — it carries that tier's threshold. */
 export function achievementDescription(entry: AchievementDto): string {
   if (entry.key === null) return m.gamification_secret_locked_description();
+  // eslint-disable-next-line paraglide/no-dynamic-message-access -- see above
   return messages[`gamification_${entry.key}_description`]?.() ?? "";
 }
 

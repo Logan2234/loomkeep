@@ -14,101 +14,157 @@ export type AdminNavItem = {
 export const ADMIN_NAV: AdminNavItem[] = [
   {
     href: "/app/admin/services",
-    label: m.admin_services_title(),
-    description: m.admin_nav_services_description(),
+    get label() {
+      return m.admin_services_title();
+    },
+    get description() {
+      return m.admin_nav_services_description();
+    },
     icon: "monitor",
     match: (p) => p.startsWith("/app/admin/services"),
   },
   {
     href: "/app/admin/users",
-    label: m.common_users(),
-    description: m.admin_nav_users_description(),
+    get label() {
+      return m.common_users();
+    },
+    get description() {
+      return m.admin_nav_users_description();
+    },
     icon: "user",
     match: (p) => p.startsWith("/app/admin/users"),
   },
   {
     href: "/app/admin/communications",
-    label: m.settings_section_communications(),
-    description: m.admin_nav_communications_description(),
+    get label() {
+      return m.settings_section_communications();
+    },
+    get description() {
+      return m.admin_nav_communications_description();
+    },
     icon: "mail",
     match: (p) => p.startsWith("/app/admin/communications"),
   },
   {
     href: "/app/admin/stats",
-    label: m.common_stats(),
-    description: m.admin_nav_stats_description(),
+    get label() {
+      return m.common_stats();
+    },
+    get description() {
+      return m.admin_nav_stats_description();
+    },
     icon: "stats",
     match: (p) => p.startsWith("/app/admin/stats"),
   },
   {
     href: "/app/admin/settings",
-    label: m.admin_settings_title(),
-    description: m.admin_nav_settings_description(),
+    get label() {
+      return m.admin_settings_title();
+    },
+    get description() {
+      return m.admin_nav_settings_description();
+    },
     icon: "gear",
     match: (p) => p.startsWith("/app/admin/settings"),
   },
   {
     href: "/app/admin/jobs",
-    label: m.admin_jobs_title(),
-    description: m.admin_nav_jobs_description(),
+    get label() {
+      return m.admin_jobs_title();
+    },
+    get description() {
+      return m.admin_nav_jobs_description();
+    },
     icon: "calendar",
     match: (p) => p.startsWith("/app/admin/jobs"),
   },
   {
     href: "/app/admin/backup",
-    label: m.admin_backup_title(),
-    description: m.admin_nav_backup_description(),
+    get label() {
+      return m.admin_backup_title();
+    },
+    get description() {
+      return m.admin_nav_backup_description();
+    },
     icon: "archive",
     match: (p) => p.startsWith("/app/admin/backup"),
   },
   {
     href: "/app/admin/imports",
-    label: m.admin_imports_title(),
-    description: m.admin_nav_imports_description(),
+    get label() {
+      return m.admin_imports_title();
+    },
+    get description() {
+      return m.admin_nav_imports_description();
+    },
     icon: "download",
     match: (p) => p.startsWith("/app/admin/imports"),
   },
   {
     href: "/app/admin/cache",
-    label: m.admin_cache_title(),
-    description: m.admin_nav_cache_description(),
+    get label() {
+      return m.admin_cache_title();
+    },
+    get description() {
+      return m.admin_nav_cache_description();
+    },
     icon: "database",
     match: (p) => p.startsWith("/app/admin/cache"),
   },
   {
     href: "/app/admin/schema",
-    label: m.admin_schema_title(),
-    description: m.admin_nav_schema_description(),
+    get label() {
+      return m.admin_schema_title();
+    },
+    get description() {
+      return m.admin_nav_schema_description();
+    },
     icon: "library",
     match: (p) => p.startsWith("/app/admin/schema"),
     devOnly: true,
   },
   {
     href: "/app/admin/components",
-    label: m.admin_components_title(),
-    description: m.admin_nav_components_description(),
+    get label() {
+      return m.admin_components_title();
+    },
+    get description() {
+      return m.admin_nav_components_description();
+    },
     icon: "compass",
     match: (p) => p.startsWith("/app/admin/components"),
     devOnly: true,
   },
   {
     href: "/app/admin/security",
-    label: m.common_security(),
-    description: m.admin_nav_security_description(),
+    get label() {
+      return m.common_security();
+    },
+    get description() {
+      return m.admin_nav_security_description();
+    },
     icon: "shield",
     match: (p) => p.startsWith("/app/admin/security"),
   },
   {
     href: "/app/admin/newsletter",
-    label: m.common_newsletter(),
-    description: m.admin_nav_newsletter_description(),
+    get label() {
+      return m.common_newsletter();
+    },
+    get description() {
+      return m.admin_nav_newsletter_description();
+    },
     icon: "send",
     match: (p) => p.startsWith("/app/admin/newsletter"),
   },
   {
     href: "/app/admin/reports",
-    label: m.admin_social_reports_title(),
-    description: m.admin_nav_reports_description(),
+    get label() {
+      return m.admin_social_reports_title();
+    },
+    get description() {
+      return m.admin_nav_reports_description();
+    },
     icon: "flag",
     match: (p) => p.startsWith("/app/admin/reports"),
   },
@@ -124,7 +180,9 @@ function itemsFor(hrefs: string[]): AdminNavItem[] {
 
 export const ADMIN_NAV_GROUPS = [
   {
-    label: m.admin_group_pilotage(),
+    get label() {
+      return m.admin_group_pilotage();
+    },
     items: itemsFor([
       "/app/admin/services",
       "/app/admin/jobs",
@@ -133,7 +191,9 @@ export const ADMIN_NAV_GROUPS = [
     ]),
   },
   {
-    label: m.admin_group_people(),
+    get label() {
+      return m.admin_group_people();
+    },
     items: itemsFor([
       "/app/admin/users",
       "/app/admin/communications",
@@ -141,11 +201,15 @@ export const ADMIN_NAV_GROUPS = [
     ]),
   },
   {
-    label: m.admin_group_moderation(),
+    get label() {
+      return m.admin_group_moderation();
+    },
     items: itemsFor(["/app/admin/reports", "/app/admin/security"]),
   },
   {
-    label: m.admin_group_maintenance(),
+    get label() {
+      return m.admin_group_maintenance();
+    },
     items: itemsFor([
       "/app/admin/backup",
       "/app/admin/imports",
@@ -153,12 +217,17 @@ export const ADMIN_NAV_GROUPS = [
     ]),
   },
   {
-    label: m.admin_group_development(),
+    get label() {
+      return m.admin_group_development();
+    },
     items: itemsFor(["/app/admin/schema", "/app/admin/components"]),
   },
 ];
 
 export const VISIBLE_ADMIN_NAV_GROUPS = ADMIN_NAV_GROUPS.map((group) => ({
-  ...group,
+  // A getter, not a spread: spreading would read the label once, at import.
+  get label() {
+    return group.label;
+  },
   items: group.items.filter((item) => !item.devOnly || import.meta.env.DEV),
 })).filter((group) => group.items.length > 0);

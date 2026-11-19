@@ -2,20 +2,6 @@ import { readFileSync, readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { parse } from "svelte/compiler";
 import { describe, expect, it } from "vitest";
-import enAdmin from "../../../messages/en/admin.json";
-import enCommon from "../../../messages/en/common.json";
-import enErrors from "../../../messages/en/errors.json";
-import enGamification from "../../../messages/en/gamification.json";
-import enOther from "../../../messages/en/other.json";
-import enSettings from "../../../messages/en/settings.json";
-import enSite from "../../../messages/en/site.json";
-import frAdmin from "../../../messages/fr/admin.json";
-import frCommon from "../../../messages/fr/common.json";
-import frErrors from "../../../messages/fr/errors.json";
-import frGamification from "../../../messages/fr/gamification.json";
-import frOther from "../../../messages/fr/other.json";
-import frSettings from "../../../messages/fr/settings.json";
-import frSite from "../../../messages/fr/site.json";
 
 const routeDirectory = fileURLToPath(new URL("./", import.meta.url));
 const routes = readdirSync(routeDirectory, {
@@ -30,26 +16,19 @@ const routes = readdirSync(routeDirectory, {
       "utf8",
     ),
   }));
-const catalogs: Record<string, Record<string, string>> = {
-  fr: {
-    ...frAdmin,
-    ...frCommon,
-    ...frErrors,
-    ...frGamification,
-    ...frOther,
-    ...frSettings,
-    ...frSite,
-  },
-  en: {
-    ...enAdmin,
-    ...enCommon,
-    ...enErrors,
-    ...enGamification,
-    ...enOther,
-    ...enSettings,
-    ...enSite,
-  },
-};
+// Every catalog file of each locale, merged.
+const catalogs = Object.fromEntries(
+  ["fr", "en"].map((locale) => {
+    const directory = new URL(`../../../messages/${locale}/`, import.meta.url);
+    const merged: Record<string, string> = Object.assign(
+      {},
+      ...readdirSync(directory).map((file) =>
+        JSON.parse(readFileSync(new URL(file, directory), "utf8")),
+      ),
+    );
+    return [locale, merged];
+  }),
+);
 const textAttributes = new Set([
   "title",
   "subtitle",

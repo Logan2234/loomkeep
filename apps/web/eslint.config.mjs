@@ -1,8 +1,44 @@
+import paraglide from "@inlang/paraglide-js/eslint";
 import svelte from "eslint-plugin-svelte";
 import { defineConfig, includeIgnoreFile } from "eslint/config";
 import path from "path";
 import ts from "typescript-eslint";
 import { baseConfig } from "../../eslint.config.base.mjs";
+
+const FUNCTION_TYPES = new Set([
+  "FunctionDeclaration",
+  "FunctionExpression",
+  "ArrowFunctionExpression",
+]);
+
+// initAuth applies the account's locale without a reload, after every module
+// was imported: a message read at import time stays in the previous locale.
+const noModuleLevelMessage = {
+  meta: {
+    type: "problem",
+    messages: {
+      eager:
+        "m.{{name}}() runs once, at import, in whatever locale is active then. Read it inside a function or a getter (`get label() {...}`).",
+    },
+    schema: [],
+  },
+  create(context) {
+    return {
+      "CallExpression[callee.type='MemberExpression'][callee.object.name='m']"(
+        node,
+      ) {
+        const ancestors = context.sourceCode.getAncestors(node);
+        if (ancestors.some((ancestor) => FUNCTION_TYPES.has(ancestor.type)))
+          return;
+        context.report({
+          node,
+          messageId: "eager",
+          data: { name: node.callee.property.name ?? "" },
+        });
+      },
+    };
+  },
+};
 
 export default defineConfig(
   // The service worker is compiled in SvelteKit's own worker context (no DOM
@@ -21,6 +57,22 @@ export default defineConfig(
   ...baseConfig(import.meta.dirname, { browser: true }),
   svelte.configs.recommended,
   svelte.configs.prettier,
+  {
+    // Static `m.key` references keep messages tree-shakable, and let
+    // catalogs.spec.ts find unused keys by scanning the source.
+    plugins: { paraglide },
+    rules: { "paraglide/no-dynamic-message-access": "error" },
+  },
+  {
+    // .svelte instance scripts run per component, so they're fine; plain
+    // modules run once.
+    files: ["**/*.ts"],
+    ignores: ["**/*.spec.ts"],
+    plugins: {
+      loomkeep: { rules: { "no-module-level-message": noModuleLevelMessage } },
+    },
+    rules: { "loomkeep/no-module-level-message": "error" },
+  },
   {
     rules: {
       // Crashes on plain .ts top-level declarations in this eslint-plugin-svelte
@@ -44,7 +96,8 @@ export default defineConfig(
         "error",
         {
           name: "confirm",
-          message: "Use ConfirmationModal instead of the native confirm dialog.",
+          message:
+            "Use ConfirmationModal instead of the native confirm dialog.",
         },
       ],
       "no-restricted-syntax": [
@@ -52,12 +105,14 @@ export default defineConfig(
         {
           selector:
             "CallExpression[callee.object.name='window'][callee.property.name='confirm']",
-          message: "Use ConfirmationModal instead of the native confirm dialog.",
+          message:
+            "Use ConfirmationModal instead of the native confirm dialog.",
         },
         {
           selector:
             "CallExpression[callee.object.name='globalThis'][callee.property.name='confirm']",
-          message: "Use ConfirmationModal instead of the native confirm dialog.",
+          message:
+            "Use ConfirmationModal instead of the native confirm dialog.",
         },
       ],
       // The app navigates with plain string hrefs/goto and is served from the

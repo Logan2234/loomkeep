@@ -38,20 +38,26 @@ const NAVIGATION: NavSection[] = [
     items: [
       {
         href: "/app",
-        label: m.common_home(),
+        get label() {
+          return m.common_home();
+        },
         icon: "home",
         match: (p) => p === "/app",
       },
       {
         href: "/app/search",
-        label: m.common_search(),
+        get label() {
+          return m.common_search();
+        },
         icon: "search",
         match: (p) => p.startsWith("/app/search"),
       },
     ],
   },
   {
-    label: m.nav_section_library(),
+    get label() {
+      return m.nav_section_library();
+    },
     items: [
       {
         href: DOMAINS.MEDIA.href,
@@ -100,11 +106,15 @@ const NAVIGATION: NavSection[] = [
     ],
   },
   {
-    label: m.nav_section_tracking(),
+    get label() {
+      return m.nav_section_tracking();
+    },
     items: [
       {
         href: "/app/calendar",
-        label: m.common_calendar(),
+        get label() {
+          return m.common_calendar();
+        },
         icon: "calendar",
         anyDomain: [Domain.MEDIA, Domain.GAMES],
         match: (p) => p.startsWith("/app/calendar"),
@@ -112,13 +122,17 @@ const NAVIGATION: NavSection[] = [
       },
       {
         href: "/app/stats",
-        label: m.common_stats(),
+        get label() {
+          return m.common_stats();
+        },
         icon: "stats",
         match: (p) => p.startsWith("/app/stats"),
       },
       {
         href: "/app/leaderboard",
-        label: m.gamification_leaderboard_title(),
+        get label() {
+          return m.gamification_leaderboard_title();
+        },
         icon: "crown",
         social: true,
         gamification: true,
@@ -126,7 +140,9 @@ const NAVIGATION: NavSection[] = [
       },
       {
         href: "/app/feed",
-        label: m.nav_feed(),
+        get label() {
+          return m.nav_feed();
+        },
         icon: "activity",
         social: true,
         match: (p) => p.startsWith("/app/feed"),

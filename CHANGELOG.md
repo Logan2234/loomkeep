@@ -40,6 +40,9 @@ history from before it was started.
 
 ### Fixed
 
+- Opening Loomkeep on a new device no longer shows statuses, menus and
+  settings labels in the browser's language next to the rest of the app in
+  your account's.
 - Admin dashboard: the Users tile counted only today's signups under
   "this week"; it now shows the last 7 days.
 - Admin › Users: the "Active session" filter listed accounts that hadn't

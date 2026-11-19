@@ -12,18 +12,30 @@ export const NAV_STYLE_META: Record<
   { label: string; blurb: string; premium: boolean }
 > = {
   marquee: {
-    label: m.nav_style_marquee(),
-    blurb: m.nav_style_marquee_description(),
+    get label() {
+      return m.nav_style_marquee();
+    },
+    get blurb() {
+      return m.nav_style_marquee_description();
+    },
     premium: false,
   },
   dock: {
-    label: m.nav_style_dock(),
-    blurb: m.nav_style_dock_description(),
+    get label() {
+      return m.nav_style_dock();
+    },
+    get blurb() {
+      return m.nav_style_dock_description();
+    },
     premium: true,
   },
   board: {
-    label: m.nav_style_board(),
-    blurb: m.nav_style_board_description(),
+    get label() {
+      return m.nav_style_board();
+    },
+    get blurb() {
+      return m.nav_style_board_description();
+    },
     premium: true,
   },
 };
