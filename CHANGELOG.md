@@ -21,6 +21,13 @@ history from before it was started.
   can be counted. To opt out, set `TELEMETRY_ENABLED=false` or turn off
   Admin › Instance settings › Count this instance. Details:
   [Telemetry](https://docs.loomkeep.app/self-hosting/telemetry/).
+- **Self-hosting: `ADMIN_EMAIL` now waits for a verified address.** When
+  email is set up, that account becomes admin once its address is verified
+  (the link in the welcome email). Without SMTP, nothing changes.
+- **Self-hosting: on/off variables also read `1`/`0`, `yes`/`no`,
+  `on`/`off`.** `REGISTRATION_ENABLED=0` now closes registration and
+  `SOCIAL_ENABLED=1` turns social on, where they used to do the opposite.
+  A value Loomkeep can't read is ignored, with a warning in the logs.
 
 - Administrators get an alert (email, push optional) when someone's import
   fails, with a link to the failed imports in Admin › Imports.
@@ -40,6 +47,10 @@ history from before it was started.
 
 ### Fixed
 
+- An inactive account now gets at least 30 days between the reminder email
+  and its deletion, even when it was already past the 36 months.
+- A saga sequel announcement is no longer emailed again every hour after a
+  failed scan.
 - Opening Loomkeep on a new device no longer shows statuses, menus and
   settings labels in the browser's language next to the rest of the app in
   your account's.
