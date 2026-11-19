@@ -94,6 +94,9 @@ const LIBRARY_KINDS_ENUM = Object.fromEntries(
   ADMIN_USER_LIBRARY_KINDS.map((kind) => [kind, kind]),
 );
 
+/** A session used within this window counts as active in the users filter. */
+const ACTIVE_SESSION_WINDOW_MS = 24 * 60 * 60 * 1000;
+
 /** Account administration: listing, role, data export and sessions. */
 @AdminOnly()
 @Controller("admin")
@@ -198,7 +201,14 @@ export class AdminUsersController {
     if (push === "no") where.pushSubscriptions = { none: {} };
 
     if (session === "yes" || session === "no") {
-      const activeSession = { expiresAt: { gt: new Date() } };
+      // A refresh token lives 30 days, so "not expired" would keep accounts
+      // that left weeks ago: a session counts as active when it was used
+      // recently (same 24h window as the "active accounts" KPI).
+      const now = Date.now();
+      const activeSession = {
+        expiresAt: { gt: new Date(now) },
+        lastUsedAt: { gte: new Date(now - ACTIVE_SESSION_WINDOW_MS) },
+      };
       where.refreshTokens =
         session === "yes" ? { some: activeSession } : { none: activeSession };
     }

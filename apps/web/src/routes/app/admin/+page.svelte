@@ -30,6 +30,8 @@
   const overviewQuery = createApiQuery(() => ({
     key: keys.admin.overview(),
     fetch: getAdminOverview,
+    // The "online now" counter is live: re-read it while the page is open.
+    refetchInterval: 30_000,
   }));
   const servicesQuery = createApiQuery(() => ({
     key: keys.admin.services(),
@@ -57,7 +59,8 @@
     loading ? m.common_loading() : m.common_unavailable();
 
   const usersTotal = $derived(overview?.accounts ?? null);
-  const usersDeltaWeek = $derived(overview?.newAccountsThisWeek ?? null);
+  const usersDelta7d = $derived(overview?.newAccountsLast7Days ?? null);
+  const usersOnline = $derived(overview?.connectedNow ?? null);
 
   /** A service counts as degraded once it's live/required and either unconfigured or unreachable. */
   function isDegraded(s: ServiceStatusDto): boolean {
@@ -160,9 +163,18 @@
           : loadingText(overviewQuery.loading)}
       </span>
       <span class="text-dim text-xs">
-        {usersDeltaWeek !== null
-          ? m.admin_users_added_week({ count: formatNumber(usersDeltaWeek) })
+        {usersDelta7d !== null
+          ? m.admin_users_added_7d({ count: formatNumber(usersDelta7d) })
           : " "}
+      </span>
+      <span class="text-dim flex items-center gap-1.5 text-xs">
+        {#if usersOnline !== null}
+          <span class="bg-success h-1.5 w-1.5 rounded-full" aria-hidden="true"
+          ></span>
+          {m.admin_users_online_now({ count: formatNumber(usersOnline) })}
+        {:else}
+          &nbsp;
+        {/if}
       </span>
     </a>
 

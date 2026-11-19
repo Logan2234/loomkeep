@@ -17,8 +17,10 @@ export interface TrendPointDto {
  */
 export interface AdminOverviewDto {
   accounts: number;
-  /** Accounts created since the start of the current weekly bucket. */
-  newAccountsThisWeek: number;
+  /** Accounts created in the last 7 days (rolling window). */
+  newAccountsLast7Days: number;
+  /** Distinct accounts with the app open right now (a live WebSocket). */
+  connectedNow: number;
   /** Accounts with at least one push subscription. */
   accountsWithPush: number;
   /** Push subscription rows (an account can have several devices). */
