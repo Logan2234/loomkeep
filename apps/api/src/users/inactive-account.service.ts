@@ -10,6 +10,13 @@ import { notSuspended } from "./suspension.util";
 /** Relance à 24 mois d'inactivité, suppression à 36 mois. */
 const WARNING_AFTER_MONTHS = 24;
 const DELETE_AFTER_MONTHS = 36;
+/**
+ * Minimum time between the reminder and the deletion. Without it, an account
+ * already past 36 months when first warned (the first scan after enabling the
+ * policy, or after an SMTP outage) was warned and deleted in the same pass.
+ */
+const NOTICE_DAYS = 30;
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 function monthsAgo(months: number, from: Date = new Date()): Date {
   const d = new Date(from);
@@ -76,7 +83,12 @@ export class InactiveAccountService {
 
     for (const user of candidates) {
       // lastActiveAt can't be null here — it's filtered by `lte` above.
-      const deletionDate = addMonths(user.lastActiveAt!, DELETE_AFTER_MONTHS);
+      const deletionDate = new Date(
+        Math.max(
+          addMonths(user.lastActiveAt!, DELETE_AFTER_MONTHS).getTime(),
+          Date.now() + NOTICE_DAYS * DAY_MS,
+        ),
+      );
       const sent = await this.mail.sendInactivityWarning(
         { email: user.email, locale: user.locale },
         deletionDate,
@@ -100,7 +112,9 @@ export class InactiveAccountService {
     const candidates = await this.prisma.user.findMany({
       where: {
         lastActiveAt: { lte: monthsAgo(DELETE_AFTER_MONTHS) },
-        inactivityWarningSentAt: { not: null },
+        inactivityWarningSentAt: {
+          lte: new Date(Date.now() - NOTICE_DAYS * DAY_MS),
+        },
       },
       select: { id: true },
     });
