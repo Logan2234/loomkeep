@@ -128,6 +128,26 @@ describe("MyAnimeList import", () => {
     });
   });
 
+  it("rejects an export whose watched episodes add up past the total cap", () => {
+    const entry = (id: number) => `
+  <anime>
+    <series_animedb_id>${id}</series_animedb_id>
+    <series_title><![CDATA[Long show ${id}]]></series_title>
+    <series_type>TV</series_type>
+    <series_episodes>10000</series_episodes>
+    <my_watched_episodes>10000</my_watched_episodes>
+    <my_status>Completed</my_status>
+  </anime>`;
+    const xml = `<myanimelist><myinfo><user_export_type>1</user_export_type></myinfo>${Array.from(
+      { length: 11 },
+      (_, i) => entry(i + 1),
+    ).join("")}</myanimelist>`;
+
+    expect(() => parseMyAnimeListXml(xml)).toThrow(
+      /too many watched episodes/i,
+    );
+  });
+
   it("rejects a manga export", () => {
     expect(() =>
       parseMyAnimeListXml(

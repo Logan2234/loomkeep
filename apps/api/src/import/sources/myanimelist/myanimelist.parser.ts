@@ -4,6 +4,9 @@ import type { ImportShow, ParsedImport } from "../../media-import-model";
 
 const MAX_ENTRIES = 20_000;
 const MAX_WATCHED_EPISODES_PER_ENTRY = 10_000;
+// Each watched episode becomes an object: the two caps above still allowed
+// 200 million of them across one export.
+const MAX_WATCHED_EPISODES_TOTAL = 100_000;
 
 const STATUS: Record<string, EntryStatus> = {
   Watching: "WATCHING",
@@ -38,6 +41,16 @@ export function parseMyAnimeListXml(input: string): ParsedImport {
 
   if (entries.length > MAX_ENTRIES) {
     throw new Error("The export contains too many anime entries");
+  }
+
+  const totalWatched = entries.reduce(
+    (sum, entry) =>
+      sum + (nonNegativeInteger(field(entry, "my_watched_episodes")) ?? 0),
+    0,
+  );
+
+  if (totalWatched > MAX_WATCHED_EPISODES_TOTAL) {
+    throw new Error("The export contains too many watched episodes");
   }
 
   return {
