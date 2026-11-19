@@ -6,7 +6,7 @@ const WEEK_DAYS = 7;
 // as they get announced, too few a week to fill a rail of their own.
 const WEEKLY_RAILS = 4;
 
-export type PremiereRailKind = "thisWeek" | "nextWeek" | "week" | "month";
+type PremiereRailKind = "thisWeek" | "nextWeek" | "week" | "month";
 
 export interface PremiereRail {
   key: string;
