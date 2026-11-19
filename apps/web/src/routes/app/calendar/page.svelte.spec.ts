@@ -2,9 +2,10 @@ import { auth } from "#lib/auth.svelte.js";
 import { formatDate } from "#lib/format.js";
 import { m } from "#lib/paraglide/messages.js";
 import { apiUrl, server } from "#lib/test/msw.js";
+import { goto, visit } from "#lib/test/navigation.svelte.js";
 import { renderWithQuery } from "#lib/test/render.js";
 import type { CalendarEntryDto, UserDto } from "@loomkeep/shared";
-import { screen, waitFor } from "@testing-library/svelte";
+import { screen, waitFor, within } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -53,6 +54,7 @@ function serveCalendar(entries: CalendarEntryDto[]) {
 let patched: { id: string; body: unknown }[];
 
 beforeEach(() => {
+  visit("/app/calendar");
   patched = [];
   server.use(
     http.get(apiUrl("/ee/status"), () => HttpResponse.json({ active: true })),
@@ -102,10 +104,14 @@ describe("calendar page", () => {
         `${m.media_movie()} (0)`,
       ];
       const game = `${m.common_Games()} (1)`;
+      const chips = screen.getByRole("group", {
+        name: m.calendar_filter_label(),
+      });
       expect(
-        screen.getAllByRole("tab").map((tab) => tab.textContent?.trim()),
+        within(chips)
+          .getAllByRole("button")
+          .map((chip) => chip.textContent?.trim()),
       ).toEqual([
-        `${m.calendar_filter_all()} (2)`,
         ...(gamesFirst ? [game, ...video] : [...video, game]),
         `${m.calendar_alerts_muted()} (0)`,
       ]);
@@ -285,7 +291,30 @@ describe("calendar page", () => {
     ).toBeTruthy();
   });
 
-  it("narrows the list with the filter tabs", async () => {
+  it("switches to the premieres on the same page, linkable", async () => {
+    server.use(
+      http.get(apiUrl("/catalog/premieres"), () => HttpResponse.json([])),
+      http.get(apiUrl("/library/tracked"), () => HttpResponse.json([])),
+    );
+    renderWithQuery(CalendarPage, {});
+    const user = userEvent.setup();
+
+    await user.click(
+      await screen.findByRole("tab", {
+        name: new RegExp(m.calendar_view_premieres()),
+      }),
+    );
+
+    expect(goto).toHaveBeenCalledWith("?view=premieres");
+    await screen.findByText(m.calendar_premieres_empty());
+    expect(
+      screen
+        .getByRole("tab", { name: new RegExp(m.calendar_view_premieres()) })
+        .getAttribute("aria-selected"),
+    ).toBe("true");
+  });
+
+  it("narrows the list with a filter chip and shows everything again once it is off", async () => {
     serveCalendar([
       upcoming("e1", "Lanterns", 7, 1, { episodeAlertsMuted: true }),
       upcoming("e2", "Futurama", 10, 1),
@@ -296,9 +325,10 @@ describe("calendar page", () => {
     await screen.findByRole("button", {
       name: m.calendar_mute_series({ title: "Futurama" }),
     });
-    await user.click(
-      screen.getByRole("tab", { name: `${m.calendar_alerts_muted()} (1)` }),
-    );
+    const mutedChip = screen.getByRole("button", {
+      name: `${m.calendar_alerts_muted()} (1)`,
+    });
+    await user.click(mutedChip);
 
     await waitFor(() =>
       expect(
@@ -312,6 +342,11 @@ describe("calendar page", () => {
         name: m.calendar_unmute_series({ title: "Lanterns" }),
       }),
     ).toBeTruthy();
+
+    await user.click(mutedChip);
+    await screen.findByRole("button", {
+      name: m.calendar_mute_series({ title: "Futurama" }),
+    });
   });
 
   it("lists only the days something airs, the strip keeping the week", async () => {

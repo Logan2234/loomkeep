@@ -56,6 +56,31 @@ export class CalendarFeedController {
       .send(ics);
   }
 
+  /** The series premiering soon, for the same apps. Public for the same reason. */
+  @Public()
+  @Get("library/premieres.ics")
+  async getPremieresIcs(
+    @Query("token") token: string | undefined,
+    @Res() reply: FastifyReply,
+  ): Promise<void> {
+    const ics = token ? await this.calendarFeed.getPremieresIcs(token) : null;
+
+    if (!ics) {
+      throw new AppException(
+        HttpStatus.NOT_FOUND,
+        ErrorCode.LibraryCalendarUnavailable,
+      );
+    }
+
+    reply
+      .header("Content-Type", "text/calendar; charset=utf-8")
+      .header(
+        "Content-Disposition",
+        'inline; filename="loomkeep-premieres.ics"',
+      )
+      .send(ics);
+  }
+
   /** The episodes already out, for feed readers. Public for the same reason. */
   @Public()
   @Get("library/releases.atom")

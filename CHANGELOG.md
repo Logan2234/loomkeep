@@ -28,6 +28,14 @@ history from before it was started.
   tour, with the answers in Admin › Stats. Off by default: turn it on in
   Admin › Instance settings or with `ASK_ACQUISITION_SOURCE=true`.
 
+### Added
+
+- Calendar › Premieres: the series starting over the next eight weeks on the
+  main streamers and channels, week by week, with this week's headliner and a
+  "My services" filter.
+- Premium: subscribe to the series premieres from "Add to my calendar", with
+  the same personal link as the release calendar.
+
 ## 1.14.0 — Person, author and studio pages, rewatching, and a reworked phone app
 
 ### Breaking changes

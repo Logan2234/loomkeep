@@ -52,6 +52,7 @@ export * from "./level";
 export * from "./locale";
 export * from "./movie-release";
 export * from "./password";
+export * from "./premiere-networks";
 export * from "./realtime";
 export * from "./report-categories";
 export * from "./rewatch";

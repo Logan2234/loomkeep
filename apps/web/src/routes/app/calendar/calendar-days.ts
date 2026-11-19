@@ -2,8 +2,20 @@ import { calendarDayIso } from "#lib/calendar-entry.js";
 import { localDateInput } from "#lib/date.js";
 import type { CalendarEntryDto } from "@loomkeep/shared";
 
-export type CalendarFilter =
-  "all" | "series" | "anime" | "movie" | "game" | "muted";
+export type CalendarFilter = "series" | "anime" | "movie" | "game" | "muted";
+
+/**
+ * The chips the user turned on. None is everything; the kinds add up (series
+ * and anime), "muted" narrows whatever they keep to the muted shows.
+ */
+export function matchesFilters(
+  entry: CalendarEntryDto,
+  selected: ReadonlySet<CalendarFilter>,
+): boolean {
+  if (selected.has("muted") && !entry.episodeAlertsMuted) return false;
+  const kinds = [...selected].filter((f) => f !== "muted");
+  return kinds.length === 0 || kinds.some((f) => matchesFilter(entry, f));
+}
 
 export function matchesFilter(
   entry: CalendarEntryDto,

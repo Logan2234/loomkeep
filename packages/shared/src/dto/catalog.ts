@@ -47,6 +47,28 @@ export interface WatchProvidersDto {
   link: string | null;
 }
 
+/** A series airing its very first episode soon, from TMDB's catalogue. */
+export interface PremiereDto {
+  /** TMDB series id: the series page is `/app/media/series/{sourceId}`. */
+  sourceId: string;
+  title: string;
+  /** Null when it matches `title`. */
+  originalTitle: string | null;
+  /** `YYYY-MM-DD`, the first broadcast in the network's country. */
+  firstAirDate: string;
+  /** One of `PREMIERE_NETWORKS`. */
+  networkId: number;
+  networkName: string;
+  /** ISO 3166-1 codes of the countries the series comes from. */
+  originCountries: string[];
+  /** Null when TMDB has no synopsis in the requested language yet. */
+  overview: string | null;
+  posterUrl: string;
+  backdropUrl: string | null;
+  /** TMDB's popularity score, to pick a headliner. */
+  popularity: number;
+}
+
 /** Every watch provider of a region, to pick one's own services from. */
 export interface WatchProviderCatalogDto {
   /** The region the list is for: the one asked for, else the automatic one. */

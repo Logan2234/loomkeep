@@ -1,9 +1,11 @@
 import type { CalendarEntryDto } from "@loomkeep/shared";
 import { describe, expect, it } from "vitest";
 import {
+  type CalendarFilter,
   calendarBand,
   groupByDay,
   matchesFilter,
+  matchesFilters,
   WEEK_DAYS,
 } from "./calendar-days";
 
@@ -94,10 +96,28 @@ describe("matchesFilter", () => {
     expect(matchesFilter(muted, "muted")).toBe(true);
     expect(matchesFilter(series, "muted")).toBe(false);
   });
+});
 
-  it("keeps everything under all", () => {
-    expect([series, anime, muted].every((e) => matchesFilter(e, "all"))).toBe(
-      true,
-    );
+describe("matchesFilters", () => {
+  const series = entry(at(1));
+  const anime = entry(at(1), {
+    mediaItem: { ...series.mediaItem!, type: "ANIME" },
+  });
+  const muted = entry(at(1), { episodeAlertsMuted: true });
+  const kept = (selected: CalendarFilter[]) =>
+    [series, anime, muted].filter((e) => matchesFilters(e, new Set(selected)));
+
+  it("keeps everything with no chip on", () => {
+    expect(kept([])).toEqual([series, anime, muted]);
+  });
+
+  it("adds the kinds up", () => {
+    expect(kept(["series", "anime"])).toEqual([series, anime, muted]);
+    expect(kept(["anime"])).toEqual([anime]);
+  });
+
+  it("narrows the kinds kept to muted shows", () => {
+    expect(kept(["muted"])).toEqual([muted]);
+    expect(kept(["anime", "muted"])).toEqual([]);
   });
 });
