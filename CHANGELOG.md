@@ -13,16 +13,28 @@ history from before it was started.
 
 ## [Unreleased]
 
-- Calendar › Premieres: the series starting over the next eight weeks on the
-  main streamers and channels, week by week, with this week's headliner and a
-  "My services" filter.
-- Premium: subscribe to the series premieres from "Add to my calendar", with
-  the same personal link as the release calendar.
+### Breaking changes
+
+- **Self-hosting: your instance now tells loomkeep.app it exists.** The
+  daily update check asks loomkeep.app for the latest version and sends a
+  random instance id and the version, nothing else, so self-hosted instances
+  can be counted. To opt out, set `TELEMETRY_ENABLED=false` or turn off
+  Admin › Instance settings › Count this instance. Details:
+  [Telemetry](https://docs.loomkeep.app/self-hosting/telemetry/).
+
 - Administrators get an alert (email, push optional) when someone's import
   fails, with a link to the failed imports in Admin › Imports.
 - An optional "How did you hear about Loomkeep?" at the end of the welcome
   tour, with the answers in Admin › Stats. Off by default: turn it on in
   Admin › Instance settings or with `ASK_ACQUISITION_SOURCE=true`.
+
+### Added
+
+- Calendar › Premieres: the series starting over the next eight weeks on the
+  main streamers and channels, week by week, with this week's headliner and a
+  "My services" filter.
+- Premium: subscribe to the series premieres from "Add to my calendar", with
+  the same personal link as the release calendar.
 
 ## 1.14.0 — Person, author and studio pages, rewatching, and a reworked phone app
 

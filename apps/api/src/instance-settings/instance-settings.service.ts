@@ -101,6 +101,7 @@ function toValues(row: InstanceSettings): InstanceSettingsValues {
     apiRateLimitFree: row.apiRateLimitFree,
     apiRateLimitPremium: row.apiRateLimitPremium,
     updateCheckEnabled: row.updateCheckEnabled,
+    telemetryEnabled: row.telemetryEnabled,
     askAcquisitionSource: row.askAcquisitionSource,
   };
 }

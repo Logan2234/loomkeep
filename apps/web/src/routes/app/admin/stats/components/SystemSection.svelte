@@ -60,6 +60,14 @@
         : m.admin_system_last_backup(),
     },
   ]);
+
+  const versionItems = $derived(
+    (stats.selfHostedInstances?.versions ?? []).map((v) => ({
+      label: v.version,
+      value: v.instances,
+      display: formatNumber(v.instances),
+    })),
+  );
 </script>
 
 <div class="grid gap-3.5 lg:grid-cols-2">
@@ -97,4 +105,28 @@
       {m.admin_system_ops_hint()}
     </p>
   </div>
+
+  {#if stats.selfHostedInstances}
+    <div class="card p-4">
+      <h3 class="font-display text-[0.9375rem] font-bold">
+        {m.admin_system_instances_title()}
+      </h3>
+      <p class="text-dim mt-0.5 mb-3.5 text-xs">
+        {m.admin_system_instances_period()}
+      </p>
+      {#if stats.selfHostedInstances.active30d === 0}
+        <p class="text-dim text-sm">{m.admin_system_instances_empty()}</p>
+      {:else}
+        <div class="mb-3.5">
+          <StatFigure
+            value={stats.selfHostedInstances.active30d}
+            label={m.admin_system_instances_title()} />
+        </div>
+        <RankBars items={versionItems} />
+      {/if}
+      <p class="text-dim mt-3 text-xs italic">
+        {m.admin_system_instances_hint()}
+      </p>
+    </div>
+  {/if}
 </div>

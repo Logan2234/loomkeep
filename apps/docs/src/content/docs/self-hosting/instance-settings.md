@@ -7,16 +7,18 @@ description: What's open to every account on your instance, set from Admin › I
 use. Changes apply the next time each visitor loads the app; no restart, no
 redeploy.
 
-| Setting             | Default | What it does                                                                                       |
-| ------------------- | ------- | -------------------------------------------------------------------------------------------------- |
-| Social              | off     | Follows, friends, activity feed, shared lists and other people's reviews.                          |
-| Messages            | off     | Private messages between friends (needs Social). Stored unencrypted in your database.              |
-| Gamification        | off     | XP, levels, achievements and leaderboard.                                                          |
-| Open registration   | on      | When off, only an [invitation](/self-hosting/administration/#invitations) lets someone sign up.    |
-| Public API          | on      | Personal API keys and `/api/v1`. When off, the API answers `api.disabled`; existing keys are kept. |
-| Free limit          | 60      | Public API requests per minute and per account.                                                    |
-| Premium limit       | 300     | The same for premium accounts, once premium is offered.                                            |
-| How you heard of us | off     | An optional "How did you hear of Loomkeep?" at the end of onboarding, answers in Admin › Stats.    |
+| Setting             | Default | What it does                                                                                        |
+| ------------------- | ------- | --------------------------------------------------------------------------------------------------- |
+| Social              | off     | Follows, friends, activity feed, shared lists and other people's reviews.                           |
+| Messages            | off     | Private messages between friends (needs Social). Stored unencrypted in your database.               |
+| Gamification        | off     | XP, levels, achievements and leaderboard.                                                           |
+| Open registration   | on      | When off, only an [invitation](/self-hosting/administration/#invitations) lets someone sign up.     |
+| Public API          | on      | Personal API keys and `/api/v1`. When off, the API answers `api.disabled`; existing keys are kept.  |
+| Free limit          | 60      | Public API requests per minute and per account.                                                     |
+| Premium limit       | 300     | The same for premium accounts, once premium is offered.                                             |
+| Update check        | on      | Looks up the latest version once a day and flags a newer one in Admin › Services.                   |
+| Count this instance | on      | Sends a random id and the version with the update check: see [Telemetry](/self-hosting/telemetry/). |
+| How you heard of us | off     | An optional "How did you hear of Loomkeep?" at the end of onboarding, answers in Admin › Stats.     |
 
 A family instance often closes registration once everyone has an account,
 and leaves social on so lists can be shared.
@@ -38,6 +40,7 @@ page.
 | Free limit          | `API_RATE_LIMIT_FREE`    |
 | Premium limit       | `API_RATE_LIMIT_PREMIUM` |
 | Update check        | `UPDATE_CHECK_ENABLED`   |
+| Count this instance | `TELEMETRY_ENABLED`      |
 | How you heard of us | `ASK_ACQUISITION_SOURCE` |
 
 The first time the instance starts with this page, its values are taken from

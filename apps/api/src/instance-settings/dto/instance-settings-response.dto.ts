@@ -13,6 +13,7 @@ class InstanceSettingsValuesResponseDto implements InstanceSettingsValues {
   apiRateLimitFree!: number;
   apiRateLimitPremium!: number;
   updateCheckEnabled!: boolean;
+  telemetryEnabled!: boolean;
   askAcquisitionSource!: boolean;
 }
 
@@ -27,6 +28,7 @@ class InstanceSettingsLocksResponseDto implements Partial<
   apiRateLimitFree?: string;
   apiRateLimitPremium?: string;
   updateCheckEnabled?: string;
+  telemetryEnabled?: string;
   askAcquisitionSource?: string;
 }
 

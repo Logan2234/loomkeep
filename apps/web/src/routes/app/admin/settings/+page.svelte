@@ -33,6 +33,7 @@
     | "registrationEnabled"
     | "publicApiEnabled"
     | "updateCheckEnabled"
+    | "telemetryEnabled"
     | "askAcquisitionSource"
   >;
   type LimitKey = Extract<
@@ -88,6 +89,12 @@
       key: "updateCheckEnabled",
       label: m.admin_settings_update_check(),
       hint: m.admin_settings_update_check_hint(),
+    },
+    {
+      key: "telemetryEnabled",
+      label: m.admin_settings_telemetry(),
+      hint: m.admin_settings_telemetry_hint(),
+      badge: "instance-count",
     },
     {
       key: "askAcquisitionSource",

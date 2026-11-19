@@ -41,5 +41,9 @@ export class UpdateInstanceSettingsRequestDto implements UpdateInstanceSettingsD
 
   @IsOptional()
   @IsBoolean()
+  telemetryEnabled?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
   askAcquisitionSource?: boolean;
 }
