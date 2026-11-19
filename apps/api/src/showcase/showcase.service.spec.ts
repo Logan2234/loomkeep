@@ -74,4 +74,23 @@ describe("ShowcaseService", () => {
 
     expect(trendingPosters).toHaveBeenCalledOnce();
   });
+
+  it("asks again within the hour when a catalog failed, instead of keeping the gap a day", async () => {
+    vi.useFakeTimers();
+    const { service, trendingPosters } = makeService({
+      tmdb: vi
+        .fn<() => Promise<string[]>>()
+        .mockRejectedValueOnce(new Error("TMDB timeout"))
+        .mockResolvedValue(["tmdb-1"]),
+    });
+
+    await service.get();
+    vi.advanceTimersByTime(60 * 60 * 1000);
+    await expect(service.get()).resolves.toEqual({
+      posters: ["tmdb-1", "igdb-1", "book-1"],
+    });
+    expect(trendingPosters).toHaveBeenCalledTimes(2);
+
+    vi.useRealTimers();
+  });
 });

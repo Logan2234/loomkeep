@@ -6,6 +6,11 @@ import { PrismaService } from "../prisma/prisma.service";
 
 const TTL_MS = 24 * 60 * 60 * 1000;
 /**
+ * A source that failed (a timeout right after a deploy, a rate limit) is
+ * retried this soon rather than leaving its share empty for a whole day.
+ */
+const RETRY_AFTER_FAILURE_MS = 10 * 60 * 1000;
+/**
  * Books and albums come from the instance itself, where a cover says what its
  * users follow: only one followed this widely, so no single account shows.
  */
@@ -21,7 +26,8 @@ const PER_SOURCE = [40, 20, 12, 12];
 @Injectable()
 export class ShowcaseService {
   private readonly logger = new Logger(ShowcaseService.name);
-  private cached: { at: number; result: Promise<ShowcaseDto> } | null = null;
+  private cached: { expiresAt: number; result: Promise<ShowcaseDto> } | null =
+    null;
 
   constructor(
     private readonly prisma: PrismaService,
@@ -30,14 +36,19 @@ export class ShowcaseService {
   ) {}
 
   get(): Promise<ShowcaseDto> {
-    if (!this.cached || Date.now() - this.cached.at > TTL_MS) {
-      this.cached = { at: Date.now(), result: this.collect() };
+    if (!this.cached || Date.now() > this.cached.expiresAt) {
+      const entry = { expiresAt: Date.now() + TTL_MS };
+      this.cached = Object.assign(entry, {
+        result: this.collect(() => {
+          entry.expiresAt = Date.now() + RETRY_AFTER_FAILURE_MS;
+        }),
+      });
     }
 
     return this.cached.result;
   }
 
-  private async collect(): Promise<ShowcaseDto> {
+  private async collect(onSourceFailed: () => void): Promise<ShowcaseDto> {
     const sources = await Promise.allSettled([
       this.tmdb.trendingPosters(),
       this.igdb.popularCovers(),
@@ -51,6 +62,7 @@ export class ShowcaseService {
       }
 
       // A catalog not configured on this instance just leaves its share out.
+      onSourceFailed();
       this.logger.warn(
         `Showcase source ${i} skipped: ${String(source.reason)}`,
       );
