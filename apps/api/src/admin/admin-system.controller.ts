@@ -49,19 +49,25 @@ export class AdminSystemController {
     return this.backup.listFiles();
   }
 
-  /** Full SQL content of one persisted backup, for download. */
+  /**
+   * Full SQL content of one persisted backup, for download. The whole
+   * instance's data, password hashes included: confirmed like a restore.
+   */
+  @RequireRecentAuth()
   @Get("backup/files/:id")
   @ApiOkResponse({ type: AdminBackupFileContentResponseDto })
   getBackupFile(@Param("id") id: string): Promise<AdminBackupFileContentDto> {
     return this.backup.readFile(id);
   }
 
+  @RequireRecentAuth()
   @HttpCode(HttpStatus.NO_CONTENT)
   @Delete("backup/files/:id")
   async deleteBackupFile(@Param("id") id: string): Promise<void> {
     await this.backup.deleteFile(id);
   }
 
+  @RequireRecentAuth()
   @HttpCode(HttpStatus.NO_CONTENT)
   @Delete("backup/orphans/:filename")
   async deleteOrphanBackupFile(

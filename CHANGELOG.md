@@ -51,6 +51,9 @@ history from before it was started.
   and its deletion, even when it was already past the 36 months.
 - A saga sequel announcement is no longer emailed again every hour after a
   failed scan.
+- Admin: downloading or deleting a backup, changing someone's role, deleting
+  an account and saving the instance settings now ask you to confirm your
+  identity first, as restoring a backup already did.
 - Opening Loomkeep on a new device no longer shows statuses, menus and
   settings labels in the browser's language next to the rest of the app in
   your account's.

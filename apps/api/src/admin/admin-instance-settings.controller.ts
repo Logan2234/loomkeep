@@ -1,6 +1,7 @@
 import type { InstanceSettingsDto } from "@loomkeep/shared";
 import { Body, Controller, Get, Patch } from "@nestjs/common";
 import { ApiOkResponse } from "@nestjs/swagger";
+import { RequireRecentAuth } from "../auth/recent-auth.guard";
 import { InstanceSettingsResponseDto } from "../instance-settings/dto/instance-settings-response.dto";
 import { UpdateInstanceSettingsRequestDto } from "../instance-settings/dto/update-instance-settings.dto";
 import { InstanceSettingsService } from "../instance-settings/instance-settings.service";
@@ -18,6 +19,7 @@ export class AdminInstanceSettingsController {
     return this.settings.toDto();
   }
 
+  @RequireRecentAuth()
   @Patch()
   @ApiOkResponse({ type: InstanceSettingsResponseDto })
   update(
