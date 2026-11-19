@@ -78,6 +78,9 @@ export const ErrorCode = {
   AdminInvitationEmailRegistered: "admin.invitation_email_registered",
   AdminInvitationAlreadyPending: "admin.invitation_already_pending",
   AdminInvitationNotRenewable: "admin.invitation_not_renewable",
+  // A self-host answering the self-hosted instances' ping, which only the
+  // hosted instance receives.
+  AdminInstancePingsNotReceived: "admin.instance_pings_not_received",
 
   // comments
   CommentUnknownTargetType: "comment.unknown_target_type",

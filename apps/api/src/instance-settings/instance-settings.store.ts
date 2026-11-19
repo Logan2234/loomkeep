@@ -31,6 +31,7 @@ const PARSE: {
   apiRateLimitFree: (raw) => Number(raw),
   apiRateLimitPremium: (raw) => Number(raw),
   updateCheckEnabled: (raw) => raw !== "false",
+  telemetryEnabled: (raw) => raw !== "false",
   askAcquisitionSource: (raw) => raw === "true",
 };
 

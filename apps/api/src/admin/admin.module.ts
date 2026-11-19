@@ -40,6 +40,8 @@ import { AdminUsersController } from "./admin-users.controller";
 import { AdminGuard } from "./admin.guard";
 import { AdminService } from "./admin.service";
 import { BackupService } from "./backup.service";
+import { InstancePingController } from "./instance-ping.controller";
+import { InstancePingService } from "./instance-ping.service";
 import { PublicStatsController } from "./public-stats.controller";
 import { PublicStatsGuard } from "./public-stats.guard";
 import { QuotaAlertService } from "./quota-alert.service";
@@ -82,6 +84,7 @@ import { UpdateCheckService } from "./update-check.service";
     AdminReportsController,
     AdminStatsController,
     PublicStatsController,
+    InstancePingController,
   ],
   providers: [
     QuotaAlertService,
@@ -96,6 +99,7 @@ import { UpdateCheckService } from "./update-check.service";
     AdminSystemStatsService,
     BackupService,
     UpdateCheckService,
+    InstancePingService,
   ],
 })
 export class AdminModule {}

@@ -3,6 +3,7 @@ import { vi, type Mock } from "vitest";
 import type { PrismaService } from "../prisma/prisma.service";
 import { AdminSystemStatsService } from "./admin-system-stats.service";
 import type { AdminService } from "./admin.service";
+import type { InstancePingService } from "./instance-ping.service";
 
 // The computation itself lives in admin-system-stats.util (own spec). What's
 // worth pinning here is the orchestration: which window each figure is read
@@ -24,7 +25,14 @@ function make(over: { backup?: unknown; counters?: unknown[] } = {}) {
     getProviderQuotaSpecs: vi.fn().mockReturnValue([]),
   } as unknown as AdminService;
 
-  return { service: new AdminSystemStatsService(prisma, admin), prisma };
+  const instancePings = {
+    summary: vi.fn().mockResolvedValue(null),
+  } as unknown as InstancePingService;
+
+  return {
+    service: new AdminSystemStatsService(prisma, admin, instancePings),
+    prisma,
+  };
 }
 
 describe("AdminSystemStatsService", () => {

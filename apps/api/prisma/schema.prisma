@@ -1517,6 +1517,7 @@ model InstanceSettings {
   apiRateLimitFree     Int      @default(60)
   apiRateLimitPremium  Int      @default(300)
   updateCheckEnabled   Boolean  @default(true)
+  telemetryEnabled     Boolean  @default(true)
   // Off for self-hosters; the hosted instance turns it on.
   askAcquisitionSource Boolean  @default(false)
   updatedAt            DateTime @updatedAt
@@ -1533,6 +1534,21 @@ model UpdateCheck {
   // The newest version administrators were emailed about, so each version
   // is announced once.
   notifiedVersion String?
+  // Random, generated on the first telemetry ping: never derived from
+  // anything about the instance or its users.
+  instanceId      String?
+}
+
+// Self-hosted instances' daily pings, received by the hosted instance only.
+// No IP or anything else about the sender is stored; rows unseen for 90 days
+// are purged.
+model InstancePing {
+  instanceId  String   @id
+  version     String
+  firstSeenAt DateTime @default(now())
+  lastSeenAt  DateTime @default(now())
+
+  @@index([lastSeenAt])
 }
 
 // One row per self-requested account deletion actually carried out, with
