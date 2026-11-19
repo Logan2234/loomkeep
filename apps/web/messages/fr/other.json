@@ -589,6 +589,8 @@
   "calendar_premieres_in_list": "Dans ma liste",
   "calendar_premieres_added_toast": "{title} ajoutée à ta liste",
   "calendar_premieres_attribution": "Les dates sont celles de la première diffusion dans le pays de la chaîne, d'après TMDB. Ce produit utilise l'API TMDB sans être approuvé ni certifié par TMDB.",
+  "calendar_premieres_feed_title": "Premières",
+  "calendar_premieres_feed_description": "Les séries qui démarrent dans les huit prochaines semaines, dans ton agenda. C'est le même lien personnel : le régénérer révoque aussi celui-ci.",
   "lists_search_placeholder": "Chercher une liste…",
   "lists_kind_ranked": "Classement",
   "lists_kind_collection": "Collection",

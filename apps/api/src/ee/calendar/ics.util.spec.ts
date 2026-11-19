@@ -1,5 +1,5 @@
-import type { CalendarEntryDto } from "@loomkeep/shared";
-import { buildCalendarIcs } from "./ics.util";
+import type { CalendarEntryDto, PremiereDto } from "@loomkeep/shared";
+import { buildCalendarIcs, buildPremieresIcs } from "./ics.util";
 
 function entry(overrides: Partial<CalendarEntryDto> = {}): CalendarEntryDto {
   return {
@@ -100,5 +100,44 @@ describe("buildCalendarIcs", () => {
     expect(
       ics.split("\n").every((line) => line === "" || line.endsWith("\r")),
     ).toBe(true);
+  });
+});
+
+describe("buildPremieresIcs", () => {
+  const premiere: PremiereDto = {
+    sourceId: "171802",
+    title: "Blade Runner 2099",
+    originalTitle: null,
+    firstAirDate: "2026-11-25",
+    networkId: 1024,
+    networkName: "Prime Video",
+    originCountries: ["US"],
+    overview: "Los Angeles, 2099.",
+    posterUrl: "https://image.tmdb.org/t/p/w500/p.jpg",
+    backdropUrl: null,
+    popularity: 10,
+  };
+
+  it("renders a premiere as an all-day event with its network and series link", () => {
+    const ics = buildPremieresIcs([premiere], {
+      name: "Loomkeep · Premières",
+      webOrigin: "https://loomkeep.app",
+    });
+
+    expect(ics).toContain("X-WR-CALNAME:Loomkeep · Premières");
+    expect(ics).toContain("UID:171802-premiere@loomkeep.app");
+    expect(ics).toContain("DTSTART;VALUE=DATE:20261125");
+    expect(ics).toContain("SUMMARY:Blade Runner 2099 (Prime Video)");
+    expect(ics).toContain("URL:https://loomkeep.app/app/media/series/171802");
+    expect(ics).toContain("DESCRIPTION:Los Angeles\\, 2099.");
+  });
+
+  it("leaves the description out when TMDB has no synopsis", () => {
+    const ics = buildPremieresIcs([{ ...premiere, overview: null }], {
+      name: "Loomkeep",
+      webOrigin: "https://loomkeep.app",
+    });
+
+    expect(ics).not.toContain("DESCRIPTION");
   });
 });

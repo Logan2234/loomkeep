@@ -1,4 +1,8 @@
-import { episodeCode, type CalendarEntryDto } from "@loomkeep/shared";
+import {
+  episodeCode,
+  type CalendarEntryDto,
+  type PremiereDto,
+} from "@loomkeep/shared";
 import { utcDateKey } from "../../common/date.util";
 
 const CRLF = "\r\n";
@@ -57,18 +61,59 @@ function eventUid(entry: CalendarEntryDto): string {
     : `${id}-${entry.seasonNumber}-${entry.episodeNumber}@loomkeep.app`;
 }
 
-/** Renders a user's upcoming-release calendar as an RFC 5545 .ics feed. */
-export function buildCalendarIcs(entries: CalendarEntryDto[]): string {
-  const now = formatTimestampUtc(new Date());
-  const lines: string[] = [
+function calendarHeader(name: string): string[] {
+  return [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
     "PRODID:-//Loomkeep//Calendrier de sorties//FR",
     "CALSCALE:GREGORIAN",
     "METHOD:PUBLISH",
-    "X-WR-CALNAME:Loomkeep",
+    `X-WR-CALNAME:${escapeText(name)}`,
     "REFRESH-INTERVAL;VALUE=DURATION:PT12H",
   ];
+}
+
+function closeCalendar(lines: string[]): string {
+  lines.push("END:VCALENDAR");
+  return lines.map(foldLine).join(CRLF) + CRLF;
+}
+
+/**
+ * The series premiering soon as an RFC 5545 .ics feed: one all-day event per
+ * first episode, linking to the series page.
+ */
+export function buildPremieresIcs(
+  premieres: PremiereDto[],
+  options: { name: string; webOrigin: string },
+): string {
+  const now = formatTimestampUtc(new Date());
+  const lines = calendarHeader(options.name);
+
+  for (const premiere of premieres) {
+    const url = `${options.webOrigin}/app/media/series/${premiere.sourceId}`;
+    lines.push(
+      "BEGIN:VEVENT",
+      `UID:${premiere.sourceId}-premiere@loomkeep.app`,
+      `DTSTAMP:${now}`,
+      `DTSTART;VALUE=DATE:${premiere.firstAirDate.replace(/-/g, "")}`,
+      `SUMMARY:${escapeText(`${premiere.title} (${premiere.networkName})`)}`,
+      `URL:${url}`,
+    );
+
+    if (premiere.overview) {
+      lines.push(`DESCRIPTION:${escapeText(premiere.overview)}`);
+    }
+
+    lines.push("END:VEVENT");
+  }
+
+  return closeCalendar(lines);
+}
+
+/** Renders a user's upcoming-release calendar as an RFC 5545 .ics feed. */
+export function buildCalendarIcs(entries: CalendarEntryDto[]): string {
+  const now = formatTimestampUtc(new Date());
+  const lines = calendarHeader("Loomkeep");
 
   for (const entry of entries) {
     const start = new Date(entry.airDate);
@@ -95,6 +140,5 @@ export function buildCalendarIcs(entries: CalendarEntryDto[]): string {
     lines.push("END:VEVENT");
   }
 
-  lines.push("END:VCALENDAR");
-  return lines.map(foldLine).join(CRLF) + CRLF;
+  return closeCalendar(lines);
 }

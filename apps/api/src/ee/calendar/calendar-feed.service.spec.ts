@@ -1,5 +1,6 @@
 import type { ConfigService } from "@nestjs/config";
 import { vi } from "vitest";
+import type { TmdbProvider } from "../../catalog/providers/tmdb.provider";
 import type { EntitlementService } from "../../entitlements/entitlement.service";
 import type { CalendarService } from "../../library/calendar.service";
 import type { PrismaService } from "../../prisma/prisma.service";
@@ -28,12 +29,55 @@ function makeService(
   const calendar = {
     getCalendar: vi.fn().mockResolvedValue([]),
   } as unknown as CalendarService;
+  const tmdb = {
+    listPremieres: vi.fn().mockResolvedValue([
+      {
+        sourceId: "171802",
+        title: "Blade Runner 2099",
+        originalTitle: null,
+        firstAirDate: "2026-11-25",
+        networkId: 1024,
+        networkName: "Prime Video",
+        originCountries: ["US"],
+        overview: null,
+        posterUrl: "https://image.tmdb.org/t/p/w500/p.jpg",
+        backdropUrl: null,
+        popularity: 10,
+      },
+    ]),
+  };
 
   return {
-    service: new CalendarFeedService(prisma, entitlements, calendar, config),
+    service: new CalendarFeedService(
+      prisma,
+      entitlements,
+      calendar,
+      config,
+      tmdb as unknown as TmdbProvider,
+    ),
     prisma,
+    tmdb,
   };
 }
+
+describe("CalendarFeedService.getPremieresIcs", () => {
+  it("lists the premieres in the subscriber's language, linking to this instance", async () => {
+    const { service, tmdb } = makeService({ id: "user-1", locale: "fr" }, true);
+
+    const ics = await service.getPremieresIcs("tok");
+
+    expect(tmdb.listPremieres).toHaveBeenCalledWith("fr");
+    expect(ics).toContain("X-WR-CALNAME:Loomkeep · Premières");
+    expect(ics).toContain("URL:https://loomkeep.app/app/media/series/171802");
+  });
+
+  it("returns null for a non-premium user, even with a valid token", async () => {
+    const { service, tmdb } = makeService({ id: "user-1" }, false);
+
+    await expect(service.getPremieresIcs("tok")).resolves.toBeNull();
+    expect(tmdb.listPremieres).not.toHaveBeenCalled();
+  });
+});
 
 describe("CalendarFeedService.getCalendarIcs", () => {
   it("returns the feed for a premium user with a valid token", async () => {
