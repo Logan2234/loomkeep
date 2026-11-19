@@ -23,11 +23,15 @@ async function importAll(locale: "en" | "fr") {
 }
 
 /** Every string reachable from `value`, by path. */
-function strings(value: unknown, path = "", seen = new Set<unknown>()) {
+function strings(
+  value: unknown,
+  path = "",
+  seen = new Set<unknown>(),
+): [string, string][] {
   if (typeof value === "string") return [[path, value]];
   if (!value || typeof value !== "object" || seen.has(value)) return [];
   seen.add(value);
-  return Object.keys(value).flatMap((key): string[][] =>
+  return Object.keys(value).flatMap((key) =>
     strings((value as Record<string, unknown>)[key], `${path}/${key}`, seen),
   );
 }
