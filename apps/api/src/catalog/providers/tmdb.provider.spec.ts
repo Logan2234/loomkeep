@@ -691,26 +691,31 @@ describe("TmdbProvider", () => {
     it.each([
       [
         "getDetails (movie)",
+        ErrorCode.CatalogItemNotFound,
         (p: TmdbProvider) => p.getDetails("1/../../account", MediaType.MOVIE),
       ],
       [
         "getDetails (series)",
+        ErrorCode.CatalogItemNotFound,
         (p: TmdbProvider) => p.getDetails("1?x=", MediaType.SERIES),
       ],
       [
         "getExtras",
+        ErrorCode.CatalogItemNotFound,
         (p: TmdbProvider) =>
           p.getExtras("../account", MediaType.MOVIE, "fr", "FR"),
       ],
-      ["getPerson", (p: TmdbProvider) => p.getPerson("../account")],
+      [
+        "getPerson",
+        ErrorCode.CatalogPersonNotFound,
+        (p: TmdbProvider) => p.getPerson("../account"),
+      ],
     ])(
       "%s never puts a non-numeric id into a TMDB path",
-      async (_name, call) => {
+      async (_name, code, call) => {
         mockFetchByUrl({});
 
-        await expect(call(provider)).rejects.toMatchObject({
-          code: expect.stringMatching(/^catalog./),
-        });
+        await expect(call(provider)).rejects.toMatchObject({ code });
         expect(global.fetch).not.toHaveBeenCalled();
       },
     );

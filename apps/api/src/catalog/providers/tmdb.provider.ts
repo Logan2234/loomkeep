@@ -788,11 +788,14 @@ function byRelease(
 }
 
 /** An id from a page's URL, interpolated into a TMDB path: digits only. */
-function assertTmdbId(id: string): void {
+function assertTmdbId(
+  id: string,
+  code: ErrorCode = ErrorCode.CatalogStudioNotFound,
+): void {
   if (!/^\d+$/.test(id)) {
     throw new AppException(
       HttpStatus.NOT_FOUND,
-      ErrorCode.CatalogStudioNotFound,
+      code,
       undefined,
       `Not a TMDB id: ${id}`,
     );
