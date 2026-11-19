@@ -1,6 +1,30 @@
 import { fileURLToPath } from "node:url";
 import ts from "typescript";
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { isRecentlyShipped } from "./feature-badges";
+
+describe("isRecentlyShipped", () => {
+  // East of UTC, where local midnight comes before UTC's.
+  const originalTz = process.env.TZ;
+  beforeEach(() => {
+    process.env.TZ = "Europe/Paris";
+  });
+  afterEach(() => {
+    process.env.TZ = originalTz;
+  });
+
+  it("shows the badge from the first minute of the shipping day, local time", () => {
+    // 00:30 in Paris on the 19th, still the 18th in UTC.
+    const now = Date.parse("2026-11-18T23:30:00Z");
+    expect(isRecentlyShipped("2026-11-19", now)).toBe(true);
+  });
+
+  it("does not show it the evening before", () => {
+    // 23:30 in Paris on the 18th.
+    const now = Date.parse("2026-11-18T22:30:00Z");
+    expect(isRecentlyShipped("2026-11-19", now)).toBe(false);
+  });
+});
 
 describe("feature badge key contract", () => {
   it("accepts a shipped feature and rejects an unknown key", () => {

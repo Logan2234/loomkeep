@@ -64,7 +64,16 @@ export type FeatureBadgeKey = keyof typeof SHIPPED;
 
 export function isFeatureNew(key: FeatureBadgeKey): boolean {
   const shippedAt = SHIPPED[key];
-  if (!shippedAt) return false;
-  const ageDays = (Date.now() - new Date(shippedAt).getTime()) / 86_400_000;
+  return !!shippedAt && isRecentlyShipped(shippedAt, Date.now());
+}
+
+/**
+ * Whether a `YYYY-MM-DD` ship date still earns its badge at `now`. The date
+ * starts at the viewer's midnight: a bare date parses as UTC's, which hid
+ * the badge for the first hour of its day in France.
+ */
+export function isRecentlyShipped(shippedAt: string, now: number): boolean {
+  const shippedDay = new Date(`${shippedAt}T00:00:00`).getTime();
+  const ageDays = (now - shippedDay) / 86_400_000;
   return ageDays >= 0 && ageDays < NEW_BADGE_DAYS;
 }
