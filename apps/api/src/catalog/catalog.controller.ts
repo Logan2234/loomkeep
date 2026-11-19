@@ -16,6 +16,7 @@ import {
   Get,
   Headers,
   HttpStatus,
+  Logger,
   Param,
   ParseIntPipe,
   Query,
@@ -45,6 +46,8 @@ import { resolveWatchRegion } from "./watch-region.util";
 
 @Controller("catalog")
 export class CatalogController {
+  private readonly logger = new Logger(CatalogController.name);
+
   constructor(
     private readonly mediaItemService: MediaItemService,
     private readonly ageGate: AgeGateService,
@@ -109,13 +112,13 @@ export class CatalogController {
         ? this.mediaItemService
             .providerFor(CatalogSource.TMDB)
             .search(query.q, query.type, page, query.lang)
-            .catch(() => [])
+            .catch((err) => this.searchFailed("TMDB", err))
         : Promise.resolve([]),
       wantAnilist
         ? this.mediaItemService
             .providerFor(CatalogSource.ANILIST)
             .search(query.q, undefined, page)
-            .catch(() => [])
+            .catch((err) => this.searchFailed("AniList", err))
         : Promise.resolve([]),
       this.ageGate.allowsAdultContent(user.sub),
     ]);
@@ -132,6 +135,12 @@ export class CatalogController {
     // wasn't empty — matches how a provider's own pagination ends (an empty
     // page), same heuristic the client used before this moved server-side.
     return { items, hasMore: items.length > 0 };
+  }
+
+  /** One source down still leaves the other's results; the log tells it from "no match". */
+  private searchFailed(source: string, err: unknown): [] {
+    this.logger.warn(`${source} search failed`, err);
+    return [];
   }
 
   /** Live detail of a cast entity (TMDB person, or AniList staff) for the media-page modal. */
