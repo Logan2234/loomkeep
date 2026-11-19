@@ -308,7 +308,12 @@ export class MediaItemService {
       this.prisma.episodeTranslation.deleteMany({
         where: { locale, episodeId: { in: episodeIds } },
       }),
-      this.prisma.episodeTranslation.createMany({ data: episodeRows }),
+      // A concurrent first view in the same locale inserts the same rows
+      // between this delete and insert: skip them instead of failing on P2002.
+      this.prisma.episodeTranslation.createMany({
+        data: episodeRows,
+        skipDuplicates: true,
+      }),
     ]);
   }
 
