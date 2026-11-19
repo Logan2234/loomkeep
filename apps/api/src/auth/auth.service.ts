@@ -309,6 +309,13 @@ export class AuthService {
       }),
     ]);
     this.events.emitToUser(stored.userId, RealtimeEvent.EMAIL_VERIFIED);
+
+    // The ADMIN_EMAIL account waited for this to be promoted; don't make it
+    // sign in again first.
+    const verified = await this.prisma.user.findUnique({
+      where: { id: stored.userId },
+    });
+    if (verified) await this.ensureAdminRole(verified);
   }
 
   /**
@@ -1034,6 +1041,11 @@ export class AuthService {
    * so it also promotes an account created before the env var was set.
    * Hosted mode leaves `ADMIN_EMAIL` unset — there admin is granted per-account
    * from the admin panel instead.
+   *
+   * With registration open, anyone could sign up first with that address, so
+   * the address must be verified — but only where it can be: an instance
+   * without SMTP can't send the link, and requiring it there would leave the
+   * operator with no way to become admin.
    */
   private async ensureAdminRole(user: User): Promise<User> {
     const adminEmail = this.configService.get<string>("ADMIN_EMAIL");
@@ -1045,6 +1057,10 @@ export class AuthService {
     }
 
     if (user.role === "ADMIN") {
+      return user;
+    }
+
+    if (!user.emailVerified && this.mail.isConfigured()) {
       return user;
     }
 

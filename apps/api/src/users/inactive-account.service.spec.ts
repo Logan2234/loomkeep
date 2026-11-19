@@ -91,7 +91,7 @@ describe("InactiveAccountService.scan", () => {
     expect(result).toEqual({ warned: 0, deleted: 0 });
   });
 
-  it("deletes accounts inactive for 36+ months that were already warned", async () => {
+  it("deletes accounts inactive for 36+ months that were warned at least 30 days ago", async () => {
     const { service, prisma } = makeService();
     (prisma.user.findMany as Mock)
       .mockResolvedValueOnce([]) // no new warnings to send
@@ -102,11 +102,40 @@ describe("InactiveAccountService.scan", () => {
     expect(prisma.user.findMany).toHaveBeenNthCalledWith(2, {
       where: {
         lastActiveAt: { lte: expect.any(Date) },
-        inactivityWarningSentAt: { not: null },
+        inactivityWarningSentAt: { lte: expect.any(Date) },
       },
       select: { id: true },
     });
     expect(result).toEqual({ warned: 0, deleted: 1 });
+  });
+
+  it("gives a full notice to an account already past 36 months when it is first warned", async () => {
+    const { service, prisma, mail } = makeService();
+    (prisma.user.findMany as Mock)
+      .mockResolvedValueOnce([
+        {
+          id: "user-3",
+          email: "carol@example.com",
+          locale: "fr",
+          lastActiveAt: new Date("2020-01-01T00:00:00.000Z"),
+        },
+      ])
+      .mockResolvedValueOnce([]);
+    const before = Date.now();
+
+    await service.scan();
+
+    const [, announcedDeletion] = (mail.sendInactivityWarning as Mock).mock
+      .calls[0] as [unknown, Date];
+    expect(announcedDeletion.getTime()).toBeGreaterThanOrEqual(
+      before + 30 * 24 * 60 * 60 * 1000,
+    );
+    const deletionQuery = (prisma.user.findMany as Mock).mock.calls[1][0] as {
+      where: { inactivityWarningSentAt: { lte: Date } };
+    };
+    expect(
+      deletionQuery.where.inactivityWarningSentAt.lte.getTime(),
+    ).toBeLessThanOrEqual(Date.now() - 30 * 24 * 60 * 60 * 1000);
   });
 
   it("does nothing when no account crosses either threshold", async () => {
