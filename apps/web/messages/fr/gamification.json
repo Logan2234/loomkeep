@@ -163,7 +163,6 @@
   "gamification_bubble_unlocked": "Succès débloqué",
   "gamification_bubble_level_reached": "Niveau atteint",
   "gamification_level": "Niveau {level}",
-  "gamification_bubble_dismiss": "Masquer",
   "gamification_disabled": "La progression est désactivée sur cette instance.",
   "gamification_empty": "Aucun succès à afficher.",
   "gamification_leaderboard_title": "Classement",

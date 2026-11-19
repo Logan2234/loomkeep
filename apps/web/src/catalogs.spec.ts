@@ -1,8 +1,5 @@
 import { Locale } from "@loomkeep/shared";
 import { readFileSync, readdirSync } from "node:fs";
-import { fileURLToPath } from "node:url";
-import { parse } from "svelte/compiler";
-import ts from "typescript";
 import { describe, expect, it } from "vitest";
 
 const settings: { baseLocale: string; locales: string[] } = JSON.parse(
@@ -22,6 +19,11 @@ const locales = readdirSync(new URL("../messages", import.meta.url), {
 const names = [
   "common",
   "other",
+  "works",
+  "library",
+  "social",
+  "home",
+  "auth",
   "errors",
   "gamification",
   "admin",
@@ -36,6 +38,42 @@ const prefixHomes: [string, (typeof names)[number]][] = [
   ["transparency_", "site"],
   ["gamification_", "gamification"],
   ["admin_", "admin"],
+  ["media_", "works"],
+  ["game_", "works"],
+  ["book_", "works"],
+  ["music_", "works"],
+  ["work_", "works"],
+  ["creator_", "works"],
+  ["ownership_", "works"],
+  ["tracking_", "works"],
+  ["library_", "library"],
+  ["session_", "library"],
+  ["reading_", "library"],
+  ["pile_", "library"],
+  ["saved_", "library"],
+  ["quick_", "library"],
+  ["add_", "library"],
+  ["scan_", "library"],
+  ["calendar_", "library"],
+  ["import_", "library"],
+  ["chat_", "social"],
+  ["report_", "social"],
+  ["reviews_", "social"],
+  ["profile_", "social"],
+  ["list_", "social"],
+  ["lists_", "social"],
+  ["comment_", "social"],
+  ["comments_", "social"],
+  ["share_", "social"],
+  ["activity_", "social"],
+  ["home_", "home"],
+  ["stats_", "home"],
+  ["onboarding_", "home"],
+  ["notif_", "home"],
+  ["news_", "home"],
+  ["auth_", "auth"],
+  ["reauth_", "auth"],
+  ["password_", "auth"],
 ];
 const catalogs = Object.fromEntries(
   locales.map((locale) => [
@@ -163,7 +201,6 @@ describe("message catalogs", () => {
         "common_learn_more",
         "common_type",
         "common_visibility",
-        "common_category",
         "common_action",
         "common_more_actions",
         "common_albums",
@@ -172,7 +209,6 @@ describe("message catalogs", () => {
         "common_items",
         "common_works",
         "common_birthdate",
-        "common_size",
         "common_users",
         "common_theme",
         "common_timezone",
@@ -192,95 +228,46 @@ describe("message catalogs", () => {
   it("distinguishes the finish action from a completed status", () => {
     expect(catalogs.fr.common.messages.common_finish).toBe("Terminer");
     expect(catalogs.en.common.messages.common_finish).toBe("Finish");
-    expect(catalogs.fr.other.messages.library_status_completed).toBe("Terminé");
-    expect(catalogs.en.other.messages.library_status_completed).toBe(
+    expect(catalogs.fr.library.messages.library_status_completed).toBe(
+      "Terminé",
+    );
+    expect(catalogs.en.library.messages.library_status_completed).toBe(
       "Completed",
     );
   });
 
-  // Parses every frontend file: seconds of CPU on its own, past the default
-  // 5s timeout when the component tests run alongside it.
-  it(
-    "resolves message calls throughout the frontend after key renames",
-    {
-      timeout: 30_000,
-    },
-    () => {
-      const directory = fileURLToPath(new URL("./", import.meta.url));
-      const keys = new Set(
-        names.flatMap((name) => Object.keys(catalogs.en[name].messages)),
-      );
-      const missing: string[] = [];
+  // Unknown keys are type errors (svelte-check); unused ones are not.
+  // no-dynamic-message-access (ESLint) keeps every reference a static
+  // `m.key`, which a plain text scan can find. The one exception is
+  // achievement-labels.ts, which builds gamification_<key>_name/_description
+  // from the API's achievement keys.
+  it("uses every message", () => {
+    let source = "";
 
-      for (const file of readdirSync(directory, {
-        recursive: true,
-        encoding: "utf8",
-      })) {
-        const path = file.replaceAll("\\", "/");
-        if (
-          !/\.(ts|svelte)$/.test(path) ||
-          path.includes("paraglide/") ||
-          path.endsWith(".spec.ts")
-        )
-          continue;
-        const source = readFileSync(new URL(path, import.meta.url), "utf8");
+    for (const file of readdirSync(new URL("./", import.meta.url), {
+      recursive: true,
+      encoding: "utf8",
+    })) {
+      const path = file.replaceAll("\\", "/");
+      if (
+        /\.(ts|svelte)$/.test(path) &&
+        !path.includes("paraglide/") &&
+        !path.endsWith(".spec.ts")
+      )
+        source += readFileSync(new URL(path, import.meta.url), "utf8");
+    }
 
-        const checkKey = (key: string) => {
-          if (!keys.has(key)) missing.push(`${path}: ${key}`);
-        };
+    const used = new Set(
+      Array.from(source.matchAll(/\bm\.(\w+)/g), ([, key]) => key),
+    );
+    const dynamic = /^gamification_\w+_(name|description)$/;
 
-        if (path.endsWith(".svelte")) {
-          const visit = (value: unknown) => {
-            if (!value || typeof value !== "object") return;
-            if (Array.isArray(value)) return value.forEach(visit);
-            const node = value as Record<string, unknown>;
-            const callee = node.callee as
-              | {
-                  type: string;
-                  computed?: boolean;
-                  object?: { type: string; name: string };
-                  property?: { name: string };
-                }
-              | undefined;
+    const unused = names.flatMap((name) =>
+      Object.keys(catalogs.en[name].messages)
+        .filter((key) => !used.has(key) && !dynamic.test(key))
+        .map((key) => `${name}: ${key}`),
+    );
 
-            if (
-              node.type === "CallExpression" &&
-              callee?.type === "MemberExpression" &&
-              !callee.computed &&
-              callee.object?.type === "Identifier" &&
-              callee.object.name === "m" &&
-              callee.property
-            ) {
-              checkKey(callee.property.name);
-            }
-
-            for (const [key, child] of Object.entries(node)) {
-              if (key !== "metadata" && key !== "loc") visit(child);
-            }
-          };
-
-          visit(parse(source, { modern: true }));
-        } else {
-          const visit = (node: ts.Node) => {
-            if (
-              ts.isCallExpression(node) &&
-              ts.isPropertyAccessExpression(node.expression) &&
-              ts.isIdentifier(node.expression.expression) &&
-              node.expression.expression.text === "m"
-            ) {
-              checkKey(node.expression.name.text);
-            }
-
-            ts.forEachChild(node, visit);
-          };
-
-          visit(
-            ts.createSourceFile(path, source, ts.ScriptTarget.Latest, true),
-          );
-        }
-      }
-
-      expect(missing).toEqual([]);
-    },
-  );
+    expect(unused).toEqual([]);
+  });
 });

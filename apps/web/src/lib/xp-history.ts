@@ -1,3 +1,4 @@
+import { achievementNameByKey } from "#lib/achievement-labels.js";
 import { m } from "#lib/paraglide/messages.js";
 import type { IconName } from "#lib/types/icon-name.js";
 import {
@@ -7,9 +8,34 @@ import {
   type XpReason,
 } from "@loomkeep/shared";
 
-// Reason and achievement labels are keyed by construction, like
-// achievement-labels.ts: the keys arrive from the API as plain strings.
-const messages = m as unknown as Record<string, (() => string) | undefined>;
+const REASON_LABEL: Record<XpReason, () => string> = {
+  EPISODE_WATCHED: m.gamification_xp_reason_episode_watched,
+  MOVIE_WATCHED: m.gamification_xp_reason_movie_watched,
+  MOVIE_REPLAYED: m.gamification_xp_reason_movie_replayed,
+  SEASON_COMPLETED: m.gamification_xp_reason_season_completed,
+  SERIES_COMPLETED: m.gamification_xp_reason_series_completed,
+  GAME_FINISHED: m.gamification_xp_reason_game_finished,
+  GAME_REPLAYED: m.gamification_xp_reason_game_replayed,
+  BOOK_FINISHED: m.gamification_xp_reason_book_finished,
+  BOOK_REPLAYED: m.gamification_xp_reason_book_replayed,
+  SESSION_DAY_LOGGED: m.gamification_xp_reason_session_day_logged,
+  ALBUM_LISTENED: m.gamification_xp_reason_album_listened,
+  WORK_ADDED: m.gamification_xp_reason_work_added,
+  DOMAIN_STARTED: m.gamification_xp_reason_domain_started,
+  WORK_RATED: m.gamification_xp_reason_work_rated,
+  REVIEW_WRITTEN: m.gamification_xp_reason_review_written,
+  REVIEW_DETAILED: m.gamification_xp_reason_review_detailed,
+  COMMENT_POSTED: m.gamification_xp_reason_comment_posted,
+  REVIEW_VOTE_RECEIVED: m.gamification_xp_reason_review_vote_received,
+  COMMENT_REACTION_RECEIVED: m.gamification_xp_reason_comment_reaction_received,
+  LIST_CREATED: m.gamification_xp_reason_list_created,
+  IMPORT_COMPLETED: m.gamification_xp_reason_import_completed,
+  PROFILE_COMPLETED: m.gamification_xp_reason_profile_completed,
+  ACHIEVEMENT_UNLOCKED: m.gamification_xp_reason_achievement_unlocked,
+  SAGA_COMPLETED: m.gamification_xp_reason_saga_completed,
+  READING_GOAL_REACHED: m.gamification_xp_reason_reading_goal_reached,
+  ADMIN_ADJUSTMENT: m.gamification_xp_reason_admin_adjustment,
+};
 
 /** Consecutive lines of one reason, gained or taken back. */
 export interface XpRun {
@@ -125,9 +151,7 @@ export function localDayKey(date: Date): string {
 }
 
 function reasonLabel(reason: XpReason): string {
-  return (
-    messages[`gamification_xp_reason_${reason.toLowerCase()}`]?.() ?? reason
-  );
+  return REASON_LABEL[reason]?.() ?? reason;
 }
 
 export function runLabel(group: XpRun): string {
@@ -169,11 +193,11 @@ const REASON_ICON: Record<XpReason, IconName> = {
 export const reasonIcon = (reason: XpReason): IconName =>
   REASON_ICON[reason] ?? "sparkles";
 
-const DOMAIN_MESSAGE: Record<string, string> = {
-  MEDIA: "common_Media",
-  GAMES: "common_Games",
-  BOOKS: "common_Books",
-  MUSIC: "common_Music",
+const DOMAIN_LABEL: Record<string, () => string> = {
+  MEDIA: m.common_Media,
+  GAMES: m.common_Games,
+  BOOKS: m.common_Books,
+  MUSIC: m.common_Music,
 };
 
 const pad2 = (n: number) => String(n).padStart(2, "0");
@@ -181,10 +205,7 @@ const pad2 = (n: number) => String(n).padStart(2, "0");
 /** What one line is about: "The Bear · S03E02", an achievement, a domain. */
 export function itemLabel(item: XpHistoryItemDto): string {
   if (item.achievementKey) {
-    return (
-      messages[`gamification_${item.achievementKey}_name`]?.() ??
-      item.achievementKey
-    );
+    return achievementNameByKey(item.achievementKey);
   }
 
   if (item.goalTarget !== null && item.goalYear !== null) {
@@ -195,7 +216,7 @@ export function itemLabel(item: XpHistoryItemDto): string {
   }
 
   if (item.domain) {
-    return messages[DOMAIN_MESSAGE[item.domain] ?? ""]?.() ?? item.domain;
+    return DOMAIN_LABEL[item.domain]?.() ?? item.domain;
   }
 
   if (!item.title) return "";
