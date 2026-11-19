@@ -163,7 +163,6 @@
   "gamification_bubble_unlocked": "Achievement unlocked",
   "gamification_bubble_level_reached": "Level reached",
   "gamification_level": "Level {level}",
-  "gamification_bubble_dismiss": "Dismiss",
   "gamification_disabled": "Progression is disabled on this instance.",
   "gamification_empty": "No achievements to show.",
   "gamification_leaderboard_title": "Leaderboard",

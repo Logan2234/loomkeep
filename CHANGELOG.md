@@ -39,11 +39,23 @@ history from before it was started.
 
 ### Added
 
+- Admin dashboard: the Users tile shows how many accounts are online right
+  now, refreshed live.
 - Calendar › Premieres: the series starting over the next eight weeks on the
   main streamers and channels, week by week, with this week's headliner and a
   "My services" filter.
 - Premium: subscribe to the series premieres from "Add to my calendar", with
   the same personal link as the release calendar.
+
+### Fixed
+
+- Opening Loomkeep on a new device no longer shows statuses, menus and
+  settings labels in the browser's language next to the rest of the app in
+  your account's.
+- Admin dashboard: the Users tile counted only today's signups under
+  "this week"; it now shows the last 7 days.
+- Admin › Users: the "Active session" filter listed accounts that hadn't
+  opened the app in weeks; it now only keeps sessions used in the last 24 hours.
 
 ## 1.14.0 — Person, author and studio pages, rewatching, and a reworked phone app
 

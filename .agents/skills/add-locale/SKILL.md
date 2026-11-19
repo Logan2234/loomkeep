@@ -16,9 +16,10 @@ breaks the app.
 ## 1. Translate the web catalogs
 
 see files: `apps/web/messages/en/*.json`
-(~3 000 keys over seven files; the largest are `other.json` ~1 170, `admin.json` ~620
-and `settings.json` ~380). Produce `apps/web/messages/<code>/` with the
-same file names.
+(~4 200 keys over twelve files, split by key prefix — see `prefixHomes` in
+`apps/web/src/catalogs.spec.ts`; the largest are `admin.json` ~820 and
+`settings.json` ~590). Produce `apps/web/messages/<code>/` with the same file
+names.
 
 - Translate from English, glance at French when the English is terse or ambiguous.
 - Keep every key, the `$schema` line, and every `{placeholder}` exactly — a test

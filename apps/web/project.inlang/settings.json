@@ -12,6 +12,11 @@
       "./messages/{locale}/errors.json",
       "./messages/{locale}/admin.json",
       "./messages/{locale}/other.json",
+      "./messages/{locale}/works.json",
+      "./messages/{locale}/library.json",
+      "./messages/{locale}/social.json",
+      "./messages/{locale}/home.json",
+      "./messages/{locale}/auth.json",
       "./messages/{locale}/gamification.json",
       "./messages/{locale}/settings.json",
       "./messages/{locale}/site.json"
