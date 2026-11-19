@@ -9,6 +9,10 @@ paths-ignore:
   - apps/web/build
   - apps/web/.svelte-kit
   - packages/shared/dist
+  # Vendored inlang plugins, copied unchanged from npm (checked by hash):
+  # their compiled TypeBox output trips js/trivial-conditional and
+  # js/useless-assignment-to-local.
+  - apps/web/project.inlang/plugins
 # hibp.service.ts's SHA-1 is the HIBP range API's k-anonymity lookup key, not
 # a credential hash: its js/insufficient-password-hash alert is dismissed as a
 # false positive in code scanning, like the other files where that rule

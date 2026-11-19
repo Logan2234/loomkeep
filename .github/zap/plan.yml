@@ -64,6 +64,11 @@ jobs:
         newRisk: False Positive
         url: http://localhost:18080/(_app/immutable/.*|favicon\.svg)
         urlRegex: true
+      # "CSP: style-src unsafe-inline": Svelte's style: directives and
+      # transitions write inline styles (vite.config.ts), and scripts stay
+      # protected by nonces.
+      - ruleId: 10055
+        newRisk: False Positive
 
   - type: spider
     parameters:
