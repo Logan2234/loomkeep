@@ -119,15 +119,23 @@ export class InactiveAccountService {
       select: { id: true },
     });
 
+    // Same isolation as scheduled deletions: a failure is retried next run.
+    let deleted = 0;
+
     for (const user of candidates) {
-      await this.accountDeletion.deleteAccount(
-        user.id,
-        "inactive",
-        `Suppression automatique pour inactivité (>${DELETE_AFTER_MONTHS} mois)`,
-      );
-      this.logger.log(`Compte ${user.id} supprimé pour inactivité`);
+      try {
+        await this.accountDeletion.deleteAccount(
+          user.id,
+          "inactive",
+          `Suppression automatique pour inactivité (>${DELETE_AFTER_MONTHS} mois)`,
+        );
+        deleted++;
+        this.logger.log(`Compte ${user.id} supprimé pour inactivité`);
+      } catch (err) {
+        this.logger.error(`Inactivity deletion of ${user.id} failed`, err);
+      }
     }
 
-    return candidates.length;
+    return deleted;
   }
 }
