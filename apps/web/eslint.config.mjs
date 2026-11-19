@@ -44,6 +44,8 @@ export default defineConfig(
   // The service worker is compiled in SvelteKit's own worker context (no DOM
   // globals); it is type-checked by svelte-check, not by this ESLint config.
   { ignores: ["src/service-worker/**"] },
+  // Third-party inlang plugin bundles, vendored as published.
+  { ignores: ["project.inlang/plugins/**"] },
   // baseConfig's includeIgnoreFile(root .gitignore) doesn't reach
   // apps/web-local entries like this one: ESLint resolves a config's
   // `ignores` relative to *that config file's own* directory, so a
