@@ -589,6 +589,8 @@
   "calendar_premieres_in_list": "In my list",
   "calendar_premieres_added_toast": "{title} added to your list",
   "calendar_premieres_attribution": "Premiere dates are the first broadcast in the network's country, from TMDB. This product uses the TMDB API but is not endorsed or certified by TMDB.",
+  "calendar_premieres_feed_title": "Premieres",
+  "calendar_premieres_feed_description": "The series premiering over the next eight weeks, in your calendar app. Same personal link: regenerating it revokes this one too.",
   "lists_search_placeholder": "Search a list…",
   "lists_kind_ranked": "Ranked",
   "lists_kind_collection": "Collection",

@@ -16,7 +16,7 @@
   let { onclose }: { onclose: () => void } = $props();
 
   let confirmingRegenerate = $state(false);
-  // Which of the three links was just copied, for its button's feedback.
+  // Which link was just copied, for its button's feedback.
   const copyFeedback = new CopyFeedback<Link>();
   const copied = $derived(copyFeedback.value);
   $effect(() => () => copyFeedback.reset());
@@ -28,10 +28,11 @@
   const token = $derived(tokenQuery.data?.token ?? null);
   const loading = $derived(tokenQuery.loading);
 
-  // One token feeds the calendar and the release feed alike.
-  type Link = "ics" | "rss" | "atom";
+  // One token feeds the calendar, the premieres and the release feed alike.
+  type Link = "ics" | "premieres" | "rss" | "atom";
   const LINK_PATHS: Record<Link, string> = {
     ics: "library/calendar.ics",
+    premieres: "library/premieres.ics",
     rss: "library/releases.rss",
     atom: "library/releases.atom",
   };
@@ -106,6 +107,29 @@
         <Icon name={copied === "ics" ? "check" : "link"} class="h-4 w-4" />
         {copied === "ics" ? m.common_link_copied() : m.common_copy_link()}
       </button>
+    </div>
+
+    <div class="border-border mt-6 border-t pt-5">
+      <p class="flex items-center gap-2 font-semibold">
+        {m.calendar_premieres_feed_title()}
+        {#if isFeatureNew("premieres")}<NewBadge />{/if}
+      </p>
+      <p class="text-dim mt-1 text-sm">
+        {m.calendar_premieres_feed_description()}
+      </p>
+      <div class="mt-3 flex justify-end">
+        <button
+          type="button"
+          class="btn btn-ghost"
+          onclick={() => copyLink("premieres")}>
+          <Icon
+            name={copied === "premieres" ? "check" : "link"}
+            class="h-4 w-4" />
+          {copied === "premieres"
+            ? m.common_link_copied()
+            : m.common_copy_link()}
+        </button>
+      </div>
     </div>
 
     <div class="border-border mt-6 border-t pt-5">
