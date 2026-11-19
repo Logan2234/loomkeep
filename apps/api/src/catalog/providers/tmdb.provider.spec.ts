@@ -687,6 +687,35 @@ describe("TmdbProvider", () => {
     });
   });
 
+  describe("ids from a page's URL", () => {
+    it.each([
+      [
+        "getDetails (movie)",
+        (p: TmdbProvider) => p.getDetails("1/../../account", MediaType.MOVIE),
+      ],
+      [
+        "getDetails (series)",
+        (p: TmdbProvider) => p.getDetails("1?x=", MediaType.SERIES),
+      ],
+      [
+        "getExtras",
+        (p: TmdbProvider) =>
+          p.getExtras("../account", MediaType.MOVIE, "fr", "FR"),
+      ],
+      ["getPerson", (p: TmdbProvider) => p.getPerson("../account")],
+    ])(
+      "%s never puts a non-numeric id into a TMDB path",
+      async (_name, call) => {
+        mockFetchByUrl({});
+
+        await expect(call(provider)).rejects.toMatchObject({
+          code: expect.stringMatching(/^catalog./),
+        });
+        expect(global.fetch).not.toHaveBeenCalled();
+      },
+    );
+  });
+
   describe("getSaga", () => {
     it("lists a film's collection in release order, an unreleased part marked upcoming", async () => {
       mockFetchByUrl({
