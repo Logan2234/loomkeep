@@ -13,7 +13,9 @@
       "entry": ["src/main.ts", "test/**/*.e2e-spec.ts"],
       "ignoreDependencies": ["pino-pretty"]
     },
-    "apps/web": {},
+    "apps/web": {
+      "entry": ["project.inlang/paraglide.config.js"]
+    },
     "apps/mobile": {
       "entry": ["scripts/*.mjs"],
       "ignoreDependencies": ["@capacitor/push-notifications"]
