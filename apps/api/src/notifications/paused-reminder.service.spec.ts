@@ -130,6 +130,30 @@ describe("PausedReminderService.run", () => {
     expect(payload.body).toContain("Severance");
   });
 
+  it("still reminds the next accounts when one email fails", async () => {
+    const { service, prisma, mail, push } = make({ series: [SERIES] });
+    const account = (id: string) => ({
+      id,
+      email: `${id}@example.com`,
+      locale: "fr",
+      timezone: "Europe/Paris",
+      alertPrefs: { PAUSED_REMINDER: { email: true, push: true } },
+    });
+    (prisma.user.findMany as Mock).mockResolvedValue([
+      account("user-1"),
+      account("user-2"),
+    ]);
+    (mail.sendPausedReminder as Mock)
+      .mockRejectedValueOnce(new Error("SMTP unavailable"))
+      .mockResolvedValue(true);
+
+    await expect(service.run(FIRST_MONDAY_9H_PARIS)).resolves.toBe(2);
+
+    expect(mail.sendPausedReminder).toHaveBeenCalledTimes(2);
+    // The failed email doesn't cost user-1 their push either.
+    expect(push.sendToUser).toHaveBeenCalledTimes(2);
+  });
+
   it("sends nothing when nothing is on pause", async () => {
     const { service, prisma, mail, push } = make();
     (prisma.user.findMany as Mock).mockResolvedValue([

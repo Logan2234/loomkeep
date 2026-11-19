@@ -45,6 +45,9 @@ import type {
 } from "../../media-import-model";
 import type { MediaImportMatchResolver } from "./media-match-resolver";
 
+/** No one rewatches an episode more than this; anything above is corrupt input. */
+const MAX_WATCHES_PER_EPISODE = 100;
+
 /** A catalogue match resolved to its required media type, ready to write. */
 export type ResolvedMatch = {
   source: CatalogSource;
@@ -843,6 +846,9 @@ export abstract class MediaImportSource<
     totalWatches: number,
     watchedAt: Date | null,
   ): Promise<number> {
+    // One row per watch: an export claiming millions (a corrupt or forged
+    // TV Time `cpt`) would otherwise be allocated in full and take the API down.
+    totalWatches = Math.min(totalWatches, MAX_WATCHES_PER_EPISODE);
     const existing = await this.prisma.episodeWatch.count({
       where: { userId, episodeId },
     });

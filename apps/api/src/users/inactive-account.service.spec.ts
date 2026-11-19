@@ -138,6 +138,23 @@ describe("InactiveAccountService.scan", () => {
     ).toBeLessThanOrEqual(Date.now() - 30 * 24 * 60 * 60 * 1000);
   });
 
+  it("deletes the other dormant accounts when one deletion fails", async () => {
+    const { service, prisma, accountDeletion } = makeService();
+    (prisma.user.findMany as Mock)
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([{ id: "user-2" }, { id: "user-3" }]);
+    (accountDeletion.deleteAccount as Mock)
+      .mockRejectedValueOnce(new Error("db down"))
+      .mockResolvedValue(undefined);
+
+    await expect(service.scan()).resolves.toEqual({ warned: 0, deleted: 1 });
+    expect(accountDeletion.deleteAccount).toHaveBeenCalledWith(
+      "user-3",
+      "inactive",
+      expect.any(String),
+    );
+  });
+
   it("does nothing when no account crosses either threshold", async () => {
     const { service, mail, accountDeletion } = makeService();
 

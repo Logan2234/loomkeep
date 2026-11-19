@@ -452,6 +452,46 @@ describe("TvTimeImportSource (via ImportJobService)", () => {
     });
   });
 
+  it("caps an absurd rewatch count instead of allocating one row per watch", async () => {
+    const { prisma, tmdb, service } = makeService();
+    tmdb.findSeriesSummaryByTvdbId.mockResolvedValue({
+      source: "TMDB",
+      sourceId: "500",
+      type: "SERIES",
+      title: "My Show",
+      year: 2024,
+      posterUrl: null,
+    });
+    prisma.season.findMany.mockResolvedValue([
+      { number: 1, episodes: [{ id: "e1", number: 1 }] },
+    ]);
+    prisma.mediaExternalId.findUnique.mockResolvedValue({
+      mediaItemId: "media-100",
+    });
+
+    const analyze = await service.startAnalyze(
+      "u1",
+      "tvtime",
+      analyzeDto({
+        episodesCsv: UNDATED_EPISODES_CSV,
+        showsCsv: SHOWS_CSV,
+        rewatchedCsv: ["episode_id,cpt", "900,50000000"].join("\n"),
+      }),
+    );
+    await runToEnd(service, "u1", analyze.id);
+
+    const commit = service.commit("u1", "tvtime", analyze.id, {
+      include: ["tvdb:100"],
+    });
+    const job = await runToEnd(service, "u1", commit.id);
+
+    expect(job.status).toBe("completed");
+    const [{ data }] = prisma.episodeWatch.createMany.mock.calls[0] as [
+      { data: unknown[] },
+    ];
+    expect(data).toHaveLength(100);
+  });
+
   it("commit applies a manual override for an unresolved movie", async () => {
     const { mediaItemService, service } = makeService(); // tmdb.search → [] (all unresolved)
 

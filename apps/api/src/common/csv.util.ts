@@ -45,6 +45,9 @@ export function parseCsv(
 
 /** Split CSV text into rows of raw string cells, honouring quoted fields. */
 export function parseCsvRows(text: string, delimiter = ","): string[][] {
+  // Excel saves CSV with a byte-order mark, which would otherwise stick to
+  // the first header and make that whole column unreadable.
+  if (text.charCodeAt(0) === 0xfeff) text = text.slice(1);
   const rows: string[][] = [];
   let row: string[] = [];
   let field = "";

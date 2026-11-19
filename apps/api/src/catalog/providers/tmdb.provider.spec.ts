@@ -687,6 +687,40 @@ describe("TmdbProvider", () => {
     });
   });
 
+  describe("ids from a page's URL", () => {
+    it.each([
+      [
+        "getDetails (movie)",
+        ErrorCode.CatalogItemNotFound,
+        (p: TmdbProvider) => p.getDetails("1/../../account", MediaType.MOVIE),
+      ],
+      [
+        "getDetails (series)",
+        ErrorCode.CatalogItemNotFound,
+        (p: TmdbProvider) => p.getDetails("1?x=", MediaType.SERIES),
+      ],
+      [
+        "getExtras",
+        ErrorCode.CatalogItemNotFound,
+        (p: TmdbProvider) =>
+          p.getExtras("../account", MediaType.MOVIE, "fr", "FR"),
+      ],
+      [
+        "getPerson",
+        ErrorCode.CatalogPersonNotFound,
+        (p: TmdbProvider) => p.getPerson("../account"),
+      ],
+    ])(
+      "%s never puts a non-numeric id into a TMDB path",
+      async (_name, code, call) => {
+        mockFetchByUrl({});
+
+        await expect(call(provider)).rejects.toMatchObject({ code });
+        expect(global.fetch).not.toHaveBeenCalled();
+      },
+    );
+  });
+
   describe("getSaga", () => {
     it("lists a film's collection in release order, an unreleased part marked upcoming", async () => {
       mockFetchByUrl({

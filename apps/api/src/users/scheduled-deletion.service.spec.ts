@@ -147,4 +147,21 @@ describe("ScheduledDeletionService.scan", () => {
       expect.any(String),
     );
   });
+
+  it("deletes the other overdue accounts when one deletion fails", async () => {
+    const { service, prisma, accountDeletion } = make();
+    (prisma.user.findMany as Mock)
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([{ id: "user-2" }, { id: "user-3" }]);
+    (accountDeletion.deleteAccount as Mock)
+      .mockRejectedValueOnce(new Error("db down"))
+      .mockResolvedValue(undefined);
+
+    await expect(service.scan()).resolves.toEqual({ reminded: 0, deleted: 1 });
+    expect(accountDeletion.deleteAccount).toHaveBeenCalledWith(
+      "user-3",
+      "self",
+      expect.any(String),
+    );
+  });
 });

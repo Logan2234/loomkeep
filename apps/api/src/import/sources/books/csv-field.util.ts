@@ -2,10 +2,15 @@
 // Only source-agnostic fields belong here — ownership stays per-source because
 // each export encodes it differently.
 
+/** Each completion becomes a reading row: an absurd count is corrupt input. */
+const MAX_READ_COUNT = 100;
+
 /** A source's "Read Count" — total completions; 0 (unread) on bad input. */
 export function parseReadCount(value: string | undefined): number {
   const count = Number((value ?? "").trim());
-  return Number.isFinite(count) && count > 0 ? Math.trunc(count) : 0;
+  return Number.isFinite(count) && count > 0
+    ? Math.min(Math.trunc(count), MAX_READ_COUNT)
+    : 0;
 }
 
 /**

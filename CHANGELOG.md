@@ -47,6 +47,8 @@ history from before it was started.
 
 ### Fixed
 
+- Importing a Goodreads, StoryGraph or Babelio CSV saved with Excel no longer
+  comes out empty.
 - An inactive account now gets at least 30 days between the reminder email
   and its deletion, even when it was already past the 36 months.
 - A saga sequel announcement is no longer emailed again every hour after a
