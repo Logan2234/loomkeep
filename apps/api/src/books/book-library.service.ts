@@ -60,7 +60,7 @@ import { compareTitles, timeMs } from "../common/sort.util";
 import { EventsGateway } from "../events/events.gateway";
 import { AchievementService } from "../gamification/achievements/achievement.service";
 
-import { upsertRetryingRace } from "../common/prisma-error.util";
+import { retryAfterUniqueRace } from "../common/prisma-error.util";
 import { ACHIEVEMENT_KEYS_BY_XP_REASON } from "../gamification/achievements/triggers";
 import { SessionXpService } from "../gamification/session-xp.service";
 import { XpService } from "../gamification/xp.service";
@@ -349,7 +349,7 @@ export class BookLibraryService {
           }
         : {}),
     };
-    let entry = await upsertRetryingRace(() =>
+    let entry = await retryAfterUniqueRace(() =>
       this.prisma.bookEntry.upsert({
         where: { userId_bookItemId: { userId, bookItemId: bookItem.id } },
         update: changes,
