@@ -419,6 +419,20 @@ describe("NotificationDigestService.runDigests", () => {
     vi.useRealTimers();
   });
 
+  it("doesn't look up premium outside every digest window", async () => {
+    // Tuesday 14h in Paris: neither the daily (18h) nor the weekly (Monday 9h) slot.
+    vi.useFakeTimers().setSystemTime(new Date("2026-08-25T12:00:00.000Z"));
+
+    const { service, entitlements } = makeService({
+      notifyEmail: DigestCadence.DAILY,
+    });
+    await service.runDigests();
+
+    expect(entitlements.isEffectivelyPremium).not.toHaveBeenCalled();
+
+    vi.useRealTimers();
+  });
+
   it("queries only rows not yet digested on the sending channel", async () => {
     const monday9amParis = new Date("2026-08-24T07:00:00.000Z");
     vi.useFakeTimers().setSystemTime(monday9amParis);
