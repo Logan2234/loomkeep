@@ -143,9 +143,15 @@ export class NotificationDigestService {
   ): Promise<number> {
     if (stored === DigestCadence.DISABLED) return 0;
 
-    const effective = await this.resolveEffectiveCadence(stored, user.id);
     const local = localParts(user.timezone, new Date());
     if (!local) return 0;
+    // Outside both slots nothing can be due: skip the premium lookup, which
+    // ran for every DAILY account every hour.
+    const inSomeSlot =
+      local.hour === 18 || (local.weekday === "Mon" && local.hour === 9);
+    if (!inSomeSlot) return 0;
+
+    const effective = await this.resolveEffectiveCadence(stored, user.id);
 
     const due =
       (effective === DigestCadence.DAILY && local.hour === 18) ||

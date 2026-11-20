@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import { vi } from "vitest";
 import type { PrismaService } from "../prisma/prisma.service";
 import {
@@ -128,6 +129,66 @@ describe("GameLibraryService — XP wiring", () => {
   const activity = {
     emit: vi.fn(),
   } as unknown as import("../social/activity.service").ActivityService;
+
+  it("adopts the row a concurrent add created instead of failing on the unique key", async () => {
+    const findUnique = vi.fn().mockResolvedValueOnce(null); // before: null -> creation
+    const upsert = vi
+      .fn()
+      .mockRejectedValueOnce(
+        new Prisma.PrismaClientKnownRequestError("Unique constraint failed", {
+          code: "P2002",
+          clientVersion: "test",
+        }),
+      )
+      .mockResolvedValue({ ...makeRow({ id: "e1" }), status: "COMPLETED" });
+    const count = vi.fn().mockResolvedValue(1);
+    const prisma = {
+      gameEntry: {
+        findUnique,
+        findUniqueOrThrow: vi
+          .fn()
+          .mockResolvedValue({ ...makeRow({ id: "e1" }), status: "COMPLETED" }),
+        upsert,
+        count,
+      },
+      gamePlaythrough: {
+        findFirst: vi.fn().mockResolvedValue(null),
+        create: vi.fn().mockResolvedValue({ id: "playthrough-1", number: 1 }),
+        update: vi.fn().mockResolvedValue({ id: "playthrough-1", number: 1 }),
+      },
+      gameItem: {
+        findUnique: vi
+          .fn()
+          .mockResolvedValue({ releaseDate: null, releaseDatePrecision: null }),
+      },
+    } as unknown as PrismaService;
+    const xp = stubXp();
+    const events = stubEvents();
+
+    const service = new GameLibraryService(
+      prisma,
+      {
+        upsertFromSource: vi.fn().mockResolvedValue({ id: "game-1" }),
+      } as unknown as GameItemService,
+      {} as AgeGateService,
+      reviews,
+      activity,
+      xp,
+      stubAchievements(),
+      events,
+      {} as import("../lists/list.service").ListService,
+      stubSessionXp(),
+      stubSagas(),
+    );
+
+    await service.upsertEntry("user-1", {
+      source: "IGDB",
+      sourceId: "igdb-1",
+      status: "COMPLETED",
+    } as never);
+
+    expect(upsert).toHaveBeenCalledTimes(2);
+  });
 
   it("awards WORK_ADDED + DOMAIN_STARTED on creation only, and GAME_FINISHED on the COMPLETED transition", async () => {
     const findUnique = vi.fn().mockResolvedValueOnce(null); // before: null -> creation

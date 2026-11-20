@@ -1,5 +1,6 @@
 import { ErrorCode } from "@loomkeep/shared";
 import { HttpStatus } from "@nestjs/common";
+import { Prisma } from "@prisma/client";
 import { vi } from "vitest";
 import type { MediaItemService } from "../catalog/media-item.service";
 import { AppException } from "../common/app.exception";
@@ -451,6 +452,58 @@ describe("LibraryService — XP wiring", () => {
       ...overrides,
     };
   }
+
+  it("adopts the row a concurrent add created instead of failing on the unique key", async () => {
+    const findUnique = vi.fn().mockResolvedValueOnce(null); // before: null -> creation
+    const upsert = vi
+      .fn()
+      .mockRejectedValueOnce(
+        new Prisma.PrismaClientKnownRequestError("Unique constraint failed", {
+          code: "P2002",
+          clientVersion: "test",
+        }),
+      )
+      .mockResolvedValue(entryRow({ status: "COMPLETED", type: "MOVIE" }));
+    const count = vi.fn().mockResolvedValue(1);
+    const prisma = {
+      mediaItem: { findUnique: vi.fn().mockResolvedValue(null) },
+      libraryEntry: { findUnique, upsert, count },
+      episode: { findMany: vi.fn().mockResolvedValue([]) },
+      episodeWatch: {
+        aggregate: vi.fn().mockResolvedValue({ _max: { watchedAt: null } }),
+      },
+    } as unknown as PrismaService;
+    const xp = stubXp();
+    const achievements = stubAchievements();
+    const events = stubEvents();
+
+    const service = new LibraryService(
+      prisma,
+      {
+        upsertFromSource: vi
+          .fn()
+          .mockResolvedValue({ id: "media-1", type: "MOVIE" }),
+      } as unknown as MediaItemService,
+      {} as AgeGateService,
+      {
+        getRating: vi.fn().mockResolvedValue(null),
+      } as unknown as ReviewService,
+      { emit: vi.fn() } as unknown as ActivityService,
+      xp,
+      achievements,
+      events,
+      {} as import("../lists/list.service").ListService,
+    );
+
+    await service.upsertEntry("user-1", {
+      source: "TMDB",
+      sourceId: "1",
+      type: "MOVIE",
+      status: "COMPLETED",
+    } as never);
+
+    expect(upsert).toHaveBeenCalledTimes(2);
+  });
 
   it("awards WORK_ADDED + DOMAIN_STARTED only on true first creation, and MOVIE_WATCHED on the COMPLETED transition", async () => {
     const findUnique = vi.fn().mockResolvedValueOnce(null); // before: null -> creation
