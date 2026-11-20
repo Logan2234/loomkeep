@@ -450,8 +450,10 @@ export class NotificationService {
     /** The push's button adding the work to the recipient's to-do status. */
     plan: (copy: NotificationCopy) => PushAction,
   ): Promise<number> {
+    let created = 0;
+
     for (const user of recipients) {
-      await this.create({
+      const isNew = await this.create({
         userId: user.id,
         type: NotificationType.SAGA_SEQUEL_ANNOUNCED,
         title: work.title,
@@ -462,6 +464,10 @@ export class NotificationService {
         data: { sagaKey: work.sagaKey, sagaTitle: work.sagaTitle },
         pushActions: (copy) => [plan(copy)],
       });
+      // Already announced to this user: a scan that failed before recording
+      // `notifiedAt` is retried hourly, and must not email them again.
+      if (!isNew) continue;
+      created++;
 
       if (
         !isSuspended(user) &&
@@ -479,7 +485,7 @@ export class NotificationService {
       }
     }
 
-    return recipients.length;
+    return created;
   }
 
   private async scanMovies(userId?: string): Promise<number> {
@@ -749,15 +755,18 @@ export class NotificationService {
   /**
    * Creates one in-app notification. Idempotent per `dedupeKey` (a re-follow or
    * a re-scan won't duplicate a row). Used by other domains (e.g. social) to
-   * post notifications without knowing the storage shape.
+   * post notifications without knowing the storage shape. Resolves to
+   * whether a row was created (`false` when the `dedupeKey` already existed).
    */
-  async create(input: CreateNotificationInput): Promise<void> {
+  async create(input: CreateNotificationInput): Promise<boolean> {
     const id = await this.createInTransaction(this.prisma, input);
 
     if (id) {
       this.publishCreated(input.userId, input.type);
       await this.pushIfWanted(input, id);
     }
+
+    return id !== null;
   }
 
   /**
@@ -778,7 +787,10 @@ export class NotificationService {
       select: { id: true, data: true, readAt: true },
     });
 
-    if (!existing) return this.create(input);
+    if (!existing) {
+      await this.create(input);
+      return;
+    }
 
     if (existing.readAt) {
       await this.prisma.notification.update({

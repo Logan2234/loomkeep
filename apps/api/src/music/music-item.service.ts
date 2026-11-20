@@ -31,7 +31,10 @@ export class MusicItemService {
   }
 
   async search(query: string): Promise<MusicSummaryDto[]> {
-    return this.musicBrainzProvider.search(query).catch(() => []);
+    return this.musicBrainzProvider.search(query).catch((err) => {
+      this.logger.warn("MusicBrainz search failed", err);
+      return [];
+    });
   }
 
   /** Live details straight from the provider — nothing is persisted. */

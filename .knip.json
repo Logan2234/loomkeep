@@ -1,6 +1,9 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
-  "ignore": [".github/pa11y/sarif-reporter.js"],
+  "ignore": [
+    ".github/pa11y/sarif-reporter.js",
+    "apps/web/project.inlang/plugins/**"
+  ],
   "ignoreIssues": {
     "apps/web/tsconfig.json": ["unlisted"],
     "apps/web/src/service-worker/tsconfig.json": ["unlisted"]

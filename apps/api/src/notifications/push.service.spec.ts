@@ -27,6 +27,7 @@ function makeService(
       upsert: vi.fn(),
       findMany: vi.fn().mockResolvedValue([]),
       delete: vi.fn(),
+      deleteMany: vi.fn(),
     },
   } as unknown as PrismaService;
 
@@ -104,6 +105,7 @@ describe("PushService.sendToUserDetailed", () => {
           },
         ]),
         delete: vi.fn(),
+        deleteMany: vi.fn(),
       },
     } as unknown as PrismaService;
 
@@ -118,12 +120,91 @@ describe("PushService.sendToUserDetailed", () => {
     expect(outcomes).toEqual([
       expect.objectContaining({ ok: false, userAgent: "Chrome" }),
     ]);
-    expect(prisma.pushSubscription.delete).toHaveBeenCalledWith({
+    expect(prisma.pushSubscription.deleteMany).toHaveBeenCalledWith({
       where: { id: "sub1" },
     });
 
     delete process.env.VAPID_PUBLIC_KEY;
     delete process.env.VAPID_PRIVATE_KEY;
+  });
+
+  it("still reports the outcome when the subscription was already removed", async () => {
+    process.env.VAPID_PUBLIC_KEY = VAPID_KEYS.publicKey;
+    process.env.VAPID_PRIVATE_KEY = VAPID_KEYS.privateKey;
+    process.env.VAPID_SUBJECT = "mailto:admin@example.com";
+    const gone = Object.assign(new Error("Record to delete does not exist"), {
+      code: "P2025",
+    });
+    const prisma = {
+      pushSubscription: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            id: "sub1",
+            endpoint: SSRF_ENDPOINT,
+            p256dh: "p",
+            auth: "a",
+            userAgent: "Chrome",
+          },
+        ]),
+        // A concurrent send (or the user unsubscribing) got there first.
+        delete: vi.fn().mockRejectedValue(gone),
+        deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
+      },
+    } as unknown as PrismaService;
+
+    const service = new PushService(prisma);
+
+    await expect(
+      service.sendToUserDetailed("u1", {
+        title: "t",
+        body: "b",
+        url: "/",
+        group: AlertGroup.ACTIVITY,
+      }),
+    ).resolves.toEqual([expect.objectContaining({ ok: false })]);
+    delete process.env.VAPID_PUBLIC_KEY;
+    delete process.env.VAPID_PRIVATE_KEY;
+    delete process.env.VAPID_SUBJECT;
+  });
+});
+
+describe("PushService delivery timeout", () => {
+  it("gives the push service a bounded time to answer", async () => {
+    process.env.VAPID_PUBLIC_KEY = VAPID_KEYS.publicKey;
+    process.env.VAPID_PRIVATE_KEY = VAPID_KEYS.privateKey;
+    process.env.VAPID_SUBJECT = "mailto:admin@example.com";
+    const send = vi
+      .spyOn(webpush, "sendNotification")
+      .mockResolvedValue({} as never);
+    const prisma = {
+      pushSubscription: {
+        findMany: vi.fn().mockResolvedValue([
+          {
+            id: "sub1",
+            endpoint: ALLOWED_ENDPOINT,
+            p256dh: "p",
+            auth: "a",
+            userAgent: "Chrome",
+          },
+        ]),
+      },
+    } as unknown as PrismaService;
+
+    await new PushService(prisma).sendToUser("u1", {
+      title: "t",
+      body: "b",
+      url: "/app",
+      group: AlertGroup.ACTIVITY,
+    });
+
+    expect(send.mock.calls[0][2]).toEqual(
+      expect.objectContaining({ timeout: expect.any(Number) }),
+    );
+
+    send.mockRestore();
+    delete process.env.VAPID_PUBLIC_KEY;
+    delete process.env.VAPID_PRIVATE_KEY;
+    delete process.env.VAPID_SUBJECT;
   });
 });
 
@@ -250,6 +331,7 @@ describe("PushService on the Android app", () => {
           },
         ]),
         delete: vi.fn(),
+        deleteMany: vi.fn(),
       },
     } as unknown as PrismaService;
     return { service: new PushService(prisma), prisma };
@@ -306,7 +388,7 @@ describe("PushService on the Android app", () => {
     });
     expect(outcomes).toEqual([{ userAgent: "LoomkeepApp/1.11.0", ok: true }]);
     // A token isn't a URL: the Web Push host filter must leave it alone.
-    expect(prisma.pushSubscription.delete).not.toHaveBeenCalled();
+    expect(prisma.pushSubscription.deleteMany).not.toHaveBeenCalled();
   });
 
   it("sends an app that builds its own notifications its picture and conversation", async () => {
@@ -390,7 +472,7 @@ describe("PushService on the Android app", () => {
 
     await service.sendToUserDetailed("u1", payload);
 
-    expect(prisma.pushSubscription.delete).toHaveBeenCalledWith({
+    expect(prisma.pushSubscription.deleteMany).toHaveBeenCalledWith({
       where: { id: "app1" },
     });
   });
@@ -406,7 +488,7 @@ describe("PushService on the Android app", () => {
     expect(outcomes).toEqual([
       expect.objectContaining({ ok: false, error: "Error: socket hang up" }),
     ]);
-    expect(prisma.pushSubscription.delete).not.toHaveBeenCalled();
+    expect(prisma.pushSubscription.deleteMany).not.toHaveBeenCalled();
   });
 
   it("skips the app while FCM isn't configured", async () => {

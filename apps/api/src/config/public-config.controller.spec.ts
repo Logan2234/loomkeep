@@ -97,9 +97,9 @@ describe("PublicConfigController", () => {
     });
   });
 
-  it('treats any non-"true" value as disabled', async () => {
+  it("ignores an unreadable value, so the stored default applies", async () => {
     delete process.env.GIT_SHA;
-    const { controller } = makeController({ SOCIAL_ENABLED: "1" });
+    const { controller } = makeController({ SOCIAL_ENABLED: "maybe" });
     await expect(controller.get()).resolves.toEqual({
       socialEnabled: false,
       chatEnabled: false,
@@ -115,7 +115,7 @@ describe("PublicConfigController", () => {
     });
   });
 
-  it('reports registrationEnabled=false only when REGISTRATION_ENABLED is exactly "false"', async () => {
+  it("reports registrationEnabled=false when REGISTRATION_ENABLED says so", async () => {
     delete process.env.GIT_SHA;
     const { controller } = makeController({ REGISTRATION_ENABLED: "false" });
     await expect(controller.get()).resolves.toEqual({

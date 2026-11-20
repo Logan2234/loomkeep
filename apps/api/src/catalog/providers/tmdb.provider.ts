@@ -243,6 +243,9 @@ export class TmdbProvider implements CatalogProvider {
     type: MediaType,
     lang?: string,
   ): Promise<ProviderMediaDetails> {
+    // A `sourceId` like "1/../account" would reach another TMDB endpoint
+    // with our token, as the saga and person lookups already guard against.
+    assertTmdbId(sourceId, ErrorCode.CatalogItemNotFound);
     return type === MediaType.MOVIE
       ? this.getMovieDetails(sourceId, lang)
       : this.getTvDetails(sourceId, lang);
@@ -481,6 +484,7 @@ export class TmdbProvider implements CatalogProvider {
     lang: string | undefined,
     watchRegion: string,
   ): Promise<MediaExtrasDto> {
+    assertTmdbId(sourceId, ErrorCode.CatalogItemNotFound);
     const path = type === MediaType.MOVIE ? "movie" : "tv";
     // Movie and TV certifications live under different append keys.
     const certificationAppend =
@@ -503,6 +507,7 @@ export class TmdbProvider implements CatalogProvider {
 
   /** Live detail of a TMDB person for the cast modal. */
   async getPerson(id: string): Promise<CastDetailDto> {
+    assertTmdbId(id, ErrorCode.CatalogPersonNotFound);
     const p = await this.get<TmdbPersonDetails>(`/person/${id}`, {
       append_to_response: "combined_credits,external_ids",
     });
@@ -806,11 +811,14 @@ function byRelease(
 }
 
 /** An id from a page's URL, interpolated into a TMDB path: digits only. */
-function assertTmdbId(id: string): void {
+function assertTmdbId(
+  id: string,
+  code: ErrorCode = ErrorCode.CatalogStudioNotFound,
+): void {
   if (!/^\d+$/.test(id)) {
     throw new AppException(
       HttpStatus.NOT_FOUND,
-      ErrorCode.CatalogStudioNotFound,
+      code,
       undefined,
       `Not a TMDB id: ${id}`,
     );

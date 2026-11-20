@@ -605,6 +605,9 @@ describe("MediaItemService season and episode translations", () => {
           overview: "Inès prend la garde.",
         },
       ],
+      // Two first views of the page in this locale race between the delete
+      // and the insert; the second must not fail on the unique key.
+      skipDuplicates: true,
     });
     expect(prisma.$transaction).toHaveBeenCalledWith(["delete", "create"]);
   });

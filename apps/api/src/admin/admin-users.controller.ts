@@ -43,6 +43,7 @@ import { AuthService } from "../auth/auth.service";
 import type { JwtPayload } from "../auth/decorators/current-user.decorator";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
 import { SessionResponseDto } from "../auth/dto/session-response.dto";
+import { RequireRecentAuth } from "../auth/recent-auth.guard";
 import { CommentService } from "../comments/comment.service";
 import { AppException } from "../common/app.exception";
 import { PagedResponseDto } from "../common/dto/paged-response.dto";
@@ -302,6 +303,7 @@ export class AdminUsersController {
    * outside the panel (the ADMIN_EMAIL bootstrap would eventually re-promote
    * them on next login, but not before).
    */
+  @RequireRecentAuth()
   @Patch("users/:userId/role")
   @ApiOkResponse({ type: AdminUserRoleResponseDto })
   async updateUserRole(
@@ -632,6 +634,7 @@ export class AdminUsersController {
    * notice (email only — there's no account left for an in-app one) before
    * the row is gone.
    */
+  @RequireRecentAuth()
   @HttpCode(HttpStatus.NO_CONTENT)
   @Delete("users/:userId")
   async deleteUser(

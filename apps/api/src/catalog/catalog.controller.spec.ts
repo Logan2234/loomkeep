@@ -1,3 +1,4 @@
+import { Logger } from "@nestjs/common";
 import { vi, type Mock } from "vitest";
 import type { AgeGateService } from "../users/age-gate.service";
 import type { DomainGateService } from "../users/domain-gate.service";
@@ -28,6 +29,23 @@ describe("CatalogController.search", () => {
     const result = await controller.search(user, { q: "show" } as never);
 
     expect(result).toEqual({ items: [], hasMore: false });
+  });
+
+  it("logs a TMDB failure instead of passing it off as no results", async () => {
+    const warn = vi
+      .spyOn(Logger.prototype, "warn")
+      .mockImplementation(() => {});
+    const controller = makeController(
+      vi.fn().mockRejectedValue(new Error("TMDB is down")),
+    );
+
+    await controller.search(user, { q: "show" } as never);
+
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining("TMDB"),
+      expect.any(Error),
+    );
+    warn.mockRestore();
   });
 
   it("keeps paging while TMDB has results the anime filter left out", async () => {

@@ -1,3 +1,4 @@
+import { Logger } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
 import { vi, type Mock } from "vitest";
 import type { JobRunService } from "../jobs/job-run.service";
@@ -65,6 +66,25 @@ function makeService(overrides: {
   const service = new BookItemService(prisma, openLibraryProvider, jobRunsStub);
   return { service, prisma, openLibraryProvider };
 }
+
+describe("BookItemService.search", () => {
+  it("answers no results but logs it when Open Library fails", async () => {
+    const warn = vi
+      .spyOn(Logger.prototype, "warn")
+      .mockImplementation(() => {});
+    const { service, openLibraryProvider } = makeService({});
+    (openLibraryProvider as unknown as { search: Mock }).search = vi
+      .fn()
+      .mockRejectedValue(new Error("Open Library is down"));
+
+    await expect(service.search("dune")).resolves.toEqual([]);
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining("search"),
+      expect.any(Error),
+    );
+    warn.mockRestore();
+  });
+});
 
 describe("BookItemService.upsertFromSource", () => {
   it("returns the cached item without hitting the provider when within the TTL", async () => {

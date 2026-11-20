@@ -1,8 +1,8 @@
 # @loomkeep/web
 
 SvelteKit PWA front-end for Loomkeep — talks to `@loomkeep/api` over HTTP,
-ships no server-side logic of its own beyond serving the app
-(`export const ssr = false`, see below). For the project as a whole (what
+ships no server-side logic of its own beyond serving the app and rendering
+its public pages (see below). For the project as a whole (what
 Loomkeep is, self-hosting, Docker), see [docs.loomkeep.app](https://docs.loomkeep.app).
 For day-to-day dev conventions shared with the API, see the root
 [CLAUDE.md](../../CLAUDE.md).
@@ -14,9 +14,10 @@ For day-to-day dev conventions shared with the API, see the root
 - **Tailwind v4** (`@tailwindcss/vite`) for styling — see
   [DESIGN.md](DESIGN.md) for the "Séance" visual identity (palette,
   typography, component classes).
-- **PWA**: `@vite-pwa/sveltekit` with a custom service worker (`src/sw.ts`,
-  `injectManifest` strategy) so Web Push `push` events can be handled
-  alongside offline app-shell precaching.
+- **PWA**: SvelteKit's own service worker (`src/service-worker/`), which
+  handles Web Push `push` and `notificationclick` events. It precaches
+  nothing; the app registers it itself (`src/lib/native/service-worker.ts`)
+  rather than letting SvelteKit do it.
 - **`@tanstack/svelte-query`** for every API call, through the
   `createApiQuery`/`createApiMutation`/`createApiInfiniteQuery` helpers in
   `src/lib/api/` (see the root CLAUDE.md).
@@ -24,8 +25,10 @@ For day-to-day dev conventions shared with the API, see the root
   API — consumed from its built `dist/`, so `pnpm build:package` at the repo
   root after editing it.
 
-No server-side rendering: the app runs as a pure SPA (`+layout.ts`), auth
-tokens live in `HttpOnly` cookies, and the API base URL comes from
+The app under `/app` and the sign-in pages run client-side only
+(`ssr = false` in their `+layout.ts`); the landing page and the legal pages
+are rendered on the server at each request. Auth tokens live in `HttpOnly`
+cookies, and the API base URL comes from
 `PUBLIC_API_URL` (`$env/dynamic/public`, resolved at server start —
 Docker-friendly, no rebuild needed to point at a different API host).
 
@@ -41,12 +44,13 @@ src/
     components/    # shared Svelte components — check here (and any
                    # route-local components/ folder) before writing a new one
     actions/       # Svelte actions (use:)
-    import/        # import-flow UI (TV Time, Steam, StoryGraph, ...)
+    native/        # bridge to the Android app's native plugins
+    realtime/      # WebSocket client
     types/         # front-end-only types (DTOs come from @loomkeep/shared)
     assets/
     auth.svelte.ts    # auth state (Svelte 5 runes)
-    queryClient.ts    # svelte-query client/provider
-  sw.ts            # custom service worker source (Web Push + precaching)
+    query-client.ts   # svelte-query client/provider
+  service-worker/  # service worker source (Web Push, notification clicks)
   app.css          # Tailwind tokens (light/dark theme variables)
 ```
 

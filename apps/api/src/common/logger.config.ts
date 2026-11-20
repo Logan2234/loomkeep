@@ -30,6 +30,8 @@ export const loggerOptions: Params = {
       paths: [
         "req.headers.authorization",
         "req.headers.cookie",
+        // The Android widgets' token can write (tick an episode, start a timer).
+        'req.headers["x-widget-token"]',
         'res.headers["set-cookie"]',
       ],
       censor: "[redacted]",

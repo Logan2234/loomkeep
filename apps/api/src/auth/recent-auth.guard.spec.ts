@@ -2,7 +2,9 @@ import { ErrorCode, REAUTH_WINDOW_MS } from "@loomkeep/shared";
 import type { ExecutionContext } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
 import { vi } from "vitest";
+import { AdminInstanceSettingsController } from "../admin/admin-instance-settings.controller";
 import { AdminSystemController } from "../admin/admin-system.controller";
+import { AdminUsersController } from "../admin/admin-users.controller";
 import { ApiKeysController } from "../api-keys/api-keys.controller";
 import type { PrismaService } from "../prisma/prisma.service";
 import { MfaController } from "../users/mfa.controller";
@@ -82,6 +84,12 @@ describe("RecentAuthGuard", () => {
       MfaController.prototype.removeWebauthnCredential,
       MfaController.prototype.setPasswordless,
       AdminSystemController.prototype.restoreBackup,
+      AdminSystemController.prototype.getBackupFile,
+      AdminSystemController.prototype.deleteBackupFile,
+      AdminSystemController.prototype.deleteOrphanBackupFile,
+      AdminUsersController.prototype.updateUserRole,
+      AdminUsersController.prototype.deleteUser,
+      AdminInstanceSettingsController.prototype.update,
     ];
 
     for (const handler of guarded) {

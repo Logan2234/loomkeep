@@ -126,6 +126,19 @@ describe("NotificationService · sequel announcements", () => {
     );
   });
 
+  it("doesn't email again someone the announcement already reached (a retried scan)", async () => {
+    const { service, prisma, mail } = makeService({
+      recipients: [fan("u1", { SAGA_SEQUEL_ANNOUNCED: { email: true } })],
+    });
+    // The row already exists: a previous run notified u1, then failed
+    // before recording notifiedAt.
+    prisma.notification.createManyAndReturn.mockResolvedValue([]);
+
+    await service.scanAll();
+
+    expect(mail.sendSagaSequel).not.toHaveBeenCalled();
+  });
+
   it("only asks for finishers who don't already track the new work", async () => {
     const { service, prisma } = makeService();
 

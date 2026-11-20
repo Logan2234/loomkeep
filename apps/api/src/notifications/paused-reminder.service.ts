@@ -4,7 +4,7 @@ import {
   GHOST_AFTER_DAYS,
   isAlertEnabled,
 } from "@loomkeep/shared";
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 import { Cron, CronExpression } from "@nestjs/schedule";
 import {
   CANONICAL_EXTERNAL_ID_SELECT,
@@ -48,6 +48,8 @@ export function isPausedReminderDue(timezone: string, now: Date): boolean {
  */
 @Injectable()
 export class PausedReminderService {
+  private readonly logger = new Logger(PausedReminderService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly mail: MailService,
@@ -84,36 +86,49 @@ export class PausedReminderService {
 
     let sent = 0;
 
+    // Each account and each channel fails on its own: the reminder is monthly,
+    // so one SMTP or push error used to cost every later account its month.
     for (const user of optedIn) {
       if (!isPausedReminderDue(user.timezone, now)) continue;
 
-      const works = await this.pausedWorks(user.id, now);
-      if (works.length === 0) continue;
+      try {
+        const works = await this.pausedWorks(user.id, now);
+        if (works.length === 0) continue;
 
-      const prefs = readAlertPrefs(user.alertPrefs);
-      const items = works.slice(0, MAX_ITEMS);
+        const prefs = readAlertPrefs(user.alertPrefs);
+        const items = works.slice(0, MAX_ITEMS);
 
-      if (isAlertEnabled(prefs, "PAUSED_REMINDER", "email")) {
-        await this.mail.sendPausedReminder(
-          { email: user.email, locale: user.locale },
-          items,
-        );
+        if (isAlertEnabled(prefs, "PAUSED_REMINDER", "email")) {
+          await this.mail
+            .sendPausedReminder(
+              { email: user.email, locale: user.locale },
+              items,
+            )
+            .catch((err: unknown) =>
+              this.logger.error(
+                `Paused reminder email failed for ${user.id}`,
+                err,
+              ),
+            );
+        }
+
+        if (isAlertEnabled(prefs, "PAUSED_REMINDER", "push")) {
+          await this.push.sendToUser(user.id, {
+            title: "Loomkeep",
+            body: notificationCopy(user.locale).pausedReminderPush(
+              items[0].title,
+              items[0].releasedSince,
+              works.length - 1,
+            ),
+            url: items[0].url,
+            group: AlertGroup.RELEASES,
+          });
+        }
+
+        sent++;
+      } catch (err) {
+        this.logger.error(`Paused reminder failed for ${user.id}`, err);
       }
-
-      if (isAlertEnabled(prefs, "PAUSED_REMINDER", "push")) {
-        await this.push.sendToUser(user.id, {
-          title: "Loomkeep",
-          body: notificationCopy(user.locale).pausedReminderPush(
-            items[0].title,
-            items[0].releasedSince,
-            works.length - 1,
-          ),
-          url: items[0].url,
-          group: AlertGroup.RELEASES,
-        });
-      }
-
-      sent++;
     }
 
     return sent;

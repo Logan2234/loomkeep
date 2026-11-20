@@ -16,6 +16,7 @@ import {
   Get,
   Headers,
   HttpStatus,
+  Logger,
   Param,
   ParseIntPipe,
   Query,
@@ -45,6 +46,8 @@ import { resolveWatchRegion } from "./watch-region.util";
 
 @Controller("catalog")
 export class CatalogController {
+  private readonly logger = new Logger(CatalogController.name);
+
   constructor(
     private readonly mediaItemService: MediaItemService,
     private readonly ageGate: AgeGateService,
@@ -101,7 +104,7 @@ export class CatalogController {
     const [results, allowAdult] = await Promise.all([
       this.tmdb
         .searchPage(query.q, query.type, query.page ?? 1, query.lang)
-        .catch(() => ({ items: [], hasMore: false })),
+        .catch((err) => this.searchFailed(err)),
       this.ageGate.allowsAdultContent(user.sub),
     ]);
 
@@ -116,6 +119,12 @@ export class CatalogController {
     // TMDB reports no total here: "more" means its own page wasn't empty,
     // even when the type filter kept nothing of it.
     return { items, hasMore: results.hasMore };
+  }
+
+  /** TMDB down answers an empty page; the log tells it from "no match". */
+  private searchFailed(err: unknown): { items: []; hasMore: false } {
+    this.logger.warn("TMDB search failed", err);
+    return { items: [], hasMore: false };
   }
 
   /** Live detail of a TMDB person for the media-page cast modal. */

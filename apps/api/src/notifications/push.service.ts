@@ -9,6 +9,8 @@ import { FcmClient, type FcmMessage } from "./fcm.client";
 import { type PushAction, signAction } from "./notification-action";
 import { isAllowedPushEndpoint } from "./push-endpoint.validator";
 
+const WEB_PUSH_TIMEOUT_MS = 10_000;
+
 export interface PushPayload {
   title: string;
   body: string;
@@ -206,7 +208,7 @@ export class PushService {
         // filter here too, not just at subscribe(), so a pre-existing
         // malicious endpoint can't still be used for SSRF.
         if (!isAllowedPushEndpoint(sub.endpoint)) {
-          await this.prisma.pushSubscription.delete({ where: { id: sub.id } });
+          await this.forget(sub.id);
           return {
             userAgent: sub.userAgent,
             ok: false,
@@ -221,6 +223,9 @@ export class PushService {
               keys: { p256dh: sub.p256dh ?? "", auth: sub.auth ?? "" },
             },
             body,
+            // Sends run inside the request that triggered them (a comment, a
+            // follow): a push service that never answers mustn't hang it.
+            { timeout: WEB_PUSH_TIMEOUT_MS },
           );
           return { userAgent: sub.userAgent, ok: true };
         } catch (err) {
@@ -228,9 +233,7 @@ export class PushService {
 
           if (statusCode === 404 || statusCode === 410) {
             // Subscription expired or was revoked by the browser — stop trying it.
-            await this.prisma.pushSubscription.delete({
-              where: { id: sub.id },
-            });
+            await this.forget(sub.id);
           } else {
             this.logger.error(`Push failed for subscription ${sub.id}`, err);
           }
@@ -243,6 +246,15 @@ export class PushService {
         }
       }),
     );
+  }
+
+  /**
+   * Drops a dead subscription. `deleteMany`, not `delete`: a concurrent send
+   * or the user unsubscribing may have removed it already, and the P2025 that
+   * `delete` throws then failed the whole batch of sends.
+   */
+  private async forget(id: string): Promise<void> {
+    await this.prisma.pushSubscription.deleteMany({ where: { id } });
   }
 
   private async sendNative(
@@ -260,7 +272,7 @@ export class PushService {
 
       if (result.unregistered) {
         // The app was uninstalled or its data cleared — stop trying it.
-        await this.prisma.pushSubscription.delete({ where: { id: sub.id } });
+        await this.forget(sub.id);
       } else {
         this.logger.error(
           `Android push failed for subscription ${sub.id}: ${result.error}`,

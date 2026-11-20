@@ -36,3 +36,13 @@ describe("parseCsv", () => {
     expect(parseCsv("")).toEqual([]);
   });
 });
+
+describe("parseCsv byte-order mark", () => {
+  it("keeps the first column of a CSV saved with a BOM (Excel)", () => {
+    const bom = String.fromCharCode(0xfeff);
+    expect(
+      parseCsv(`${bom}Title,Author
+Dune,Herbert`),
+    ).toEqual([{ Title: "Dune", Author: "Herbert" }]);
+  });
+});

@@ -1,3 +1,4 @@
+import { Logger } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
 import { vi, type Mock } from "vitest";
 import type { PrismaService } from "../prisma/prisma.service";
@@ -51,6 +52,25 @@ function makeService(overrides: {
   const service = new MusicItemService(prisma, musicBrainzProvider);
   return { service, prisma, musicBrainzProvider };
 }
+
+describe("MusicItemService.search", () => {
+  it("answers no results but logs it when MusicBrainz fails", async () => {
+    const warn = vi
+      .spyOn(Logger.prototype, "warn")
+      .mockImplementation(() => {});
+    const { service, musicBrainzProvider } = makeService({});
+    (musicBrainzProvider as unknown as { search: Mock }).search = vi
+      .fn()
+      .mockRejectedValue(new Error("MusicBrainz is down"));
+
+    await expect(service.search("ok computer")).resolves.toEqual([]);
+    expect(warn).toHaveBeenCalledWith(
+      expect.stringContaining("search"),
+      expect.any(Error),
+    );
+    warn.mockRestore();
+  });
+});
 
 describe("MusicItemService.upsertFromSource", () => {
   it("returns the cached item without hitting the provider when within the TTL", async () => {
