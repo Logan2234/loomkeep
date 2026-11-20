@@ -137,7 +137,7 @@ function makeService(adminEmail?: string, registrationEnabled?: string) {
   const mail = {
     sendWelcome: vi.fn(),
     sendVerifyEmail: vi.fn(),
-    sendPasswordResetLink: vi.fn(),
+    sendPasswordResetLink: vi.fn().mockResolvedValue(true),
     sendPasswordChanged: vi.fn(),
     sendNewDeviceLogin: vi.fn(),
     sendMfaEmailCode: vi.fn(),
@@ -1254,6 +1254,33 @@ describe("AuthService.requestPasswordReset", () => {
     );
     const [, token] = (mail.sendPasswordResetLink as Mock).mock.calls[0];
     expect(createArgs.data.tokenHash).toBe(hashToken(token));
+  });
+});
+
+describe("AuthService.requestPasswordReset timing", () => {
+  it("answers without waiting for the email, so the delay doesn't reveal an account", async () => {
+    const { service, prisma, mail } = makeService();
+    const user = makeUser();
+    (prisma.user.findUnique as Mock).mockResolvedValue(user);
+    // A slow SMTP relay: the request must not hang on it.
+    (mail.sendPasswordResetLink as Mock).mockReturnValue(new Promise(() => {}));
+
+    await expect(
+      service.requestPasswordReset(user.email),
+    ).resolves.toBeUndefined();
+  });
+
+  it("still answers when the email fails to go out", async () => {
+    const { service, prisma, mail } = makeService();
+    const user = makeUser();
+    (prisma.user.findUnique as Mock).mockResolvedValue(user);
+    (mail.sendPasswordResetLink as Mock).mockRejectedValue(
+      new Error("SMTP down"),
+    );
+
+    await expect(
+      service.requestPasswordReset(user.email),
+    ).resolves.toBeUndefined();
   });
 });
 

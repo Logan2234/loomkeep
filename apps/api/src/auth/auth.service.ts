@@ -963,10 +963,13 @@ export class AuthService {
       "PASSWORD_RESET",
       RESET_TOKEN_TTL_MINUTES * 60_000,
     );
-    await this.mail.sendPasswordResetLink(
-      { email: user.email, locale: user.locale },
-      token,
-    );
+    // Not awaited: the SMTP round-trip only happens for an existing account,
+    // so waiting on it made the response time tell whether one exists.
+    void this.mail
+      .sendPasswordResetLink({ email: user.email, locale: user.locale }, token)
+      .catch((err: unknown) =>
+        this.logger.error("Password reset email failed", err),
+      );
   }
 
   /**
