@@ -1,4 +1,5 @@
 import { ErrorCode } from "@loomkeep/shared";
+import { Prisma } from "@prisma/client";
 import { vi } from "vitest";
 import { BookSessionService } from "./book-session.service";
 
@@ -195,6 +196,63 @@ describe("BookSessionService", () => {
       "reading-1",
     );
     expect(achievements.evaluate).toHaveBeenCalledOnce();
+  });
+
+  it("retries when a concurrent first session started the reading first", async () => {
+    prisma.bookEntry.findUnique.mockResolvedValue({
+      id: "entry-1",
+      userId: "user-1",
+      bookItemId: "book-1",
+      status: "READ",
+      startedAt: occurredAt,
+      finishedAt: occurredAt,
+      editionKey: "edition-1",
+      referencePageCount: 100,
+    });
+    tx.bookReading.aggregate.mockResolvedValue({ _max: { number: 1 } });
+    tx.bookReading.create.mockResolvedValue({
+      id: "reading-2",
+      number: 2,
+      status: "ACTIVE",
+      editionKey: "edition-1",
+      referencePageCount: 100,
+      baselinePage: 0,
+      currentPage: 0,
+      startedAt: occurredAt,
+    });
+    tx.bookReading.findUniqueOrThrow.mockResolvedValue({
+      id: "reading-2",
+      baselinePage: 0,
+      referencePageCount: 100,
+      status: "ACTIVE",
+      startedAt: occurredAt,
+      finishedAt: null,
+    });
+    tx.bookSession.findMany.mockResolvedValue([
+      {
+        durationMinutes: 45,
+        pagesRead: 10,
+        startPage: null,
+        endPage: null,
+        occurredAt,
+      },
+    ]);
+
+    prisma.$transaction.mockRejectedValueOnce(
+      new Prisma.PrismaClientKnownRequestError("Unique constraint failed", {
+        code: "P2002",
+        clientVersion: "test",
+      }),
+    );
+
+    await service.create("user-1", "entry-1", {
+      durationMinutes: 45,
+      pagesRead: 10,
+      occurredAt: occurredAt.toISOString(),
+      cycleAction: "RESTART",
+    });
+
+    expect(prisma.$transaction).toHaveBeenCalledTimes(2);
   });
 
   it("starts a new reading at page zero without reusing completed progress", async () => {

@@ -82,7 +82,7 @@ import { compareTitles, timeMs } from "../common/sort.util";
 import { EventsGateway } from "../events/events.gateway";
 import { AchievementService } from "../gamification/achievements/achievement.service";
 
-import { upsertRetryingRace } from "../common/prisma-error.util";
+import { retryAfterUniqueRace } from "../common/prisma-error.util";
 import { ACHIEVEMENT_KEYS_BY_XP_REASON } from "../gamification/achievements/triggers";
 import {
   isSeasonComplete,
@@ -318,7 +318,7 @@ export class LibraryService {
       notes: dto.notes,
       favorite: dto.favorite,
     };
-    const entry = await upsertRetryingRace(() =>
+    const entry = await retryAfterUniqueRace(() =>
       this.prisma.libraryEntry.upsert({
         where: { userId_mediaItemId: { userId, mediaItemId: mediaItem.id } },
         update: changes,

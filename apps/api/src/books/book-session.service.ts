@@ -29,6 +29,7 @@ import {
 } from "../common/entry-lifecycle.util";
 import { localDayOrUtc } from "../common/local-day.util";
 import { toPagedResult } from "../common/pagination.util";
+import { retryAfterUniqueRace } from "../common/prisma-error.util";
 import { bookSessionAggregate } from "../common/session-aggregate.util";
 import { sessionPeriodMinutes } from "../common/session-period.util";
 import { normalizeSessionNotes, sessionDate } from "../common/session.util";
@@ -75,8 +76,10 @@ export class BookSessionService {
     this.assertEdition(entry);
     const pages = this.normalizePages(dto, entry.referencePageCount);
 
-    const { session, reading, completed } = await this.prisma.$transaction(
-      async (tx) => {
+    const { session, reading, completed } = await retryAfterUniqueRace(() =>
+      // Two first sessions at once may both create cycle number 1; the
+      // retry then finds the one the other created.
+      this.prisma.$transaction(async (tx) => {
         const reading = await this.resolveReading(
           tx,
           entry,
@@ -123,7 +126,7 @@ export class BookSessionService {
           reading,
           completed: recomputed.completed,
         };
-      },
+      }),
     );
 
     await this.activity.emit({

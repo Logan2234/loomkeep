@@ -35,18 +35,20 @@ export function isRecordNotFound(err: unknown): boolean {
 }
 
 /**
- * Runs an `upsert` again when it lost a race to a concurrent create of the
- * same row. Prisma can't always turn an upsert into one ON CONFLICT statement
- * (an `include` rules it out), so two simultaneous first writes may both
- * try the insert; the second attempt finds the row and updates it.
+ * Runs a write once more when it lost a race to a concurrent create of the
+ * same row (P2002). Prisma can't always turn an upsert into one ON CONFLICT
+ * statement (an `include` rules it out), and a transaction that reads before
+ * it inserts has the same window; the second attempt finds the row the other
+ * request created. A violation aborts an interactive transaction, so pass the
+ * whole `$transaction` call, not one statement of it.
  */
-export async function upsertRetryingRace<T>(
-  upsert: () => Promise<T>,
+export async function retryAfterUniqueRace<T>(
+  write: () => Promise<T>,
 ): Promise<T> {
   try {
-    return await upsert();
+    return await write();
   } catch (err) {
     if (!isUniqueViolation(err)) throw err;
-    return upsert();
+    return write();
   }
 }

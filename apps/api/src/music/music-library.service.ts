@@ -47,7 +47,7 @@ import {
   titleContains,
 } from "../common/entry-lifecycle.util";
 import { canonicalExternalId } from "../common/external-id.util";
-import { upsertRetryingRace } from "../common/prisma-error.util";
+import { retryAfterUniqueRace } from "../common/prisma-error.util";
 import { compareTitles, timeMs } from "../common/sort.util";
 import { EventsGateway } from "../events/events.gateway";
 import { XpService } from "../gamification/xp.service";
@@ -183,7 +183,7 @@ export class MusicLibraryService {
       notes: dto.notes,
       favorite: dto.favorite,
     };
-    const entry = await upsertRetryingRace(() =>
+    const entry = await retryAfterUniqueRace(() =>
       this.prisma.musicEntry.upsert({
         where: { userId_musicItemId: { userId, musicItemId: musicItem.id } },
         update: changes,
