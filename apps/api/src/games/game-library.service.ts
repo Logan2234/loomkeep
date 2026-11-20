@@ -54,6 +54,7 @@ import { compareTitles, timeMs } from "../common/sort.util";
 import { EventsGateway } from "../events/events.gateway";
 import { AchievementService } from "../gamification/achievements/achievement.service";
 
+import { upsertRetryingRace } from "../common/prisma-error.util";
 import { ACHIEVEMENT_KEYS_BY_XP_REASON } from "../gamification/achievements/triggers";
 import { SessionXpService } from "../gamification/session-xp.service";
 import { XpService } from "../gamification/xp.service";
@@ -290,12 +291,14 @@ export class GameLibraryService {
         ? { finishedAt: new Date() }
         : {}),
     };
-    let entry = await this.prisma.gameEntry.upsert({
-      where: { userId_gameItemId: { userId, gameItemId: gameItem.id } },
-      update: changes,
-      create: { userId, gameItemId: gameItem.id, ...changes },
-      include: ENTRY_INCLUDE,
-    });
+    let entry = await upsertRetryingRace(() =>
+      this.prisma.gameEntry.upsert({
+        where: { userId_gameItemId: { userId, gameItemId: gameItem.id } },
+        update: changes,
+        create: { userId, gameItemId: gameItem.id, ...changes },
+        include: ENTRY_INCLUDE,
+      }),
+    );
     const statusPlaythrough =
       dto.status &&
       before?.status !== dto.status &&

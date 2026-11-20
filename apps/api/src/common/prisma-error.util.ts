@@ -33,3 +33,20 @@ export function isRecordNotFound(err: unknown): boolean {
     err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2025"
   );
 }
+
+/**
+ * Runs an `upsert` again when it lost a race to a concurrent create of the
+ * same row. Prisma can't always turn an upsert into one ON CONFLICT statement
+ * (an `include` rules it out), so two simultaneous first writes may both
+ * try the insert; the second attempt finds the row and updates it.
+ */
+export async function upsertRetryingRace<T>(
+  upsert: () => Promise<T>,
+): Promise<T> {
+  try {
+    return await upsert();
+  } catch (err) {
+    if (!isUniqueViolation(err)) throw err;
+    return upsert();
+  }
+}
