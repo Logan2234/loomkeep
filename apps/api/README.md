@@ -22,7 +22,7 @@ decisions and dev conventions shared with the web app, see the root
 - **Sentry SDK** (`@sentry/node`, `src/instrument.ts`) reports 5xx
   exceptions to GlitchTip when `GLITCHTIP_API_DSN` is set — see
   [Error tracking](https://docs.loomkeep.app/self-hosting/optional-services/error-tracking/).
-- **Swagger UI** on `/docs`, dev-only (`NODE_ENV=development`) — the
+- **Swagger UI** on `/swagger`, dev-only (`NODE_ENV=development`) — the
   `@nestjs/swagger` import is dynamic so it's never bundled in production.
 
 ## Modules (`src/`)
@@ -33,8 +33,9 @@ Domain modules, one per bounded concern:
   Library/MusicBrainz providers, and `MediaItemService.upsertFromSource()`
   (the single entry point that persists a catalogue item on-demand).
 - `library/` — a user's tracked items, watch/read/listen progress.
-- `import/` — interactive import pipelines (TV Time, Trakt, Simkl,
-  MyAnimeList, Steam, Goodreads, StoryGraph, Babelio) under `sources/`,
+- `import/` — interactive import pipelines (TV Time, Trakt, Simkl, IMDb,
+  Letterboxd, AniList, MyAnimeList, Steam, Goodreads, StoryGraph, Babelio)
+  under `sources/`,
   behind a shared analyze → review → commit flow.
 - `reviews/`, `comments/`, `social/`, `reports/` — the social feature set,
   gated behind `SOCIAL_ENABLED` (see

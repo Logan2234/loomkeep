@@ -51,11 +51,13 @@ see [Catalogue keys](/self-hosting/catalogues/).
 
 ## Security and logs
 
-| Variable                                            | What it is                                                                                                   |
-| --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| `PUBLIC_TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY` | Optional bot protection on sign-up: see [Behind Cloudflare](/self-hosting/cloudflare/#turnstile-on-sign-up). |
-| `LOG_LEVEL`                                         | `fatal`, `error`, `warn`, `info` (default), `debug`, `trace` or `silent`.                                    |
-| `IMAGE_TAG`                                         | Pins the images to a release instead of `latest`: see [Upgrades](/self-hosting/upgrades-and-backups/).       |
+| Variable                                            | What it is                                                                                                                                            |
+| --------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `PUBLIC_TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY` | Optional bot protection on sign-up: see [Behind Cloudflare](/self-hosting/cloudflare/#turnstile-on-sign-up).                                          |
+| `LOG_LEVEL`                                         | `fatal`, `error`, `warn`, `info` (default), `debug`, `trace` or `silent`.                                                                             |
+| `IMAGE_TAG`                                         | Pins the images to a release instead of `latest`: see [Upgrades](/self-hosting/upgrades-and-backups/).                                                |
+| `API_TLS_KEY`, `API_TLS_CERT`                       | Optional: the PEM contents (not paths) of a key and certificate, for the API to serve HTTPS itself without a reverse proxy. Leave empty behind Caddy. |
+| `GIT_SHA`                                           | Set when the image is built; shown in Admin next to the version. Nothing to set yourself.                                                             |
 
 :::tip
 Empty optional variables simply turn their feature off: an import without
