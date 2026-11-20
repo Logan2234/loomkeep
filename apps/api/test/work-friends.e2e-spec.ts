@@ -66,7 +66,7 @@ describe("Friends on a work (e2e)", () => {
       const entry = await as(who)
         .put("/api/library")
         .send({
-          source: "ANILIST",
+          source: "TMDB",
           sourceId: "4242",
           type: "ANIME",
           status: "PLANNED",

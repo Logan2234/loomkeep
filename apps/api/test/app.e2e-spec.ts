@@ -170,7 +170,7 @@ describe("Loomkeep API (e2e)", () => {
       .put("/api/library")
       .set("Cookie", sessionCookies)
       .send({
-        source: "ANILIST",
+        source: "TMDB",
         sourceId: "4242",
         type: "ANIME",
         status: "WATCHING",
@@ -372,7 +372,7 @@ describe("Loomkeep API (e2e)", () => {
     const created = await request(http)
       .put("/api/library")
       .set("Cookie", sessionCookies)
-      .send({ source: "ANILIST", sourceId: "5555", type: "ANIME" })
+      .send({ source: "TMDB", sourceId: "5555", type: "ANIME" })
       .expect(200);
     const newEntryId = created.body.id;
 
@@ -580,7 +580,7 @@ describe("Loomkeep API (e2e)", () => {
 
   it("media extras: returns where-to-watch, cast and similar", async () => {
     const res = await request(http)
-      .get("/api/catalog/anilist/5555/extras?type=ANIME")
+      .get("/api/catalog/tmdb/5555/extras?type=ANIME")
       .set("Cookie", sessionCookies)
       .expect(200);
     expect(res.body.watchProviders).toBeDefined();

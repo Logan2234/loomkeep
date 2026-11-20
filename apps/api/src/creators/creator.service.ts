@@ -73,23 +73,24 @@ export class CreatorService {
       return withStatuses(page, true, (work) => books.get(work.sourceId));
     }
 
-    // TMDB films and series are separate id namespaces.
-    const [allowAdult, movies, series] = await Promise.all([
+    // TMDB films and series are separate id namespaces; a show is stored as
+    // a series or an anime, the way TMDB classifies it.
+    const ofType = (type: MediaType) =>
+      this.statuses(
+        userId,
+        type,
+        allIds((w) => w.type === type),
+      );
+    const [allowAdult, movies, series, anime] = await Promise.all([
       this.ageGate.allowsAdultContent(userId),
-      this.statuses(
-        userId,
-        MediaType.MOVIE,
-        allIds((w) => w.type === MediaType.MOVIE),
-      ),
-      this.statuses(
-        userId,
-        MediaType.SERIES,
-        allIds((w) => w.type === MediaType.SERIES),
-      ),
+      ofType(MediaType.MOVIE),
+      ofType(MediaType.SERIES),
+      ofType(MediaType.ANIME),
     ]);
+    const byType = { MOVIE: movies, SERIES: series, ANIME: anime };
 
     return withStatuses(page, allowAdult, (work) =>
-      (work.type === MediaType.MOVIE ? movies : series).get(work.sourceId),
+      work.type ? byType[work.type].get(work.sourceId) : undefined,
     );
   }
 

@@ -10,23 +10,23 @@ const member = (
   sourceId: string,
   extra: Partial<SagaMemberDto> = {},
 ): SagaMemberDto => ({
-  source: "ANILIST",
+  source: "TMDB",
   sourceId,
-  type: "ANIME",
+  type: "MOVIE",
   title: `Work ${sourceId}`,
   year: 2020,
   posterUrl: null,
   isAdult: false,
   releaseDate: "2020-04-01",
-  format: "TV",
-  episodes: 12,
+  format: null,
+  episodes: null,
   upcoming: false,
   status: null,
   ...extra,
 });
 
 const franchise: MediaSagaDto = {
-  key: "ANILIST:1",
+  key: "TMDB:1",
   title: "Work 1",
   members: [member("1"), member("2"), member("3", { isAdult: true })],
 };
@@ -70,24 +70,24 @@ describe("SagaService", () => {
   it("adds the viewer's status to each work and tags the tracked ones with the saga", async () => {
     const { service, sagas, library } = makeService(true);
 
-    const saga = await service.getSaga("user-1", "ANIME", "2", "fr");
+    const saga = await service.getSaga("user-1", "MOVIE", "2", "fr");
 
     expect(saga?.members.map((m) => [m.sourceId, m.status])).toEqual([
       ["1", "COMPLETED"],
       ["2", null],
       ["3", null],
     ]);
-    expect(sagas.read).toHaveBeenCalledWith("ANIME", "2", "fr");
+    expect(sagas.read).toHaveBeenCalledWith("MOVIE", "2", "fr");
     expect(library.statusesBySourceId).toHaveBeenCalledWith(
       "user-1",
-      "ANILIST",
-      "ANIME",
+      "TMDB",
+      "MOVIE",
       ["1", "2", "3"],
     );
     expect(sagas.rememberMembership).toHaveBeenCalledWith(
-      "ANIME",
+      "MOVIE",
       ["1", "2", "3"],
-      "ANILIST:1",
+      "TMDB:1",
     );
   });
 
@@ -95,23 +95,24 @@ describe("SagaService", () => {
     const { service, sagas } = makeService(true);
     sagas.rememberMembership.mockResolvedValue(1);
 
-    await service.getSaga("user-1", "ANIME", "2");
+    await service.getSaga("user-1", "MOVIE", "2");
 
-    expect(sagas.sync).toHaveBeenCalledWith("ANIME", "2");
+    expect(sagas.sync).toHaveBeenCalledWith("MOVIE", "2");
   });
 
   it("leaves 18+ works out for an account that can't see them", async () => {
     const { service } = makeService(false);
 
-    const saga = await service.getSaga("user-1", "ANIME", "1");
+    const saga = await service.getSaga("user-1", "MOVIE", "1");
 
     expect(saga?.members.map((m) => m.sourceId)).toEqual(["1", "2"]);
   });
 
-  it("has no saga to offer for a series", async () => {
+  it("has no saga to offer for a series or an anime", async () => {
     const { service, sagas } = makeService();
 
     expect(await service.getSaga("user-1", "SERIES", "1399")).toBeNull();
+    expect(await service.getSaga("user-1", "ANIME", "37854")).toBeNull();
     expect(sagas.read).not.toHaveBeenCalled();
   });
 
@@ -189,11 +190,11 @@ describe("SagaService", () => {
 
   it("shows film sagas in the viewer's language, keeping the saved titles when that fails", async () => {
     const { service, prisma, library, sagas } = makeService(true);
-    const row = (sagaKey: string, sourceId: string, type = "MOVIE") => ({
+    const row = (sagaKey: string, sourceId: string) => ({
       sagaKey,
-      source: type === "ANIME" ? "ANILIST" : "TMDB",
+      source: "TMDB",
       sourceId,
-      type,
+      type: "MOVIE",
       position: 0,
       title: `Saved ${sourceId}`,
       posterUrl: null,
@@ -208,10 +209,6 @@ describe("SagaService", () => {
         updatedAt: new Date("2026-10-01"),
         mediaItem: { sagaKey: "TMDB:726871" },
       },
-      {
-        updatedAt: new Date("2026-09-01"),
-        mediaItem: { sagaKey: "ANILIST:1" },
-      },
     ]);
     prisma.saga.findMany.mockResolvedValue([
       {
@@ -219,21 +216,8 @@ describe("SagaService", () => {
         title: "Dune Collection",
         members: [row("TMDB:726871", "1"), row("TMDB:726871", "2")],
       },
-      {
-        key: "ANILIST:1",
-        title: "Attack on Titan",
-        members: [
-          row("ANILIST:1", "10", "ANIME"),
-          row("ANILIST:1", "11", "ANIME"),
-        ],
-      },
     ]);
-    library.statusesBySourceId.mockResolvedValue(
-      new Map([
-        ["1", "COMPLETED"],
-        ["10", "COMPLETED"],
-      ]),
-    );
+    library.statusesBySourceId.mockResolvedValue(new Map([["1", "COMPLETED"]]));
     sagas.readCollection.mockResolvedValue({
       key: "TMDB:726871",
       title: "Dune - Saga",
@@ -247,7 +231,6 @@ describe("SagaService", () => {
 
     expect(result.inProgress.map((s) => [s.title, s.next?.title])).toEqual([
       ["Dune - Saga", "Dune : Deuxième partie"],
-      ["Attack on Titan", "Saved 11"],
     ]);
     expect(sagas.readCollection).toHaveBeenCalledOnce();
     expect(sagas.readCollection).toHaveBeenCalledWith(

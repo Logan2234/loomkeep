@@ -1,30 +1,15 @@
 ---
 title: AniList
-description: Anime, straight from your AniList list.
+description: Coming back soon, from AniList's data export.
 sidebar:
   order: 4.5
 ---
 
-import { Steps } from "@astrojs/starlight/components";
+The AniList import is off for now. Loomkeep used to read your list through
+AniList's API, whose terms don't allow a tracker like Loomkeep to use it, and
+anime now come from TMDB like series. It will come back reading the data
+export AniList gives you (**Settings › Account › GDPR Data Download**), with
+each anime matched on TMDB.
 
-**What comes in:** your anime list, with progress, scores, start and finish
-dates, notes and the date you added each anime, your favourite anime, and
-your custom lists.
-
-**Not imported:** manga, rewatch counts, and whether an entry is private.
-
-<Steps>
-
-1. Make sure your AniList profile isn't private, in your AniList settings,
-   for the time of the import.
-2. In Loomkeep, open **Settings › Import › AniList** and enter your user name
-   (or paste your profile's address, `anilist.co/user/…`).
-3. Review and import: see [how an import works](/guide/imports/#how-an-import-works).
-
-</Steps>
-
-There is nothing to match: AniList is the catalogue Loomkeep uses for anime,
-so every title comes in as itself. Paused and rewatched titles come in as
-watching, and a score is rounded to the nearest half point. Each custom list
-becomes a Loomkeep list with the same name; a list you already have under
-that name is left alone.
+Until then, export your list from [MyAnimeList](/guide/imports/myanimelist/)
+if you keep one there too.

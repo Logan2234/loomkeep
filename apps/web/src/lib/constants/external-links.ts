@@ -13,7 +13,6 @@ export const ANDROID_APK_URL =
   "https://github.com/Logan2234/loomkeep/releases/latest/download/loomkeep-android.apk";
 
 export const TMDB_API = "https://www.themoviedb.org/";
-export const ANILIST_API = "https://anilist.co/";
 export const OMDB_API = "https://www.omdbapi.com/";
 export const IGDB_API = "https://www.igdb.com/";
 export const OPENLIBRARY_API = "https://openlibrary.org/";

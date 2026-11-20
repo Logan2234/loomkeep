@@ -27,7 +27,6 @@
   // require its notice wherever its data appears, signed out included.
   const DATA_SOURCES: ProviderBrandKey[] = [
     "tmdb",
-    "anilist",
     "igdb",
     "openlibrary",
     "musicbrainz",

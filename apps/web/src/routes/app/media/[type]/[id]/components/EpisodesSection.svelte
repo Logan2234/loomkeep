@@ -83,15 +83,13 @@
     seasons: MediaDetailSeasonDto[];
     entry: LibraryEntryDto | null;
     mediaType: MediaType;
-    /** The route's catalogue id (TMDB for a series, AniList for an anime). */
-    sourceId: string;
+    /** The route's TMDB id; null for a work not yet moved off AniList. */
+    sourceId: string | null;
     reload: () => Promise<void>;
     onError: (message: string) => void;
   } = $props();
 
-  // Anime air dates are exact broadcast times (AniList's schedule).
-  const exactTime = $derived(mediaType === "ANIME");
-  const tmdbSourceId = $derived(mediaType === "SERIES" ? sourceId : null);
+  const tmdbSourceId = $derived(mediaType !== "MOVIE" ? sourceId : null);
 
   // "Now" for aired/upcoming checks, kept current while the page stays open.
   let now = $state(new Date());
@@ -718,7 +716,6 @@
     {season}
     title={seasonLabel(season)}
     tracked={!!entry}
-    {exactTime}
     canOpenPosters={!!tmdbSourceId}
     watchedCount={seasonWatchedCount(season)}
     hasPending={season.episodes.some((e) => e.id && !e.seen && isAired(e, now))}
@@ -814,7 +811,6 @@
                   {episode}
                   {seasonNumber}
                   {code}
-                  {exactTime}
                   rewatching={!!entry?.rewatching}
                   tracked={!!entry}
                   {now}
@@ -914,8 +910,7 @@
           {code}
           countdown={nextUp
             ? null
-            : (upcomingLabel(episode.airDate, now, exactTime) ??
-              m.media_not_aired())}
+            : (upcomingLabel(episode.airDate, now) ?? m.media_not_aired())}
           busy={!!episode.id && episodeBusy(episode.id)}
           onGo={() => goToEpisode(seasonNumber, episode.number)}
           onMark={() => episode.id && markWatched(episode.id)} />
@@ -930,7 +925,6 @@
     {episode}
     seasonNumber={season.number}
     code={episodeCode(season.number, episode.number)}
-    {exactTime}
     tracked={!!entry}
     {now}
     {tmdbSourceId}

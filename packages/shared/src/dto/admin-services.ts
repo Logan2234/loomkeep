@@ -45,7 +45,7 @@ export interface ServiceStatusDto {
   area: ServiceArea;
   /**
    * Whether the app hard-fails for its area without this service. `false` for
-   * optional enrichers (OMDb ratings) and keyless fallbacks (AniList).
+   * optional enrichers (OMDb ratings).
    */
   required: boolean;
   /** Its API key/credentials are present in the environment. */

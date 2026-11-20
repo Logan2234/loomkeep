@@ -44,8 +44,8 @@ wording change or a rename.
 
 ### Data model & catalog
 
-- **On-demand cache, not a mirror.** Catalogs (TMDB + AniList, IGDB, Open
-  Library, MusicBrainz — one provider per domain) are queried live. A
+- **On-demand cache, not a mirror.** Catalogs (TMDB, IGDB, Open Library,
+  MusicBrainz — one provider per domain) are queried live. A
   `MediaItem`/`GameItem`/`BookItem`/`MusicItem` is created only when a user
   first tracks it, through its domain's `upsertFromSource()`. Refreshes
   (24h TTL, 7 days for an ended series) never delete seasons/episodes, so
@@ -56,6 +56,10 @@ wording change or a rename.
 - TMDB movie/TV ids are separate namespaces: every call carries a
   `MediaType`. TVDB ids are captured from TMDB because the TV Time import
   reconciles through them.
+- An anime is a TMDB show TMDB files as a Japanese animation (`isTmdbAnime`):
+  stored as `ANIME`, a TMDB show is `SERIES` or `ANIME`, never both, so look
+  it up with `storedTypesFor()`. AniList is no catalogue any more (its terms
+  forbid a competing tracker); `AnimeMigrationService` moves what was on it.
 - `LibraryEntry.watchedEpisodes`/`lastWatchedAt` and `MediaItem.episodeCount`
   are maintained by Postgres triggers — never write them from the app.
 - Import sources share a base class per domain (`MediaImportSource`,

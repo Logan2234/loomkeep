@@ -62,9 +62,9 @@ describe("AdminService.getServicesStatus", () => {
       failure: "missingKey",
     });
     expect(tmdb?.detail).toBeUndefined();
-    // AniList, Open Library and MusicBrainz are keyless, so they are still
+    // Open Library and MusicBrainz are keyless, so they are still
     // probed; but no keyed probe ran here.
-    expect(global.fetch).toHaveBeenCalledTimes(3);
+    expect(global.fetch).toHaveBeenCalledTimes(2);
   });
 
   it("marks a configured service healthy on a 2xx probe", async () => {

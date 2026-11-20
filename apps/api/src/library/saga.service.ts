@@ -52,7 +52,7 @@ export class SagaService {
     sourceId: string,
     lang?: string,
   ): Promise<MediaSagaDto | null> {
-    if (type === "SERIES") return null;
+    if (type !== "MOVIE") return null;
 
     const saga = await this.sagas.read(type, sourceId, lang);
     if (!saga) return null;
@@ -63,10 +63,9 @@ export class SagaService {
     );
     if (members.length < 2) return null;
 
-    const source: CatalogSource = type === "ANIME" ? "ANILIST" : "TMDB";
     const ids = members.map((m) => m.sourceId);
     const [statuses, tagged] = await Promise.all([
-      this.library.statusesBySourceId(userId, source, type, ids),
+      this.library.statusesBySourceId(userId, "TMDB", type, ids),
       this.sagas.rememberMembership(type, ids, saga.key),
     ]);
 
@@ -295,20 +294,16 @@ export class SagaService {
     members: SagaMember[],
   ): Promise<Map<string, EntryStatus>> {
     const statuses = new Map<string, EntryStatus>();
-
-    for (const type of ["MOVIE", "ANIME"] as const) {
-      const ids = members.filter((m) => m.type === type).map((m) => m.sourceId);
-      if (ids.length === 0) continue;
-      const source: CatalogSource = type === "ANIME" ? "ANILIST" : "TMDB";
-      const byId = await this.library.statusesBySourceId(
-        userId,
-        source,
-        type,
-        ids,
-      );
-      for (const [id, status] of byId) statuses.set(`${type}:${id}`, status);
-    }
-
+    const ids = members
+      .filter((m) => m.type === "MOVIE")
+      .map((m) => m.sourceId);
+    const byId = await this.library.statusesBySourceId(
+      userId,
+      "TMDB",
+      "MOVIE",
+      ids,
+    );
+    for (const [id, status] of byId) statuses.set(`MOVIE:${id}`, status);
     return statuses;
   }
 }

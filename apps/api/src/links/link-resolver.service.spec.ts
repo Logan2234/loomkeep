@@ -3,16 +3,17 @@ import { HttpStatus } from "@nestjs/common";
 import type { ConfigService } from "@nestjs/config";
 import { vi } from "vitest";
 import type { OpenLibraryProvider } from "../books/providers/open-library.provider";
-import type { AnilistProvider } from "../catalog/providers/anilist.provider";
 import type { TmdbProvider } from "../catalog/providers/tmdb.provider";
 import { AppException } from "../common/app.exception";
 import type { IgdbProvider } from "../games/providers/igdb.provider";
 import type { MusicBrainzProvider } from "../music/providers/musicbrainz.provider";
+import type { PrismaService } from "../prisma/prisma.service";
 import { LinkResolverService } from "./link-resolver.service";
 
 function makeResolver(overrides: {
   tmdb?: Partial<TmdbProvider>;
-  anilist?: Partial<AnilistProvider>;
+  /** The work a migrated AniList id now belongs to, if any. */
+  migrated?: unknown;
   igdb?: Partial<IgdbProvider>;
   openLibrary?: Partial<OpenLibraryProvider>;
   musicBrainz?: Partial<MusicBrainzProvider>;
@@ -25,8 +26,12 @@ function makeResolver(overrides: {
   } as unknown as ConfigService;
   return new LinkResolverService(
     config,
+    {
+      mediaItem: {
+        findFirst: vi.fn().mockResolvedValue(overrides.migrated ?? null),
+      },
+    } as unknown as PrismaService,
     (overrides.tmdb ?? {}) as TmdbProvider,
-    (overrides.anilist ?? {}) as AnilistProvider,
     (overrides.igdb ?? {}) as IgdbProvider,
     (overrides.openLibrary ?? {}) as OpenLibraryProvider,
     (overrides.musicBrainz ?? {}) as MusicBrainzProvider,
@@ -104,8 +109,8 @@ describe("LinkResolverService", () => {
 
   it("lets a provider outage through rather than calling the link unknown", async () => {
     const resolver = makeResolver({
-      anilist: {
-        getSummaryByMalId: vi
+      tmdb: {
+        findMovieSummaryByImdbId: vi
           .fn()
           .mockRejectedValue(
             new AppException(
@@ -117,8 +122,29 @@ describe("LinkResolverService", () => {
     });
 
     await expect(
-      resolver.resolve("https://myanimelist.net/anime/52991"),
+      resolver.resolve("https://www.imdb.com/title/tt11280740/"),
     ).rejects.toBeInstanceOf(AppException);
+  });
+
+  it("opens an AniList link on the TMDB anime it was migrated to", async () => {
+    const resolver = makeResolver({
+      migrated: { type: "ANIME", externalIds: [{ externalId: "209867" }] },
+    });
+
+    await expect(
+      resolver.resolve("https://anilist.co/anime/154587/Sousou-no-Frieren/"),
+    ).resolves.toEqual({ domain: "MEDIA", href: "/app/media/anime/209867" });
+  });
+
+  it("no longer recognizes an AniList link nobody tracked, nor a MyAnimeList one", async () => {
+    const resolver = makeResolver({});
+
+    await expect(
+      resolver.resolve("https://anilist.co/anime/154587"),
+    ).resolves.toBeNull();
+    await expect(
+      resolver.resolve("https://myanimelist.net/anime/52991"),
+    ).resolves.toBeNull();
   });
 
   it("opens a link to this instance, or to the hosted one, on the same page", async () => {

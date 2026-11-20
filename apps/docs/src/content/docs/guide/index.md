@@ -10,12 +10,12 @@ rest of the guide (imports, the calendar, your data) reads straight through.
 
 Loomkeep tracks four domains, each with its own library:
 
-| Domain               | Catalogue                   |
-| -------------------- | --------------------------- |
-| Films, series, anime | TMDB, and AniList for anime |
-| Games                | IGDB                        |
-| Books                | Open Library                |
-| Music (albums)       | MusicBrainz                 |
+| Domain               | Catalogue    |
+| -------------------- | ------------ |
+| Films, series, anime | TMDB         |
+| Games                | IGDB         |
+| Books                | Open Library |
+| Music (albums)       | MusicBrainz  |
 
 Turn on only the ones you use in **Settings › Domains**; the others disappear
 from menus, search and stats. Catalogues are searched live: a title is only

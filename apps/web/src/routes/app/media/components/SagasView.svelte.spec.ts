@@ -214,16 +214,11 @@ describe("SagasView", () => {
       }),
     ).toBeNull();
 
-    const typeGroup = within(panel).getByRole("group", {
-      name: m.common_type(),
-    });
-    await user.click(
-      within(typeGroup).getByRole("button", { name: m.media_anime() }),
-    );
-
-    await waitFor(() =>
-      expect(requests.at(-1)?.searchParams.getAll("type")).toEqual(["ANIME"]),
-    );
+    // Only films have sagas now: there is no type to pick.
+    expect(
+      within(panel).queryByRole("group", { name: m.common_type() }),
+    ).toBeNull();
+    expect(requests.at(-1)?.searchParams.getAll("type")).toEqual([]);
   });
 
   it("searches from the header, beside the view switch", async () => {

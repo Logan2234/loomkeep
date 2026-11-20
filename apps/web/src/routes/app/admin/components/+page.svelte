@@ -208,7 +208,6 @@
 
   const PROVIDERS: ProviderBrandKey[] = [
     "tmdb",
-    "anilist",
     "omdb",
     "igdb",
     "openlibrary",
@@ -232,7 +231,7 @@
   let notificationsEnabled = $state(true);
   let viewMode = $state<ViewMode>("compact");
   let genres = $state<string[]>(["drama"]);
-  let sources = $state<string[]>(["tmdb", "anilist"]);
+  let sources = $state<string[]>(["tmdb", "igdb"]);
   let longSelection = $state<string[]>(["long"]);
   let rating = $state<number | null>(7);
   let wizardStep = $state(0);
@@ -246,7 +245,6 @@
   ];
   const SOURCE_OPTIONS = [
     { value: "tmdb", label: "TMDB" },
-    { value: "anilist", label: "AniList" },
     { value: "igdb", label: "IGDB" },
     { value: "musicbrainz", label: "MusicBrainz" },
   ];

@@ -47,7 +47,7 @@ describe("Work search (e2e)", () => {
       .put("/api/library")
       .set("Cookie", session.alice)
       .send({
-        source: "ANILIST",
+        source: "TMDB",
         sourceId: "4242",
         type: "ANIME",
         status: "WATCHING",
@@ -89,7 +89,7 @@ describe("Work search (e2e)", () => {
   });
 
   it("shows it once when a catalogue returns it too", async () => {
-    // The stubbed AniList answers any query with this same anime.
+    // The stubbed TMDB answers any query with this same anime.
     const body = await search("alice", "evangelion");
 
     expect(

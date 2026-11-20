@@ -24,7 +24,6 @@
     episode,
     seasonNumber,
     code,
-    exactTime,
     tracked,
     now,
     tmdbSourceId,
@@ -40,7 +39,6 @@
     episode: MediaDetailEpisodeDto;
     seasonNumber: number;
     code: string;
-    exactTime: boolean;
     tracked: boolean;
     now: Date;
     /** A TMDB series' id: its episodes have a live gallery. */
@@ -89,7 +87,7 @@
   );
   const watched = $derived(episode.seen);
   const upcoming = $derived(
-    watched ? null : upcomingLabel(episode.airDate, now, exactTime),
+    watched ? null : upcomingLabel(episode.airDate, now),
   );
 
   // One TMDB call per episode, so only once its panel is open.
@@ -110,7 +108,7 @@
   const imageSource = $derived(
     episode.stillUrl
       ? m.media_episode_image_source({
-          source: exactTime ? (episode.streamingSite ?? "AniList") : "TMDB",
+          source: "TMDB",
         })
       : null,
   );
@@ -251,9 +249,7 @@
             {m.media_episode_air_date()}
           </dt>
           <dd class="mt-0.5 text-sm">
-            {episode.airDate
-              ? airDateLabel(episode.airDate, exactTime, true)
-              : "—"}
+            {episode.airDate ? airDateLabel(episode.airDate) : "—"}
           </dd>
         </div>
         <div class="bg-surface px-3 py-2">
@@ -297,9 +293,7 @@
         <p class="mt-4 leading-relaxed">{episode.overview}</p>
       {:else}
         <p class="text-dim mt-4 text-sm">
-          {exactTime
-            ? m.media_episode_no_synopsis_anime()
-            : m.media_episode_no_synopsis()}
+          {m.media_episode_no_synopsis()}
         </p>
       {/if}
 

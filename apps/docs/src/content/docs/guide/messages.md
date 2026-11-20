@@ -146,7 +146,7 @@ what it is, its year, and a link to its page.
   of its first works. Both stay up to date; a private list can't be shared.
 - **#** inside a sentence: type `#` and a few letters of a title, pick the
   work, and its name becomes a link to its page — without a card.
-- **A link** to a work's page, on Loomkeep or on TMDB, IMDb, AniList, Steam,
+- **A link** to a work's page, on Loomkeep or on TMDB, IMDb, Steam,
   IGDB, Open Library or MusicBrainz, turns into its card on its own, a moment
   after the message is sent. Up to three per message.
 

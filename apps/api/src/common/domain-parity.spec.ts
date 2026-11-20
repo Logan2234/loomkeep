@@ -122,6 +122,8 @@ const FIRST_TRACK: Record<
     externalIdModel: string;
     itemModel: string;
     itemKey: string;
+    /** A TMDB show is looked up under either of its types, so not by unique key. */
+    lookup?: "findFirst";
     persist: (prisma: PrismaService) => Promise<unknown>;
   }
 > = {
@@ -129,11 +131,11 @@ const FIRST_TRACK: Record<
     externalIdModel: "mediaExternalId",
     itemModel: "mediaItem",
     itemKey: "mediaItem",
+    lookup: "findFirst",
     persist: (prisma) =>
       new MediaItemService(
         prisma,
         provider("TMDB") as never,
-        provider("ANILIST") as never,
         jobRuns,
         {} as never,
       ).upsertFromSource("TMDB", "42", "MOVIE"),
@@ -180,16 +182,21 @@ describe.each(Object.keys(FIRST_TRACK) as CacheDomain[])(
   "%s first track of an uncached work",
   (domain) => {
     it("adopts the row a concurrent first track created instead of failing", async () => {
-      const { externalIdModel, itemModel, itemKey, persist } =
+      const { externalIdModel, itemModel, itemKey, lookup, persist } =
         FIRST_TRACK[domain];
       const winner = { id: "winner" };
       const prisma = prismaDouble({
-        [externalIdModel]: {
-          findUnique: vi
-            .fn()
-            .mockResolvedValueOnce(null)
-            .mockResolvedValueOnce({ [itemKey]: winner }),
-        },
+        [externalIdModel]: lookup
+          ? {
+              [lookup]: vi.fn().mockResolvedValue(null),
+              findUnique: vi.fn().mockResolvedValue({ [itemKey]: winner }),
+            }
+          : {
+              findUnique: vi
+                .fn()
+                .mockResolvedValueOnce(null)
+                .mockResolvedValueOnce({ [itemKey]: winner }),
+            },
         [itemModel]: { create: vi.fn().mockRejectedValue(uniqueViolation()) },
       });
 
@@ -207,17 +214,18 @@ const STALE_TRACK: Record<
   {
     externalIdModel: string;
     itemKey: string;
+    lookup?: "findFirst";
     track: (prisma: PrismaService, outage: Error) => Promise<unknown>;
   }
 > = {
   MEDIA: {
     externalIdModel: "mediaExternalId",
     itemKey: "mediaItem",
+    lookup: "findFirst",
     track: (prisma, outage) =>
       new MediaItemService(
         prisma,
         { getDetails: vi.fn().mockRejectedValue(outage) } as never,
-        provider("ANILIST") as never,
         jobRuns,
         {} as never,
       ).upsertFromSource("TMDB", "42", "MOVIE"),
@@ -259,7 +267,7 @@ describe.each(Object.keys(STALE_TRACK) as CacheDomain[])(
   "%s track of a stale cached work during a provider outage",
   (domain) => {
     it("serves the cached copy instead of failing", async () => {
-      const { externalIdModel, itemKey, track } = STALE_TRACK[domain];
+      const { externalIdModel, itemKey, lookup, track } = STALE_TRACK[domain];
       const cached = {
         id: "cached",
         lastSyncedAt: new Date("2020-01-01T00:00:00Z"),
@@ -267,7 +275,7 @@ describe.each(Object.keys(STALE_TRACK) as CacheDomain[])(
       };
       const prisma = prismaDouble({
         [externalIdModel]: {
-          findUnique: vi.fn().mockResolvedValue({
+          [lookup ?? "findUnique"]: vi.fn().mockResolvedValue({
             [`${itemKey}Id`]: "cached",
             [itemKey]: cached,
           }),
@@ -280,9 +288,11 @@ describe.each(Object.keys(STALE_TRACK) as CacheDomain[])(
     });
 
     it("still fails for a work never cached", async () => {
-      const { externalIdModel, track } = STALE_TRACK[domain];
+      const { externalIdModel, lookup, track } = STALE_TRACK[domain];
       const prisma = prismaDouble({
-        [externalIdModel]: { findUnique: vi.fn().mockResolvedValue(null) },
+        [externalIdModel]: {
+          [lookup ?? "findUnique"]: vi.fn().mockResolvedValue(null),
+        },
       });
 
       await expect(track(prisma, new Error("provider down"))).rejects.toThrow(

@@ -252,7 +252,7 @@ describe("calendar page", () => {
     expect(screen.getByText(m.calendar_catch_up({ count: 3 }))).toBeTruthy();
   });
 
-  it("gives an anime's broadcast time, never a TMDB day's, and says a work is muted", async () => {
+  it("gives a broadcast time an AniList date carries, never a TMDB day's, and says a work is muted", async () => {
     const air = inDays(2);
     serveCalendar([
       upcoming("e1", "Frieren", 5, 2, {
@@ -266,7 +266,10 @@ describe("calendar page", () => {
           sourceId: "1",
         },
       }),
-      upcoming("e2", "Andor", 1, 2, { airDate: air, episodeAlertsMuted: true }),
+      upcoming("e2", "Andor", 1, 2, {
+        airDate: `${air.slice(0, 10)}T00:00:00.000Z`,
+        episodeAlertsMuted: true,
+      }),
     ]);
     renderWithQuery(CalendarPage, {});
 
