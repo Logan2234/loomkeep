@@ -1,6 +1,7 @@
 <script lang="ts">
   import { type SelectOption } from "#lib/types/select-option.js";
 
+  import { ownershipSourceLabel } from "#lib/constants/ownership-sources.js";
   import { joinMeta } from "#lib/format.js";
   import { m } from "#lib/paraglide/messages.js";
   import Dropdown from "./Dropdown.svelte";
@@ -28,7 +29,7 @@
   const current = $derived(
     joinMeta(
       statusOptions.find((option) => option.value === status)?.label ?? status,
-      source,
+      source && ownershipSourceLabel(source),
     ),
   );
 </script>

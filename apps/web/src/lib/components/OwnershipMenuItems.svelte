@@ -6,6 +6,7 @@
   // The items of an ownership menu, for a Dropdown with role="menu": one
   // entry per way of owning a work, and a submenu for those that come with
   // presets (Streaming › Netflix, Prime Video…, "Autre…" for a free value).
+  import { ownershipSourceLabel } from "#lib/constants/ownership-sources.js";
   import { m } from "#lib/paraglide/messages.js";
   import DropdownSubmenu from "./DropdownSubmenu.svelte";
   import Icon from "./Icon.svelte";
@@ -60,7 +61,7 @@
           class="menu-item"
           onclick={() => onPick(option.value, preset)}>
           {@render check(current && source === preset)}
-          {preset}
+          {ownershipSourceLabel(preset)}
         </button>
       {/each}
       {#if customFor === option.value}

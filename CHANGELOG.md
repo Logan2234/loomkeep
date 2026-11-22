@@ -44,6 +44,10 @@ history from before it was started.
   "My services" filter.
 - Premium: subscribe to the series premieres from "Add to my calendar", with
   the same personal link as the release calendar.
+- Ownership › Physical now asks for the format: DVD, Blu-ray, 4K or VHS for
+  films and series, boxed, loose, sealed or collector's edition for games,
+  pocket, paperback, hardcover or box set for books, vinyl, CD or cassette
+  for albums.
 - Self-hosting: the Docker images carry a signed provenance and an SBOM, so
   you can check where an image comes from and what it contains. See
   "Checking an image" in the upgrade docs.
