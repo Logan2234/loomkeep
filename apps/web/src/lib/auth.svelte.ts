@@ -1,4 +1,5 @@
 import { FeatureFlag, type UserDto } from "@loomkeep/shared";
+import { chat } from "./chat/chat.svelte";
 import { liveFlags } from "./feature-flags-live.svelte";
 import { queryClient } from "./query-client";
 
@@ -40,6 +41,9 @@ class AuthState {
     this.user = null;
     this.isPremium = false;
     queryClient.clear();
+    // Messages is state of its own, outside the query cache: left as it was,
+    // the next account opened on the previous one's conversation and drafts.
+    chat.reset();
   }
 }
 
