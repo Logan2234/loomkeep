@@ -22,9 +22,10 @@ import {
   StudioKind,
   StudioWorkOrder,
 } from "@loomkeep/shared";
-import { HttpStatus, Injectable } from "@nestjs/common";
+import { HttpStatus, Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { AppException } from "../../common/app.exception";
+import { mapWithConcurrency } from "../../common/concurrency.util";
 import { utcDateKey } from "../../common/date.util";
 import { fetchJson } from "../../common/http.util";
 import { QuotaTrackerService } from "../../common/quota-tracker.service";
@@ -99,11 +100,13 @@ const GALLERY_CACHE_SIZE = 500;
 const SHORT_FILM_MAX_MINUTES = 40;
 // 20 films a page: past 100 shorts the rest stay listed as works.
 const SHORT_FILM_MAX_PAGES = 5;
+const SEASON_FETCH_CONCURRENCY = 4;
 
 /** Films and (western) series, from The Movie Database. */
 @Injectable()
 export class TmdbProvider implements CatalogProvider {
   readonly source = CatalogSource.TMDB;
+  private readonly logger = new Logger(TmdbProvider.name);
 
   // Episode and season galleries barely move either, and a panel tends to
   // be reopened while browsing a season.
@@ -370,15 +373,36 @@ export class TmdbProvider implements CatalogProvider {
 
     // Episode lists live on per-season endpoints. Same language as the show
     // itself, so a translation fetch also brings episode titles/synopses.
-    const seasons: ProviderSeason[] = await Promise.all(
-      (tv.seasons ?? []).map(async (season) => {
-        const detail = await this.get<TmdbSeasonDetails>(
-          `/tv/${sourceId}/season/${season.season_number}`,
-          { language: regionalLocale(lang) },
-        );
-        return toTvSeason(season, detail);
-      }),
+    // A few at a time: a long soap has dozens of seasons, all against one
+    // rate limit. A season that can't be read is left out rather than
+    // failing the whole show; refreshes never delete seasons, so the one
+    // already stored keeps its episodes until the next refresh.
+    const fetched = await mapWithConcurrency(
+      tv.seasons ?? [],
+      SEASON_FETCH_CONCURRENCY,
+      async (season): Promise<ProviderSeason | Error> => {
+        try {
+          const detail = await this.get<TmdbSeasonDetails>(
+            `/tv/${sourceId}/season/${season.season_number}`,
+            { language: regionalLocale(lang) },
+          );
+          return toTvSeason(season, detail);
+        } catch (err) {
+          return err instanceof Error ? err : new Error(String(err));
+        }
+      },
     );
+    const seasons = fetched.filter(
+      (season): season is ProviderSeason => !(season instanceof Error),
+    );
+    const failed = fetched.length - seasons.length;
+
+    if (failed > 0) {
+      if (seasons.length === 0) throw fetched[0];
+      this.logger.warn(
+        `TMDB series ${sourceId}: ${failed} of ${fetched.length} seasons unreadable, left out`,
+      );
+    }
 
     return toTvDetails(tv, seasons);
   }

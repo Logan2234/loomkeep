@@ -190,6 +190,67 @@ describe("TmdbProvider", () => {
     ).resolves.toBeNull();
   });
 
+  describe("a long-running series", () => {
+    const SEASONS = 12;
+
+    function mockSeries(failing: (season: number) => boolean) {
+      let inFlight = 0;
+      let peak = 0;
+      global.fetch = vi.fn(async (input: string | URL) => {
+        const url = new URL(input.toString());
+        const season = /\/season\/(\d+)$/.exec(url.pathname)?.[1];
+
+        if (!season) {
+          return Response.json({
+            id: 1,
+            name: "Long Show",
+            seasons: Array.from({ length: SEASONS }, (_, i) => ({
+              season_number: i + 1,
+            })),
+          });
+        }
+
+        inFlight++;
+        peak = Math.max(peak, inFlight);
+        await new Promise((resolve) => setTimeout(resolve, 5));
+        inFlight--;
+        return failing(Number(season))
+          ? new Response("", { status: 404 })
+          : Response.json({
+              episodes: [{ episode_number: 1, name: `S${season}E1` }],
+            });
+      }) as unknown as typeof fetch;
+      return { peak: () => peak };
+    }
+
+    it("asks TMDB for a few seasons at a time, not all at once", async () => {
+      const series = mockSeries(() => false);
+
+      const details = await provider.getDetails("1", MediaType.SERIES);
+
+      expect(details.seasons).toHaveLength(SEASONS);
+      expect(series.peak()).toBeLessThanOrEqual(4);
+    });
+
+    it("keeps the other seasons when one can't be read", async () => {
+      mockSeries((season) => season === 3);
+
+      const details = await provider.getDetails("1", MediaType.SERIES);
+
+      expect(details.seasons.map((s) => s.number)).toEqual([
+        1, 2, 4, 5, 6, 7, 8, 9, 10, 11, 12,
+      ]);
+    });
+
+    it("still fails when no season can be read", async () => {
+      mockSeries(() => true);
+
+      await expect(
+        provider.getDetails("1", MediaType.SERIES),
+      ).rejects.toThrow();
+    });
+  });
+
   it("maps series details with TVDB ID and per-season episodes (specials included)", async () => {
     mockFetchByUrl({
       "/tv/1396/season/0": fixture("tmdb-season-0.json"),

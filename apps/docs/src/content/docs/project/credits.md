@@ -5,7 +5,8 @@ description: Where Loomkeep's catalogue data comes from, and the terms and notic
 
 Loomkeep stores no catalogue of its own: titles, covers and details come
 live from open or public catalogues, which stay under their own terms. The
-app lists them in **Settings › Data sources** too.
+app lists the catalogues it queries in **Settings › Data sources**; JustWatch
+is credited next to the offers it supplies.
 
 ## Catalogues
 

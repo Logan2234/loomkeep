@@ -4,6 +4,9 @@ const FCM_SCOPE = "https://www.googleapis.com/auth/firebase.messaging";
 const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
 // Renew the OAuth token this long before Google says it expires.
 const TOKEN_EXPIRY_MARGIN_MS = 5 * 60 * 1000;
+// Without a deadline, a hung Google endpoint holds the send (and the
+// notification run awaiting it) open indefinitely. Same budget as web push.
+const REQUEST_TIMEOUT_MS = 10_000;
 
 interface ServiceAccount {
   project_id: string;
@@ -40,6 +43,9 @@ export type FcmSendResult =
  */
 export class FcmClient {
   private accessToken: { value: string; expiresAt: number } | null = null;
+  // The request in flight, shared by every send that finds the token stale
+  // meanwhile: a burst of pushes asks Google once, not once per device.
+  private tokenRequest: Promise<string> | null = null;
 
   constructor(
     private readonly account: ServiceAccount,
@@ -78,6 +84,7 @@ export class FcmClient {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ message: { token, ...message } }),
+        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
       },
     );
     if (response.ok) return { ok: true };
@@ -90,11 +97,18 @@ export class FcmClient {
     };
   }
 
-  private async oauthToken(): Promise<string> {
+  private oauthToken(): Promise<string> {
     if (this.accessToken && this.accessToken.expiresAt > this.now()) {
-      return this.accessToken.value;
+      return Promise.resolve(this.accessToken.value);
     }
 
+    this.tokenRequest ??= this.requestOauthToken().finally(() => {
+      this.tokenRequest = null;
+    });
+    return this.tokenRequest;
+  }
+
+  private async requestOauthToken(): Promise<string> {
     const response = await fetch(GOOGLE_TOKEN_URL, {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -102,6 +116,7 @@ export class FcmClient {
         grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
         assertion: this.signedAssertion(),
       }),
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     });
 
     if (!response.ok) {

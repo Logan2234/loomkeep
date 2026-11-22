@@ -1197,6 +1197,31 @@ describe("AuthService.revokeOtherSessions", () => {
   });
 });
 
+describe("AuthService.revokeSession", () => {
+  it("deletes the session only within its owner's account", async () => {
+    const { service, prisma } = makeService();
+
+    await service.revokeSession("user-1", "session-b");
+
+    expect(prisma.refreshToken.deleteMany).toHaveBeenCalledWith({
+      where: { id: "session-b", userId: "user-1" },
+    });
+  });
+
+  it("evicts the revoked session from the cache and disconnects its socket, leaving the others", async () => {
+    const { service, sessionCache, events } = makeService();
+    sessionCache.markLive("session-a");
+    sessionCache.markLive("session-b");
+
+    await service.revokeSession("user-1", "session-b");
+
+    expect(sessionCache.isKnownLive("session-b")).toBe(false);
+    expect(sessionCache.isKnownLive("session-a")).toBe(true);
+    expect(events.disconnectSession).toHaveBeenCalledWith("session-b");
+    expect(events.disconnectSession).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe("AuthService.logout", () => {
   it("deletes the refresh token matching the presented value's hash", async () => {
     const { service, prisma } = makeService();
@@ -1337,7 +1362,8 @@ describe("AuthService.resetPassword", () => {
   });
 
   it("updates the password, revokes every session and reset token, disconnects every live socket, and emails a confirmation", async () => {
-    const { service, prisma, mail, security, events } = makeService();
+    const { service, prisma, mail, security, events, sessionCache } =
+      makeService();
     const user = makeUser();
     (prisma.userToken.findUnique as Mock).mockResolvedValue({
       userId: "user-1",
@@ -1349,8 +1375,13 @@ describe("AuthService.resetPassword", () => {
       { id: "session-a" },
       { id: "session-b" },
     ]);
+    sessionCache.markLive("session-a");
+    sessionCache.markLive("session-b");
 
     await service.resetPassword("good-token", "brand-new-password");
+
+    expect(sessionCache.isKnownLive("session-a")).toBe(false);
+    expect(sessionCache.isKnownLive("session-b")).toBe(false);
 
     const updateArgs = (prisma.user.update as Mock).mock.calls[0][0];
     expect(updateArgs.where).toEqual({ id: "user-1" });

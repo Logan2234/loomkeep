@@ -85,7 +85,28 @@ healthy() {
   done
 }
 
+# Caddy's config files are single-file bind mounts: the reset replaced them
+# with new inodes, so the running container still reads the old ones, and
+# `up -d` doesn't recreate it when only their content changed. Recreated when
+# any of them differs from the checkout (a few seconds without the proxy).
+caddy_config_stale() {
+  local container source destination
+  container=$(docker compose ps -q caddy)
+  [ -n "$container" ] || return 1
+  while read -r source destination; do
+    case "$destination" in /etc/caddy/*) ;; *) continue ;; esac
+    if ! docker exec "$container" cat "$destination" | cmp -s - "$source"; then
+      return 0
+    fi
+  done < <(docker inspect -f '{{range .Mounts}}{{.Source}} {{.Destination}}{{"\n"}}{{end}}' "$container")
+  return 1
+}
+
 if start && healthy; then
+  if caddy_config_stale; then
+    echo "Caddy's config changed: recreating it."
+    docker compose up -d --no-deps --force-recreate caddy
+  fi
   # A day of unused images keeps the previous pair for a manual rollback;
   # a week of them, with several deploys a day, filled the disk. Images in
   # use are never removed.

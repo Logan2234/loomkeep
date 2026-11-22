@@ -32,6 +32,7 @@ jobs:
       # workflow itself).
       lint: ${{ steps.filter.outputs.api == 'true' || steps.filter.outputs.web == 'true' || steps.filter.outputs.root == 'true' }}
       docker: ${{ steps.filter.outputs.docker }}
+      shell: ${{ steps.filter.outputs.shell }}
       # Also on every main commit while the version's release isn't
       # published: publish-release-apk needs this run's APK to publish it.
       mobile: ${{ steps.filter.outputs.mobile == 'true' || steps.release.outputs.pending == 'true' }}
@@ -74,6 +75,9 @@ jobs:
               - '.github/actions/setup/**'
             docker:
               - 'docker/**'
+              - '.github/workflows/ci.yml'
+            shell:
+              - '**/*.sh'
               - '.github/workflows/ci.yml'
             mobile:
               - 'apps/mobile/**'
@@ -145,6 +149,22 @@ jobs:
             -e UMAMI_SITE_ADDRESS=stats.loomkeep.example \
             -e UNLEASH_SITE_ADDRESS=flags.loomkeep.example \
             "$caddy_image" caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
+
+  # The shell scripts run on the VPS (deploy, offsite backup, ntfy alert), in
+  # the api image and in the Android jobs: nothing else catches a mistake in
+  # them before they run for real. ubuntu-latest ships shellcheck.
+  shellcheck:
+    needs: changes
+    if: needs.changes.outputs.shell == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - run: |
+          mapfile -t scripts < <(git ls-files '*.sh')
+          for script in "${scripts[@]}"; do bash -n "$script"; done
+          shellcheck "${scripts[@]}"
 
   # Web and API run in parallel; packages/shared is TS-only and rides with API.
   lint-test-web:
@@ -675,7 +695,8 @@ jobs:
   # and both images are tagged. Skipped checks (nothing of theirs changed)
   # pass; the Android jobs don't count, they never block the web.
   ready-to-ship:
-    needs: [docker-config, lint-test-web, lint-test-api, e2e, knip, docker-tag]
+    needs:
+      [docker-config, shellcheck, lint-test-web, lint-test-api, e2e, knip, docker-tag]
     if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
