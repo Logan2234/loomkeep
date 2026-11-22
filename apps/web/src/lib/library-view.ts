@@ -1,6 +1,7 @@
 import { STORAGE_KEYS } from "#lib/constants/storage-keys.js";
 import { type SelectOption } from "#lib/types/select-option.js";
 
+import { ownershipSourceLabel } from "#lib/constants/ownership-sources.js";
 import { m } from "#lib/paraglide/messages.js";
 import type {
   BulkEntriesResultDto,
@@ -144,7 +145,7 @@ export function ownershipText(
 ): string | null {
   if (status === "NONE") return null;
   const label = options.find((o) => o.value === status)?.label ?? status;
-  return joinMeta(label, source);
+  return joinMeta(label, source && ownershipSourceLabel(source));
 }
 
 /** Selection mode (UX-04), as each display mode renders it. */
