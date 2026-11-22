@@ -64,6 +64,8 @@ export async function fetchJson<T>(
     try {
       response = await fetch(url, { ...init, signal: controller.signal });
     } catch (err) {
+      clearTimeout(timeout);
+
       if (attempt < MAX_ATTEMPTS) {
         await sleep(retryDelayMs(null, attempt));
         continue;
@@ -75,9 +77,26 @@ export async function fetchJson<T>(
         undefined,
         `${opts.sourceLabel} request failed: ${(err as Error).message}`,
       );
-    } finally {
-      clearTimeout(timeout);
     }
+
+    if (response.ok) {
+      // The timeout stays armed through the body: a provider that sends its
+      // headers and then stalls would otherwise hold the caller forever.
+      try {
+        return (await response.json()) as T;
+      } catch (err) {
+        throw new AppException(
+          HttpStatus.BAD_GATEWAY,
+          ErrorCode.CatalogProviderUnavailable,
+          undefined,
+          `${opts.sourceLabel} response unreadable: ${(err as Error).message}`,
+        );
+      } finally {
+        clearTimeout(timeout);
+      }
+    }
+
+    clearTimeout(timeout);
 
     if (opts.notFoundMessage && response.status === 404) {
       throw new AppException(
@@ -87,8 +106,6 @@ export async function fetchJson<T>(
         opts.notFoundMessage,
       );
     }
-
-    if (response.ok) return (await response.json()) as T;
 
     lastStatus = response.status;
     const transient = opts.isRetryable
