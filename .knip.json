@@ -10,7 +10,8 @@
   },
   "workspaces": {
     ".": {
-      "entry": [".github/lighthouse/*.cjs"]
+      "entry": [".github/lighthouse/*.cjs"],
+      "ignoreDependencies": ["@microsoft/eslint-formatter-sarif"]
     },
     "apps/api": {
       "entry": ["src/main.ts", "test/**/*.e2e-spec.ts"],
