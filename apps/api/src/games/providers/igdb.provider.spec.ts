@@ -211,6 +211,14 @@ describe("IgdbProvider", () => {
           websites: [
             { url: "https://twitter.com/rockstargames", category: 5 },
             { url: "https://www.rockstargames.com/V/", category: 1 },
+            {
+              url: "https://store.epicgames.com/p/grand-theft-auto-v",
+              type: 16,
+            },
+            {
+              url: "https://store.steampowered.com/app/271590",
+              category: 13,
+            },
           ],
         },
       ],
@@ -236,6 +244,13 @@ describe("IgdbProvider", () => {
       releaseDate: "2013-09-17T00:00:00.000Z",
       releaseDatePrecision: null,
       website: "https://www.rockstargames.com/V/",
+      stores: [
+        { store: "STEAM", url: "https://store.steampowered.com/app/271590" },
+        {
+          store: "EPIC",
+          url: "https://store.epicgames.com/p/grand-theft-auto-v",
+        },
+      ],
       similarGames: [],
       developers: [],
       publishers: [],

@@ -6,6 +6,7 @@ import {
 } from "@loomkeep/shared";
 import { Injectable, Logger } from "@nestjs/common";
 import { Cron, CronExpression } from "@nestjs/schedule";
+import { jsonObject } from "../common/json.util";
 import { localParts } from "../common/local-day.util";
 import { EntitlementService } from "../entitlements/entitlement.service";
 import { JOB_KEYS } from "../jobs/job-keys";
@@ -20,6 +21,7 @@ interface DigestItem {
   title: string;
   body: string;
   url: string;
+  seasonFinale?: boolean;
 }
 
 /** Varied so the same user doesn't read the same sentence at every send. */
@@ -33,6 +35,13 @@ function pushBody(
     return notificationCopy(locale).releaseDigestPush(
       period,
       items.map((item) => item.title),
+    );
+  const finale = items.find((item) => item.seasonFinale);
+  if (finale)
+    return notificationCopy(locale).seasonFinaleDigestPush(
+      period,
+      finale.title,
+      items.length,
     );
   const variants = notificationCopy(locale).episodeDigestPush(
     period,
@@ -174,7 +183,14 @@ export class NotificationDigestService {
           ? { emailDigestedAt: null }
           : { pushDigestedAt: null }),
       },
-      select: { id: true, title: true, body: true, url: true, dedupeKey: true },
+      select: {
+        id: true,
+        title: true,
+        body: true,
+        url: true,
+        dedupeKey: true,
+        data: true,
+      },
       orderBy: { createdAt: "asc" },
     });
     if (pending.length === 0) return 0;
@@ -242,6 +258,7 @@ export class NotificationDigestService {
       title: n.title,
       body: n.body ?? "",
       url: n.url ?? "/app/calendar",
+      seasonFinale: jsonObject(n.data).seasonFinale === true,
     }));
     const period: DigestPeriod =
       effective === DigestCadence.DAILY ? "daily" : "weekly";

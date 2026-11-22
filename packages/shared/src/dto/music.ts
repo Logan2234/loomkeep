@@ -31,6 +31,24 @@ export interface MusicExternalLinkDto {
 }
 
 /** Full album details, fetched live from the source. */
+/** Streaming services first, then stores: the album page's display order. */
+export const LISTEN_SERVICES = [
+  "SPOTIFY",
+  "APPLE_MUSIC",
+  "DEEZER",
+  "YOUTUBE_MUSIC",
+  "TIDAL",
+  "QOBUZ",
+  "BANDCAMP",
+  "AMAZON_MUSIC",
+] as const;
+export type ListenService = (typeof LISTEN_SERVICES)[number];
+
+export interface ListenLinkDto {
+  service: ListenService;
+  url: string;
+}
+
 export interface MusicDetailsDto extends MusicSummaryDto {
   /** Tags/genres the source associates with the album. */
   genres: string[];
@@ -54,6 +72,8 @@ export interface MusicDetailsDto extends MusicSummaryDto {
   disambiguation: string | null;
   /** Curated external links (Discogs, Bandcamp, Wikidata, official site, Wikipedia…). */
   externalLinks: MusicExternalLinkDto[];
+  /** Where to listen to or buy the album, from MusicBrainz's links. */
+  listenLinks: ListenLinkDto[];
   /** Record label of the representative release, when known. */
   label: string | null;
   /** Catalog number of the representative release, when known. */

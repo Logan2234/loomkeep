@@ -132,4 +132,46 @@ describe("local movie release calendar", () => {
     });
     expect(query.take).toBe(500);
   });
+
+  it("flags the episode that ends its season", async () => {
+    vi.useFakeTimers().setSystemTime(new Date("2026-11-20T10:00:00Z"));
+    const mediaItem = {
+      id: "m1",
+      title: "Andor",
+      type: "SERIES",
+      canonicalSource: "TMDB",
+      externalIds: [{ source: "TMDB", externalId: "83867" }],
+      entries: [{ id: "e1", episodeAlertsMuted: false }],
+    };
+    const episode = (number: number, episodeType: string | null) => ({
+      number,
+      title: null,
+      episodeType,
+      airDate: new Date(`2026-11-2${number}T20:00:00Z`),
+      season: { number: 2, mediaItemId: "m1", mediaItem },
+    });
+    const prisma = {
+      episode: {
+        findMany: vi
+          .fn()
+          .mockResolvedValue([episode(1, "standard"), episode(2, "finale")]),
+      },
+      $queryRaw: vi.fn().mockResolvedValue([]),
+      libraryEntry: { findMany: vi.fn().mockResolvedValue([]) },
+      gameEntry: { findMany: vi.fn().mockResolvedValue([]) },
+      user: {
+        findUniqueOrThrow: vi
+          .fn()
+          .mockResolvedValue({ watchRegion: null, timezone: "UTC" }),
+      },
+    };
+
+    const [standard, finale] = await new CalendarService(
+      prisma as never,
+    ).getCalendar("u1");
+
+    expect(standard.seasonFinale).toBeUndefined();
+    expect(finale).toMatchObject({ episodeNumber: 2, seasonFinale: true });
+    vi.useRealTimers();
+  });
 });

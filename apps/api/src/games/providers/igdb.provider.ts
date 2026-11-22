@@ -23,6 +23,7 @@ import type {
   ProviderGameDetails,
   ProviderGameSaga,
 } from "./game-provider.types";
+import { gameStoreLinks } from "./game-stores";
 
 export const IGDB_OAUTH_URL = "https://id.twitch.tv/oauth2/token";
 const API_URL = "https://api.igdb.com/v4";
@@ -430,6 +431,7 @@ export class IgdbProvider implements GameCatalogProvider {
       website:
         game.websites?.find((w) => w.category === 1 || w.type === 1)?.url ??
         null,
+      stores: gameStoreLinks((game.websites ?? []).map((w) => w.url)),
       similarGames: (game.similar_games ?? [])
         .slice(0, MAX_SIMILAR_GAMES)
         .map((g) => this.toSummary(g)),

@@ -308,5 +308,6 @@
   "add_to_list_shared": "Condivise con me",
   "add_to_list_empty": "Scrivi un nome per creare la tua prima lista.",
   "scan_isbn_invalid_code": "Questo codice a barre non è l'ISBN di un libro.",
-  "scan_unavailable": "Lo scanner non è riuscito ad avviarsi. Riprova tra poco."
+  "scan_unavailable": "Lo scanner non è riuscito ad avviarsi. Riprova tra poco.",
+  "calendar_season_finale": "Finale di stagione"
 }

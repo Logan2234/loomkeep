@@ -46,6 +46,7 @@
   import { upcomingLabel } from "./episode-format";
   import { followRangeDrag } from "./episode-range-drag";
   import EpisodePanel from "./EpisodePanel.svelte";
+  import EpisodeRatingsGrid from "./EpisodeRatingsGrid.svelte";
   import EpisodeRow from "./EpisodeRow.svelte";
   import {
     announcedEpisode,
@@ -383,6 +384,13 @@
 
   // The episode whose side panel is open.
   let openEpisode = $state<{ season: number; episode: number } | null>(null);
+  // The ratings grid replaces the list while it's shown.
+  let view = $state<"list" | "ratings">("list");
+  const hasRatings = $derived(
+    seasons.some((s) =>
+      s.episodes.some((e) => e.voteAverage !== null || e.myRating !== null),
+    ),
+  );
   const panel = $derived.by(() => {
     if (!openEpisode) return null;
     const { season: sn, episode: en } = openEpisode;
@@ -710,7 +718,33 @@
   {#if entry}
     <span class="text-dim font-sans text-sm font-medium">{progressLabel}</span>
   {/if}
+  {#if hasRatings}
+    <span
+      class="border-border ml-auto inline-flex self-center overflow-hidden rounded-lg border font-sans text-sm font-semibold"
+      role="group"
+      aria-label={m.media_episodes_view()}>
+      {#each [["list", m.media_episodes_view_list()], ["ratings", m.media_episodes_view_ratings()]] as const as [key, label] (key)}
+        <button
+          type="button"
+          aria-pressed={view === key}
+          title={key === "ratings"
+            ? m.media_episode_ratings_title()
+            : undefined}
+          onclick={() => (view = key)}
+          class="px-3 py-1 transition-colors duration-150 {view === key
+            ? 'bg-fg text-bg'
+            : 'hover:bg-surface-2'}">{label}</button>
+      {/each}
+    </span>
+    {#if isFeatureNew("episode-ratings")}<NewBadge />{/if}
+  {/if}
 </h2>
+
+{#if view === "ratings"}
+  <div in:fly={{ y: reduced ? 0 : 8, duration: reduced ? 0 : 200 }}>
+    <EpisodeRatingsGrid {seasons} onOpen={openPanel} />
+  </div>
+{/if}
 
 {#snippet seasonCard(season: MediaDetailSeasonDto)}
   {@const seasonId = season.id}
@@ -742,7 +776,7 @@
 {/if}
 
 <!-- Scopes what sticks: the tabs and the bar leave with the list. -->
-<div>
+<div hidden={view !== "list"}>
   <div
     bind:this={tabsEl}
     class="bg-bg sticky z-15 -mx-1 px-1 py-1.5"

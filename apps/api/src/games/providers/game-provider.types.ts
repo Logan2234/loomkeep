@@ -2,6 +2,7 @@ import type {
   CreatorRefDto,
   GameSagaMemberDto,
   GameSource,
+  GameStoreLinkDto,
   GameSummaryDto,
   GameTimeToBeatDto,
   RatingDto,
@@ -22,6 +23,7 @@ export interface ProviderGameDetails {
   releaseDate: string | null;
   releaseDatePrecision: ReleaseDatePrecision | null;
   website: string | null;
+  stores: GameStoreLinkDto[];
   similarGames: GameSummaryDto[];
   developers: string[];
   publishers: string[];

@@ -633,6 +633,8 @@ model User {
   // colour) wherever a title's offers are listed. Not tied to a region: the
   // ids are global, a region only decides which of them offer a title.
   watchProviderIds              Int[]                  @default([])
+  // ListenService values, put first on an album's page.
+  listenServices                String[]               @default([])
   // Ordered ids of the mobile bottom-bar shortcuts (see web navigation.ts,
   // `MobileNavId`). Free-form strings, not a Prisma enum: the set is a web-UI
   // concern (includes the "menu" launcher and non-domain routes), gated at
@@ -2202,7 +2204,8 @@ model Episode {
   // has voted yet.
   voteAverage   Float?
   voteCount     Int?
-  // TMDB's "standard" / "mid_season" / "finale". Not displayed for now.
+  // TMDB's "standard" / "mid_season" / "finale". A finale is flagged in the
+  // calendar and the release digest.
   episodeType   String?
   // Where to stream it (AniList's Crunchyroll links).
   streamingUrl  String?

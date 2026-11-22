@@ -1,5 +1,6 @@
 import type {
   AuthTokensDto,
+  ListenService,
   Locale,
   LoginResponseDto,
   MfaMethod,
@@ -1285,6 +1286,7 @@ export function toUserDto(user: User): UserDto {
     domainOrder: user.domainOrder as UserDto["domainOrder"],
     watchRegion: user.watchRegion,
     watchProviderIds: user.watchProviderIds,
+    listenServices: user.listenServices as ListenService[],
     homeLayout: readHomeLayout(user.homeLayout),
     homePhoneLayout: readHomePhoneLayout(user.homePhoneLayout),
     deletionScheduledFor: user.deletionScheduledFor?.toISOString() ?? null,

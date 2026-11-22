@@ -3,6 +3,7 @@ import type {
   AlertPrefs,
   DigestCadence,
   Domain,
+  ListenService,
   ListVisibility,
   Locale,
   ProfileAccess,
@@ -11,6 +12,8 @@ import type {
   SpoilerSensitivity,
   UserDto,
 } from "@loomkeep/shared";
+import { LISTEN_SERVICES } from "@loomkeep/shared";
+import { ApiProperty } from "@nestjs/swagger";
 import { HomeLayoutBody, HomePhoneLayoutBody } from "./home-layout.dto";
 
 export class UserResponseDto implements UserDto {
@@ -226,6 +229,13 @@ export class UserResponseDto implements UserDto {
    * @example [8, 337]
    */
   watchProviderIds!: number[];
+
+  /**
+   * The music services the account listens on, put first on an album's page.
+   * @example ["SPOTIFY", "BANDCAMP"]
+   */
+  @ApiProperty({ enum: LISTEN_SERVICES, isArray: true })
+  listenServices!: ListenService[];
 
   /** The home page's widget grid; null for the default one. */
   homeLayout!: HomeLayoutBody | null;

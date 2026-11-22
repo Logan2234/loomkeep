@@ -218,6 +218,14 @@ const COLOR_TEXT = "#1C1712";
 const COLOR_ACCENT = "#8A5F0A";
 const COLOR_MUTED = "#6B6354";
 
+/** One line of the episode digest email. */
+interface DigestMailItem {
+  title: string;
+  body: string;
+  url: string;
+  seasonFinale?: boolean;
+}
+
 // Umami Link slugs (see UMAMI_LINKS_BASE_URL in .env.example) — fixed
 // naming, created once in the Umami dashboard, not per-deployment config.
 // "Voir" (new
@@ -1157,7 +1165,7 @@ export class MailService {
    */
   async sendEpisodeDigest(
     recipient: MailRecipient,
-    items: { title: string; body: string; url: string }[],
+    items: DigestMailItem[],
     period: "daily" | "weekly",
   ): Promise<void> {
     const locale = resolveCopyLocale(recipient.locale);
@@ -2039,7 +2047,7 @@ ${url}`,
    */
   private buildEpisodeDigest(
     locale: Locale,
-    items: { title: string; body: string; url: string }[],
+    items: DigestMailItem[],
     period: "daily" | "weekly",
   ): TemplateBody {
     const copy = MAIL_COPY[resolveCopyLocale(locale)].episodeDigest;
@@ -2051,11 +2059,14 @@ ${url}`,
     const listHtml = items
       .map(
         (i) =>
-          `<p style="margin:0 0 16px;"><a href="${this.webOrigin}${i.url}" style="color:${COLOR_TEXT};font-weight:600;text-decoration:none;">${escapeHtml(i.title)}</a><br/><span style="color:${COLOR_MUTED};font-size:13px;">${escapeHtml(i.body)}</span></p>`,
+          `<p style="margin:0 0 16px;"><a href="${this.webOrigin}${i.url}" style="color:${COLOR_TEXT};font-weight:600;text-decoration:none;">${escapeHtml(i.title)}</a>${i.seasonFinale ? ` <span style="color:${COLOR_ACCENT};font-size:12px;font-weight:700;">${escapeHtml(copy.seasonFinale)}</span>` : ""}<br/><span style="color:${COLOR_MUTED};font-size:13px;">${escapeHtml(i.body)}</span></p>`,
       )
       .join("");
     const listText = items
-      .map((i) => `${i.title} — ${i.body}\n${this.webOrigin}${i.url}`)
+      .map(
+        (i) =>
+          `${i.title}${i.seasonFinale ? ` (${copy.seasonFinale})` : ""} — ${i.body}\n${this.webOrigin}${i.url}`,
+      )
       .join("\n\n");
 
     let subject: string;

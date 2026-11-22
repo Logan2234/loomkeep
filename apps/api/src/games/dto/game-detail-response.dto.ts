@@ -1,15 +1,23 @@
 import type {
   GameDetailDto,
+  GameStoreLinkDto,
   ReleaseDatePrecision,
   StoredGameDetailDto,
 } from "@loomkeep/shared";
-import { GameSource } from "@loomkeep/shared";
+import { GAME_STORES, GameSource } from "@loomkeep/shared";
 import { ApiProperty } from "@nestjs/swagger";
 import { CreatorRefResponseDto } from "../../catalog/dto/creator-ref-response.dto";
 import { RatingResponseDto } from "../../catalog/dto/rating-response.dto";
 import { GameEntryResponseDto } from "./game-entry-response.dto";
 import { GameSummaryResponseDto } from "./game-summary-response.dto";
 import { GameTimeToBeatResponseDto } from "./game-time-to-beat-response.dto";
+
+class GameStoreLinkResponseDto implements GameStoreLinkDto {
+  @ApiProperty({ enum: GAME_STORES })
+  store!: GameStoreLinkDto["store"];
+
+  url!: string;
+}
 
 export class GameDetailResponseDto implements GameDetailDto {
   // See game-summary-response.dto.ts: single-member enum, needs an explicit hint.
@@ -30,6 +38,7 @@ export class GameDetailResponseDto implements GameDetailDto {
   releaseDatePrecision!: ReleaseDatePrecision | null;
   upcoming!: boolean;
   website!: string | null;
+  stores!: GameStoreLinkResponseDto[];
   similarGames!: GameSummaryResponseDto[];
   developers!: string[];
   publishers!: string[];

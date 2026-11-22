@@ -472,6 +472,7 @@ export class UsersService {
         domainOrder: dto.domainOrder,
         watchRegion: dto.watchRegion,
         watchProviderIds: dto.watchProviderIds,
+        listenServices: dto.listenServices,
       },
     });
     await this.maybeAwardProfileCompleted(userId, user);

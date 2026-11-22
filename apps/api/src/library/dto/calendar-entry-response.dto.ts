@@ -14,5 +14,6 @@ export class CalendarEntryResponseDto implements CalendarEntryDto {
   releaseType?: "cinema" | "digital";
   releasePrecision?: "DAY" | "MONTH";
   episodeTitle!: string | null;
+  seasonFinale?: boolean;
   airDate!: string;
 }

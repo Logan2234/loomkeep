@@ -41,6 +41,7 @@
   import ProviderMark from "#lib/components/ProviderMark.svelte";
   import RelatedCarousel from "#lib/components/RelatedCarousel.svelte";
 
+  import ServiceLinks from "#lib/components/ServiceLinks.svelte";
   import ShareWorkModal from "#lib/components/ShareWorkModal.svelte";
   import { gameWork } from "#lib/chat/work-search.js";
   import TrackingStatusBadge from "#lib/components/TrackingStatusBadge.svelte";
@@ -638,6 +639,22 @@
           <dt class="timecode text-xs">{m.game_multiplayer()}</dt>
           <dd class="mt-0.5 text-sm">
             {detail.multiplayerModes.join(", ")}
+          </dd>
+        </div>
+      {/if}
+
+      {#if detail && detail.stores.length > 0}
+        <div>
+          <dt class="timecode text-xs">
+            {m.game_where_to_play()}
+            {#if isFeatureNew("game-stores")}<NewBadge />{/if}
+          </dt>
+          <dd class="mt-1.5">
+            <ServiceLinks
+              links={detail.stores.map((s) => ({
+                service: s.store,
+                url: s.url,
+              }))} />
           </dd>
         </div>
       {/if}

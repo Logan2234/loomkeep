@@ -2,6 +2,7 @@ import type {
   AlertPrefs,
   DigestCadence,
   Domain,
+  ListenService,
   ListVisibility,
   Locale,
   ReviewVisibility,
@@ -11,6 +12,7 @@ import type {
 import {
   DigestCadence as DigestCadenceValues,
   Domain as DomainValues,
+  LISTEN_SERVICES,
   ListVisibility as ListVisibilityValues,
   Locale as LocaleValues,
   ReviewVisibility as ReviewVisibilityValues,
@@ -142,4 +144,9 @@ export class UpdateUserDto implements UpdateUserRequestDto {
   @IsInt({ each: true })
   @Min(1, { each: true })
   watchProviderIds?: number[];
+
+  @IsOptional()
+  @ArrayUnique()
+  @IsIn(LISTEN_SERVICES, { each: true })
+  listenServices?: ListenService[];
 }

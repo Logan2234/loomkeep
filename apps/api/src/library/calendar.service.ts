@@ -95,6 +95,7 @@ export class CalendarService {
       seasonNumber: episode.season.number,
       episodeNumber: episode.number,
       episodeTitle: episode.title,
+      ...(episode.episodeType === "finale" ? { seasonFinale: true } : {}),
       // airDate is guaranteed non-null by the `gte` filter above.
       airDate: episode.airDate!.toISOString(),
     }));

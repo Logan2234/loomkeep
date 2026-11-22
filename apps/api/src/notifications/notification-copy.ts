@@ -67,6 +67,16 @@ const COPY = {
       `${type === "cinema" ? "Sortie au cinéma" : "Sortie numérique"} · ${region}`,
     gameRelease: (thisMonth: boolean) =>
       thisMonth ? "Sortie prévue ce mois-ci" : "Sortie du jeu",
+    seasonFinaleDigestPush: (
+      period: DigestPeriod,
+      show: string,
+      episodeCount: number,
+    ) => {
+      const when = period === "daily" ? "aujourd'hui" : "ces 7 derniers jours";
+      return episodeCount === 1
+        ? `Le final de saison de ${show} est sorti ${when}.`
+        : `${episodeCount} épisodes sortis ${when}, dont le final de saison de ${show}.`;
+    },
     episodeDigestPush: (period: DigestPeriod, titles: string[]) => {
       const when = period === "daily" ? "aujourd'hui" : "ces 7 derniers jours";
       const shows = [...new Set(titles)];
@@ -224,6 +234,16 @@ const COPY = {
       `${type === "cinema" ? "Cinema release" : "Digital release"} · ${region}`,
     gameRelease: (thisMonth: boolean) =>
       thisMonth ? "Due out this month" : "Game release",
+    seasonFinaleDigestPush: (
+      period: DigestPeriod,
+      show: string,
+      episodeCount: number,
+    ) => {
+      const when = period === "daily" ? "today" : "in the last 7 days";
+      return episodeCount === 1
+        ? `The season finale of ${show} came out ${when}.`
+        : `${episodeCount} episodes came out ${when}, including the season finale of ${show}.`;
+    },
     episodeDigestPush: (period: DigestPeriod, titles: string[]) => {
       const when = period === "daily" ? "today" : "in the last 7 days";
       const shows = [...new Set(titles)];
@@ -382,6 +402,16 @@ const COPY = {
       `${type === "cinema" ? "Uscita al cinema" : "Uscita digitale"} · ${region}`,
     gameRelease: (thisMonth: boolean) =>
       thisMonth ? "In uscita questo mese" : "Uscita del gioco",
+    seasonFinaleDigestPush: (
+      period: DigestPeriod,
+      show: string,
+      episodeCount: number,
+    ) => {
+      const when = period === "daily" ? "oggi" : "negli ultimi 7 giorni";
+      return episodeCount === 1
+        ? `Il finale di stagione di ${show} è uscito ${when}.`
+        : `${episodeCount} episodi usciti ${when}, tra cui il finale di stagione di ${show}.`;
+    },
     episodeDigestPush: (period: DigestPeriod, titles: string[]) => {
       const when = period === "daily" ? "oggi" : "negli ultimi 7 giorni";
       const shows = [...new Set(titles)];
@@ -534,6 +564,12 @@ export interface NotificationCopy {
    * one entry per episode, so a show with several appears several times.
    */
   episodeDigestPush: (period: DigestPeriod, titles: string[]) => string[];
+  /** The digest push when one of its episodes ends a season. */
+  seasonFinaleDigestPush: (
+    period: DigestPeriod,
+    show: string,
+    episodeCount: number,
+  ) => string;
   releaseDigestPush: (period: DigestPeriod, titles: string[]) => string;
   movieRelease: (type: "cinema" | "digital", region: string) => string;
   /** A game dated to a month alerts on its 1st, before the day is known. */

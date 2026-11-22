@@ -229,6 +229,12 @@
     class="border-border text-dim shrink-0 rounded-full border px-2 py-0.5 text-[0.65rem] font-semibold">
     {e.mediaItem ? MEDIA_TYPE_LABEL[e.mediaItem.type] : m.game_type()}
   </span>
+  {#if e.seasonFinale}
+    <span
+      class="border-accent/40 bg-accent/10 text-accent shrink-0 rounded-full border px-2 py-0.5 text-[0.65rem] font-bold">
+      {m.calendar_season_finale()}
+    </span>
+  {/if}
   {#if behind && e.episodesBehind > 0}
     <span
       class="border-accent/40 text-accent shrink-0 rounded-full border px-2 py-0.5 font-mono text-[0.65rem]">

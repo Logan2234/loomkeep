@@ -7,6 +7,8 @@ export interface CandidateEpisode {
   seasonNumber: number;
   episodeNumber: number;
   episodeTitle: string | null;
+  /** TMDB marks the season's last episode `finale`. */
+  seasonFinale: boolean;
   mediaTitle: string;
   mediaType: MediaType;
   sourceId: string;
@@ -23,6 +25,7 @@ export interface NewEpisodeNotification {
   seasonNumber: number;
   episodeNumber: number;
   episodeTitle: string | null;
+  seasonFinale: boolean;
   airDate: Date;
 }
 
@@ -54,6 +57,7 @@ export function selectNewEpisodeNotifications(
       seasonNumber: e.seasonNumber,
       episodeNumber: e.episodeNumber,
       episodeTitle: e.episodeTitle,
+      seasonFinale: e.seasonFinale,
       airDate: e.airDate,
     }));
 }

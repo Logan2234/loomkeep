@@ -587,5 +587,7 @@
   "settings_app_lock_desc": "Ask for your fingerprint, face or PIN when you open the app on this phone.",
   "settings_app_lock_unavailable": "Needs Android 10 or later and a screen lock on this phone.",
   "settings_help_onboarding_title": "Replay Loomkeep's welcome",
-  "settings_help_onboarding_hint": "The first-run tour, with your current settings."
+  "settings_help_onboarding_hint": "The first-run tour, with your current settings.",
+  "settings_streaming_music_title": "Music services",
+  "settings_streaming_music_body": "The ones you listen on come first on an album's page."
 }

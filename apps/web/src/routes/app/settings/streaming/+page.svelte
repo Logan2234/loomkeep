@@ -13,8 +13,12 @@
   import { formatRegion, compareText } from "#lib/format.js";
   import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
+  import { createListenServiceToggle } from "#lib/listen-service-toggle.svelte.js";
   import { createWatchProviderToggle } from "#lib/watch-provider-toggle.svelte.js";
-  import type { WatchProviderDto } from "@loomkeep/shared";
+  import NewBadge from "#lib/components/NewBadge.svelte";
+  import { isFeatureNew } from "#lib/feature-badges.js";
+  import { SERVICE_BRANDS } from "#lib/service-brands.js";
+  import { LISTEN_SERVICES, type WatchProviderDto } from "@loomkeep/shared";
   import { flip } from "svelte/animate";
   import { backOut } from "svelte/easing";
   import { scale, slide } from "svelte/transition";
@@ -58,6 +62,8 @@
   }));
 
   const picker = createWatchProviderToggle();
+  const listenPicker = createListenServiceToggle();
+  const myListen = $derived(new Set(auth.user?.listenServices ?? []));
   const mine = $derived(new Set(auth.user?.watchProviderIds ?? []));
 
   // The featured grid also keeps the user's own picks from further down the
@@ -215,6 +221,46 @@
           region: formatRegion(catalog?.region ?? picked ?? "US"),
         })}
       </p>
+    </section>
+
+    <section
+      id="streaming-music"
+      use:flashAnchor={{ anchor: "streaming-music", hash: page.url.hash }}
+      class="inset-card p-5 md:p-6">
+      <div class="flex flex-wrap items-baseline justify-between gap-2">
+        <p class="font-semibold">
+          {m.settings_streaming_music_title()}
+          {#if isFeatureNew("listen-links")}<NewBadge />{/if}
+        </p>
+        <span class="timecode text-xs">{countLabel(myListen.size)}</span>
+      </div>
+      <p class="text-dim mt-1 max-w-xl text-sm">
+        {m.settings_streaming_music_body()}
+      </p>
+      <div
+        class="mt-4 grid grid-cols-[repeat(auto-fill,minmax(4.25rem,1fr))] gap-2">
+        {#each LISTEN_SERVICES as service (service)}
+          {@const brand = SERVICE_BRANDS[service]}
+          {@const isMine = myListen.has(service)}
+          <button
+            type="button"
+            aria-pressed={isMine}
+            class="grid justify-items-center gap-1 rounded-lg border px-1 py-2 text-center text-[0.68rem] leading-tight transition-colors {isMine
+              ? 'border-accent bg-accent/10 text-fg'
+              : 'border-border text-dim hover:text-fg'}"
+            onclick={() => listenPicker.toggle(service)}>
+            <span
+              class="grid h-10 w-10 place-items-center rounded-lg text-sm font-black"
+              style:background-color={brand.color}
+              style:color={brand.foreground}
+              aria-hidden="true">{brand.monogram}</span>
+            <span class="w-full truncate">{brand.name}</span>
+          </button>
+        {/each}
+      </div>
+      {#if listenPicker.error}
+        <p class="text-danger mt-3 text-sm">{listenPicker.error}</p>
+      {/if}
     </section>
   </div>
 </SettingsSection>

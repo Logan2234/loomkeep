@@ -453,5 +453,16 @@
   "media_episode_play_video": "Play the video",
   "media_episode_slide": "Image {index} of {count}",
   "media_episode_rewatched": "Rewatched",
-  "media_season_images": "Season images"
+  "media_season_images": "Season images",
+  "media_episodes_view": "Episodes view",
+  "media_episodes_view_list": "List",
+  "media_episodes_view_ratings": "Ratings",
+  "media_episode_ratings_title": "Ratings by episode",
+  "media_season_short": "S{number}",
+  "media_episode_ratings_cell": "Season {season}, episode {episode}: {rating}",
+  "media_episode_ratings_none": "no rating yet",
+  "media_episode_ratings_mine": "your rating {rating}",
+  "media_episode_ratings_legend_mine": "rated by you",
+  "game_where_to_play": "Where to play",
+  "music_listen_on": "Listen on"
 }

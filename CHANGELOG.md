@@ -43,6 +43,15 @@ history from before it was started.
 
 ### Added
 
+- Series pages: a « Ratings » view in Episodes colours every episode by its
+  rating, season by season, with a dot on the ones you rated.
+- Season finales are flagged in the calendar, the release email and the
+  push digest.
+- Game pages list where to buy or play: Steam, GOG, Epic Games, itch.io,
+  App Store and Google Play.
+- Album pages list where to listen: Spotify, Apple Music, Deezer, YouTube
+  Music, Tidal, Qobuz, Bandcamp and Amazon. Pick yours in Settings ›
+  Streaming to see them first.
 - Admin › Instance settings › Domains: turn a domain off for the whole
   instance, with the number of accounts that use it. It disappears from the
   app for everyone, and the libraries come back when it's turned on again.

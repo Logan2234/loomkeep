@@ -399,6 +399,7 @@ export const EN_COPY: MailCopy = {
     manySubject: (count, period) => `${count} releases ${period}`,
     manyIntro: (count, period) =>
       `A packed lineup: ${count} new releases ${period}.`,
+    seasonFinale: "Season finale",
     preferences: "Manage my notifications",
   },
   newsletter: {
