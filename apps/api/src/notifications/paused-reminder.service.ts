@@ -13,7 +13,10 @@ import {
 import { localDay, localParts } from "../common/local-day.util";
 import { JOB_KEYS } from "../jobs/job-keys";
 import { JobRunService } from "../jobs/job-run.service";
-import { materializedStatus } from "../library/status.util";
+import {
+  materializedStatus,
+  withEpisodeLeftToWatch,
+} from "../library/status.util";
 import { MailService, type PausedReminderItem } from "../mail/mail.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { notSuspended } from "../users/suspension.util";
@@ -206,8 +209,17 @@ export class PausedReminderService {
 
     // In progress the way the library derives it: the stored status says
     // nothing about what was watched.
-    const series = started.filter(
+    const inProgress = started.filter(
       (entry) => materializedStatus(entry) === "WATCHING",
+    );
+    const leftToWatch = await withEpisodeLeftToWatch(
+      this.prisma,
+      userId,
+      inProgress.map((entry) => entry.mediaItemId),
+      now,
+    );
+    const series = inProgress.filter((entry) =>
+      leftToWatch.has(entry.mediaItemId),
     );
 
     const daysSince = (date: Date) =>

@@ -26,6 +26,7 @@ describe("In-progress series (e2e)", () => {
     total: number,
     watched: number,
     status = "PLANNED",
+    announced = 0,
   ) {
     seeded++;
     const item = await prisma.mediaItem.create({
@@ -54,12 +55,13 @@ describe("In-progress series (e2e)", () => {
       },
     });
 
-    for (let n = 1; n <= total; n++) {
+    for (let n = 1; n <= total + announced; n++) {
       const episode = await prisma.episode.create({
         data: {
           seasonId: season.id,
           number: n,
-          airDate: new Date("2024-01-01"),
+          // The last `announced` ones are still to air.
+          airDate: n <= total ? new Date("2024-01-01") : new Date("2099-01-01"),
         },
       });
 
@@ -94,6 +96,9 @@ describe("In-progress series (e2e)", () => {
     const started = await seedSeries(4, 2);
     const finished = await seedSeries(3, 3);
     const dropped = await seedSeries(4, 1, "DROPPED");
+    // Every aired episode seen, the next one only announced: waiting, not
+    // paused, though the cached count makes it look partly watched.
+    const waiting = await seedSeries(3, 3, "PLANNED", 1);
 
     const paused = (
       await app.get(PausedReminderService).pausedWorks(userId, now)
@@ -101,6 +106,7 @@ describe("In-progress series (e2e)", () => {
     expect(paused).toContain(started);
     expect(paused).not.toContain(finished);
     expect(paused).not.toContain(dropped);
+    expect(paused).not.toContain(waiting);
 
     const stale = (
       await app.get(StatsService).fetchInProgressStaleness(userId)
@@ -108,5 +114,6 @@ describe("In-progress series (e2e)", () => {
     expect(stale).toContain(started);
     expect(stale).not.toContain(finished);
     expect(stale).not.toContain(dropped);
+    expect(stale).not.toContain(waiting);
   });
 });

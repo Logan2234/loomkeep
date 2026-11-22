@@ -127,6 +127,14 @@ describe("StatsService in-progress staleness", () => {
     const prisma = {
       libraryEntry: { findMany: vi.fn().mockResolvedValue(entries) },
       episodeWatch: { findMany: vi.fn().mockResolvedValue(watches) },
+      // Every series has an aired episode left to watch.
+      season: {
+        findMany: vi.fn(async () =>
+          (entries as { mediaItem: { id: string } }[]).map((e) => ({
+            mediaItemId: e.mediaItem.id,
+          })),
+        ),
+      },
     };
     return { service: makeServiceWith(prisma), prisma };
   }
