@@ -16,8 +16,9 @@ jobs:
     permissions:
       packages: write
     steps:
-      # Every push to main tags loomkeep-api and loomkeep-web with `latest`
-      # and the commit's short SHA. Each tag is an index whose platform
+      # Every push to main tags loomkeep-api and loomkeep-web with `edge`
+      # and the commit's short SHA; `latest` and the version tags only move
+      # with a release. Each tag is an index whose platform
       # images and provenance attestations show as "untagged" versions in
       # the package view: they belong to it and go when it goes.
       #

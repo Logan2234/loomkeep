@@ -399,8 +399,9 @@ enum EntryStatus {
 
 // How the user holds a movie/series/anime, if at all. NONE (default) means
 // unset — most entries never get this filled in. DIGITAL/STREAMING carry a
-// free-form `ownershipSource` (e.g. "Netflix", "Apple TV"); PHYSICAL/BORROWED
-// don't need one.
+// free-form `ownershipSource` (e.g. "Netflix", "Apple TV"); PHYSICAL may carry
+// its format as a code ("BLU_RAY", "DVD"…, translated by the web);
+// BORROWED needs none.
 enum MediaOwnershipStatus {
   NONE
   PHYSICAL
@@ -425,7 +426,9 @@ enum GameStatus {
 
 // How the user holds a game, if at all. NONE (default) means unset. DIGITAL
 // carries a free-form `ownershipSource` (e.g. "Steam"), SUBSCRIPTION too (e.g.
-// "Xbox Game Pass"); PHYSICAL/BORROWED don't need one.
+// "Xbox Game Pass"); PHYSICAL may carry its
+// format as a code ("PAPERBACK", "BLU_RAY"…, translated by the web);
+// BORROWED needs none.
 enum GameOwnershipStatus {
   NONE
   PHYSICAL
@@ -460,7 +463,9 @@ enum BookStatus {
 
 // How the user holds a book, if at all. NONE (default) means unset. DIGITAL
 // carries a free-form `ownershipSource` (e.g. "Kindle"), AUDIO too (e.g.
-// "Audible"); PHYSICAL/BORROWED don't need one.
+// "Audible"); PHYSICAL may carry its
+// format as a code ("PAPERBACK", "BLU_RAY"…, translated by the web);
+// BORROWED needs none.
 enum BookOwnershipStatus {
   NONE
   PHYSICAL
@@ -502,7 +507,9 @@ enum MusicStatus {
 
 // How the user holds an album, if at all. NONE (default) means unset.
 // DIGITAL/STREAMING carry a free-form `ownershipSource` (e.g. "Bandcamp",
-// "Spotify"); PHYSICAL/BORROWED don't need one.
+// "Spotify"); PHYSICAL may carry its
+// format as a code ("PAPERBACK", "BLU_RAY"…, translated by the web);
+// BORROWED needs none.
 enum MusicOwnershipStatus {
   NONE
   PHYSICAL

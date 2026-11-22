@@ -46,9 +46,19 @@ history from before it was started.
   the same personal link as the release calendar.
 - Book library › Filters: "Free to read online" keeps the books an edition
   of which anyone can read for free on the Internet Archive.
+- Ownership › Physical now asks for the format: DVD, Blu-ray, 4K or VHS for
+  films and series, boxed, loose, sealed or collector's edition for games,
+  pocket, paperback, hardcover or box set for books, vinyl, CD or cassette
+  for albums.
 - Self-hosting: the Docker images carry a signed provenance and an SBOM, so
   you can check where an image comes from and what it contains. See
   "Checking an image" in the upgrade docs.
+
+### Changed
+
+- Book, game and album pages open at once for a title someone on the
+  instance already tracks, from what Loomkeep keeps of it, then fill in the
+  rest (editions, ratings, similar titles…) as the catalogue answers.
 
 ### Fixed
 

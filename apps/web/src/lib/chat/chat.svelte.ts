@@ -116,6 +116,24 @@ class ChatState {
     );
   }
 
+  /** Back to nothing open, on sign-out: the next account starts clean. */
+  reset(): void {
+    for (const timer of this.typingTimers.values()) clearTimeout(timer);
+    this.typingTimers.clear();
+    this.open = false;
+    this.drawer = false;
+    this.tab = "friends";
+    this.activeId = null;
+    this.activeWork = null;
+    this.workOnScreen = null;
+    this.composing = false;
+    this.returnTo = null;
+    this.fullscreenId = null;
+    this.typing = {};
+    this.presence = {};
+    chatDrafts.clear();
+  }
+
   /** Their message arrived: they're done typing it. */
   stopTyping(conversationId: string): void {
     clearTimeout(this.typingTimers.get(conversationId));

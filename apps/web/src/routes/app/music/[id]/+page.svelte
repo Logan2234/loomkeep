@@ -8,6 +8,7 @@
   import {
     deleteMusicEntry,
     getMusicDetail,
+    getStoredMusicDetail,
     updateMusicEntry,
     upsertMusicEntry,
   } from "#lib/api/client.js";
@@ -68,7 +69,14 @@
     fetch: () => getMusicDetail(SOURCE, id),
     enabled: !!id,
   }));
-  const detail = $derived(musicQuery.data);
+  // An album the instance already stores shows at once, from that row, while
+  // the full detail from MusicBrainz completes it.
+  const storedQuery = createApiQuery(() => ({
+    key: keys.music.stored(SOURCE, id),
+    fetch: () => getStoredMusicDetail(SOURCE, id),
+    enabled: !!id,
+  }));
+  const detail = $derived(musicQuery.data ?? storedQuery.data ?? undefined);
   const work = $derived(detail ? musicWork(detail) : null);
   let sharing = $state(false);
   const error = $derived(musicQuery.error);

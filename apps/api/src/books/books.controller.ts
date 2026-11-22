@@ -17,6 +17,7 @@ import {
   ErrorCode,
   LIBRARY_SAGA_SORTS,
   ReadingGoalDto,
+  StoredBookDetailDto,
 } from "@loomkeep/shared";
 import {
   Body,
@@ -52,7 +53,10 @@ import { BookItemService } from "./book-item.service";
 import { BookLibraryService } from "./book-library.service";
 import { BookSagaService } from "./book-saga.service";
 import { BookSessionService } from "./book-session.service";
-import { BookDetailResponseDto } from "./dto/book-detail-response.dto";
+import {
+  BookDetailResponseDto,
+  StoredBookDetailResponseDto,
+} from "./dto/book-detail-response.dto";
 import { BookEditionResponseDto } from "./dto/book-edition-response.dto";
 import { BookEntryResponseDto } from "./dto/book-entry-response.dto";
 import {
@@ -342,6 +346,23 @@ export class BooksController {
       sourceId,
       safeLang(lang),
     );
+  }
+
+  /** The page's first paint, from the stored book alone (no Open Library call). */
+  @Get(":source/:sourceId/stored")
+  @ApiOkResponse({ type: StoredBookDetailResponseDto })
+  async getStoredBookDetail(
+    @CurrentUser() user: JwtPayload,
+    @Param("source") sourceParam: string,
+    @Param("sourceId") sourceId: string,
+  ): Promise<StoredBookDetailDto> {
+    return {
+      detail: await this.bookLibraryService.getStoredBookDetail(
+        user.sub,
+        parseBookSource(sourceParam),
+        sourceId,
+      ),
+    };
   }
 
   /**

@@ -99,6 +99,79 @@ describe("MusicLibraryService.deleteEntry", () => {
   });
 });
 
+describe("MusicLibraryService finishedAt", () => {
+  it("dates an album when it's first marked listened, as games and books do", async () => {
+    const upsert = vi
+      .fn()
+      .mockResolvedValue({ ...makeRow({ id: "e1" }), status: "LISTENED" });
+    const prisma = {
+      musicEntry: {
+        findUnique: vi.fn().mockResolvedValue(null),
+        upsert,
+        count: vi.fn().mockResolvedValue(1),
+      },
+    } as unknown as PrismaService;
+    const service = new MusicLibraryService(
+      prisma,
+      {
+        upsertFromSource: vi.fn().mockResolvedValue({ id: "album-1" }),
+      } as unknown as MusicItemService,
+      {
+        getRating: vi.fn().mockResolvedValue(null),
+        setRating: vi.fn(),
+      } as unknown as import("../reviews/review.service").ReviewService,
+      {
+        emit: vi.fn(),
+      } as unknown as import("../social/activity.service").ActivityService,
+      stubXp(),
+      stubEvents(),
+      {} as import("../lists/list.service").ListService,
+    );
+
+    await service.upsertEntry("user-1", {
+      source: "MUSICBRAINZ",
+      sourceId: "mbid-1",
+      status: "LISTENED",
+    } as never);
+
+    expect(upsert.mock.calls[0][0].create.finishedAt).toBeInstanceOf(Date);
+  });
+
+  it("dates it when an update marks it listened, keeping a date already set", async () => {
+    const update = vi
+      .fn()
+      .mockResolvedValue({ ...makeRow(), status: "LISTENED" });
+    const prisma = {
+      musicEntry: {
+        findUnique: vi.fn().mockResolvedValue(makeRow()),
+        update,
+      },
+    } as unknown as PrismaService;
+    const service = new MusicLibraryService(
+      prisma,
+      {
+        upsertFromSource: vi.fn().mockResolvedValue({ id: "album-1" }),
+      } as unknown as MusicItemService,
+      {
+        getRating: vi.fn().mockResolvedValue(null),
+        setRating: vi.fn(),
+      } as unknown as import("../reviews/review.service").ReviewService,
+      {
+        emit: vi.fn(),
+      } as unknown as import("../social/activity.service").ActivityService,
+      stubXp(),
+      stubEvents(),
+      {} as import("../lists/list.service").ListService,
+    );
+
+    await service.updateEntry("user-1", "entry-1", {
+      status: "LISTENED",
+    } as never);
+
+    expect(update.mock.calls[0][0].data.finishedAt).toBeInstanceOf(Date);
+  });
+});
+
 describe("MusicLibraryService — XP wiring", () => {
   it("adopts the row a concurrent add created instead of failing on the unique key", async () => {
     const findUnique = vi.fn().mockResolvedValueOnce(null); // before: null -> creation

@@ -60,6 +60,16 @@ export function getBooksPile(filters: ListBooksFilters = {}) {
   });
 }
 
+/**
+ * What the instance already stores about a book, answered without calling
+ * Open Library: the page shows it while getBookDetail completes it. Null when
+ * nobody tracks the book yet.
+ */
+export const getStoredBookDetail = (source: string, sourceId: string) =>
+  typedRequest("/books/{source}/{sourceId}/stored", {
+    params: { source: source.toLowerCase(), sourceId },
+  }).then((r) => r.detail);
+
 export function getBookDetail(
   source: string,
   sourceId: string,

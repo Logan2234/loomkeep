@@ -804,29 +804,84 @@ export class BookLibraryService {
     const ref = await this.prisma.bookExternalId.findUnique({
       where: { source_externalId: { source, externalId: sourceId } },
     });
-    const entryRow = ref
-      ? await this.prisma.bookEntry.findUnique({
-          where: {
-            userId_bookItemId: { userId, bookItemId: ref.bookItemId },
-          },
-          include: ENTRY_INCLUDE,
-        })
-      : null;
 
     return {
       ...details,
       commentTargetId: ref?.bookItemId ?? null,
-      entry: entryRow
-        ? toEntryDto(
-            entryRow,
-            await this.reviews.getRating(
-              userId,
-              ReviewTargetType.BOOK,
-              entryRow.bookItemId,
-            ),
-          )
-        : null,
+      entry: ref ? await this.entryFor(userId, ref.bookItemId) : null,
     };
+  }
+
+  /**
+   * The page's first paint for a book the instance already stores, without
+   * calling Open Library: what only the catalogue gives (editions, ratings,
+   * same-author books…) stays empty until getBookDetail answers. Null when
+   * nobody tracks the book, or when it's an 18+ title the account can't see
+   * (getBookDetail says why).
+   */
+  async getStoredBookDetail(
+    userId: string,
+    source: BookSource,
+    sourceId: string,
+  ): Promise<BookDetailDto | null> {
+    const ref = await this.prisma.bookExternalId.findUnique({
+      where: { source_externalId: { source, externalId: sourceId } },
+      include: { bookItem: true },
+    });
+    if (!ref) return null;
+
+    const item = ref.bookItem;
+
+    if (item.isAdult && !(await this.ageGate.allowsAdultContent(userId))) {
+      return null;
+    }
+
+    return {
+      source,
+      sourceId,
+      title: item.title,
+      authors: item.authors,
+      year: item.releaseDate?.getUTCFullYear() ?? null,
+      coverUrl: item.coverUrl,
+      isAdult: item.isAdult,
+      authorRefs: [],
+      overview: item.overview,
+      subtitle: null,
+      publisher: null,
+      genres: item.genres,
+      pageCount: item.pageCount,
+      editionKey: null,
+      releaseDate: item.releaseDate?.toISOString() ?? null,
+      website: null,
+      sameAuthorBooks: [],
+      ratings: [],
+      editionCount: null,
+      isbn: item.isbn,
+      series: null,
+      seriesKey: item.seriesKey,
+      language: null,
+      firstSentence: null,
+      readOnlineUrl: null,
+      externalLinks: [],
+      commentTargetId: item.id,
+      entry: await this.entryFor(userId, item.id),
+    };
+  }
+
+  private async entryFor(
+    userId: string,
+    bookItemId: string,
+  ): Promise<BookEntryDto | null> {
+    const entryRow = await this.prisma.bookEntry.findUnique({
+      where: { userId_bookItemId: { userId, bookItemId } },
+      include: ENTRY_INCLUDE,
+    });
+    if (!entryRow) return null;
+
+    return toEntryDto(
+      entryRow,
+      await this.reviews.getRating(userId, ReviewTargetType.BOOK, bookItemId),
+    );
   }
 
   private assertEntryOwnership(userId: string, entryId: string) {

@@ -515,3 +515,107 @@ describe.each(Object.keys(CACHE_MODEL) as CacheDomain[])(
     });
   },
 );
+
+/**
+ * A detail page's first paint, from the stored row alone (media already reads
+ * its page from the cache). Built without its constructor: the call only
+ * reaches prisma, the age gate and the user's rating.
+ */
+const STORED_DETAIL: Record<
+  Exclude<CacheDomain, "MEDIA">,
+  {
+    externalIdModel: string;
+    entryModel: string;
+    itemKey: string;
+    adultGated: boolean;
+    read: (
+      service: object,
+    ) => (userId: string, source: never, sourceId: string) => Promise<unknown>;
+    proto: object;
+  }
+> = {
+  GAMES: {
+    externalIdModel: "gameExternalId",
+    entryModel: "gameEntry",
+    itemKey: "gameItem",
+    adultGated: true,
+    proto: GameLibraryService.prototype,
+    read: (s) => (s as GameLibraryService).getStoredGameDetail.bind(s),
+  },
+  BOOKS: {
+    externalIdModel: "bookExternalId",
+    entryModel: "bookEntry",
+    itemKey: "bookItem",
+    adultGated: true,
+    proto: BookLibraryService.prototype,
+    read: (s) => (s as BookLibraryService).getStoredBookDetail.bind(s),
+  },
+  MUSIC: {
+    externalIdModel: "musicExternalId",
+    entryModel: "musicEntry",
+    itemKey: "musicItem",
+    adultGated: false,
+    proto: MusicLibraryService.prototype,
+    read: (s) => (s as MusicLibraryService).getStoredMusicDetail.bind(s),
+  },
+};
+
+describe.each(Object.keys(STORED_DETAIL) as Exclude<CacheDomain, "MEDIA">[])(
+  "%s stored detail",
+  (domain) => {
+    const { externalIdModel, entryModel, itemKey, adultGated, proto, read } =
+      STORED_DETAIL[domain];
+    const item = (isAdult = false) => ({
+      id: "item-1",
+      title: "Stored title",
+      authors: [],
+      artists: [],
+      genres: ["Drama"],
+      platforms: [],
+      coverUrl: null,
+      overview: null,
+      releaseDate: new Date("2020-05-01"),
+      releaseDatePrecision: "DAY",
+      timeToBeatHastilyMin: null,
+      timeToBeatNormallyMin: null,
+      timeToBeatCompletelyMin: null,
+      isAdult,
+    });
+
+    function storedDetail(ref: unknown, allowsAdult = true) {
+      const prisma = prismaDouble({
+        [externalIdModel]: { findUnique: vi.fn().mockResolvedValue(ref) },
+        // The user hasn't tracked it: someone else's entry put it in the cache.
+        [entryModel]: { findUnique: vi.fn().mockResolvedValue(null) },
+      });
+      const service = Object.assign(Object.create(proto), {
+        prisma,
+        ageGate: { allowsAdultContent: vi.fn().mockResolvedValue(allowsAdult) },
+        reviews: { getRating: vi.fn().mockResolvedValue(7) },
+      });
+      return read(service)(USER, "SOURCE" as never, "42");
+    }
+
+    it("is null for a work nobody tracks yet", async () => {
+      await expect(storedDetail(null)).resolves.toBeNull();
+    });
+
+    it("answers from the stored row", async () => {
+      await expect(storedDetail({ [itemKey]: item() })).resolves.toMatchObject({
+        title: "Stored title",
+        year: 2020,
+        genres: ["Drama"],
+        commentTargetId: "item-1",
+        entry: null,
+      });
+    });
+
+    if (adultGated) {
+      it("shows nothing of an 18+ title the account can't see", async () => {
+        await expect(
+          storedDetail({ [itemKey]: item(true) }, false),
+        ).resolves.toBeNull();
+      });
+    }
+  },
+);

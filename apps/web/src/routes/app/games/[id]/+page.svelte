@@ -12,6 +12,7 @@
     ApiError,
     deleteGameEntry,
     getGameDetail,
+    getStoredGameDetail,
     getGameSaga,
     updateGameEntry,
     upsertGameEntry,
@@ -105,7 +106,14 @@
   $effect(() => {
     if (gameQuery.data) adultBlocked = false;
   });
-  const detail = $derived(gameQuery.data);
+  // A game the instance already stores shows at once, from that row, while
+  // the full detail from IGDB completes it.
+  const storedQuery = createApiQuery(() => ({
+    key: keys.games.stored(SOURCE, id),
+    fetch: () => getStoredGameDetail(SOURCE, id),
+    enabled: !!id,
+  }));
+  const detail = $derived(gameQuery.data ?? storedQuery.data ?? undefined);
   // 18+ titles never become a card: the friend may not allow them.
   const work = $derived(detail ? gameWork(detail) : null);
   let sharing = $state(false);

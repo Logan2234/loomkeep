@@ -235,6 +235,15 @@ export interface BookSessionMutationDto {
  * (cached if persisted, else fetched live) + the current user's library state.
  * `entry` is null when the book is not in the library.
  */
+/**
+ * A book page's first paint, from the row the instance already stores: no
+ * catalogue call, so the fields only the catalogue gives stay empty until
+ * the full detail answers. Null when nobody tracks the book yet.
+ */
+export interface StoredBookDetailDto {
+  detail: BookDetailDto | null;
+}
+
 export interface BookDetailDto extends BookDetailsDto {
   /** Cached work id when a public discussion can exist; null for a live-only item. */
   commentTargetId: string | null;

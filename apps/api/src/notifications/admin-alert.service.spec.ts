@@ -39,4 +39,23 @@ describe("AdminAlertService", () => {
     expect(push.sendToUser).toHaveBeenCalledTimes(1);
     expect(push.sendToUser).toHaveBeenCalledWith("a2", expect.anything());
   });
+
+  it("still pushes, and still resolves, when an admin's email fails", async () => {
+    const { service, push } = make([
+      {
+        id: "a1",
+        email: "a@x.com",
+        locale: "fr",
+        alertPrefs: { ADMIN_JOB_FAILED: { email: true, push: true } },
+      },
+      { id: "a2", email: "b@x.com", locale: "en", alertPrefs: {} },
+    ]);
+    const channels = send();
+    channels.email.mockRejectedValueOnce(new Error("SMTP down"));
+
+    await expect(service.notify("ADMIN_JOB_FAILED", channels)).resolves.toBe(2);
+
+    expect(push.sendToUser).toHaveBeenCalledWith("a1", expect.anything());
+    expect(channels.email).toHaveBeenCalledTimes(2);
+  });
 });

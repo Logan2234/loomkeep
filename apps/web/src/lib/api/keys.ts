@@ -28,6 +28,8 @@ export const keys = {
   books: {
     detail: (source: string, sourceId: string, edition?: string) =>
       ["books", "detail", source, sourceId, edition] as const,
+    stored: (source: string, sourceId: string) =>
+      ["books", "stored", source, sourceId] as const,
     editions: (source: string, sourceId: string) =>
       ["books", "editions", source, sourceId] as const,
     reading: (sort: string) => ["books", "reading", sort] as const,
@@ -49,6 +51,8 @@ export const keys = {
     playing: (sort: string) => ["games", "playing", sort] as const,
     detail: (source: string, sourceId: string) =>
       ["games", "detail", source, sourceId] as const,
+    stored: (source: string, sourceId: string) =>
+      ["games", "stored", source, sourceId] as const,
     tracked: () => ["games", "tracked"] as const,
     platforms: () => ["games", "platforms"] as const,
     search: (query: string) => ["games", "search", query] as const,
@@ -60,6 +64,8 @@ export const keys = {
     toListen: (sort: string) => ["music", "to-listen", sort] as const,
     detail: (source: string, sourceId: string) =>
       ["music", "detail", source, sourceId] as const,
+    stored: (source: string, sourceId: string) =>
+      ["music", "stored", source, sourceId] as const,
     tracked: () => ["music", "tracked"] as const,
     search: (query: string) => ["music", "search", query] as const,
   },

@@ -136,7 +136,19 @@ export async function request<T>(
   // an empty body, so check the actual text first rather than trusting the
   // status code.
   const text = await response.text();
-  return (text ? JSON.parse(text) : undefined) as T;
+  if (!text) return undefined as T;
+
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    // A 2xx that isn't JSON never comes from the API: a captive portal or a
+    // proxy's page answered instead, which is "not reaching the server".
+    throw new ApiError(
+      response.status,
+      "Unreadable response",
+      ErrorCode.NetworkOffline,
+    );
+  }
 }
 
 const ACCESS_TOKEN_CODES: ReadonlySet<string> = new Set([

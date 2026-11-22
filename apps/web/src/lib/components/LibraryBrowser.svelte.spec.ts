@@ -435,7 +435,8 @@ describe("LibraryBrowser", () => {
       query: "",
       statuses: ["READING"],
       favoritesOnly: true,
-      extra: [],
+      // BOOKS' extra filter: "free to read online", off here.
+      extra: false,
     });
   });
 

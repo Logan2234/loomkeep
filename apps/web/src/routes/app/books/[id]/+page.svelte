@@ -13,6 +13,7 @@
     getBookDetail,
     getBookEditions,
     getBookSaga,
+    getStoredBookDetail,
     updateBookEntry,
     upsertBookEntry,
   } from "#lib/api/client.js";
@@ -83,7 +84,17 @@
     fetch: () => getBookDetail(SOURCE, id, selectedEdition),
     enabled: !!id,
   }));
-  const detail = $derived(bookQuery.data);
+  // A book the instance already stores shows at once, from that row, while
+  // the full detail (Open Library, several calls) completes it.
+  const storedQuery = createApiQuery(() => ({
+    key: keys.books.stored(SOURCE, id),
+    fetch: () => getStoredBookDetail(SOURCE, id),
+    enabled: !!id && !selectedEdition,
+  }));
+  const detail = $derived(
+    bookQuery.data ??
+      (selectedEdition ? undefined : (storedQuery.data ?? undefined)),
+  );
   // 18+ titles never become a card: the friend may not allow them.
   const work = $derived(detail ? bookWork(detail) : null);
   let sharing = $state(false);

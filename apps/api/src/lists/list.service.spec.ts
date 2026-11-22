@@ -934,6 +934,20 @@ describe("ListService member management — owner only", () => {
     expect(events.emitToList).toHaveBeenCalledWith("l1", "list-updated");
   });
 
+  it("answers the already-editor conflict when a concurrent add got there first", async () => {
+    const { svc, create } = make("owner");
+    create.mockRejectedValueOnce(
+      new Prisma.PrismaClientKnownRequestError("Unique constraint failed", {
+        code: "P2002",
+        clientVersion: "test",
+      }),
+    );
+
+    await expect(svc.addMember("owner", "l1", "friend")).rejects.toMatchObject({
+      code: "lists.member_already_editor",
+    });
+  });
+
   it("refuses someone who isn't the owner's friend", async () => {
     const { svc, create } = make("owner");
     (svc as unknown as { follow: FollowService }).follow = stubFollow([]);
