@@ -513,6 +513,10 @@ jobs:
           # unused build-arg warning.
           build-args: ${{ matrix.name == 'api' && format('GIT_SHA={0}', steps.vars.outputs.short) || '' }}
           outputs: type=image,name=ghcr.io/${{ steps.vars.outputs.owner }}/loomkeep-${{ matrix.name }},push-by-digest=true,name-canonical=true,push=true
+          # An SPDX SBOM rides along with the image, next to its provenance:
+          # self-hosters can list what an image contains without pulling it.
+          sbom: true
+          provenance: mode=max
           cache-from: type=gha,scope=${{ matrix.name }}-${{ matrix.platform }}
           cache-to: type=gha,mode=max,scope=${{ matrix.name }}-${{ matrix.platform }}
       - name: Hand the digest to docker-tag
@@ -593,6 +597,41 @@ jobs:
             $(jq -cr '.tags | map("--tag " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
             $(printf "$IMAGE@sha256:%s " *)
           docker buildx imagetools inspect "$IMAGE:${GITHUB_SHA:0:12}"
+
+  # Signs each tagged image's provenance with GitHub's OIDC identity
+  # (Sigstore) and stores it in GHCR next to the image, as for the APK:
+  # `gh attestation verify oci://… -R Logan2234/loomkeep` proves an image
+  # was built by this workflow from this repository. Kept out of
+  # ready-to-ship, so a Sigstore outage never holds a deploy back.
+  attest-images:
+    needs: docker-tag
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+    strategy:
+      matrix:
+        name: [api, web]
+    steps:
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4
+      - uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - id: image
+        run: |
+          image="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/loomkeep-${{ matrix.name }}"
+          digest=$(docker buildx imagetools inspect "$image:${GITHUB_SHA:0:12}" --format '{{json .Manifest}}' | jq -r .digest)
+          echo "name=$image" >> "$GITHUB_OUTPUT"
+          echo "digest=$digest" >> "$GITHUB_OUTPUT"
+      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-name: ${{ steps.image.outputs.name }}
+          subject-digest: ${{ steps.image.outputs.digest }}
+          push-to-registry: true
 
   # The SHA-tagged images the deploy pulls, scanned once pushed; trivy.yml
   # rescans `edge` weekly, for new CVEs in an unchanged base image. PRs are

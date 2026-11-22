@@ -39,6 +39,31 @@ Each release's notes, on GitHub and in the
 [changelog](https://feedback.loomkeep.app/changelog), say when an upgrade
 asks for a step of your own.
 
+### Checking an image
+
+Each image published from `main` carries two records, stored next to it in
+the registry:
+
+- a **provenance** signed through Sigstore with GitHub's identity, which
+  proves it was built by this repository's workflow from a given commit;
+- an **SBOM**, the list of every package it contains, in SPDX format.
+
+With the [GitHub CLI](https://cli.github.com/), check an image before
+running it:
+
+```sh
+gh attestation verify oci://ghcr.io/logan2234/loomkeep-api:latest -R Logan2234/loomkeep
+```
+
+and list what it contains:
+
+```sh
+docker buildx imagetools inspect ghcr.io/logan2234/loomkeep-api:latest   --format '{{ json (index .SBOM "linux/amd64").SPDX.packages }}'
+```
+
+Replace `api` by `web` for the other image, and `linux/amd64` by
+`linux/arm64` on an ARM server. Images built before 1.15 have no signature.
+
 ### Notes needing action
 
 - **Instance settings moved out of Unleash.** Social features, gamification,
