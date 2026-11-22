@@ -15,12 +15,16 @@
   import NewBadge from "#lib/components/NewBadge.svelte";
   import PageHeader from "#lib/components/PageHeader.svelte";
   import Switch from "#lib/components/Switch.svelte";
+  import { DOMAINS } from "#lib/constants/domains.js";
   import { DOCS_URL } from "#lib/constants/external-links.js";
   import { isFeatureNew, type FeatureBadgeKey } from "#lib/feature-badges.js";
   import { m } from "#lib/paraglide/messages.js";
   import { toast } from "#lib/toast.svelte.js";
   import {
     API_RATE_LIMIT_BOUNDS,
+    DOMAIN_SETTING,
+    Domain,
+    type InstanceDomain,
     type InstanceSettingKey,
     type UpdateInstanceSettingsDto,
   } from "@loomkeep/shared";
@@ -103,6 +107,20 @@
       badge: "acquisition-source",
     },
   ];
+  const DOMAIN_ROWS: { domain: InstanceDomain; hint: string }[] = [
+    { domain: Domain.MEDIA, hint: m.settings_domain_media_description() },
+    { domain: Domain.GAMES, hint: m.settings_domain_games_description() },
+    { domain: Domain.BOOKS, hint: m.settings_domain_books_description() },
+    { domain: Domain.MUSIC, hint: m.settings_domain_music_description() },
+  ];
+  // Mirrors the API's instanceDomains: on, and with its catalogue key.
+  const offered = $derived(
+    DOMAIN_ROWS.filter(({ domain }) => {
+      const key = DOMAIN_SETTING[domain];
+      return settings?.values[key] && !settings.missingEnv[key];
+    }).map(({ domain }) => domain),
+  );
+
   const LIMITS: { key: LimitKey; label: string }[] = [
     { key: "apiRateLimitFree", label: m.admin_settings_rate_free() },
     { key: "apiRateLimitPremium", label: m.admin_settings_rate_premium() },
@@ -199,6 +217,50 @@
             feature.hint,
             feature.badge,
           )}
+        {/each}
+      </div>
+    </section>
+
+    <section class="mt-8 flex flex-col gap-3">
+      <div>
+        <h2 class="font-display text-lg font-bold">
+          {m.common_domains()}
+          {#if isFeatureNew("instance-domains")}<NewBadge />{/if}
+        </h2>
+        <p class="text-dim text-sm">{m.admin_settings_domains_hint()}</p>
+      </div>
+      <div class="card divide-border divide-y overflow-hidden">
+        {#each DOMAIN_ROWS as { domain, hint } (domain)}
+          {@const key = DOMAIN_SETTING[domain]}
+          {@const missing = settings.missingEnv[key]}
+          {@const isLast = offered.length === 1 && offered[0] === domain}
+          <div class="flex items-start gap-4 p-4">
+            <div class="min-w-0 flex-1">
+              <p class="font-semibold">{DOMAINS[domain].label}</p>
+              <p class="text-dim text-sm">{hint}</p>
+              {#if missing}
+                <span class="text-warning mt-1 flex items-center gap-1 text-xs">
+                  <Icon name="warning" class="h-3 w-3" />
+                  {m.admin_settings_domain_missing_key({
+                    env: missing.join(", "),
+                  })}
+                </span>
+              {:else if isLast}
+                <span class="text-dim mt-1 block text-xs">
+                  {m.admin_settings_domain_last()}
+                </span>
+              {/if}
+              {@render locked(key)}
+            </div>
+            <Switch
+              label={DOMAINS[domain].label}
+              checked={offered.includes(domain)}
+              disabled={!!missing ||
+                isLast ||
+                !!settings.lockedBy[key] ||
+                saveMut.loading}
+              onChange={(value) => saveMut.mutate({ [key]: value })} />
+          </div>
         {/each}
       </div>
     </section>

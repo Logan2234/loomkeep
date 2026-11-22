@@ -45,3 +45,12 @@ export function stubSessionXp(): SessionXpService {
 export function stubSagas<T extends GameSagaService | BookSagaService>(): T {
   return { completed: vi.fn().mockResolvedValue(null) } as unknown as T;
 }
+
+/** A config with every catalogue key set, so the instance offers every domain. */
+export function allDomainsConfig(): ConfigService {
+  return makeConfig({
+    TMDB_API_TOKEN: "token",
+    TWITCH_CLIENT_ID: "id",
+    TWITCH_CLIENT_SECRET: "secret",
+  });
+}

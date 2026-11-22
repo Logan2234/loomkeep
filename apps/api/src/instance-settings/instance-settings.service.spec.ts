@@ -78,6 +78,10 @@ describe("InstanceSettingsService", () => {
         socialEnabled: "SOCIAL_ENABLED",
         apiRateLimitFree: "API_RATE_LIMIT_FREE",
       },
+      missingEnv: {
+        mediaDomainEnabled: ["TMDB_API_TOKEN"],
+        gamesDomainEnabled: ["TWITCH_CLIENT_ID", "TWITCH_CLIENT_SECRET"],
+      },
     });
   });
 
@@ -89,6 +93,18 @@ describe("InstanceSettingsService", () => {
       service.update({ registrationEnabled: true }),
     ).rejects.toMatchObject({ code: "admin.setting_locked_by_env" });
     expect(prisma.instanceSettings.upsert).not.toHaveBeenCalled();
+  });
+
+  it("refuses a change that would leave the instance without a domain", async () => {
+    // No catalogue key: media and games are off already, whatever their toggle.
+    const { service, prisma } = setup();
+    await service.onModuleInit();
+
+    await service.update({ booksDomainEnabled: false });
+    await expect(
+      service.update({ musicDomainEnabled: false }),
+    ).rejects.toMatchObject({ code: "admin.no_domain_left" });
+    expect(prisma.instanceSettings.upsert).toHaveBeenCalledTimes(1);
   });
 
   it("keeps the env-era parsing: registration open unless exactly false", async () => {

@@ -1,6 +1,7 @@
 import {
   ALERTS,
   DigestCadence,
+  Domain,
   episodeCode,
   ErrorCode,
   gameReleaseAlertDay,
@@ -16,6 +17,7 @@ import {
   RealtimeEvent,
 } from "@loomkeep/shared";
 import { HttpStatus, Injectable, Logger } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
 import { Cron, CronExpression } from "@nestjs/schedule";
 import { type Notification, Prisma } from "@prisma/client";
 import { resolveWatchRegion } from "../catalog/watch-region.util";
@@ -28,6 +30,7 @@ import {
 import { jsonObject, toJsonInput } from "../common/json.util";
 import { type ParsedPage, toPagedResult } from "../common/pagination.util";
 import { EventsGateway } from "../events/events.gateway";
+import { isDomainOffered } from "../instance-settings/instance-domains";
 import { JOB_KEYS } from "../jobs/job-keys";
 import { JobRunService } from "../jobs/job-run.service";
 import { MailService } from "../mail/mail.service";
@@ -101,6 +104,7 @@ export class NotificationService {
     private readonly events: EventsGateway,
     private readonly push: PushService,
     private readonly mail: MailService,
+    private readonly config: ConfigService,
   ) {}
 
   /**
@@ -148,11 +152,15 @@ export class NotificationService {
    * want the narrow query.
    */
   private async runScanAll(): Promise<number> {
+    // Alerts of a domain the instance no longer offers stop with it.
+    const media = isDomainOffered(this.config, Domain.MEDIA);
+    const games = isDomainOffered(this.config, Domain.GAMES);
     const moviesCreated =
-      (await this.scanMovies()) +
-      (await this.scanGames()) +
-      (await this.scanSagaSequels()) +
-      (await this.scanGameSagaSequels());
+      (media ? await this.scanMovies() : 0) +
+      (games ? await this.scanGames() : 0) +
+      (media ? await this.scanSagaSequels() : 0) +
+      (games ? await this.scanGameSagaSequels() : 0);
+    if (!media) return moviesCreated;
     const now = new Date();
     const since = sinceDaysAgo(now, WINDOW_DAYS);
 
@@ -668,14 +676,21 @@ export class NotificationService {
       return 0;
     }
 
-    const gamesCreated = user.enabledDomains.includes("GAMES")
-      ? await this.scanGames(userId)
-      : 0;
+    const gamesCreated =
+      user.enabledDomains.includes("GAMES") &&
+      isDomainOffered(this.config, Domain.GAMES)
+        ? await this.scanGames(userId)
+        : 0;
 
     // Episode alerts belong to the MEDIA domain: a user who disabled it gets
     // none. Filtered here (not by hiding the feed) so other notification types
     // stay available.
-    if (!user.enabledDomains.includes("MEDIA")) return gamesCreated;
+    if (
+      !user.enabledDomains.includes("MEDIA") ||
+      !isDomainOffered(this.config, Domain.MEDIA)
+    ) {
+      return gamesCreated;
+    }
 
     const moviesCreated = (await this.scanMovies(userId)) + gamesCreated;
 

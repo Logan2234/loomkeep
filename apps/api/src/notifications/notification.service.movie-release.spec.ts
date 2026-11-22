@@ -1,4 +1,5 @@
 import { vi } from "vitest";
+import { allDomainsConfig, makeConfig } from "../test-utils/stubs";
 import { NotificationService } from "./notification.service";
 
 describe("movie release reminders", () => {
@@ -50,6 +51,7 @@ describe("movie release reminders", () => {
       {} as never,
       {} as never,
       {} as never,
+      allDomainsConfig(),
     );
     expect(await service.scanAll()).toBe(0);
     vi.setSystemTime(new Date("2026-10-04T12:00:00Z"));
@@ -102,8 +104,36 @@ describe("movie release reminders", () => {
       {} as never,
       {} as never,
       {} as never,
+      allDomainsConfig(),
     );
     expect(await service.scanAll()).toBe(0);
     expect(createMany).not.toHaveBeenCalled();
+  });
+  it("sends no film or episode alert once the instance stops offering films and series", async () => {
+    const prisma = {
+      libraryEntry: { findMany: vi.fn() },
+      episode: { findMany: vi.fn() },
+      sagaMember: { findMany: vi.fn() },
+      gameEntry: { findMany: vi.fn().mockResolvedValue([]) },
+      gameSagaMember: { findMany: vi.fn().mockResolvedValue([]) },
+      notification: { createMany: vi.fn() },
+    };
+    const service = new NotificationService(
+      prisma as never,
+      { record: (_key: string, fn: () => Promise<unknown>) => fn() } as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      makeConfig({
+        TMDB_API_TOKEN: "token",
+        TWITCH_CLIENT_ID: "id",
+        TWITCH_CLIENT_SECRET: "secret",
+        MEDIA_DOMAIN_ENABLED: "false",
+      }),
+    );
+    expect(await service.scanAll()).toBe(0);
+    expect(prisma.libraryEntry.findMany).not.toHaveBeenCalled();
+    expect(prisma.episode.findMany).not.toHaveBeenCalled();
+    expect(prisma.gameEntry.findMany).toHaveBeenCalled();
   });
 });

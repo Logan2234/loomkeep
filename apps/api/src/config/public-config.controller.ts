@@ -11,6 +11,7 @@ import { isHardened } from "../common/hardening.util";
 import { configuredSupportAddress } from "../common/instance-defaults";
 import { primaryWebOrigin } from "../common/web-origin.util";
 import { isGamificationEnabled } from "../gamification/gamification.config";
+import { instanceDomains } from "../instance-settings/instance-domains";
 import { instanceSetting } from "../instance-settings/instance-settings.store";
 import { isSocialEnabled } from "../social/social.config";
 import { PublicConfigResponseDto } from "./dto/public-config-response.dto";
@@ -37,6 +38,7 @@ export class PublicConfigController {
         this.config,
         "askAcquisitionSource",
       ),
+      domains: instanceDomains(this.config),
       erdEnabled: this.config.get<string>("NODE_ENV") === "development",
       adminMfaEnforced: isHardened((key) => this.config.get<string>(key)),
       version,

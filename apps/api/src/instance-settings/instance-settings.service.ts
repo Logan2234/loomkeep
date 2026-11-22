@@ -6,6 +6,8 @@ import type {
 } from "@loomkeep/shared";
 import {
   DEFAULT_INSTANCE_SETTINGS,
+  DOMAIN_SETTING,
+  type DomainSettingKey,
   ErrorCode,
   INSTANCE_SETTING_ENV,
 } from "@loomkeep/shared";
@@ -14,6 +16,11 @@ import { ConfigService } from "@nestjs/config";
 import type { InstanceSettings } from "@prisma/client";
 import { AppException } from "../common/app.exception";
 import { PrismaService } from "../prisma/prisma.service";
+import {
+  INSTANCE_DOMAINS,
+  instanceDomains,
+  missingDomainEnv,
+} from "./instance-domains";
 import {
   envOverride,
   instanceSetting,
@@ -52,11 +59,17 @@ export class InstanceSettingsService implements OnModuleInit {
 
   toDto(): InstanceSettingsDto {
     const lockedBy: InstanceSettingsDto["lockedBy"] = {};
+    const missingEnv: InstanceSettingsDto["missingEnv"] = {};
 
     for (const key of KEYS) {
       if (envOverride(this.config, key) !== null) {
         lockedBy[key] = INSTANCE_SETTING_ENV[key];
       }
+    }
+
+    for (const domain of INSTANCE_DOMAINS) {
+      const missing = missingDomainEnv(this.config, domain);
+      if (missing.length > 0) missingEnv[DOMAIN_SETTING[domain]] = missing;
     }
 
     return {
@@ -65,6 +78,7 @@ export class InstanceSettingsService implements OnModuleInit {
         { ...DEFAULT_INSTANCE_SETTINGS },
       ),
       lockedBy,
+      missingEnv,
     };
   }
 
@@ -79,6 +93,18 @@ export class InstanceSettingsService implements OnModuleInit {
         ErrorCode.AdminSettingLockedByEnv,
         { setting: locked, env: INSTANCE_SETTING_ENV[locked] },
       );
+    }
+
+    const domainSettings = Object.fromEntries(
+      Object.values(DOMAIN_SETTING).map((key) => [
+        key,
+        patch[key] ?? this.get(key),
+      ]),
+    ) as Record<DomainSettingKey, boolean>;
+    const offered = instanceDomains(this.config, domainSettings);
+
+    if (!INSTANCE_DOMAINS.some((domain) => offered.includes(domain))) {
+      throw new AppException(HttpStatus.CONFLICT, ErrorCode.AdminNoDomainLeft);
     }
 
     const row = await this.prisma.instanceSettings.upsert({
@@ -103,5 +129,9 @@ function toValues(row: InstanceSettings): InstanceSettingsValues {
     updateCheckEnabled: row.updateCheckEnabled,
     telemetryEnabled: row.telemetryEnabled,
     askAcquisitionSource: row.askAcquisitionSource,
+    mediaDomainEnabled: row.mediaDomainEnabled,
+    gamesDomainEnabled: row.gamesDomainEnabled,
+    booksDomainEnabled: row.booksDomainEnabled,
+    musicDomainEnabled: row.musicDomainEnabled,
   };
 }

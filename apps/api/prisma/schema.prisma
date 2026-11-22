@@ -1527,6 +1527,12 @@ model InstanceSettings {
   telemetryEnabled     Boolean  @default(true)
   // Off for self-hosters; the hosted instance turns it on.
   askAcquisitionSource Boolean  @default(false)
+  // A domain off, or without its catalogue key, is gone from the app; its
+  // library entries stay.
+  mediaDomainEnabled   Boolean  @default(true)
+  gamesDomainEnabled   Boolean  @default(true)
+  booksDomainEnabled   Boolean  @default(true)
+  musicDomainEnabled   Boolean  @default(true)
   updatedAt            DateTime @updatedAt
 }
 

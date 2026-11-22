@@ -1,13 +1,9 @@
-import {
-  Domain,
-  ErrorCode,
-  PREMIUM_DOMAINS,
-  maintenanceFlag,
-} from "@loomkeep/shared";
+import { Domain, ErrorCode, PREMIUM_DOMAINS } from "@loomkeep/shared";
 import { HttpStatus, Injectable } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
 import { AppException } from "../common/app.exception";
 import { EntitlementService } from "../entitlements/entitlement.service";
-import { FeatureFlagsService } from "../feature-flags/feature-flags.service";
+import { instanceDomains } from "../instance-settings/instance-domains";
 import { PrismaService } from "../prisma/prisma.service";
 
 /**
@@ -15,10 +11,9 @@ import { PrismaService } from "../prisma/prisma.service";
  * not just hidden from the nav, it is unreachable. Called by the per-domain
  * search endpoints so a disabled domain returns 403 instead of results.
  *
- * Also intersects with the deployment-wide `MAINTENANCE_<DOMAIN>` Unleash
- * flags (see FeatureFlagsService) — a domain an admin put in maintenance is
- * unreachable for every user, exactly as if they had turned it off
- * themselves, regardless of their own `enabledDomains`. And with
+ * Also intersects with the domains the instance offers (`instanceDomains`):
+ * one the admin turned off, or without its catalogue key, is unreachable for
+ * every user, whatever their own `enabledDomains`. And with
  * `PREMIUM_DOMAINS` — a free user keeps these unreachable even if their own
  * `enabledDomains` still lists one (e.g. from before it became premium-gated).
  */
@@ -26,7 +21,7 @@ import { PrismaService } from "../prisma/prisma.service";
 export class DomainGateService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly flags: FeatureFlagsService,
+    private readonly config: ConfigService,
     private readonly entitlements: EntitlementService,
   ) {}
 
@@ -44,15 +39,16 @@ export class DomainGateService {
     }
   }
 
-  /** The domains this user currently keeps enabled and that aren't under maintenance. */
+  /** The domains this user keeps enabled, among those the instance offers. */
   async getEnabledDomains(userId: string): Promise<Domain[]> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       select: { enabledDomains: true },
     });
 
-    const enabled = (user?.enabledDomains ?? []).filter(
-      (domain) => !this.flags.isEnabled(maintenanceFlag(domain)),
+    const offered = instanceDomains(this.config);
+    const enabled = (user?.enabledDomains ?? []).filter((domain) =>
+      offered.includes(domain),
     );
 
     if (!enabled.some((domain) => PREMIUM_DOMAINS.includes(domain))) {

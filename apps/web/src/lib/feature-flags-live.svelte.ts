@@ -11,7 +11,7 @@ import type { UnleashClient } from "unleash-proxy-client";
  * (`PUBLIC_UNLEASH_FRONTEND_URL` unset) or before the flag exists in
  * Unleash — the Frontend API only reports *enabled* flags, so "not created
  * yet" and "explicitly off" are indistinguishable here. That's fine for a
- * kill-switch-style flag (off by default, like `MAINTENANCE_<DOMAIN>`), but
+ * kill-switch-style flag (off by default, like `NEWS_BANNER`), but
  * a flag that should default to *on* until someone explicitly disables it
  * can't use this path — relay it through `GET /api/config` instead (see
  * `isSocialEnabled`/`isRegistrationEnabled` for that pattern), since only

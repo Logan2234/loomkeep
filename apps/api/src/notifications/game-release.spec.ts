@@ -1,4 +1,5 @@
 import { vi } from "vitest";
+import { allDomainsConfig } from "../test-utils/stubs";
 import { NotificationService } from "./notification.service";
 
 const today = new Date().toISOString().slice(0, 10);
@@ -39,6 +40,7 @@ function makeService(games: unknown[]) {
     { emitToUser: vi.fn() } as never,
     { sendToUser: vi.fn() } as never,
     {} as never,
+    allDomainsConfig(),
   );
   return { service, prisma };
 }

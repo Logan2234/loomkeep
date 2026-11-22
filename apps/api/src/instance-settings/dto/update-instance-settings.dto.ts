@@ -46,4 +46,20 @@ export class UpdateInstanceSettingsRequestDto implements UpdateInstanceSettingsD
   @IsOptional()
   @IsBoolean()
   askAcquisitionSource?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  mediaDomainEnabled?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  gamesDomainEnabled?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  booksDomainEnabled?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  musicDomainEnabled?: boolean;
 }

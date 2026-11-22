@@ -1,20 +1,23 @@
 import { Domain } from "@loomkeep/shared";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { auth } from "./auth.svelte";
+import { appConfig } from "./config.svelte";
 import {
   domainOffReason,
   isDomainEnabled,
   orderedDomains,
   pathDomain,
+  toggleDomainSelection,
 } from "./domain-availability";
 
-// Unleash's live flags, the only input here that isn't the user itself.
+// Unleash's live flags (the premium seam reads one).
 const { isEnabled } = vi.hoisted(() => ({ isEnabled: vi.fn(() => false) }));
 vi.mock("./feature-flags-live.svelte", () => ({ liveFlags: { isEnabled } }));
 
 describe("isDomainEnabled", () => {
   beforeEach(() => {
     isEnabled.mockReturnValue(false);
+    appConfig.domains = Object.values(Domain);
     auth.isPremium = false;
     auth.user = {
       enabledDomains: [Domain.MEDIA, Domain.MUSIC],
@@ -26,14 +29,12 @@ describe("isDomainEnabled", () => {
     expect(isDomainEnabled(Domain.BOOKS)).toBe(false);
   });
 
-  it("excludes a domain under deployment-wide maintenance", () => {
-    isEnabled.mockImplementation(
-      ((flag: string) => flag === `MAINTENANCE_${Domain.MEDIA}`) as never,
-    );
+  it("excludes a domain the instance doesn't offer", () => {
+    appConfig.domains = [Domain.GAMES, Domain.BOOKS, Domain.MUSIC];
 
     expect(isDomainEnabled(Domain.MEDIA)).toBe(false);
     // Not the user's to undo: a warning mustn't send them to Settings.
-    expect(domainOffReason(Domain.MEDIA)).toBe("maintenance");
+    expect(domainOffReason(Domain.MEDIA)).toBe("instance");
     expect(domainOffReason(Domain.BOOKS)).toBe("off");
   });
 
@@ -61,6 +62,22 @@ describe("isDomainEnabled", () => {
     auth.user = null;
 
     expect(isDomainEnabled(Domain.BOOKS)).toBe(true);
+  });
+});
+
+describe("toggleDomainSelection", () => {
+  beforeEach(() => {
+    appConfig.domains = Object.values(Domain);
+  });
+
+  it("refuses to drop the last domain the instance still offers", () => {
+    appConfig.domains = [Domain.BOOKS, Domain.MUSIC];
+    const current = [Domain.MEDIA, Domain.BOOKS];
+
+    expect(toggleDomainSelection(current, Domain.BOOKS)).toBe(current);
+    expect(toggleDomainSelection(current, Domain.MEDIA)).toEqual([
+      Domain.BOOKS,
+    ]);
   });
 });
 

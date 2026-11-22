@@ -85,7 +85,7 @@
   "common_manage": "Gestisci",
   "common_work": "Opera",
   "common_work_domain_off": "Il dominio «{domain}» non è attivo: attivalo in Impostazioni › Domini per aprire questa scheda.",
-  "common_work_domain_maintenance": "Il dominio «{domain}» è in manutenzione: questa scheda non è disponibile per il momento.",
+  "common_work_domain_not_offered": "Il dominio «{domain}» non è disponibile su questa istanza: questa scheda non può essere aperta.",
   "common_season": "Stagione",
   "common_episode": "Episodio",
   "common_sending": "Invio…",

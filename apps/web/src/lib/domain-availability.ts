@@ -1,12 +1,11 @@
 import { DOMAIN_IDS } from "#lib/constants/domains.js";
 import {
   Domain,
-  maintenanceFlag,
   PREMIUM_DOMAINS,
   type ReviewTargetType,
 } from "@loomkeep/shared";
 import { auth } from "./auth.svelte";
-import { liveFlags } from "./feature-flags-live.svelte";
+import { appConfig } from "./config.svelte";
 
 /**
  * Single read-point for the domain-composition preference (see `Domain`).
@@ -14,11 +13,9 @@ import { liveFlags } from "./feature-flags-live.svelte";
  * user changes. Falls back to "enabled" when the user or field is missing, so
  * nothing is hidden before the profile has loaded.
  *
- * Also excludes any domain an admin put under deployment-wide maintenance —
- * a live `MAINTENANCE_<DOMAIN>` Unleash flag (see `liveFlags`), treated
- * exactly like the user having turned the domain off themselves. Updates
- * without a reload; this only hides UI — `DomainGateService` is what actually
- * enforces the gate server-side.
+ * Also excludes any domain the instance doesn't offer (`isDomainOffered`),
+ * treated like the user having turned it off themselves. This only hides
+ * UI — `DomainGateService` is what actually enforces the gate server-side.
  *
  * And a premium domain while the plan is enforced and the account is free:
  * `enabledDomains` is the user's raw choice, which can still name one from
@@ -34,14 +31,22 @@ export function isDomainEnabled(domain: Domain): boolean {
 }
 
 /**
+ * Whether the instance offers `domain`: an admin turned off, or one without
+ * its catalogue key, is gone from the app for everyone — no settings tile,
+ * no onboarding choice.
+ */
+export function isDomainOffered(domain: Domain): boolean {
+  return appConfig.domains.includes(domain);
+}
+
+/**
  * Why `isDomainEnabled(domain)` is false, or `null` when it isn't — so a
- * warning can say whether the user can turn the domain back on themselves
- * or has to wait out a maintenance.
+ * warning can say whether the user can turn the domain back on themselves.
  */
 export function domainOffReason(
   domain: Domain,
-): "maintenance" | "premium" | "off" | null {
-  if (liveFlags.isEnabled(maintenanceFlag(domain))) return "maintenance";
+): "instance" | "premium" | "off" | null {
+  if (!isDomainOffered(domain)) return "instance";
   if (auth.isPremiumLocked && PREMIUM_DOMAINS.includes(domain))
     return "premium";
   const enabled = auth.user?.enabledDomains;
@@ -64,13 +69,15 @@ export function orderedDomains(preference: Domain[] | undefined): Domain[] {
 }
 
 /**
- * Toggles `id` in `current`, refusing to drop the last remaining domain —
- * used by both the settings "Domaines" section and the onboarding wizard's
- * domain step so the "at least one" rule can't drift between the two.
- * Rebuilds in canonical order so the stored list stays tidy.
+ * Toggles `id` in `current`, refusing to drop the last remaining domain the
+ * instance offers — used by both the settings "Domaines" section and the
+ * onboarding wizard's domain step so the "at least one" rule can't drift
+ * between the two. Rebuilds in canonical order so the stored list stays tidy.
  */
 export function toggleDomainSelection(current: Domain[], id: Domain): Domain[] {
   const has = current.includes(id);
+  const offered = current.filter(isDomainOffered);
+  if (has && offered.length === 1 && offered[0] === id) return current;
   if (has && current.length === 1) return current;
   return DOMAIN_IDS.filter((d) => (d === id ? !has : current.includes(d)));
 }

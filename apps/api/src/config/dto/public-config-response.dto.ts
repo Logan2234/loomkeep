@@ -1,4 +1,5 @@
-import type { PublicConfigDto } from "@loomkeep/shared";
+import { Domain, type PublicConfigDto } from "@loomkeep/shared";
+import { ApiProperty } from "@nestjs/swagger";
 
 export class PublicConfigResponseDto implements PublicConfigDto {
   socialEnabled!: boolean;
@@ -7,6 +8,9 @@ export class PublicConfigResponseDto implements PublicConfigDto {
   registrationEnabled!: boolean;
   publicApiEnabled!: boolean;
   askAcquisitionSource!: boolean;
+  @ApiProperty({ enum: Domain, isArray: true })
+  domains!: Domain[];
+
   erdEnabled!: boolean;
   adminMfaEnforced!: boolean;
   version!: string;
