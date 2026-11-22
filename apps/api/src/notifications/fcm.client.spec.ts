@@ -101,6 +101,38 @@ describe("FcmClient", () => {
     ).toHaveLength(2);
   });
 
+  it("asks for one OAuth token however many sends need it at once", async () => {
+    const client = new FcmClient(ACCOUNT);
+
+    await Promise.all(
+      ["a", "b", "c"].map((token) => client.send(token, MESSAGE)),
+    );
+
+    expect(
+      fetchMock.mock.calls.filter(([url]) => url.includes("oauth2")),
+    ).toHaveLength(1);
+  });
+
+  it("asks again after a failed OAuth request", async () => {
+    const client = new FcmClient(ACCOUNT);
+    fetchMock.mockResolvedValueOnce(json(500, {}));
+
+    await expect(client.send("a", MESSAGE)).rejects.toThrow("HTTP 500");
+    await expect(client.send("a", MESSAGE)).resolves.toEqual({ ok: true });
+  });
+
+  it("gives every request a deadline, so a hung Google endpoint can't stall a send", async () => {
+    const client = new FcmClient(ACCOUNT);
+
+    await client.send("a", MESSAGE);
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+
+    for (const [, init] of fetchMock.mock.calls) {
+      expect(init.signal).toBeInstanceOf(AbortSignal);
+    }
+  });
+
   it("flags a dead token apart from other failures", async () => {
     const client = new FcmClient(ACCOUNT);
     fetchMock.mockImplementation((url: string) =>
