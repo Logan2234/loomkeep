@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import { vi } from "vitest";
 import type { PrismaService } from "../prisma/prisma.service";
 import {
@@ -422,6 +423,54 @@ describe("BookLibraryService — XP wiring", () => {
   const activity = {
     emit: vi.fn(),
   } as unknown as import("../social/activity.service").ActivityService;
+
+  it("adopts the row a concurrent add created instead of failing on the unique key", async () => {
+    const findUnique = vi
+      .fn()
+      // upsertEntry's own "before" lookup: null -> a true creation
+      .mockResolvedValueOnce(null)
+      // syncFinishedAt's post-write lookup
+      .mockResolvedValueOnce({ status: "TO_READ", finishedAt: null });
+    const upsert = vi
+      .fn()
+      .mockRejectedValueOnce(
+        new Prisma.PrismaClientKnownRequestError("Unique constraint failed", {
+          code: "P2002",
+          clientVersion: "test",
+        }),
+      )
+      .mockResolvedValue({ ...makeRow({ id: "e1" }), status: "TO_READ" });
+    const count = vi.fn().mockResolvedValue(1);
+    const prisma = {
+      bookEntry: { findUnique, upsert, count },
+    } as unknown as PrismaService;
+    const xp = stubXp();
+    const events = stubEvents();
+
+    const service = new BookLibraryService(
+      prisma,
+      {
+        upsertFromSource: vi.fn().mockResolvedValue({ id: "book-1" }),
+      } as unknown as BookItemService,
+      {} as AgeGateService,
+      reviews,
+      activity,
+      xp,
+      stubAchievements(),
+      events,
+      {} as import("../lists/list.service").ListService,
+      stubSessionXp(),
+      stubSagas(),
+    );
+
+    await service.upsertEntry("user-1", {
+      source: "OPEN_LIBRARY",
+      sourceId: "ol-1",
+      status: "TO_READ",
+    } as never);
+
+    expect(upsert).toHaveBeenCalledTimes(2);
+  });
 
   it("awards WORK_ADDED and DOMAIN_STARTED only on true first creation, not on update", async () => {
     const findUnique = vi

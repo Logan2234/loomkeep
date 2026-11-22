@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import { vi } from "vitest";
 import type { PrismaService } from "../prisma/prisma.service";
 import { stubEvents, stubXp } from "../test-utils/stubs";
@@ -99,6 +100,51 @@ describe("MusicLibraryService.deleteEntry", () => {
 });
 
 describe("MusicLibraryService — XP wiring", () => {
+  it("adopts the row a concurrent add created instead of failing on the unique key", async () => {
+    const findUnique = vi.fn().mockResolvedValueOnce(null); // before: null -> creation
+    const upsert = vi
+      .fn()
+      .mockRejectedValueOnce(
+        new Prisma.PrismaClientKnownRequestError("Unique constraint failed", {
+          code: "P2002",
+          clientVersion: "test",
+        }),
+      )
+      .mockResolvedValue({ ...makeRow({ id: "e1" }), status: "LISTENED" });
+    const count = vi.fn().mockResolvedValue(1);
+    const prisma = {
+      musicEntry: { findUnique, upsert, count },
+    } as unknown as PrismaService;
+    const xp = stubXp();
+    const reviews = {
+      getRating: vi.fn().mockResolvedValue(null),
+      setRating: vi.fn(),
+    } as unknown as import("../reviews/review.service").ReviewService;
+
+    const events = stubEvents();
+    const service = new MusicLibraryService(
+      prisma,
+      {
+        upsertFromSource: vi.fn().mockResolvedValue({ id: "album-1" }),
+      } as unknown as MusicItemService,
+      reviews,
+      {
+        emit: vi.fn(),
+      } as unknown as import("../social/activity.service").ActivityService,
+      xp,
+      events,
+      {} as import("../lists/list.service").ListService,
+    );
+
+    await service.upsertEntry("user-1", {
+      source: "MUSICBRAINZ",
+      sourceId: "mbid-1",
+      status: "LISTENED",
+    } as never);
+
+    expect(upsert).toHaveBeenCalledTimes(2);
+  });
+
   it("awards WORK_ADDED + DOMAIN_STARTED on creation only, and ALBUM_LISTENED on the LISTENED transition", async () => {
     const findUnique = vi.fn().mockResolvedValueOnce(null); // before: null -> creation
     const upsert = vi

@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import { vi } from "vitest";
 import { GameSessionService } from "./game-session.service";
 
@@ -266,6 +267,33 @@ describe("GameSessionService", () => {
     await expect(
       service.create("user-1", "entry-1", dto, "IMPORT"),
     ).resolves.toBeDefined();
+  });
+
+  it("retries when a concurrent first session created the playthrough first", async () => {
+    prisma.gameEntry.findUnique.mockResolvedValue({
+      id: "entry-1",
+      userId: "user-1",
+      gameItemId: "game-1",
+      status: "BACKLOG",
+      startedAt: null,
+      playtimeMinutes: 0,
+      trackedPlaytimeMinutes: 0,
+      steamPlaytimeMinutes: null,
+    });
+    prisma.$transaction.mockRejectedValueOnce(
+      new Prisma.PrismaClientKnownRequestError("Unique constraint failed", {
+        code: "P2002",
+        clientVersion: "test",
+      }),
+    );
+
+    await expect(
+      service.create("user-1", "entry-1", {
+        durationMinutes: 60,
+        occurredAt: created.occurredAt.toISOString(),
+      }),
+    ).resolves.toBeDefined();
+    expect(prisma.$transaction).toHaveBeenCalledTimes(2);
   });
 
   it("creates the first playthrough and links the first session to it", async () => {

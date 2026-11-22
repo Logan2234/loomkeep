@@ -541,9 +541,12 @@ export class MediaItemService {
     type: MediaType,
     details: ProviderMediaDetails,
   ): Promise<MediaItem> {
-    const item = await this.prisma.mediaItem.update({
+    // Marked fresh only once seasons and episodes are in (below): stamped
+    // first, a failure midway left episodes missing for a whole TTL.
+    const { lastSyncedAt, syncFailedAt, ...fields } = this.baseFields(details);
+    await this.prisma.mediaItem.update({
       where: { id: mediaItemId },
-      data: this.baseFields(details),
+      data: fields,
     });
 
     for (const ext of details.externalIds) {
@@ -580,6 +583,11 @@ export class MediaItemService {
 
       await this.syncEpisodes(storedSeason.id, season.episodes);
     }
+
+    const item = await this.prisma.mediaItem.update({
+      where: { id: mediaItemId },
+      data: { lastSyncedAt, syncFailedAt },
+    });
 
     // Refresh whatever locale translations already exist, on this same
     // cycle — see the note on MediaItemTranslation in the Prisma schema.

@@ -23,6 +23,7 @@ import {
   assertSessionOwnership,
 } from "../common/entry-lifecycle.util";
 import { toPagedResult } from "../common/pagination.util";
+import { retryAfterUniqueRace } from "../common/prisma-error.util";
 import { sessionPeriodMinutes } from "../common/session-period.util";
 import { normalizeSessionNotes, sessionDate } from "../common/session.util";
 import { GAME_STATUS_BY_CYCLE } from "../common/tracking-cycle-status.util";
@@ -67,8 +68,10 @@ export class GameSessionService {
       await assertGameReleased(this.prisma, entry.gameItemId);
     }
 
-    const { session, playthrough } = await this.prisma.$transaction(
-      async (tx) => {
+    const { session, playthrough } = await retryAfterUniqueRace(() =>
+      // Two first sessions at once may both create cycle number 1; the
+      // retry then finds the one the other created.
+      this.prisma.$transaction(async (tx) => {
         const playthrough = await this.resolvePlaythrough(
           tx,
           entry,
@@ -107,7 +110,7 @@ export class GameSessionService {
           },
         });
         return { session: created, playthrough };
-      },
+      }),
     );
 
     await this.activity.emit({

@@ -255,6 +255,43 @@ describe("MediaItemService.upsertFromSource series/anime type", () => {
   });
 });
 
+describe("MediaItemService refresh", () => {
+  it("only marks the item fresh once its seasons and episodes are synced", async () => {
+    const prisma = {
+      mediaItem: { update: vi.fn().mockResolvedValue({ id: "media-1" }) },
+      mediaExternalId: { upsert: vi.fn() },
+      season: { upsert: vi.fn().mockRejectedValue(new Error("db hiccup")) },
+      mediaItemTranslation: { findMany: vi.fn().mockResolvedValue([]) },
+    } as unknown as PrismaService;
+    const service = new MediaItemService(
+      prisma,
+      undefined as never,
+      jobRunsStub,
+      undefined as never,
+    );
+    const refresh = (
+      service as unknown as {
+        refresh: (...args: unknown[]) => Promise<unknown>;
+      }
+    ).refresh.bind(service);
+
+    await expect(
+      refresh("TMDB", "42", "media-1", "SERIES", {
+        summary: { title: "Severance", posterUrl: null, isAdult: false },
+        externalIds: [],
+        seasons: [{ number: 1, episodes: [] }],
+      }),
+    ).rejects.toThrow("db hiccup");
+
+    // The next refresh must still see it as stale, or the missing seasons
+    // stay missing for a whole TTL.
+    for (const [call] of (prisma.mediaItem.update as Mock).mock.calls) {
+      expect(call.data).not.toHaveProperty("lastSyncedAt");
+      expect(call.data).not.toHaveProperty("syncFailedAt");
+    }
+  });
+});
+
 describe("MediaItemService episode sync", () => {
   function makeService(stored: unknown[]) {
     const prisma = {
