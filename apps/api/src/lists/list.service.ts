@@ -863,9 +863,16 @@ export class ListService {
         ErrorCode.ListMemberAlreadyEditor,
       );
 
-    const row = await this.prisma.listMember.create({
-      data: { listId: id, userId: target.id },
-    });
+    // The check above can lose to a concurrent add (double click): same answer.
+    const row = await this.prisma.listMember
+      .create({ data: { listId: id, userId: target.id } })
+      .catch((err: unknown) => {
+        if (!isUniqueViolation(err)) throw err;
+        throw new AppException(
+          HttpStatus.CONFLICT,
+          ErrorCode.ListMemberAlreadyEditor,
+        );
+      });
 
     const owner = await this.author(userId);
     const copy = await this.notifications.copyFor(target.id);
