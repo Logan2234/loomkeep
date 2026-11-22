@@ -68,6 +68,9 @@ export const DOMAIN_SETTING = {
 export type InstanceDomain = keyof typeof DOMAIN_SETTING;
 export type DomainSettingKey = (typeof DOMAIN_SETTING)[InstanceDomain];
 
+/** How many accounts keep each domain enabled: who turning it off touches. */
+export type InstanceDomainAccountsDto = Record<InstanceDomain, number>;
+
 /** What a fresh instance starts with — the same as the env defaults used to be. */
 export const DEFAULT_INSTANCE_SETTINGS: InstanceSettingsValues = {
   socialEnabled: false,

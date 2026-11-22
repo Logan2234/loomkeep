@@ -44,8 +44,8 @@ history from before it was started.
 ### Added
 
 - Admin › Instance settings › Domains: turn a domain off for the whole
-  instance. It disappears from the app for everyone, and the libraries come
-  back when it's turned on again.
+  instance, with the number of accounts that use it. It disappears from the
+  app for everyone, and the libraries come back when it's turned on again.
 - Admin dashboard: the Users tile shows how many accounts are online right
   now, refreshed live.
 - Calendar › Premieres: the series starting over the next eight weeks on the

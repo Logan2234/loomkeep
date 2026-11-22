@@ -8,6 +8,12 @@ import { setStoredInstanceSettings } from "./instance-settings.store";
 function setup(env: Record<string, string> = {}, { stored = true } = {}) {
   let row = { id: 1, ...DEFAULT_INSTANCE_SETTINGS, updatedAt: new Date() };
   const prisma = {
+    user: {
+      count: vi.fn(
+        ({ where }: { where: { enabledDomains: { has: string } } }) =>
+          Promise.resolve(where.enabledDomains.has === "MEDIA" ? 7 : 2),
+      ),
+    },
     instanceSettings: {
       findUnique: vi.fn(() => Promise.resolve(stored ? row : null)),
       create: vi.fn(({ data }: { data: object }) => {
@@ -105,6 +111,17 @@ describe("InstanceSettingsService", () => {
       service.update({ musicDomainEnabled: false }),
     ).rejects.toMatchObject({ code: "admin.no_domain_left" });
     expect(prisma.instanceSettings.upsert).toHaveBeenCalledTimes(1);
+  });
+
+  it("counts, for each domain, the accounts that keep it enabled", async () => {
+    const { service } = setup();
+
+    await expect(service.domainAccounts()).resolves.toEqual({
+      MEDIA: 7,
+      GAMES: 2,
+      BOOKS: 2,
+      MUSIC: 2,
+    });
   });
 
   it("keeps the env-era parsing: registration open unless exactly false", async () => {

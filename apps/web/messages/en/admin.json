@@ -631,6 +631,8 @@
   "admin_settings_domains_hint": "A domain turned off disappears from the app for every account. Library entries are kept and come back when it's turned on again.",
   "admin_settings_domain_missing_key": "Missing key: {env}",
   "admin_settings_domain_last": "At least one domain stays offered.",
+  "admin_settings_domain_accounts_one": "{count} account has it on",
+  "admin_settings_domain_accounts_many": "{count} accounts have it on",
   "admin_settings_social_hint": "Follows, friends, activity feed, shared lists and other people's reviews.",
   "admin_settings_gamification": "Gamification",
   "admin_settings_gamification_hint": "XP, levels, achievements and leaderboard.",

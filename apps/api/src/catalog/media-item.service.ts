@@ -3,7 +3,9 @@ import type {
   MediaDetailsDto,
   MediaType,
 } from "@loomkeep/shared";
+import { Domain } from "@loomkeep/shared";
 import { Injectable, Logger } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
 import { Cron, CronExpression } from "@nestjs/schedule";
 import { Prisma, type MediaItem } from "@prisma/client";
 import {
@@ -16,6 +18,7 @@ import {
 } from "../common/catalog-sync.util";
 import { mapWithConcurrency } from "../common/concurrency.util";
 import { isUniqueViolation } from "../common/prisma-error.util";
+import { isDomainOffered } from "../instance-settings/instance-domains";
 import { JOB_KEYS } from "../jobs/job-keys";
 import { JobRunService } from "../jobs/job-run.service";
 import { PrismaService } from "../prisma/prisma.service";
@@ -78,6 +81,7 @@ export class MediaItemService {
     private readonly anilistProvider: AnilistProvider,
     private readonly jobRuns: JobRunService,
     private readonly sagas: SagaSyncService,
+    private readonly config: ConfigService,
   ) {}
 
   /**
@@ -89,6 +93,8 @@ export class MediaItemService {
    */
   @Cron(CronExpression.EVERY_6_HOURS, { name: JOB_KEYS.MEDIA_REFRESH_STALE })
   async refreshStale(): Promise<number> {
+    // A domain the instance no longer offers may have lost its catalogue key.
+    if (!isDomainOffered(this.config, Domain.MEDIA)) return 0;
     const { refreshed } = await this.jobRuns.record(
       JOB_KEYS.MEDIA_REFRESH_STALE,
       async () => assertSomeRefreshed(await this.runRefreshStale(), "media"),

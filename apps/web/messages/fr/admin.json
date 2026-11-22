@@ -631,6 +631,8 @@
   "admin_settings_domains_hint": "Un domaine coupé disparaît de l'appli pour tous les comptes. Les bibliothèques sont gardées et reviennent quand on le rallume.",
   "admin_settings_domain_missing_key": "Clé manquante : {env}",
   "admin_settings_domain_last": "Au moins un domaine reste proposé.",
+  "admin_settings_domain_accounts_one": "{count} compte l'a activé",
+  "admin_settings_domain_accounts_many": "{count} comptes l'ont activé",
   "admin_settings_social_hint": "Abonnements, amis, flux d'activité, listes partagées et critiques des autres.",
   "admin_settings_gamification": "Gamification",
   "admin_settings_gamification_hint": "XP, niveaux, succès et classement.",

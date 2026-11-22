@@ -284,6 +284,8 @@ export const keys = {
   admin: {
     overview: () => ["admin", "overview"] as const,
     instanceSettings: () => ["admin", "instance-settings"] as const,
+    domainAccounts: () =>
+      ["admin", "instance-settings", "domain-accounts"] as const,
     reportsPendingCount: () => ["admin", "reports-pending-count"] as const,
     newsletterSends: () => ["admin", "newsletter-sends"] as const,
     newsletterPreview: (id: string, locale: string) =>

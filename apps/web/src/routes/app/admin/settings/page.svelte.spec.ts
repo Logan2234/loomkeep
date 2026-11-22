@@ -29,6 +29,9 @@ beforeEach(() => {
   };
   server.use(
     http.get(apiUrl("/admin/instance-settings"), () => HttpResponse.json(dto)),
+    http.get(apiUrl("/admin/instance-settings/domain-accounts"), () =>
+      HttpResponse.json({ MEDIA: 12, GAMES: 1, BOOKS: 0, MUSIC: 3 }),
+    ),
     http.patch(apiUrl("/admin/instance-settings"), async ({ request }) => {
       patched = (await request.json()) as UpdateInstanceSettingsDto;
       return HttpResponse.json({
@@ -102,6 +105,19 @@ describe("Admin instance settings", () => {
           env: "TWITCH_CLIENT_ID, TWITCH_CLIENT_SECRET",
         }),
       ),
+    ).toBeTruthy();
+  });
+
+  it("says how many accounts each domain would touch", async () => {
+    renderWithQuery(Page, {});
+
+    expect(
+      await screen.findByText(
+        m.admin_settings_domain_accounts_many({ count: 12 }),
+      ),
+    ).toBeTruthy();
+    expect(
+      screen.getByText(m.admin_settings_domain_accounts_one({ count: 1 })),
     ).toBeTruthy();
   });
 

@@ -3,6 +3,7 @@ import { Prisma } from "@prisma/client";
 import { vi, type Mock } from "vitest";
 import type { JobRunService } from "../jobs/job-run.service";
 import type { PrismaService } from "../prisma/prisma.service";
+import { allDomainsConfig } from "../test-utils/stubs";
 import { BookItemService } from "./book-item.service";
 import type { ProviderBookDetails } from "./providers/book-provider.types";
 import type { OpenLibraryProvider } from "./providers/open-library.provider";
@@ -63,7 +64,12 @@ function makeService(overrides: {
     getStoredDetails:
       overrides.getStoredDetails ?? vi.fn().mockResolvedValue(details),
   } as unknown as OpenLibraryProvider;
-  const service = new BookItemService(prisma, openLibraryProvider, jobRunsStub);
+  const service = new BookItemService(
+    prisma,
+    openLibraryProvider,
+    jobRunsStub,
+    allDomainsConfig(),
+  );
   return { service, prisma, openLibraryProvider };
 }
 

@@ -1,4 +1,5 @@
 import type {
+  InstanceDomainAccountsDto,
   InstanceSettingKey,
   InstanceSettingsDto,
   InstanceSettingsValues,
@@ -80,6 +81,17 @@ export class InstanceSettingsService implements OnModuleInit {
       lockedBy,
       missingEnv,
     };
+  }
+
+  async domainAccounts(): Promise<InstanceDomainAccountsDto> {
+    const counts = await Promise.all(
+      INSTANCE_DOMAINS.map((domain) =>
+        this.prisma.user.count({ where: { enabledDomains: { has: domain } } }),
+      ),
+    );
+    return Object.fromEntries(
+      INSTANCE_DOMAINS.map((domain, i) => [domain, counts[i]]),
+    ) as InstanceDomainAccountsDto;
   }
 
   async update(patch: UpdateInstanceSettingsDto): Promise<InstanceSettingsDto> {

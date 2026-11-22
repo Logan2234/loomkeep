@@ -1,5 +1,6 @@
 <script lang="ts">
   import {
+    getAdminDomainAccounts,
     getAdminInstanceSettings,
     updateAdminInstanceSettings,
   } from "#lib/api/client.js";
@@ -51,6 +52,12 @@
     enabled: auth.isAdmin,
   }));
   const settings = $derived(settingsQuery.data);
+  // Best effort: without the counts, the switches work all the same.
+  const accountsQuery = createApiQuery(() => ({
+    key: keys.admin.domainAccounts(),
+    fetch: getAdminDomainAccounts,
+    enabled: auth.isAdmin,
+  }));
 
   const saveMut = createApiMutation(() => ({
     mutate: (patch: UpdateInstanceSettingsDto) =>
@@ -238,6 +245,14 @@
             <div class="min-w-0 flex-1">
               <p class="font-semibold">{DOMAINS[domain].label}</p>
               <p class="text-dim text-sm">{hint}</p>
+              {#if accountsQuery.data}
+                {@const count = accountsQuery.data[domain]}
+                <p class="text-dim mt-1 text-xs">
+                  {count === 1
+                    ? m.admin_settings_domain_accounts_one({ count })
+                    : m.admin_settings_domain_accounts_many({ count })}
+                </p>
+              {/if}
               {#if missing}
                 <span class="text-warning mt-1 flex items-center gap-1 text-xs">
                   <Icon name="warning" class="h-3 w-3" />

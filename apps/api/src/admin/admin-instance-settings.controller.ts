@@ -1,8 +1,14 @@
-import type { InstanceSettingsDto } from "@loomkeep/shared";
+import type {
+  InstanceDomainAccountsDto,
+  InstanceSettingsDto,
+} from "@loomkeep/shared";
 import { Body, Controller, Get, Patch } from "@nestjs/common";
 import { ApiOkResponse } from "@nestjs/swagger";
 import { RequireRecentAuth } from "../auth/recent-auth.guard";
-import { InstanceSettingsResponseDto } from "../instance-settings/dto/instance-settings-response.dto";
+import {
+  InstanceDomainAccountsResponseDto,
+  InstanceSettingsResponseDto,
+} from "../instance-settings/dto/instance-settings-response.dto";
 import { UpdateInstanceSettingsRequestDto } from "../instance-settings/dto/update-instance-settings.dto";
 import { InstanceSettingsService } from "../instance-settings/instance-settings.service";
 import { AdminOnly } from "./admin-only.decorator";
@@ -17,6 +23,13 @@ export class AdminInstanceSettingsController {
   @ApiOkResponse({ type: InstanceSettingsResponseDto })
   get(): InstanceSettingsDto {
     return this.settings.toDto();
+  }
+
+  /** Accounts that keep each domain enabled, shown beside its switch. */
+  @Get("domain-accounts")
+  @ApiOkResponse({ type: InstanceDomainAccountsResponseDto })
+  domainAccounts(): Promise<InstanceDomainAccountsDto> {
+    return this.settings.domainAccounts();
   }
 
   @RequireRecentAuth()

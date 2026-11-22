@@ -1,6 +1,7 @@
 import { vi, type Mock } from "vitest";
 import type { JobRunService } from "../jobs/job-run.service";
 import type { PrismaService } from "../prisma/prisma.service";
+import { allDomainsConfig } from "../test-utils/stubs";
 import { MediaItemService } from "./media-item.service";
 
 // Runs `fn` straight through without touching the DB — refreshStale's own
@@ -24,6 +25,7 @@ describe("MediaItemService.refreshStale", () => {
       undefined as never,
       jobRunsStub,
       sagas as never,
+      allDomainsConfig(),
     );
     return { service, prisma, sagas };
   }
@@ -191,6 +193,7 @@ describe("MediaItemService refresh", () => {
       undefined as never,
       jobRunsStub,
       undefined as never,
+      allDomainsConfig(),
     );
     const refresh = (
       service as unknown as {
@@ -231,6 +234,7 @@ describe("MediaItemService episode sync", () => {
       undefined as never,
       jobRunsStub,
       undefined as never,
+      allDomainsConfig(),
     );
     return { service, prisma };
   }
@@ -396,6 +400,7 @@ describe("MediaItemService.translationFor", () => {
       undefined as never,
       jobRunsStub,
       undefined as never,
+      allDomainsConfig(),
     );
     return { service, prisma, tmdbProvider };
   }
@@ -540,6 +545,7 @@ describe("MediaItemService season and episode translations", () => {
       undefined as never,
       jobRunsStub,
       undefined as never,
+      allDomainsConfig(),
     );
 
     await service.translationFor("m1", "TMDB", "42", "SERIES", "fr");
@@ -588,6 +594,7 @@ describe("MediaItemService.translatedTitles", () => {
       undefined as never,
       jobRunsStub,
       undefined as never,
+      allDomainsConfig(),
     );
 
     expect(await service.translatedTitles(["m1"], "en")).toEqual(new Map());
@@ -610,6 +617,7 @@ describe("MediaItemService.translatedTitles", () => {
       undefined as never,
       jobRunsStub,
       undefined as never,
+      allDomainsConfig(),
     );
 
     const titles = await service.translatedTitles(["m1", "m2", "m3"], "fr");
@@ -653,6 +661,7 @@ describe("MediaItemService.forceRefresh (translation refresh)", () => {
       undefined as never,
       jobRunsStub,
       undefined as never,
+      allDomainsConfig(),
     );
 
     await service.forceRefresh("m1");
@@ -696,6 +705,7 @@ describe("MediaItemService.forceRefresh (translation refresh)", () => {
       undefined as never,
       jobRunsStub,
       undefined as never,
+      allDomainsConfig(),
     );
     vi.spyOn(service["logger"], "error").mockImplementation(() => undefined);
 

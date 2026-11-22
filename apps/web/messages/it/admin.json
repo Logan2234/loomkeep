@@ -631,6 +631,8 @@
   "admin_settings_domains_hint": "Un dominio disattivato scompare dall'app per tutti gli account. Le librerie vengono conservate e tornano quando lo si riattiva.",
   "admin_settings_domain_missing_key": "Chiave mancante: {env}",
   "admin_settings_domain_last": "Almeno un dominio resta disponibile.",
+  "admin_settings_domain_accounts_one": "{count} account l'ha attivato",
+  "admin_settings_domain_accounts_many": "{count} account l'hanno attivato",
   "admin_settings_social_hint": "Follow, amici, feed attività, liste condivise e recensioni degli altri.",
   "admin_settings_gamification": "Gamification",
   "admin_settings_gamification_hint": "XP, livelli, traguardi e classifica.",

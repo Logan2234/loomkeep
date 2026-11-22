@@ -1,4 +1,5 @@
 import type {
+  InstanceDomainAccountsDto,
   InstanceSettingKey,
   InstanceSettingsDto,
   InstanceSettingsValues,
@@ -47,6 +48,13 @@ class InstanceSettingsMissingEnvResponseDto implements Partial<
   gamesDomainEnabled?: string[];
   booksDomainEnabled?: string[];
   musicDomainEnabled?: string[];
+}
+
+export class InstanceDomainAccountsResponseDto implements InstanceDomainAccountsDto {
+  MEDIA!: number;
+  GAMES!: number;
+  BOOKS!: number;
+  MUSIC!: number;
 }
 
 export class InstanceSettingsResponseDto implements InstanceSettingsDto {

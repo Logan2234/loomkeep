@@ -98,6 +98,9 @@ export const getAdminSystemStats = () => typedRequest("/admin/stats/system");
 
 export const getAdminJobs = () => typedRequest("/admin/jobs");
 
+export const getAdminDomainAccounts = () =>
+  typedRequest("/admin/instance-settings/domain-accounts");
+
 export const getAdminInstanceSettings = () =>
   typedRequest("/admin/instance-settings");
 
