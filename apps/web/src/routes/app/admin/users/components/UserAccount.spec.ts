@@ -1,10 +1,10 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-describe("UserDrawer activity loading", () => {
+describe("UserAccount activity loading", () => {
   it("loads each heavy activity domain only when its modal opens", () => {
     const source = readFileSync(
-      new URL("./UserDrawer.svelte", import.meta.url),
+      new URL("./UserAccount.svelte", import.meta.url),
       "utf8",
     );
 

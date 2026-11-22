@@ -46,6 +46,10 @@ history from before it was started.
 - Admin › Instance settings › Domains: turn a domain off for the whole
   instance, with the number of accounts that use it. It disappears from the
   app for everyone, and the libraries come back when it's turned on again.
+- Admin › Users: each account opens on its own page, with its journey,
+  sign-in security, devices, API keys, preferences, imports and moderation
+  history. The table adds library size, domains and second factor columns,
+  sorting, and filters for suspended, inactive and not onboarded accounts.
 - Admin dashboard: the Users tile shows how many accounts are online right
   now, refreshed live.
 - Calendar › Premieres: the series starting over the next eight weeks on the
@@ -71,6 +75,11 @@ history from before it was started.
 
 ### Fixed
 
+- Self-hosting: the offsite backup no longer stops at the first missing
+  add-on database or at an unquoted `SMTP_FROM` in `.env`; it uploads what
+  it could, checks the upload and pings the health check's `/fail` on error.
+- A series with many seasons no longer fails to add when one season can't
+  be read from TMDB.
 - Importing a Goodreads, StoryGraph or Babelio CSV saved with Excel no longer
   comes out empty.
 - An inactive account now gets at least 30 days between the reminder email

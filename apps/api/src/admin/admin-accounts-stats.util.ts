@@ -105,6 +105,15 @@ export function ageInYears(birthDate: Date, now: Date): number {
   return age;
 }
 
+/** The bracket `birthDate` falls in at `now`, its label as the histogram shows it. */
+export function ageBracket(birthDate: Date, now: Date): string | null {
+  const age = ageInYears(birthDate, now);
+  return (
+    AGE_BUCKETS.find((b) => age >= b.min && (b.max === null || age <= b.max))
+      ?.label ?? null
+  );
+}
+
 /**
  * Age histogram over accounts with a birthDate set — always the full set of
  * brackets, zero-filled, same convention as the ratings distribution (a

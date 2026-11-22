@@ -38,6 +38,7 @@ import { AdminStatsController } from "./admin-stats.controller";
 import { AdminSystemStatsService } from "./admin-system-stats.service";
 import { AdminSystemController } from "./admin-system.controller";
 import { AdminUsersController } from "./admin-users.controller";
+import { AdminUsersService } from "./admin-users.service";
 import { AdminGuard } from "./admin.guard";
 import { AdminService } from "./admin.service";
 import { BackupService } from "./backup.service";
@@ -95,6 +96,7 @@ import { UpdateCheckService } from "./update-check.service";
     AdminGuard,
     PublicStatsGuard,
     AdminOverviewService,
+    AdminUsersService,
     AdminAccountsStatsService,
     AdminCatalogueStatsService,
     AdminSocialStatsService,

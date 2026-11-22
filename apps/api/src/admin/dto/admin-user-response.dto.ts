@@ -2,6 +2,9 @@ import type {
   AccountDeletionReason,
   AdminUserDto,
   AdminUserInvitationDto,
+  AdminUserLibraryCountsDto,
+  AdminUserSecondFactor,
+  Domain,
   Plan,
   Role,
 } from "@loomkeep/shared";
@@ -9,6 +12,13 @@ import type {
 class AdminUserInvitationResponseDto implements AdminUserInvitationDto {
   label!: string | null;
   createdByName!: string | null;
+}
+
+class AdminUserLibraryCountsResponseDto implements AdminUserLibraryCountsDto {
+  media!: number;
+  games!: number;
+  books!: number;
+  music!: number;
 }
 
 export class AdminUserResponseDto implements AdminUserDto {
@@ -28,4 +38,9 @@ export class AdminUserResponseDto implements AdminUserDto {
   deletionReason!: AccountDeletionReason | null;
   xp!: number;
   invitation!: AdminUserInvitationResponseDto | null;
+  libraryCounts!: AdminUserLibraryCountsResponseDto;
+  enabledDomains!: Domain[];
+  secondFactors!: AdminUserSecondFactor[];
+  onboarded!: boolean;
+  online!: boolean;
 }
