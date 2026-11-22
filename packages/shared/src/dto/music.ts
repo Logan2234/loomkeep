@@ -123,6 +123,11 @@ export interface UpdateMusicEntryDto {
  * (cached if persisted, else fetched live) + the current user's library state.
  * `entry` is null when the album is not in the library.
  */
+/** An album page's first paint, from the stored row (see StoredBookDetailDto). */
+export interface StoredMusicDetailDto {
+  detail: MusicDetailDto | null;
+}
+
 export interface MusicDetailDto extends MusicDetailsDto {
   /** Cached work id when a public discussion can exist; null for a live-only item. */
   commentTargetId: string | null;

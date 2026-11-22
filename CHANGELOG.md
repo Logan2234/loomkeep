@@ -48,6 +48,12 @@ history from before it was started.
   you can check where an image comes from and what it contains. See
   "Checking an image" in the upgrade docs.
 
+### Changed
+
+- Book, game and album pages open at once for a title someone on the
+  instance already tracks, from what Loomkeep keeps of it, then fill in the
+  rest (editions, ratings, similar titles…) as the catalogue answers.
+
 ### Fixed
 
 - Importing a Goodreads, StoryGraph or Babelio CSV saved with Excel no longer

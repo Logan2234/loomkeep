@@ -51,6 +51,12 @@ export function getMusicPile(filters: ListMusicFilters = {}) {
   });
 }
 
+/** What the instance already stores about an album (see getStoredBookDetail). */
+export const getStoredMusicDetail = (source: string, sourceId: string) =>
+  typedRequest("/music/{source}/{sourceId}/stored", {
+    params: { source: source.toLowerCase(), sourceId },
+  }).then((r) => r.detail);
+
 export const getMusicDetail = (source: string, sourceId: string) =>
   typedRequest("/music/{source}/{sourceId}", {
     params: { source: source.toLowerCase(), sourceId },

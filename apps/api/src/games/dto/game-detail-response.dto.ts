@@ -1,4 +1,8 @@
-import type { GameDetailDto, ReleaseDatePrecision } from "@loomkeep/shared";
+import type {
+  GameDetailDto,
+  ReleaseDatePrecision,
+  StoredGameDetailDto,
+} from "@loomkeep/shared";
 import { GameSource } from "@loomkeep/shared";
 import { ApiProperty } from "@nestjs/swagger";
 import { CreatorRefResponseDto } from "../../catalog/dto/creator-ref-response.dto";
@@ -44,4 +48,8 @@ export class GameDetailResponseDto implements GameDetailDto {
   timeToBeat!: GameTimeToBeatResponseDto | null;
   commentTargetId!: string | null;
   entry!: GameEntryResponseDto | null;
+}
+
+export class StoredGameDetailResponseDto implements StoredGameDetailDto {
+  detail!: GameDetailResponseDto | null;
 }

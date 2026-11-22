@@ -15,6 +15,7 @@ import {
   GameSessionSummaryDto,
   GameSource,
   LIBRARY_SAGA_SORTS,
+  StoredGameDetailDto,
 } from "@loomkeep/shared";
 import {
   Body,
@@ -48,7 +49,10 @@ import { filterAdultContent } from "../users/age.util";
 import { DomainGateService } from "../users/domain-gate.service";
 import { BulkUpdateGameEntriesBody } from "./dto/bulk-update-game-entries.dto";
 import { CreateGameSessionDto } from "./dto/create-game-session.dto";
-import { GameDetailResponseDto } from "./dto/game-detail-response.dto";
+import {
+  GameDetailResponseDto,
+  StoredGameDetailResponseDto,
+} from "./dto/game-detail-response.dto";
 import { GameEntryResponseDto } from "./dto/game-entry-response.dto";
 import {
   GameSagaResponseDto,
@@ -293,6 +297,23 @@ export class GamesController {
     parseGameSource(sourceParam);
     await this.domainGate.assertEnabled(user.sub, Domain.GAMES);
     return { saga: await this.gameSagaService.getSaga(user.sub, sourceId) };
+  }
+
+  /** The page's first paint, from the stored game alone (no IGDB call). */
+  @Get(":source/:sourceId/stored")
+  @ApiOkResponse({ type: StoredGameDetailResponseDto })
+  async getStoredGameDetail(
+    @CurrentUser() user: JwtPayload,
+    @Param("source") sourceParam: string,
+    @Param("sourceId") sourceId: string,
+  ): Promise<StoredGameDetailDto> {
+    return {
+      detail: await this.gameLibraryService.getStoredGameDetail(
+        user.sub,
+        parseGameSource(sourceParam),
+        sourceId,
+      ),
+    };
   }
 
   /** Game detail page: catalogue metadata + the user's library state. */
