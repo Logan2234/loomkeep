@@ -67,7 +67,7 @@ function setup(
     user: {
       findUnique: vi.fn().mockResolvedValue({ email: "test@example.com" }),
     },
-    importRun: { create: vi.fn() },
+    importRun: { create: vi.fn(), upsert: vi.fn() },
   };
   const ageGate = {
     allowsAdultContent: vi.fn().mockResolvedValue(overrides.allowAdult ?? true),

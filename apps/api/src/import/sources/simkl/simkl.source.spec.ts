@@ -32,7 +32,7 @@ function makeService(env: Record<string, string> = {}) {
     user: {
       findUnique: vi.fn().mockResolvedValue({ email: "test@example.com" }),
     },
-    importRun: { create: vi.fn() },
+    importRun: { create: vi.fn(), upsert: vi.fn() },
     $transaction: vi.fn((ops: Promise<unknown>[]) => Promise.all(ops)),
   };
   const mediaItemService = {

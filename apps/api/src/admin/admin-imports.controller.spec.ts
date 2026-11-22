@@ -56,6 +56,7 @@ describe("AdminImportsController.listImportRuns", () => {
         sourceId: "myanimelist",
         status: "SUCCESS",
         userId: "user-1",
+        id: { notIn: [] },
       },
       select: expect.objectContaining({
         id: true,

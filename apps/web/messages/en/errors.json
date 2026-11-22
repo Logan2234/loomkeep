@@ -60,6 +60,7 @@
   "apierr_catalog_search_query_required": "A search term is required.",
   "apierr_import_malformed_export": "The exported file couldn't be read or is malformed.",
   "apierr_import_job_not_found": "This import could not be found.",
+  "apierr_import_interrupted": "The server restarted during this import. What it had written is kept: run it again to finish.",
   "apierr_import_job_forbidden": "This import belongs to another account.",
   "apierr_import_job_source_mismatch": "The import source doesn't match.",
   "apierr_import_job_no_analysis": "This import hasn't been analyzed yet.",

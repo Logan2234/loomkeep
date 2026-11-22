@@ -60,6 +60,7 @@
   "apierr_catalog_search_query_required": "Serve un termine di ricerca.",
   "apierr_import_malformed_export": "Il file esportato non è leggibile o non è valido.",
   "apierr_import_job_not_found": "Impossibile trovare questa importazione.",
+  "apierr_import_interrupted": "Il server si è riavviato durante questa importazione. Ciò che era già stato scritto resta: riavviala per completarla.",
   "apierr_import_job_forbidden": "Questa importazione appartiene a un altro account.",
   "apierr_import_job_source_mismatch": "La fonte dell'importazione non corrisponde.",
   "apierr_import_job_no_analysis": "Questa importazione non è ancora stata analizzata.",

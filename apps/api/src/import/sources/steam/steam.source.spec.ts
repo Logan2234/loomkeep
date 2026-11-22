@@ -95,7 +95,7 @@ function build(over: Partial<Mocks> = {}): {
     user: {
       findUnique: vi.fn().mockResolvedValue({ email: "test@example.com" }),
     },
-    importRun: { create: vi.fn() },
+    importRun: { create: vi.fn(), upsert: vi.fn() },
   };
   const config = { getOrThrow: vi.fn().mockReturnValue("steam-key") };
   const quota = { record: vi.fn() };

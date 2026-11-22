@@ -98,7 +98,7 @@ export class ImportController {
   status(
     @CurrentUser() user: JwtPayload,
     @Param("jobId") jobId: string,
-  ): ImportJobDto {
-    return this.jobs.getJob(user.sub, jobId);
+  ): Promise<ImportJobDto> {
+    return this.jobs.pollJob(user.sub, jobId);
   }
 }
