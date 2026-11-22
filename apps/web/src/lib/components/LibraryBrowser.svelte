@@ -87,6 +87,7 @@
     type LibraryViewMode,
   } from "#lib/library-view.js";
   import { prefersReducedMotion } from "#lib/motion.js";
+  import { isFeatureNew } from "#lib/feature-badges.js";
   import { m } from "#lib/paraglide/messages.js";
   import { pileHeaderLabel } from "#lib/pile.js";
   import { filtersToSearchParams } from "#lib/saved-views.js";
@@ -212,8 +213,12 @@
   let platforms = $state<string[]>(
     initialParams.get("platform")?.split(",").filter(Boolean) ?? [],
   );
+  // BOOKS' extra filter: books anyone can read online for free.
+  let freeToRead = $state(initialParams.get("free") === "1");
   // Each domain has at most one extra filter, opaque to the loaders.
-  const extra = $derived(domain === "GAMES" ? platforms : types);
+  const extra = $derived(
+    domain === "GAMES" ? platforms : domain === "BOOKS" ? freeToRead : types,
+  );
 
   const reduced = prefersReducedMotion();
 
@@ -268,6 +273,7 @@
     favorite: favoritesOnly,
     types,
     platforms,
+    freeToRead,
     sort,
     order: reversed ? "asc" : "desc",
   });
@@ -278,6 +284,7 @@
     favoritesOnly = filters.favorite ?? false;
     types = filters.types ?? [];
     platforms = filters.platforms ?? [];
+    freeToRead = filters.freeToRead ?? false;
     // A sort this library no longer offers falls back to its default.
     sort = sorts.some((o) => o.value === filters.sort)
       ? filters.sort!
@@ -762,7 +769,7 @@
 
   const hasQuery = $derived(query.trim() !== "");
   const hasPanelFilters = $derived(
-    favoritesOnly || types.length > 0 || platforms.length > 0,
+    favoritesOnly || freeToRead || types.length > 0 || platforms.length > 0,
   );
   const hasFilters = $derived(statuses.length > 0 || hasPanelFilters);
   // The pills of what the list shows unpicked first, then, past a divider,
@@ -811,6 +818,7 @@
   function clearFilters() {
     statuses = [];
     favoritesOnly = false;
+    freeToRead = false;
     types = [];
     platforms = [];
   }
@@ -824,7 +832,10 @@
 
   // The statuses show on the toolbar itself: the badge counts the rest.
   const panelFilterCount = $derived(
-    types.length + platforms.length + (favoritesOnly ? 1 : 0),
+    types.length +
+      platforms.length +
+      (favoritesOnly ? 1 : 0) +
+      (freeToRead ? 1 : 0),
   );
 
   const savedViewsQuery = createApiQuery(() => ({
@@ -867,6 +878,15 @@
             key: "favorites",
             label: m.common_favorites(),
             remove: () => (favoritesOnly = false),
+          },
+        ]
+      : []),
+    ...(freeToRead
+      ? [
+          {
+            key: "free-to-read",
+            label: m.library_free_to_read_chip(),
+            remove: () => (freeToRead = false),
           },
         ]
       : []),
@@ -1218,6 +1238,18 @@
       else types = values as MediaType[];
     }}
     bind:favoritesOnly
+    switches={domain === "BOOKS"
+      ? [
+          {
+            key: "free-to-read",
+            label: m.library_free_to_read(),
+            hint: m.library_free_to_read_hint(),
+            isNew: isFeatureNew("free-to-read"),
+            checked: freeToRead,
+            onChange: (next: boolean) => (freeToRead = next),
+          },
+        ]
+      : []}
     {sorts}
     bind:sort
     bind:reversed

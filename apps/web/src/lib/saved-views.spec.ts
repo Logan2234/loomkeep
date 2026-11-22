@@ -21,6 +21,13 @@ describe("filtersToSearchParams", () => {
     ).toBe("");
   });
 
+  it("carries the books' free-to-read filter as free=1", () => {
+    expect(filtersToSearchParams({ freeToRead: true }).toString()).toBe(
+      "free=1",
+    );
+    expect(filtersToSearchParams({ freeToRead: false }).toString()).toBe("");
+  });
+
   it("writes the same keys the library page reads", () => {
     expect(
       filtersToSearchParams({

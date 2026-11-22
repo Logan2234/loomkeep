@@ -168,6 +168,7 @@ export class BooksController {
     @Query("page") page?: string,
     @Query("limit") limit?: string,
     @Query("lang") lang?: string,
+    @Query("free") free?: string,
   ): Promise<PagedResult<BookEntryDto>> {
     await this.domainGate.assertEnabled(user.sub, Domain.BOOKS);
     return this.bookLibraryService.listEntries(user.sub, {
@@ -181,6 +182,7 @@ export class BooksController {
         limit,
         lang,
       }),
+      freeToRead: free === "true",
     });
   }
 
@@ -230,10 +232,12 @@ export class BooksController {
     @Query("favorite") favorite?: string,
     @Query("status") status?: string | string[],
     @Query("lang") lang?: string,
+    @Query("free") free?: string,
   ): Promise<PileSummaryDto> {
     await this.domainGate.assertEnabled(user.sub, Domain.BOOKS);
     return this.bookLibraryService.getPile(user.sub, {
       ...parseListEntriesQuery({ q, favorite, status, lang }),
+      freeToRead: free === "true",
     });
   }
 

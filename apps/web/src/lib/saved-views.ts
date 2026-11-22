@@ -20,6 +20,7 @@ export function filtersToSearchParams(
   if (filters.types?.length) params.set("type", filters.types.join(","));
   if (filters.platforms?.length)
     params.set("platform", filters.platforms.join(","));
+  if (filters.freeToRead) params.set("free", "1");
 
   if (filters.sort && filters.sort !== defaultSort) {
     params.set("sort", filters.sort);

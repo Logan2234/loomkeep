@@ -23,6 +23,8 @@ export interface SavedViewFiltersDto {
   types?: MediaType[];
   /** GAMES only: the platforms played on. */
   platforms?: string[];
+  /** BOOKS only: books an edition of which anyone can read online for free. */
+  freeToRead?: boolean;
   sort?: string;
   order?: SortOrder;
 }

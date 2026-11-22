@@ -101,6 +101,11 @@ const ENTRY_INCLUDE = {
   },
 } satisfies Prisma.BookEntryInclude;
 
+/** The shared list filters, plus books anyone can read online for free. */
+export interface BookListFilters extends ListEntriesFilters {
+  freeToRead?: boolean;
+}
+
 type EntryWithBook = Prisma.BookEntryGetPayload<{
   include: typeof ENTRY_INCLUDE;
 }>;
@@ -434,7 +439,7 @@ export class BookLibraryService {
 
   async listEntries(
     userId: string,
-    filters: ListEntriesFilters,
+    filters: BookListFilters,
   ): Promise<PagedResult<BookEntryDto>> {
     const where = this.entryWhere(userId, filters);
     const ratingsOf = (bookItemIds: string[]) =>
@@ -503,7 +508,7 @@ export class BookLibraryService {
    */
   async getPile(
     userId: string,
-    filters: ListEntriesFilters,
+    filters: BookListFilters,
   ): Promise<PileSummaryDto> {
     const entries = await this.prisma.bookEntry.findMany({
       where: {
@@ -583,7 +588,7 @@ export class BookLibraryService {
 
   private entryWhere(
     userId: string,
-    filters: ListEntriesFilters,
+    filters: BookListFilters,
   ): Prisma.BookEntryWhereInput {
     const q = searchTerm(filters);
     const statuses = filters.statuses ?? [];
@@ -604,7 +609,13 @@ export class BookLibraryService {
       userId,
       AND: statusFilters.length > 0 ? [{ OR: statusFilters }] : undefined,
       favorite: filters.favorite ? true : undefined,
-      bookItem: q ? { title: titleContains(q) } : undefined,
+      bookItem:
+        q || filters.freeToRead
+          ? {
+              title: q ? titleContains(q) : undefined,
+              readOnlineUrl: filters.freeToRead ? { not: null } : undefined,
+            }
+          : undefined,
     };
   }
 
