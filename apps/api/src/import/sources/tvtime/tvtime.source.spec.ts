@@ -4,6 +4,7 @@ import type {
   ImportPlan,
   ImportPlanItem,
 } from "@loomkeep/shared";
+import { ErrorCode } from "@loomkeep/shared";
 import { vi } from "vitest";
 import { makeZip } from "../../../../test/make-zip";
 import { ImportJobService } from "../../import-job.service";
@@ -528,8 +529,11 @@ describe("TvTimeImportSource (via ImportJobService)", () => {
     expect(films!.sub).toBe("1 on the watchlist");
   });
 
-  it("commit with overwrite wipes history and library first", async () => {
-    const { prisma, tmdb, service } = makeService();
+  // Overwrite used to empty the whole library before the first write: one
+  // failing title, or a restart, left it amputated of every title not yet
+  // rewritten (audit 2026-11-17, BUG-04).
+  it("commit with overwrite replaces each title just before writing it, and the rest once all are in", async () => {
+    const { prisma, tmdb, mediaItemService, service } = makeService();
     tmdb.findSeriesSummaryByTvdbId.mockResolvedValue({
       source: "TMDB",
       sourceId: "500",
@@ -560,12 +564,96 @@ describe("TvTimeImportSource (via ImportJobService)", () => {
 
     expect(job.status).toBe("completed");
     expect(job.report!.overwrite).toBe(true);
-    expect(prisma.episodeWatch.deleteMany).toHaveBeenCalledWith({
-      where: { userId: "u1" },
-    });
     expect(prisma.libraryEntry.deleteMany).toHaveBeenCalledWith({
-      where: { userId: "u1" },
+      where: { userId: "u1", mediaItemId: "media-100" },
     });
+    expect(prisma.episodeWatch.deleteMany).toHaveBeenCalledWith({
+      where: {
+        userId: "u1",
+        episode: { season: { mediaItemId: "media-100" } },
+      },
+    });
+    // Its old row goes before its new one is written.
+    expect(
+      prisma.libraryEntry.deleteMany.mock.invocationCallOrder[0],
+    ).toBeLessThan(prisma.libraryEntry.upsert.mock.invocationCallOrder[0]);
+    expect(prisma.libraryEntry.deleteMany).toHaveBeenLastCalledWith({
+      where: { userId: "u1", mediaItemId: { notIn: ["media-100"] } },
+    });
+    expect(prisma.episodeWatch.deleteMany).toHaveBeenLastCalledWith({
+      where: {
+        userId: "u1",
+        episode: { season: { mediaItemId: { notIn: ["media-100"] } } },
+      },
+    });
+  });
+
+  it("commit with overwrite that fails on a title leaves the titles not yet rewritten alone", async () => {
+    const { prisma, tmdb, mediaItemService, service } = makeService();
+    tmdb.findSeriesSummaryByTvdbId.mockResolvedValue({
+      source: "TMDB",
+      sourceId: "500",
+      type: "SERIES",
+      title: "My Show",
+      year: 2024,
+      posterUrl: null,
+    });
+    prisma.season.findMany.mockResolvedValue([
+      { number: 1, episodes: [{ id: "e1", number: 1 }] },
+    ]);
+    prisma.mediaExternalId.findUnique.mockResolvedValue({
+      mediaItemId: "media-100",
+    });
+
+    const analyze = await service.startAnalyze(
+      "u1",
+      "tvtime",
+      analyzeDto({ episodesCsv: EPISODES_CSV, showsCsv: SHOWS_CSV }),
+    );
+    await runToEnd(service, "u1", analyze.id);
+    mediaItemService.upsertFromSource.mockRejectedValue(new Error("TMDB down"));
+
+    const commit = service.commit("u1", "tvtime", analyze.id, {
+      include: ["tvdb:100"],
+      overwrite: true,
+    });
+    const job = await runToEnd(service, "u1", commit.id);
+
+    expect(job.status).toBe("failed");
+    expect(prisma.libraryEntry.deleteMany).not.toHaveBeenCalled();
+    expect(prisma.episodeWatch.deleteMany).not.toHaveBeenCalled();
+  });
+
+  it("refuses an overwrite with nothing selected, which would only empty the library", async () => {
+    const { prisma, tmdb, mediaItemService, service } = makeService();
+    tmdb.findSeriesSummaryByTvdbId.mockResolvedValue({
+      source: "TMDB",
+      sourceId: "500",
+      type: "SERIES",
+      title: "My Show",
+      year: 2024,
+      posterUrl: null,
+    });
+    prisma.season.findMany.mockResolvedValue([
+      { number: 1, episodes: [{ id: "e1", number: 1 }] },
+    ]);
+    prisma.mediaExternalId.findUnique.mockResolvedValue({
+      mediaItemId: "media-100",
+    });
+
+    const analyze = await service.startAnalyze(
+      "u1",
+      "tvtime",
+      analyzeDto({ episodesCsv: EPISODES_CSV, showsCsv: SHOWS_CSV }),
+    );
+    await runToEnd(service, "u1", analyze.id);
+
+    expect(() =>
+      service.commit("u1", "tvtime", analyze.id, {
+        include: [],
+        overwrite: true,
+      }),
+    ).toThrow(expect.objectContaining({ code: ErrorCode.ValidationFailed }));
   });
 
   it("rejects an archive missing a required file", async () => {

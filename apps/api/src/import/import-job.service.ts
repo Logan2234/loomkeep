@@ -326,6 +326,14 @@ export class ImportJobService {
       overwrite: (dto.overwrite ?? false) && source.supportsOverwrite,
     };
 
+    // Replacing the library with nothing would only empty it.
+    if (decisions.overwrite && decisions.include.size === 0) {
+      throw new AppException(
+        HttpStatus.BAD_REQUEST,
+        ErrorCode.ValidationFailed,
+      );
+    }
+
     const { parsed, plan } = analyzed;
     const job = this.newJob(userId, sourceId, "commit", null);
     job.progress.total = decisions.include.size;

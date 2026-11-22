@@ -169,12 +169,11 @@ export abstract class BookCsvSource<
     const matchByKey = indexPlanMatches(plan);
     const allowAdult = await this.ageGate.allowsAdultContent(userId);
 
-    if (decisions.overwrite) {
-      // Reading cycles cascade on BookEntry delete.
-      await this.prisma.bookEntry.deleteMany({ where: { userId } });
-    }
-
     const tally = new Map<BookStatus, number>();
+    // Overwrite replaces book by book (see writeBook), and drops the books
+    // the export doesn't cover only once every one is written: a failure or
+    // a restart mid-way never costs a book not yet rewritten.
+    const written = new Set<string>();
 
     for (const key of decisions.include) {
       const index = rowIndex(key);
@@ -187,16 +186,29 @@ export abstract class BookCsvSource<
       }
 
       const status = (decisions.statuses.get(key) ?? row.status) as BookStatus;
-      const written = await this.writeBook(
+      const bookItemId = await this.writeBook(
         userId,
         match.source as BookSource,
         match.sourceId,
         status,
         row,
         allowAdult,
+        decisions.overwrite && written,
       );
-      if (written) tally.set(status, (tally.get(status) ?? 0) + 1);
+
+      if (bookItemId) {
+        written.add(bookItemId);
+        tally.set(status, (tally.get(status) ?? 0) + 1);
+      }
+
       progress.tick();
+    }
+
+    if (decisions.overwrite) {
+      // Reading cycles cascade on BookEntry delete.
+      await this.prisma.bookEntry.deleteMany({
+        where: { userId, bookItemId: { notIn: [...written] } },
+      });
     }
 
     const tiles: ImportReportTile[] = STATUS_GROUPS.flatMap((g) => {
@@ -213,7 +225,11 @@ export abstract class BookCsvSource<
     return { overwrite: decisions.overwrite, tiles };
   }
 
-  /** Fetch details, persist the book, and upsert the entry. False if skipped. */
+  /**
+   * Fetch details, persist the book, and upsert the entry: its book id, or
+   * null if skipped. Under overwrite its previous entry (and reading cycles)
+   * goes first, so the import's own replaces it whole.
+   */
   private async writeBook(
     userId: string,
     source: BookSource,
@@ -221,16 +237,24 @@ export abstract class BookCsvSource<
     status: BookStatus,
     row: TRow,
     allowAdult: boolean,
-  ): Promise<boolean> {
+    replace: { has(id: string): boolean } | false,
+  ): Promise<string | null> {
     const details = await this.bookItemService
       .providerFor()
       .getStoredDetails(sourceId)
       .catch(() => null);
-    if (!details) return false;
+    if (!details) return null;
     // Guard the commit too: the client sends its own list of ids.
-    if (details.summary.isAdult && !allowAdult) return false;
+    if (details.summary.isAdult && !allowAdult) return null;
 
     const bookItem = await this.bookItemService.persistDetails(source, details);
+
+    if (replace && !replace.has(bookItem.id)) {
+      await this.prisma.bookEntry.deleteMany({
+        where: { userId, bookItemId: bookItem.id },
+      });
+    }
+
     // A finished book with a known length reads as fully progressed.
     const currentPage =
       status === "READ" && details.pageCount ? details.pageCount : 0;
@@ -295,7 +319,7 @@ export abstract class BookCsvSource<
       });
     }
 
-    return true;
+    return bookItem.id;
   }
 
   /**

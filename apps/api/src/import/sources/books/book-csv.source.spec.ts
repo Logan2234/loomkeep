@@ -380,7 +380,10 @@ describe("BookCsvSource (via StoryGraphImportSource)", () => {
     expect(upsert).not.toHaveBeenCalled();
   });
 
-  it("commit with overwrite wipes the book library first", async () => {
+  // Overwrite used to empty the whole book library before the first write
+  // (audit 2026-11-17, BUG-04): a book is now replaced just before its own
+  // write, the rest only once every book is in.
+  it("commit with overwrite replaces each book as it goes, and the rest once all are in", async () => {
     const getStoredDetails = vi.fn().mockResolvedValue({
       summary: summary({ sourceId: "OL1W" }),
       overview: null,
@@ -411,7 +414,15 @@ describe("BookCsvSource (via StoryGraphImportSource)", () => {
     });
     const job = await runToEnd(service, "user-1", committed.id);
 
-    expect(deleteMany).toHaveBeenCalledWith({ where: { userId: "user-1" } });
+    expect(deleteMany).not.toHaveBeenCalledWith({
+      where: { userId: "user-1" },
+    });
+    expect(deleteMany).toHaveBeenCalledWith({
+      where: { userId: "user-1", bookItemId: "item-1" },
+    });
+    expect(deleteMany).toHaveBeenLastCalledWith({
+      where: { userId: "user-1", bookItemId: { notIn: ["item-1"] } },
+    });
     expect(job.report!.overwrite).toBe(true);
     expect(job.report!.tiles).toMatchObject([{ id: "READ", value: 1 }]);
   });
