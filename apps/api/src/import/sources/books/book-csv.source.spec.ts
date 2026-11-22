@@ -3,8 +3,11 @@ import type {
   ImportPlan,
   ImportPlanItem,
 } from "@loomkeep/shared";
+import { ErrorCode } from "@loomkeep/shared";
+import { HttpStatus } from "@nestjs/common";
 import { vi, type Mock } from "vitest";
 import type { BookItemService } from "../../../books/book-item.service";
+import { AppException } from "../../../common/app.exception";
 import type { PrismaService } from "../../../prisma/prisma.service";
 import type { AgeGateService } from "../../../users/age-gate.service";
 import { ImportJobService } from "../../import-job.service";
@@ -425,5 +428,55 @@ describe("BookCsvSource (via StoryGraphImportSource)", () => {
     });
     expect(job.report!.overwrite).toBe(true);
     expect(job.report!.tiles).toMatchObject([{ id: "READ", value: 1 }]);
+  });
+
+  // A book the catalogue no longer knows used to vanish from the report
+  // while the run counted as a success, and a provider outage did the same
+  // (audit 2026-11-17, BUG-05).
+  describe("a book whose details can't be fetched at commit", () => {
+    const csv = [
+      HEADER,
+      'X,Author,"",9782228937597,paperback,read,2025/07/23,"","",0,"",,,,,,,,"","","","",Yes',
+    ].join("\n");
+
+    async function commitWith(failure: AppException) {
+      const { service } = setup({
+        getStoredDetails: vi.fn().mockRejectedValue(failure),
+        resolveByIsbns: vi.fn().mockResolvedValue({
+          matches: new Map([["9782228937597", summary({ sourceId: "OL1W" })]]),
+          failedIsbns: [],
+        }),
+      });
+      const analyzed = await service.startAnalyze("user-1", "storygraph", {
+        input: csv,
+      });
+      await runToEnd(service, "user-1", analyzed.id);
+      const committed = service.commit("user-1", "storygraph", analyzed.id, {
+        include: ["b0"],
+      });
+      return runToEnd(service, "user-1", committed.id);
+    }
+
+    it("is counted as not found when the catalogue no longer has it", async () => {
+      const job = await commitWith(
+        new AppException(HttpStatus.NOT_FOUND, ErrorCode.CatalogItemNotFound),
+      );
+
+      expect(job.status).toBe("completed");
+      expect(job.report!.tiles).toContainEqual(
+        expect.objectContaining({ id: "notFound", value: 1 }),
+      );
+    });
+
+    it("fails the import on a provider outage, so it can be run again", async () => {
+      const job = await commitWith(
+        new AppException(
+          HttpStatus.BAD_GATEWAY,
+          ErrorCode.CatalogProviderUnavailable,
+        ),
+      );
+
+      expect(job.status).toBe("failed");
+    });
   });
 });

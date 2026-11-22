@@ -11,9 +11,10 @@ import type {
   ImportReportTile,
   ImportSource,
 } from "@loomkeep/shared";
-import { Domain, ReviewTargetType } from "@loomkeep/shared";
+import { Domain, ErrorCode, ReviewTargetType } from "@loomkeep/shared";
 import assert from "node:assert/strict";
 import { BookItemService } from "../../../books/book-item.service";
+import { AppException } from "../../../common/app.exception";
 import { mapWithConcurrency, refKey } from "../../../common/concurrency.util";
 import { PrismaService } from "../../../prisma/prisma.service";
 import { ReviewService } from "../../../reviews/review.service";
@@ -24,6 +25,9 @@ import {
   type ProgressReporter,
   indexPlanMatches,
 } from "../../import-source";
+
+/** writeBook's answer for a book the catalogue no longer knows. */
+const NOT_FOUND = Symbol("not found");
 
 // Rows are resolved against the catalogue a few at a time — fast enough for a
 // typical export while staying polite to the Open Library API.
@@ -170,6 +174,7 @@ export abstract class BookCsvSource<
     const allowAdult = await this.ageGate.allowsAdultContent(userId);
 
     const tally = new Map<BookStatus, number>();
+    let notFound = 0;
     // Overwrite replaces book by book (see writeBook), and drops the books
     // the export doesn't cover only once every one is written: a failure or
     // a restart mid-way never costs a book not yet rewritten.
@@ -196,7 +201,9 @@ export abstract class BookCsvSource<
         decisions.overwrite && written,
       );
 
-      if (bookItemId) {
+      if (bookItemId === NOT_FOUND) {
+        notFound++;
+      } else if (bookItemId) {
         written.add(bookItemId);
         tally.set(status, (tally.get(status) ?? 0) + 1);
       }
@@ -222,6 +229,15 @@ export abstract class BookCsvSource<
       tiles.push({ id: "books", label: "Books", value: 0, sub: null });
     }
 
+    if (notFound > 0) {
+      tiles.push({
+        id: "notFound",
+        label: "Not found",
+        value: notFound,
+        sub: null,
+      });
+    }
+
     return { overwrite: decisions.overwrite, tiles };
   }
 
@@ -238,12 +254,24 @@ export abstract class BookCsvSource<
     row: TRow,
     allowAdult: boolean,
     replace: { has(id: string): boolean } | false,
-  ): Promise<string | null> {
+  ): Promise<string | typeof NOT_FOUND | null> {
+    // Only "the catalogue no longer has it" is skipped: an outage fails the
+    // import (no free quota spent, the same analysis can be run again)
+    // instead of dropping the book while the run counts as a success.
     const details = await this.bookItemService
       .providerFor()
       .getStoredDetails(sourceId)
-      .catch(() => null);
-    if (!details) return null;
+      .catch((err: unknown) => {
+        if (
+          err instanceof AppException &&
+          err.code === ErrorCode.CatalogItemNotFound
+        ) {
+          return null;
+        }
+
+        throw err;
+      });
+    if (!details) return NOT_FOUND;
     // Guard the commit too: the client sends its own list of ids.
     if (details.summary.isAdult && !allowAdult) return null;
 
