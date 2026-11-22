@@ -9,7 +9,11 @@ vi.mock("$app/state", () => import("#lib/test/navigation.svelte.js"));
 vi.mock("$app/navigation", () => import("#lib/test/navigation.svelte.js"));
 vi.mock("#lib/auth.svelte.js", () => ({ auth: { isAdmin: true } }));
 vi.mock("#lib/config.svelte.js", () => ({
-  appConfig: { socialEnabled: true, gamificationEnabled: true },
+  appConfig: {
+    socialEnabled: true,
+    gamificationEnabled: true,
+    domains: ["MEDIA", "GAMES", "BOOKS", "MUSIC"],
+  },
 }));
 vi.mock("#lib/reports-pending.svelte.js", () => ({
   useReportsPendingCount: () => ({ count: 12, available: true }),
