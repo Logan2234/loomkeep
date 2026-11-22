@@ -10,11 +10,13 @@ import { BookLibraryService } from "../books/book-library.service";
 import { MediaItemService } from "../catalog/media-item.service";
 import { GameItemService } from "../games/game-item.service";
 import { GameLibraryService } from "../games/game-library.service";
+import { JOB_KEYS } from "../jobs/job-keys";
 import { LibraryService } from "../library/library.service";
 import { MusicItemService } from "../music/music-item.service";
 import { MusicLibraryService } from "../music/music-library.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import { allDomainsConfig, stubSagas } from "../test-utils/stubs";
+import { isUniqueViolation } from "./prisma-error.util";
 
 /**
  * Parity across the four library domains. Each has its own services and
@@ -623,5 +625,181 @@ describe.each(Object.keys(STORED_DETAIL) as Exclude<CacheDomain, "MEDIA">[])(
         ).resolves.toBeNull();
       });
     }
+  },
+);
+
+/**
+ * Each cached domain re-syncs stale works on a schedule. Music has no job by
+ * design (an album only refreshes when someone tracks it again, see
+ * CLAUDE.md): that is the one declared exception, not an oversight to copy.
+ */
+const REFRESH_CRON: Record<
+  CacheDomain,
+  { proto: object; jobKey: string } | null
+> = {
+  MEDIA: {
+    proto: MediaItemService.prototype,
+    jobKey: JOB_KEYS.MEDIA_REFRESH_STALE,
+  },
+  GAMES: {
+    proto: GameItemService.prototype,
+    jobKey: JOB_KEYS.GAMES_REFRESH_STALE,
+  },
+  BOOKS: {
+    proto: BookItemService.prototype,
+    jobKey: JOB_KEYS.BOOKS_REFRESH_STALE,
+  },
+  MUSIC: null,
+};
+
+// @nestjs/schedule's key for @Cron options (not exported from its index).
+const CRON_METADATA = "SCHEDULE_CRON_OPTIONS";
+
+describe.each(
+  (Object.keys(REFRESH_CRON) as CacheDomain[]).filter((d) => REFRESH_CRON[d]),
+)("%s stale refresh", (domain) => {
+  it("is scheduled under its own job key", () => {
+    const { proto, jobKey } = REFRESH_CRON[domain]!;
+    const refreshStale = (proto as { refreshStale?: () => unknown })
+      .refreshStale;
+
+    expect(refreshStale).toBeTypeOf("function");
+    expect(Reflect.getMetadata(CRON_METADATA, refreshStale!)).toMatchObject({
+      name: jobKey,
+    });
+  });
+});
+
+it("gives every *_REFRESH_STALE job key to a domain's refresh", () => {
+  const declared = Object.values(REFRESH_CRON)
+    .filter((cron) => cron !== null)
+    .map((cron) => cron.jobKey);
+  const refreshJobs = Object.entries(JOB_KEYS)
+    .filter(([name]) => name.endsWith("_REFRESH_STALE"))
+    .map(([, key]) => key);
+
+  expect([...refreshJobs].sort()).toEqual([...declared].sort());
+});
+
+/** A permissive collaborator: every method resolves to nothing. */
+const anything = () =>
+  new Proxy(
+    {},
+    {
+      get: (target: Record<string, Mock>, key: string) =>
+        (target[key] ??= vi.fn().mockResolvedValue(undefined)),
+    },
+  ) as never;
+
+/**
+ * Two "add" requests for the same work at once: the loser's insert hits the
+ * entry's unique key. Each domain's upsertEntry runs it once more and finds
+ * the winner's row (the P2002 must never surface as a 500).
+ */
+const UPSERT_ENTRY: Record<
+  CacheDomain,
+  {
+    entryModel: string;
+    add: (prisma: PrismaService) => Promise<unknown>;
+  }
+> = {
+  MEDIA: {
+    entryModel: "libraryEntry",
+    add: (prisma) =>
+      new LibraryService(
+        prisma,
+        {
+          upsertFromSource: vi
+            .fn()
+            .mockResolvedValue({ id: "item-1", type: "MOVIE" }),
+        } as never,
+        anything(),
+        anything(),
+        anything(),
+        anything(),
+        anything(),
+        anything(),
+        anything(),
+      ).upsertEntry(USER, {
+        source: "TMDB",
+        sourceId: "42",
+        type: "MOVIE",
+      } as never),
+  },
+  GAMES: {
+    entryModel: "gameEntry",
+    add: (prisma) =>
+      new GameLibraryService(
+        prisma,
+        {
+          upsertFromSource: vi.fn().mockResolvedValue({ id: "item-1" }),
+        } as never,
+        anything(),
+        anything(),
+        anything(),
+        anything(),
+        anything(),
+        anything(),
+        anything(),
+        anything(),
+        stubSagas(),
+      ).upsertEntry(USER, { source: "IGDB", sourceId: "42" } as never),
+  },
+  BOOKS: {
+    entryModel: "bookEntry",
+    add: (prisma) =>
+      new BookLibraryService(
+        prisma,
+        {
+          upsertFromSource: vi.fn().mockResolvedValue({ id: "item-1" }),
+        } as never,
+        anything(),
+        anything(),
+        anything(),
+        anything(),
+        anything(),
+        anything(),
+        anything(),
+        anything(),
+        stubSagas(),
+      ).upsertEntry(USER, { source: "OPEN_LIBRARY", sourceId: "42" } as never),
+  },
+  MUSIC: {
+    entryModel: "musicEntry",
+    add: (prisma) =>
+      new MusicLibraryService(
+        prisma,
+        {
+          upsertFromSource: vi.fn().mockResolvedValue({ id: "item-1" }),
+        } as never,
+        anything(),
+        anything(),
+        anything(),
+        anything(),
+        anything(),
+      ).upsertEntry(USER, { source: "MUSICBRAINZ", sourceId: "42" } as never),
+  },
+};
+
+describe.each(Object.keys(UPSERT_ENTRY) as CacheDomain[])(
+  "%s concurrent add of the same work",
+  (domain) => {
+    it("retries the insert that lost the race instead of failing on it", async () => {
+      const { entryModel, add } = UPSERT_ENTRY[domain];
+      const upsert = vi
+        .fn()
+        .mockRejectedValueOnce(uniqueViolation())
+        .mockResolvedValue({ id: ENTRY_ID, userId: USER });
+      const prisma = prismaDouble({
+        [entryModel]: { findUnique: vi.fn().mockResolvedValue(null), upsert },
+      });
+
+      // What follows the write (the DTO, XP, activity) isn't this case's
+      // business and may trip over the doubles: only the race matters.
+      const outcome = await add(prisma).catch((err: unknown) => err);
+
+      expect(upsert).toHaveBeenCalledTimes(2);
+      expect(isUniqueViolation(outcome)).toBe(false);
+    });
   },
 );
