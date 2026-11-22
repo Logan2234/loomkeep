@@ -45,6 +45,12 @@ history from before it was started.
 - Premium: subscribe to the series premieres from "Add to my calendar", with
   the same personal link as the release calendar.
 
+### Changed
+
+- Book, game and album pages open at once for a title someone on the
+  instance already tracks, from what Loomkeep keeps of it, then fill in the
+  rest (editions, ratings, similar titles…) as the catalogue answers.
+
 ### Fixed
 
 - Importing a Goodreads, StoryGraph or Babelio CSV saved with Excel no longer

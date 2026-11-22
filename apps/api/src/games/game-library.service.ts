@@ -787,29 +787,99 @@ export class GameLibraryService {
     const ref = await this.prisma.gameExternalId.findUnique({
       where: { source_externalId: { source, externalId: sourceId } },
     });
-    const entryRow = ref
-      ? await this.prisma.gameEntry.findUnique({
-          where: {
-            userId_gameItemId: { userId, gameItemId: ref.gameItemId },
-          },
-          include: ENTRY_INCLUDE,
-        })
-      : null;
 
     return {
       ...details,
       commentTargetId: ref?.gameItemId ?? null,
-      entry: entryRow
-        ? toEntryDto(
-            entryRow,
-            await this.reviews.getRating(
-              userId,
-              ReviewTargetType.GAME,
-              entryRow.gameItemId,
-            ),
-          )
-        : null,
+      entry: ref ? await this.entryFor(userId, ref.gameItemId) : null,
     };
+  }
+
+  /**
+   * The page's first paint for a game the instance already stores, without
+   * calling IGDB (see BookLibraryService.getStoredBookDetail). Null when
+   * nobody tracks it, or for an 18+ title the account can't see.
+   */
+  async getStoredGameDetail(
+    userId: string,
+    source: GameSource,
+    sourceId: string,
+  ): Promise<GameDetailDto | null> {
+    const ref = await this.prisma.gameExternalId.findUnique({
+      where: { source_externalId: { source, externalId: sourceId } },
+      include: { gameItem: true },
+    });
+    if (!ref) return null;
+
+    const item = ref.gameItem;
+
+    if (item.isAdult && !(await this.ageGate.allowsAdultContent(userId))) {
+      return null;
+    }
+
+    const hasTimeToBeat =
+      item.timeToBeatHastilyMin !== null ||
+      item.timeToBeatNormallyMin !== null ||
+      item.timeToBeatCompletelyMin !== null;
+
+    return {
+      source,
+      sourceId,
+      title: item.title,
+      year: item.releaseDate?.getUTCFullYear() ?? null,
+      coverUrl: item.coverUrl,
+      isAdult: item.isAdult,
+      overview: item.overview,
+      backdropUrl: item.backdropUrl,
+      screenshots: [],
+      genres: item.genres,
+      platforms: item.platforms,
+      releaseDate: item.releaseDate?.toISOString() ?? null,
+      releaseDatePrecision: item.releaseDatePrecision,
+      upcoming: isGameItemUpcoming(item),
+      website: null,
+      similarGames: [],
+      developers: [],
+      publishers: [],
+      developerRefs: [],
+      publisherRefs: [],
+      gameModes: [],
+      playerPerspectives: [],
+      franchiseGames: [],
+      franchiseName: null,
+      franchiseRefs: [],
+      ratings: [],
+      storyline: null,
+      trailerVideoId: null,
+      ageRatingImageUrls: [],
+      multiplayerModes: [],
+      timeToBeat: hasTimeToBeat
+        ? {
+            hastilyMin: item.timeToBeatHastilyMin,
+            normallyMin: item.timeToBeatNormallyMin,
+            completelyMin: item.timeToBeatCompletelyMin,
+            submissions: item.timeToBeatSubmissions ?? 0,
+          }
+        : null,
+      commentTargetId: item.id,
+      entry: await this.entryFor(userId, item.id),
+    };
+  }
+
+  private async entryFor(
+    userId: string,
+    gameItemId: string,
+  ): Promise<GameEntryDto | null> {
+    const entryRow = await this.prisma.gameEntry.findUnique({
+      where: { userId_gameItemId: { userId, gameItemId } },
+      include: ENTRY_INCLUDE,
+    });
+    if (!entryRow) return null;
+
+    return toEntryDto(
+      entryRow,
+      await this.reviews.getRating(userId, ReviewTargetType.GAME, gameItemId),
+    );
   }
 
   private assertEntryOwnership(userId: string, entryId: string) {

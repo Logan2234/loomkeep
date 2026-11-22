@@ -10,6 +10,7 @@ import {
   MusicEntryDto,
   MusicSearchResponseDto,
   MusicSource,
+  StoredMusicDetailDto,
 } from "@loomkeep/shared";
 import {
   Body,
@@ -38,7 +39,10 @@ import { parseEnumParam } from "../common/parse-enum-param.util";
 import { PileSummaryResponseDto } from "../stats/dto/pile-summary-response.dto";
 import { DomainGateService } from "../users/domain-gate.service";
 import { BulkUpdateMusicEntriesBody } from "./dto/bulk-update-music-entries.dto";
-import { MusicDetailResponseDto } from "./dto/music-detail-response.dto";
+import {
+  MusicDetailResponseDto,
+  StoredMusicDetailResponseDto,
+} from "./dto/music-detail-response.dto";
 import { MusicEntryResponseDto } from "./dto/music-entry-response.dto";
 import { MusicSearchResultResponseDto } from "./dto/music-search-response.dto";
 import { UpdateMusicEntryDto } from "./dto/update-music-entry.dto";
@@ -182,6 +186,24 @@ export class MusicController {
   ): Promise<void> {
     await this.domainGate.assertEnabled(user.sub, Domain.MUSIC);
     await this.musicLibraryService.deleteEntry(user.sub, entryId);
+  }
+
+  /** The page's first paint, from the stored album alone (no MusicBrainz call). */
+  @Get(":source/:sourceId/stored")
+  @ApiOkResponse({ type: StoredMusicDetailResponseDto })
+  async getStoredMusicDetail(
+    @CurrentUser() user: JwtPayload,
+    @Param("source") sourceParam: string,
+    @Param("sourceId") sourceId: string,
+  ): Promise<StoredMusicDetailDto> {
+    await this.domainGate.assertEnabled(user.sub, Domain.MUSIC);
+    return {
+      detail: await this.musicLibraryService.getStoredMusicDetail(
+        user.sub,
+        parseMusicSource(sourceParam),
+        sourceId,
+      ),
+    };
   }
 
   /** Album detail page: catalogue metadata + the user's library state. */

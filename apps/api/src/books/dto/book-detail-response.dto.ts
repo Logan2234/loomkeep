@@ -1,4 +1,4 @@
-import type { BookDetailDto } from "@loomkeep/shared";
+import type { BookDetailDto, StoredBookDetailDto } from "@loomkeep/shared";
 import { BookSource } from "@loomkeep/shared";
 import { ApiProperty } from "@nestjs/swagger";
 import { CreatorRefResponseDto } from "../../catalog/dto/creator-ref-response.dto";
@@ -38,4 +38,8 @@ export class BookDetailResponseDto implements BookDetailDto {
   externalLinks!: { label: string; url: string }[];
   commentTargetId!: string | null;
   entry!: BookEntryResponseDto | null;
+}
+
+export class StoredBookDetailResponseDto implements StoredBookDetailDto {
+  detail!: BookDetailResponseDto | null;
 }

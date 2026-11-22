@@ -530,29 +530,72 @@ export class MusicLibraryService {
     const ref = await this.prisma.musicExternalId.findUnique({
       where: { source_externalId: { source, externalId: sourceId } },
     });
-    const entryRow = ref
-      ? await this.prisma.musicEntry.findUnique({
-          where: {
-            userId_musicItemId: { userId, musicItemId: ref.musicItemId },
-          },
-          include: ENTRY_INCLUDE,
-        })
-      : null;
 
     return {
       ...details,
       commentTargetId: ref?.musicItemId ?? null,
-      entry: entryRow
-        ? toEntryDto(
-            entryRow,
-            await this.reviews.getRating(
-              userId,
-              ReviewTargetType.MUSIC,
-              entryRow.musicItemId,
-            ),
-          )
-        : null,
+      entry: ref ? await this.entryFor(userId, ref.musicItemId) : null,
     };
+  }
+
+  /**
+   * The page's first paint for an album the instance already stores, without
+   * calling MusicBrainz (see BookLibraryService.getStoredBookDetail). The
+   * track list and links stay empty until getMusicDetail answers. Null when
+   * nobody tracks the album.
+   */
+  async getStoredMusicDetail(
+    userId: string,
+    source: MusicSource,
+    sourceId: string,
+  ): Promise<MusicDetailDto | null> {
+    const ref = await this.prisma.musicExternalId.findUnique({
+      where: { source_externalId: { source, externalId: sourceId } },
+      include: { musicItem: true },
+    });
+    if (!ref) return null;
+
+    const item = ref.musicItem;
+    return {
+      source,
+      sourceId,
+      title: item.title,
+      artists: item.artists,
+      year: item.releaseDate?.getUTCFullYear() ?? null,
+      coverUrl: item.coverUrl,
+      genres: item.genres,
+      albumType: item.albumType,
+      trackCount: item.trackCount,
+      releaseDate: item.releaseDate?.toISOString() ?? null,
+      releaseDatePrecision: null,
+      sameArtistAlbums: [],
+      tags: [],
+      disambiguation: null,
+      externalLinks: [],
+      label: null,
+      catalogNumber: null,
+      tracks: [],
+      totalDurationMs: null,
+      extraCoverImages: [],
+      commentTargetId: item.id,
+      entry: await this.entryFor(userId, item.id),
+    };
+  }
+
+  private async entryFor(
+    userId: string,
+    musicItemId: string,
+  ): Promise<MusicEntryDto | null> {
+    const entryRow = await this.prisma.musicEntry.findUnique({
+      where: { userId_musicItemId: { userId, musicItemId } },
+      include: ENTRY_INCLUDE,
+    });
+    if (!entryRow) return null;
+
+    return toEntryDto(
+      entryRow,
+      await this.reviews.getRating(userId, ReviewTargetType.MUSIC, musicItemId),
+    );
   }
 
   private assertEntryOwnership(userId: string, entryId: string) {

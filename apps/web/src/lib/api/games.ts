@@ -62,6 +62,12 @@ export function getGamesPile(filters: ListGamesFilters = {}) {
   });
 }
 
+/** What the instance already stores about a game (see getStoredBookDetail). */
+export const getStoredGameDetail = (source: string, sourceId: string) =>
+  typedRequest("/games/{source}/{sourceId}/stored", {
+    params: { source: source.toLowerCase(), sourceId },
+  }).then((r) => r.detail);
+
 export const getGameDetail = (source: string, sourceId: string) =>
   typedRequest("/games/{source}/{sourceId}", {
     params: { source: source.toLowerCase(), sourceId },

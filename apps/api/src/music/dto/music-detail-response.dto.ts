@@ -1,4 +1,4 @@
-import type { MusicDetailDto } from "@loomkeep/shared";
+import type { MusicDetailDto, StoredMusicDetailDto } from "@loomkeep/shared";
 import { MusicSource } from "@loomkeep/shared";
 import { ApiProperty } from "@nestjs/swagger";
 import { MusicEntryResponseDto } from "./music-entry-response.dto";
@@ -32,4 +32,8 @@ export class MusicDetailResponseDto implements MusicDetailDto {
   extraCoverImages!: { url: string; type: string }[];
   commentTargetId!: string | null;
   entry!: MusicEntryResponseDto | null;
+}
+
+export class StoredMusicDetailResponseDto implements StoredMusicDetailDto {
+  detail!: MusicDetailResponseDto | null;
 }
