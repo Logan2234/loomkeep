@@ -211,7 +211,8 @@ export abstract class BookCsvSource<
       progress.tick();
     }
 
-    if (decisions.overwrite) {
+    // Nothing written replaces nothing, rather than emptying the library.
+    if (decisions.overwrite && written.size > 0) {
       // Reading cycles cascade on BookEntry delete.
       await this.prisma.bookEntry.deleteMany({
         where: { userId, bookItemId: { notIn: [...written] } },

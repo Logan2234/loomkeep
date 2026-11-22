@@ -468,6 +468,35 @@ describe("BookCsvSource (via StoryGraphImportSource)", () => {
       );
     });
 
+    it("leaves the library alone under overwrite when no book could be written", async () => {
+      const { service, deleteMany } = setup({
+        getStoredDetails: vi
+          .fn()
+          .mockRejectedValue(
+            new AppException(
+              HttpStatus.NOT_FOUND,
+              ErrorCode.CatalogItemNotFound,
+            ),
+          ),
+        resolveByIsbns: vi.fn().mockResolvedValue({
+          matches: new Map([["9782228937597", summary({ sourceId: "OL1W" })]]),
+          failedIsbns: [],
+        }),
+      });
+      const analyzed = await service.startAnalyze("user-1", "storygraph", {
+        input: csv,
+      });
+      await runToEnd(service, "user-1", analyzed.id);
+      const committed = service.commit("user-1", "storygraph", analyzed.id, {
+        include: ["b0"],
+        overwrite: true,
+      });
+      const job = await runToEnd(service, "user-1", committed.id);
+
+      expect(job.status).toBe("completed");
+      expect(deleteMany).not.toHaveBeenCalled();
+    });
+
     it("fails the import on a provider outage, so it can be run again", async () => {
       const job = await commitWith(
         new AppException(

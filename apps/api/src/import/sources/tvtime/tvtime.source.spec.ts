@@ -624,6 +624,27 @@ describe("TvTimeImportSource (via ImportJobService)", () => {
     expect(prisma.episodeWatch.deleteMany).not.toHaveBeenCalled();
   });
 
+  it("commit with overwrite that writes no title leaves the library alone", async () => {
+    const { prisma, service } = makeService();
+    const analyze = await service.startAnalyze(
+      "u1",
+      "tvtime",
+      analyzeDto({ episodesCsv: EPISODES_CSV, showsCsv: SHOWS_CSV }),
+    );
+    await runToEnd(service, "u1", analyze.id);
+
+    // Selected, but nothing of it resolves to a work: nothing gets written.
+    const commit = service.commit("u1", "tvtime", analyze.id, {
+      include: ["tvdb:unknown"],
+      overwrite: true,
+    });
+    const job = await runToEnd(service, "u1", commit.id);
+
+    expect(job.status).toBe("completed");
+    expect(prisma.libraryEntry.deleteMany).not.toHaveBeenCalled();
+    expect(prisma.episodeWatch.deleteMany).not.toHaveBeenCalled();
+  });
+
   it("refuses an overwrite with nothing selected, which would only empty the library", async () => {
     const { prisma, tmdb, mediaItemService, service } = makeService();
     tmdb.findSeriesSummaryByTvdbId.mockResolvedValue({

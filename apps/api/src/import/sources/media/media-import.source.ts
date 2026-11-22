@@ -417,7 +417,9 @@ export abstract class MediaImportSource<
       progress.tick();
     }
 
-    if (decisions.overwrite) {
+    // Nothing written (every title unresolved) replaces nothing: emptying
+    // the library then would be the old failure all over again.
+    if (decisions.overwrite && replaced.size > 0) {
       const kept = [...replaced];
       await this.prisma.$transaction([
         this.prisma.episodeWatch.deleteMany({
