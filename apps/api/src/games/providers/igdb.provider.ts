@@ -538,20 +538,31 @@ export class IgdbProvider implements GameCatalogProvider {
 
   /** POST an Apicalypse query to an IGDB endpoint with a valid access token. */
   private async query<T>(path: string, body: string): Promise<T> {
-    await this.throttle.wait();
+    const headers: Record<string, string> = {
+      "Client-ID": this.configService.getOrThrow<string>("TWITCH_CLIENT_ID"),
+      Accept: "application/json",
+    };
     return fetchJson<T>(
       `${API_URL}${path}`,
+      { method: "POST", headers, body },
       {
-        method: "POST",
-        headers: {
-          "Client-ID":
-            this.configService.getOrThrow<string>("TWITCH_CLIENT_ID"),
-          Authorization: `Bearer ${await this.accessToken()}`,
-          Accept: "application/json",
+        sourceLabel: "IGDB",
+        onAttempt: () => this.quota.record("igdb"),
+        // Per attempt, retries included: the throttle (IGDB's 4 req/s), and
+        // the token, which a 401 below has dropped if Twitch revoked it early.
+        beforeAttempt: async () => {
+          await this.throttle.wait();
+          headers.Authorization = `Bearer ${await this.accessToken()}`;
         },
-        body,
+        isRetryable: (status) => {
+          if (status === 401) {
+            this.token = null;
+            return true;
+          }
+
+          return status === 429 || status >= 500;
+        },
       },
-      { sourceLabel: "IGDB", onAttempt: () => this.quota.record("igdb") },
     );
   }
 
