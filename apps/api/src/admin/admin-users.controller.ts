@@ -1,5 +1,6 @@
 import {
   type AdminUserCommentDto,
+  type AdminUserDetailDto,
   type AdminUserDto,
   type AdminUserFilter,
   type AdminUserLibraryEntryDto,
@@ -8,6 +9,7 @@ import {
   type AdminUserOptionDto,
   type AdminUserPlanDto,
   type AdminUserRoleDto,
+  type AdminUserSort,
   type AdminUserXpDto,
   type MyListDto,
   type MyReviewDto,
@@ -18,6 +20,8 @@ import {
   type UserSummaryDto,
   ADMIN_USER_FILTERS,
   ADMIN_USER_LIBRARY_KINDS,
+  ADMIN_USER_SORTS,
+  Domain,
   ErrorCode,
   ModerationMeasure,
   ReportTargetType,
@@ -72,14 +76,14 @@ import { ReviewService } from "../reviews/review.service";
 import { SecurityEventService } from "../security/security-event.service";
 import { FollowService } from "../social/follow.service";
 import { AccountDeletionService } from "../users/account-deletion.service";
-import { avatarUrl } from "../users/avatar.util";
 import { DataExportService } from "../users/data-export.service";
 import { UserDataExportResponseDto } from "../users/dto/data-export/user-data-export-response.dto";
 import { ScheduledDeletionService } from "../users/scheduled-deletion.service";
-import { isSuspended } from "../users/suspension.util";
 import { AdminOnly } from "./admin-only.decorator";
+import { AdminUsersService } from "./admin-users.service";
 import { AdjustAdminUserXpDto } from "./dto/adjust-admin-user-xp.dto";
 import { AdminUserCommentResponseDto } from "./dto/admin-user-comment-response.dto";
+import { AdminUserDetailResponseDto } from "./dto/admin-user-detail-response.dto";
 import { AdminUserLibraryEntryResponseDto } from "./dto/admin-user-library-entry-response.dto";
 import { AdminUserLibraryStatsResponseDto } from "./dto/admin-user-library-stats-response.dto";
 import { AdminUserOptionResponseDto } from "./dto/admin-user-option-response.dto";
@@ -94,6 +98,9 @@ import { UpdateAdminUserRoleDto } from "./dto/update-admin-user-role.dto";
 const LIBRARY_KINDS_ENUM = Object.fromEntries(
   ADMIN_USER_LIBRARY_KINDS.map((kind) => [kind, kind]),
 );
+
+/** An account unseen for this long is "inactive" in the users filter. */
+const INACTIVE_AFTER_MS = 90 * 24 * 60 * 60 * 1000;
 
 /** A session used within this window counts as active in the users filter. */
 const ACTIVE_SESSION_WINDOW_MS = 24 * 60 * 60 * 1000;
@@ -117,6 +124,7 @@ export class AdminUsersController {
     private readonly xp: XpService,
     private readonly accountDeletion: AccountDeletionService,
     private readonly scheduledDeletions: ScheduledDeletionService,
+    private readonly adminUsers: AdminUsersService,
   ) {}
 
   /**
@@ -138,6 +146,9 @@ export class AdminUsersController {
     @Query("newsletter") newsletter?: string,
     @Query("push") push?: string,
     @Query("session") session?: string,
+    @Query("domain") domain?: string,
+    @Query("sort") sort?: string,
+    @Query("dir") dir?: string,
   ): Promise<PagedResult<AdminUserDto>> {
     const {
       skip,
@@ -168,6 +179,16 @@ export class AdminUsersController {
       ...(activeFilter === "deletion"
         ? { deletionScheduledFor: { not: null } }
         : {}),
+      ...(activeFilter === "suspended"
+        ? { suspendedUntil: { gt: new Date() } }
+        : {}),
+      ...(activeFilter === "onboarding" ? { onboardedAt: null } : {}),
+      ...(activeFilter === "inactive"
+        ? { lastActiveAt: { lt: new Date(Date.now() - INACTIVE_AFTER_MS) } }
+        : {}),
+      ...(Object.values(Domain).includes(domain as Domain)
+        ? { enabledDomains: { has: domain as Domain } }
+        : {}),
     };
 
     const createdRange = dateRange(createdFrom, createdTo);
@@ -187,11 +208,18 @@ export class AdminUsersController {
     if (mfa === "yes") {
       where.AND = [
         ...(Array.isArray(where.AND) ? where.AND : []),
-        { OR: [{ mfaTotpEnabled: true }, { mfaEmailEnabled: true }] },
+        {
+          OR: [
+            { mfaTotpEnabled: true },
+            { mfaEmailEnabled: true },
+            { webauthnCredentials: { some: {} } },
+          ],
+        },
       ];
     } else if (mfa === "no") {
       where.mfaTotpEnabled = false;
       where.mfaEmailEnabled = false;
+      where.webauthnCredentials = { none: {} };
     }
 
     if (newsletter === "yes" || newsletter === "no") {
@@ -214,58 +242,25 @@ export class AdminUsersController {
         session === "yes" ? { some: activeSession } : { none: activeSession };
     }
 
-    const rows = await this.prisma.user.findMany({
+    const rows = await this.adminUsers.page(
       where,
-      orderBy: { createdAt: "desc" },
+      ADMIN_USER_SORTS.includes(sort as AdminUserSort)
+        ? (sort as AdminUserSort)
+        : "created",
+      dir !== "asc",
       skip,
-      take: take + 1,
-      include: {
-        score: { select: { xp: true } },
-        invitation: {
-          select: {
-            label: true,
-            createdBy: { select: { displayName: true } },
-          },
-        },
-      },
-    });
+      take + 1,
+    );
     const { items: users, hasMore } = toPagedResult(rows, pageLimit);
 
-    // Same batched pattern — most accounts have no row yet (defaults to
-    // FREE, see EntitlementService), so this is a lookup, not a per-user query.
-    const entitlements = await this.prisma.userEntitlement.findMany({
-      where: { userId: { in: users.map((u) => u.id) } },
-      select: { userId: true, plan: true },
-    });
-    const planByUserId = new Map(entitlements.map((e) => [e.userId, e.plan]));
+    return { hasMore, items: await this.adminUsers.toRows(users) };
+  }
 
-    return {
-      hasMore,
-      items: users.map((u) => ({
-        id: u.id,
-        email: u.email,
-        username: u.username,
-        displayName: u.displayName,
-        avatarUrl: avatarUrl(u),
-        emailVerified: u.emailVerified,
-        role: u.role,
-        plan: planByUserId.get(u.id) ?? "FREE",
-        createdAt: u.createdAt.toISOString(),
-        lastActiveAt: u.lastActiveAt?.toISOString() ?? null,
-        inactivityWarningSentAt:
-          u.inactivityWarningSentAt?.toISOString() ?? null,
-        suspendedUntil: isSuspended(u) ? u.suspendedUntil!.toISOString() : null,
-        deletionScheduledFor: u.deletionScheduledFor?.toISOString() ?? null,
-        deletionReason: u.deletionScheduledFor ? u.deletionReason : null,
-        xp: u.score?.xp ?? 0,
-        invitation: u.invitation
-          ? {
-              label: u.invitation.label,
-              createdByName: u.invitation.createdBy?.displayName ?? null,
-            }
-          : null,
-      })),
-    };
+  /** Everything the account page shows beyond the table row. */
+  @Get("users/:userId")
+  @ApiOkResponse({ type: AdminUserDetailResponseDto })
+  getUser(@Param("userId") userId: string): Promise<AdminUserDetailDto> {
+    return this.adminUsers.detail(userId);
   }
 
   /** Compact server-searched account list for admin pickers. */

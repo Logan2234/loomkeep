@@ -7,6 +7,7 @@ import type { CommentService } from "../comments/comment.service";
 import { AppException } from "../common/app.exception";
 import { DEFAULT_PAGE_SIZE } from "../common/pagination.util";
 import type { EntitlementService } from "../entitlements/entitlement.service";
+import type { EventsGateway } from "../events/events.gateway";
 import type { XpService } from "../gamification/xp.service";
 import type { ListService } from "../lists/list.service";
 import type { MailService } from "../mail/mail.service";
@@ -21,6 +22,27 @@ import { AccountDeletionService } from "../users/account-deletion.service";
 import type { DataExportService } from "../users/data-export.service";
 import type { ScheduledDeletionService } from "../users/scheduled-deletion.service";
 import { AdminUsersController } from "./admin-users.controller";
+import { AdminUsersService } from "./admin-users.service";
+
+/** A `User` row as the list reads it, with what each test sets. */
+function userRow(overrides: Record<string, unknown>) {
+  return {
+    email: "a@example.com",
+    username: "a",
+    displayName: "A",
+    emailVerified: true,
+    role: "USER",
+    createdAt: new Date("2026-01-01T00:00:00.000Z"),
+    lastActiveAt: null,
+    inactivityWarningSentAt: null,
+    enabledDomains: ["MEDIA"],
+    onboardedAt: new Date("2026-01-01T00:00:00.000Z"),
+    mfaTotpEnabled: false,
+    mfaEmailEnabled: false,
+    _count: { webauthnCredentials: 0 },
+    ...overrides,
+  };
+}
 
 function jwtPayload(sub: string): JwtPayload {
   return { sub, email: `${sub}@example.com` };
@@ -45,10 +67,18 @@ function makeController() {
     securityEvent: { updateMany: vi.fn() },
     invitation: { updateMany: vi.fn() },
     notification: { deleteMany: vi.fn() },
-    libraryEntry: { count: vi.fn(), findMany: vi.fn() },
-    gameEntry: { count: vi.fn(), findMany: vi.fn() },
-    bookEntry: { count: vi.fn() },
-    musicEntry: { count: vi.fn() },
+    libraryEntry: {
+      count: vi.fn(),
+      findMany: vi.fn(),
+      groupBy: vi.fn().mockResolvedValue([]),
+    },
+    gameEntry: {
+      count: vi.fn(),
+      findMany: vi.fn(),
+      groupBy: vi.fn().mockResolvedValue([]),
+    },
+    bookEntry: { count: vi.fn(), groupBy: vi.fn().mockResolvedValue([]) },
+    musicEntry: { count: vi.fn(), groupBy: vi.fn().mockResolvedValue([]) },
   } as unknown as PrismaService;
   const authService = {
     revokeAllSessions: vi.fn(),
@@ -111,6 +141,9 @@ function makeController() {
     xp,
     accountDeletion,
     scheduledDeletions,
+    new AdminUsersService(prisma, {
+      connectedUserIds: vi.fn().mockResolvedValue(new Set(["user-1"])),
+    } as unknown as EventsGateway),
   );
   return {
     controller,
@@ -130,28 +163,18 @@ describe("AdminUsersController.listUsers", () => {
   it("maps each account's persisted lastActiveAt/inactivityWarningSentAt", async () => {
     const { controller, prisma } = makeController();
     (prisma.user.findMany as Mock).mockResolvedValue([
-      {
+      userRow({
         id: "user-1",
-        email: "a@example.com",
-        username: "a",
-        displayName: "A",
-        emailVerified: true,
-        role: "USER",
-        createdAt: new Date("2026-01-01T00:00:00.000Z"),
         lastActiveAt: new Date("2026-02-01T00:00:00.000Z"),
         inactivityWarningSentAt: new Date("2026-02-15T00:00:00.000Z"),
-      },
-      {
+      }),
+      userRow({
         id: "user-2",
         email: "b@example.com",
         username: "b",
         displayName: "B",
         emailVerified: false,
-        role: "USER",
-        createdAt: new Date("2026-01-02T00:00:00.000Z"),
-        lastActiveAt: null,
-        inactivityWarningSentAt: null,
-      },
+      }),
     ]);
 
     const result = await controller.listUsers();
@@ -245,7 +268,15 @@ describe("AdminUsersController.listUsers", () => {
             gte: new Date("2026-08-01T22:00:00.000Z"),
             lt: new Date("2026-09-01T22:00:00.000Z"),
           },
-          AND: [{ OR: [{ mfaTotpEnabled: true }, { mfaEmailEnabled: true }] }],
+          AND: [
+            {
+              OR: [
+                { mfaTotpEnabled: true },
+                { mfaEmailEnabled: true },
+                { webauthnCredentials: { some: {} } },
+              ],
+            },
+          ],
           notifyNewsletter: true,
           pushSubscriptions: { some: {} },
           refreshTokens: {
@@ -283,6 +314,7 @@ describe("AdminUsersController.listUsers", () => {
         where: {
           mfaTotpEnabled: false,
           mfaEmailEnabled: false,
+          webauthnCredentials: { none: {} },
           notifyNewsletter: false,
           pushSubscriptions: { none: {} },
           refreshTokens: {
@@ -294,6 +326,147 @@ describe("AdminUsersController.listUsers", () => {
         },
       }),
     );
+  });
+});
+
+describe("AdminUsersController.listUsers columns, filters and sorting", () => {
+  const listWith = (
+    controller: AdminUsersController,
+    args: { filter?: string; domain?: string; sort?: string; dir?: string },
+  ) =>
+    controller.listUsers(
+      undefined,
+      args.filter,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      args.domain,
+      args.sort,
+      args.dir,
+    );
+
+  it("adds library counts, domains, second factors, onboarding and presence to each row", async () => {
+    const { controller, prisma } = makeController();
+    (prisma.user.findMany as Mock).mockResolvedValue([
+      userRow({
+        id: "user-1",
+        enabledDomains: ["MEDIA", "BOOKS"],
+        mfaTotpEnabled: true,
+        _count: { webauthnCredentials: 2 },
+        onboardedAt: null,
+      }),
+    ]);
+    (prisma.libraryEntry.groupBy as Mock).mockResolvedValue([
+      { userId: "user-1", _count: 12 },
+    ]);
+    (prisma.bookEntry.groupBy as Mock).mockResolvedValue([
+      { userId: "user-1", _count: 3 },
+    ]);
+
+    const [row] = (await controller.listUsers()).items;
+
+    expect(row).toMatchObject({
+      libraryCounts: { media: 12, games: 0, books: 3, music: 0 },
+      enabledDomains: ["MEDIA", "BOOKS"],
+      secondFactors: ["TOTP", "WEBAUTHN"],
+      onboarded: false,
+      online: true,
+    });
+  });
+
+  it("filters suspended, not onboarded and long inactive accounts, and by domain", async () => {
+    const { controller, prisma } = makeController();
+    (prisma.user.findMany as Mock).mockResolvedValue([]);
+
+    await listWith(controller, { filter: "suspended", domain: "GAMES" });
+    expect(prisma.user.findMany).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        where: {
+          suspendedUntil: { gt: expect.any(Date) },
+          enabledDomains: { has: "GAMES" },
+        },
+      }),
+    );
+
+    await listWith(controller, { filter: "onboarding" });
+    expect(prisma.user.findMany).toHaveBeenLastCalledWith(
+      expect.objectContaining({ where: { onboardedAt: null } }),
+    );
+
+    await listWith(controller, { filter: "inactive", domain: "nope" });
+    expect(prisma.user.findMany).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        where: { lastActiveAt: { lt: expect.any(Date) } },
+      }),
+    );
+  });
+
+  it("sorts by last activity with never-seen accounts last", async () => {
+    const { controller, prisma } = makeController();
+    (prisma.user.findMany as Mock).mockResolvedValue([]);
+
+    await listWith(controller, { sort: "active" });
+
+    expect(prisma.user.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        orderBy: [
+          { lastActiveAt: { sort: "desc", nulls: "last" } },
+          { id: "asc" },
+        ],
+      }),
+    );
+  });
+
+  it("ranks by library size across the four domains before paginating", async () => {
+    const { controller, prisma } = makeController();
+    (prisma.user.findMany as Mock)
+      .mockResolvedValueOnce([
+        { id: "small", score: null },
+        { id: "big", score: null },
+        { id: "empty", score: null },
+      ])
+      .mockResolvedValueOnce([
+        userRow({ id: "small" }),
+        userRow({ id: "big" }),
+        userRow({ id: "empty" }),
+      ]);
+    (prisma.libraryEntry.groupBy as Mock).mockResolvedValue([
+      { userId: "small", _count: 2 },
+      { userId: "big", _count: 5 },
+    ]);
+    (prisma.musicEntry.groupBy as Mock).mockResolvedValue([
+      { userId: "big", _count: 4 },
+    ]);
+
+    const { items } = await listWith(controller, { sort: "library" });
+
+    expect(items.map((u) => u.id)).toEqual(["big", "small", "empty"]);
+  });
+
+  it("ranks by XP, an account without a score counting as zero, ascending on request", async () => {
+    const { controller, prisma } = makeController();
+    (prisma.user.findMany as Mock)
+      .mockResolvedValueOnce([
+        { id: "high", score: { xp: 900 } },
+        { id: "none", score: null },
+        { id: "low", score: { xp: 10 } },
+      ])
+      .mockResolvedValueOnce([
+        userRow({ id: "high" }),
+        userRow({ id: "none" }),
+        userRow({ id: "low" }),
+      ]);
+
+    const { items } = await listWith(controller, { sort: "xp", dir: "asc" });
+
+    expect(items.map((u) => u.id)).toEqual(["none", "low", "high"]);
   });
 });
 

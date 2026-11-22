@@ -37,6 +37,10 @@ history from before it was started.
 
 ### Added
 
+- Admin › Users: each account opens on its own page, with its journey,
+  sign-in security, devices, API keys, preferences, imports and moderation
+  history. The table adds library size, domains and second factor columns,
+  sorting, and filters for suspended, inactive and not onboarded accounts.
 - Admin dashboard: the Users tile shows how many accounts are online right
   now, refreshed live.
 - Calendar › Premieres: the series starting over the next eight weeks on the

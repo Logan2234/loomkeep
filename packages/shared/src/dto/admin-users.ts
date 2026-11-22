@@ -1,6 +1,13 @@
 import type {
   AccountDeletionReason,
+  AcquisitionSource,
+  DigestCadence,
+  Domain,
+  ModerationMeasure,
   Plan,
+  ProfileAccess,
+  PushPlatform,
+  ReviewVisibility,
   Role,
   SecurityEventType,
 } from "../enums";
@@ -32,6 +39,137 @@ export interface AdminUserDto {
   xp: number;
   /** The invitation this account signed up through — null for an open registration. */
   invitation: AdminUserInvitationDto | null;
+  /** Works saved per domain; films, series and anime count as MEDIA. */
+  libraryCounts: AdminUserLibraryCountsDto;
+  enabledDomains: Domain[];
+  /** Second factors set up, all three counted: an app code, an emailed code, a passkey. */
+  secondFactors: AdminUserSecondFactor[];
+  /** Whether the welcome tour was finished or skipped to the end. */
+  onboarded: boolean;
+  /** Whether the account has the app open somewhere right now. */
+  online: boolean;
+}
+
+export interface AdminUserLibraryCountsDto {
+  media: number;
+  games: number;
+  books: number;
+  music: number;
+}
+
+export type AdminUserSecondFactor = "TOTP" | "EMAIL" | "WEBAUTHN";
+
+/** The admin users table's sortable columns. */
+export const ADMIN_USER_SORTS = ["created", "active", "library", "xp"] as const;
+export type AdminUserSort = (typeof ADMIN_USER_SORTS)[number];
+
+/** Everything the admin account page shows beyond the table row. */
+export interface AdminUserDetailDto {
+  user: AdminUserDto;
+  journey: {
+    onboardedAt: string | null;
+    acquisitionSource: AcquisitionSource | null;
+    /** Free text given with the OTHER source. */
+    acquisitionSourceOther: string | null;
+    acceptedTermsVersion: string | null;
+    acceptedTermsAt: string | null;
+    /** An age bracket such as "25-34", never the birth date itself; null when none was given. */
+    ageBracket: string | null;
+  };
+  security: {
+    passkeys: number;
+    passwordless: boolean;
+    recoveryCodesLeft: number;
+    apiKeys: AdminUserApiKeyDto[];
+    devices: AdminUserDeviceDto[];
+    pushSubscriptions: AdminUserPushSubscriptionDto[];
+    /** The latest security events of the account, newest first. */
+    events: AdminUserSecurityEventDto[];
+  };
+  preferences: {
+    locale: string;
+    timezone: string;
+    watchRegion: string | null;
+    watchProviderCount: number;
+    notifyEmail: DigestCadence;
+    notifyPush: DigestCadence;
+    newsletter: boolean;
+    newsletterOptInAt: string | null;
+    profileAccess: ProfileAccess;
+    defaultReviewVisibility: ReviewVisibility;
+    allowAdultContent: boolean;
+  };
+  /** The latest imports, newest first. */
+  imports: AdminUserImportDto[];
+  /** The latest works saved, every domain together, newest first. */
+  recentAdditions: AdminUserRecentAdditionDto[];
+  engagement: {
+    achievements: number;
+    sharedListMemberships: number;
+    savedViews: number;
+  };
+  moderation: {
+    /** Decisions taken against the account, newest first. */
+    decisions: AdminUserModerationDecisionDto[];
+    reportsFiled: number;
+    blocking: number;
+    blockedBy: number;
+  };
+}
+
+export interface AdminUserApiKeyDto {
+  id: string;
+  name: string;
+  /** The key's last characters, as shown to its owner. */
+  suffix: string;
+  lastUsedAt: string | null;
+  expiresAt: string | null;
+}
+
+export interface AdminUserDeviceDto {
+  id: string;
+  userAgent: string | null;
+  lastSeenAt: string;
+}
+
+export interface AdminUserPushSubscriptionDto {
+  id: string;
+  platform: PushPlatform;
+  userAgent: string | null;
+  createdAt: string;
+}
+
+export interface AdminUserSecurityEventDto {
+  id: string;
+  type: SecurityEventType;
+  createdAt: string;
+}
+
+export interface AdminUserImportDto {
+  id: string;
+  sourceId: string;
+  /** "SUCCESS" or "FAILURE", as `ImportRun.status` stores it. */
+  status: string;
+  itemCount: number;
+  finishedAt: string;
+}
+
+export interface AdminUserRecentAdditionDto {
+  id: string;
+  title: string;
+  domain: Domain;
+  /** Client route to the work's page, null when the catalog id is unknown. */
+  href: string | null;
+  addedAt: string;
+}
+
+export interface AdminUserModerationDecisionDto {
+  id: string;
+  measure: ModerationMeasure;
+  tosClause: string;
+  decidedAt: string;
+  /** Null once the deciding admin's account is gone, or for an automated decision. */
+  decidedByName: string | null;
 }
 
 export interface AdminUserInvitationDto {
@@ -118,6 +256,9 @@ export const ADMIN_USER_FILTERS = [
   "never",
   "premium",
   "deletion",
+  "suspended",
+  "onboarding",
+  "inactive",
 ] as const;
 
 export type AdminUserFilter = (typeof ADMIN_USER_FILTERS)[number];

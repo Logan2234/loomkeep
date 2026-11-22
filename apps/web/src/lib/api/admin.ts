@@ -6,6 +6,7 @@ import type {
   AdminUserFilter,
   AdminUserLibraryKind,
   AdminUserOptionDto,
+  AdminUserSort,
   CreateAdminInvitationRequestDto,
   Domain,
   Locale,
@@ -122,6 +123,9 @@ export function getAdminUsers(
     newsletter?: string;
     push?: string;
     session?: string;
+    domain?: string;
+    sort?: AdminUserSort;
+    dir?: "asc" | "desc";
   } = {},
 ) {
   return typedRequest("/admin/users", {
@@ -139,9 +143,15 @@ export function getAdminUsers(
       newsletter: filters.newsletter || undefined,
       push: filters.push || undefined,
       session: filters.session || undefined,
+      domain: filters.domain || undefined,
+      sort: filters.sort === "created" ? undefined : filters.sort,
+      dir: filters.dir === "asc" ? "asc" : undefined,
     },
   });
 }
+
+export const getAdminUser = (userId: string) =>
+  typedRequest("/admin/users/{userId}", { params: { userId } });
 
 export function getAdminInvitations(
   filters: { page?: number; query?: string; status?: string } = {},
