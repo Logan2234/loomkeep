@@ -1,5 +1,5 @@
 import { AlertGroup, type AlertKey, isAlertEnabled } from "@loomkeep/shared";
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 import type { MailRecipient } from "../mail/mail.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { readAlertPrefs } from "./alert-prefs.util";
@@ -23,6 +23,8 @@ export type AdminAlertKey = Extract<
  */
 @Injectable()
 export class AdminAlertService {
+  private readonly logger = new Logger(AdminAlertService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly push: PushService,
@@ -44,15 +46,25 @@ export class AdminAlertService {
       admins.map(async (admin) => {
         const prefs = readAlertPrefs(admin.alertPrefs);
 
+        // Each admin and each channel fails on its own: a failed email used
+        // to skip that admin's push and reject the whole alert.
         if (isAlertEnabled(prefs, key, "email")) {
-          await send.email({ email: admin.email, locale: admin.locale });
+          try {
+            await send.email({ email: admin.email, locale: admin.locale });
+          } catch (err) {
+            this.logger.error(`${key} email failed for ${admin.id}`, err);
+          }
         }
 
         if (isAlertEnabled(prefs, key, "push")) {
-          await this.push.sendToUser(admin.id, {
-            ...send.push(notificationCopy(admin.locale)),
-            group: AlertGroup.ADMIN,
-          });
+          try {
+            await this.push.sendToUser(admin.id, {
+              ...send.push(notificationCopy(admin.locale)),
+              group: AlertGroup.ADMIN,
+            });
+          } catch (err) {
+            this.logger.error(`${key} push failed for ${admin.id}`, err);
+          }
         }
       }),
     );
