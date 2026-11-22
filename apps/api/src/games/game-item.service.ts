@@ -1,6 +1,7 @@
 import type { GameDetailsDto, GameSource } from "@loomkeep/shared";
-import { isGameUpcoming } from "@loomkeep/shared";
+import { Domain, isGameUpcoming } from "@loomkeep/shared";
 import { Injectable, Logger } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
 import { Cron, CronExpression } from "@nestjs/schedule";
 import type { GameItem } from "@prisma/client";
 import { chunk } from "../common/array.util";
@@ -14,6 +15,7 @@ import {
 } from "../common/catalog-sync.util";
 import { mapWithConcurrency } from "../common/concurrency.util";
 import { isUniqueViolation } from "../common/prisma-error.util";
+import { isDomainOffered } from "../instance-settings/instance-domains";
 import { JOB_KEYS } from "../jobs/job-keys";
 import { JobRunService } from "../jobs/job-run.service";
 import { PrismaService } from "../prisma/prisma.service";
@@ -47,6 +49,7 @@ export class GameItemService {
     private readonly igdbProvider: IgdbProvider,
     private readonly jobRuns: JobRunService,
     private readonly sagas: GameSagaService,
+    private readonly config: ConfigService,
   ) {}
 
   /**
@@ -58,6 +61,8 @@ export class GameItemService {
    */
   @Cron(CronExpression.EVERY_6_HOURS, { name: JOB_KEYS.GAMES_REFRESH_STALE })
   async refreshStale(): Promise<number> {
+    // A domain the instance no longer offers may have lost its catalogue key.
+    if (!isDomainOffered(this.config, Domain.GAMES)) return 0;
     const { refreshed } = await this.jobRuns.record(
       JOB_KEYS.GAMES_REFRESH_STALE,
       async () => assertSomeRefreshed(await this.runRefreshStale(), "game"),

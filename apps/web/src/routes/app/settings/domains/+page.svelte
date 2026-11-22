@@ -12,11 +12,10 @@
   import Tooltip from "#lib/components/Tooltip.svelte";
   import { DOMAINS } from "#lib/constants/domains.js";
   import { createDomainToggle } from "#lib/domain-toggle.svelte.js";
-  import { orderedDomains } from "#lib/domain-availability.js";
-  import { liveFlags } from "#lib/feature-flags-live.svelte.js";
+  import { isDomainOffered, orderedDomains } from "#lib/domain-availability.js";
   import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
-  import { Domain, PREMIUM_DOMAINS, maintenanceFlag } from "@loomkeep/shared";
+  import { Domain, PREMIUM_DOMAINS } from "@loomkeep/shared";
   import { dragHandle, dragHandleZone } from "svelte-dnd-action";
   import { flip } from "svelte/animate";
   import { cubicOut } from "svelte/easing";
@@ -70,11 +69,14 @@
     // The drag placeholder replaces id; keep the domain to render its tile.
     domain: Domain;
   }
+  // A domain the instance doesn't offer has no tile: it's gone, not locked.
   const items = $derived(
-    orderedDomains(auth.user?.domainOrder).map((domain) => ({
-      id: domain,
-      domain,
-    })),
+    orderedDomains(auth.user?.domainOrder)
+      .filter(isDomainOffered)
+      .map((domain) => ({ id: domain, domain })),
+  );
+  const offeredOn = $derived(
+    (auth.user?.enabledDomains ?? []).filter(isDomainOffered),
   );
   // Writable derived: svelte-dnd-action reassigns it mid-drag, and it
   // otherwise tracks `items` (e.g. after a save from another tab).
@@ -118,13 +120,8 @@
         {@const d = DOMAINS[id]}
         {@const domain = id}
         {@const on = auth.user.enabledDomains.includes(id)}
-        {@const isLast = on && auth.user.enabledDomains.length === 1}
-        {@const inMaintenance = liveFlags.isEnabled(maintenanceFlag(id))}
-        {@const showLock =
-          !on &&
-          !inMaintenance &&
-          premiumLocked &&
-          PREMIUM_DOMAINS.includes(id)}
+        {@const isLast = on && offeredOn.length === 1}
+        {@const showLock = !on && premiumLocked && PREMIUM_DOMAINS.includes(id)}
         <div
           class="min-w-0"
           animate:flip={{ duration: flipDurationMs, easing: cubicOut }}>
@@ -144,12 +141,7 @@
                 class="btn-icon absolute top-2 right-2 z-10 cursor-grab touch-none active:cursor-grabbing">
                 <Icon name="grip" class="h-3.5 w-3.5" />
               </span>
-              {#if inMaintenance}
-                <span
-                  class="bg-surface-2 text-dim absolute -top-1.5 -right-1.5 z-10 rounded-full p-1">
-                  <Icon name="lock" class="h-3 w-3" />
-                </span>
-              {:else if d.comingSoon && !showLock}
+              {#if d.comingSoon && !showLock}
                 <span
                   class="bg-surface-2 text-dim absolute -top-1.5 -right-1.5 z-10 rounded-full px-1.5 py-0.5 text-[0.55rem] font-bold">
                   {m.common_coming_soon()}
@@ -159,12 +151,8 @@
                 type="button"
                 class="flex h-full w-full flex-col justify-between rounded-xl p-4 pt-8 text-left disabled:pointer-events-none disabled:opacity-50"
                 aria-pressed={on}
-                disabled={isLast || inMaintenance || showLock}
-                title={inMaintenance
-                  ? m.settings_domain_temporarily_unavailable()
-                  : isLast
-                    ? m.settings_domain_last_required()
-                    : undefined}
+                disabled={isLast || showLock}
+                title={isLast ? m.settings_domain_last_required() : undefined}
                 onclick={() => domainToggle.toggle(id)}>
                 <Icon name={d.icon} class="domain-tile-icon h-6 w-6" />
                 <span class="block">
@@ -223,7 +211,7 @@
       background: color-mix(in srgb, var(--domain-color) 11%, transparent);
     }
 
-    /* The toggle disables itself (last domain, maintenance, locked); the tile
+    /* The toggle disables itself (last domain, locked); the tile
      itself never does (it's the drag item too) — read the button's state
      instead of the div's, which :disabled can never match. */
     .domain-tile:hover:has(button:not(:disabled)) {

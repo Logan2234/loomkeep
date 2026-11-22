@@ -145,7 +145,6 @@
   "settings_domain_music_description": "Albums and artists",
   "settings_domain_podcasts_description": "Shows and episodes",
   "settings_domain_boardgames_description": "Board games and sessions",
-  "settings_domain_temporarily_unavailable": "Temporarily unavailable.",
   "settings_domain_last_required": "At least one domain must stay active.",
   "settings_nav_style_label": "Navigation style",
   "settings_nav_style_description": "Change how the sidebar and bottom bar look. \"Marquee\" is included; the other two are for premium members.",

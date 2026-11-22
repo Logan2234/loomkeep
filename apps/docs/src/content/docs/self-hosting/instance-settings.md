@@ -19,9 +19,23 @@ redeploy.
 | Update check        | on      | Looks up the latest version once a day and flags a newer one in Admin › Services.                   |
 | Count this instance | on      | Sends a random id and the version with the update check: see [Telemetry](/self-hosting/telemetry/). |
 | How you heard of us | off     | An optional "How did you hear of Loomkeep?" at the end of onboarding, answers in Admin › Stats.     |
+| Domains             | on      | One switch per domain (films and series, games, books, music): see [below](#domains).               |
 
 A family instance often closes registration once everyone has an account,
 and leaves social on so lists can be shared.
+
+## Domains
+
+Each domain (films and series, games, books, music) can be turned off for
+the whole instance. A domain that is off disappears from the app for every
+account: navigation, search, home page, statistics, alerts. Library entries
+are kept, still appear in exports, and come back when the domain is turned
+on again. At least one domain stays on.
+
+A domain whose [catalogue key](/self-hosting/catalogues/) is missing is off
+whatever its switch says, and the admin page names the missing key: films
+and series need `TMDB_API_TOKEN`, games `TWITCH_CLIENT_ID` and
+`TWITCH_CLIENT_SECRET`. Books and music need no key.
 
 ## Setting them from the environment
 
@@ -42,6 +56,10 @@ page.
 | Update check        | `UPDATE_CHECK_ENABLED`   |
 | Count this instance | `TELEMETRY_ENABLED`      |
 | How you heard of us | `ASK_ACQUISITION_SOURCE` |
+| Films and series    | `MEDIA_DOMAIN_ENABLED`   |
+| Games               | `GAMES_DOMAIN_ENABLED`   |
+| Books               | `BOOKS_DOMAIN_ENABLED`   |
+| Music               | `MUSIC_DOMAIN_ENABLED`   |
 
 The first time the instance starts with this page, its values are taken from
 these variables. After that, remove a variable from `.env` to unlock its

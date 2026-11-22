@@ -67,6 +67,7 @@ export const ErrorCode = {
   AdminAccountNotFound: "admin.account_not_found",
   AdminReportNotFound: "admin.report_not_found",
   AdminSettingLockedByEnv: "admin.setting_locked_by_env",
+  AdminNoDomainLeft: "admin.no_domain_left",
   AdminCannotSelfDemote: "admin.cannot_self_demote",
   AdminCannotSelfDelete: "admin.cannot_self_delete",
   AdminForbidden: "admin.forbidden",

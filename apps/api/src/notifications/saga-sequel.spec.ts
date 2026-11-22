@@ -1,4 +1,5 @@
 import { vi } from "vitest";
+import { allDomainsConfig } from "../test-utils/stubs";
 import { NotificationService } from "./notification.service";
 
 const DUNE_3 = {
@@ -67,6 +68,7 @@ function makeService({
     { emitToUser: vi.fn() } as never,
     push as never,
     mail as never,
+    allDomainsConfig(),
   );
   return { service, prisma, push, mail };
 }

@@ -1,7 +1,9 @@
+import type { ConfigService } from "@nestjs/config";
 import { Prisma } from "@prisma/client";
 import { vi, type Mock } from "vitest";
 import type { JobRunService } from "../jobs/job-run.service";
 import type { PrismaService } from "../prisma/prisma.service";
+import { allDomainsConfig, makeConfig } from "../test-utils/stubs";
 import { GameItemService } from "./game-item.service";
 import type { ProviderGameDetails } from "./providers/game-provider.types";
 import type { IgdbProvider } from "./providers/igdb.provider";
@@ -42,6 +44,7 @@ function makeService(overrides: {
   getDetails?: Mock;
   getDetailsByIds?: Mock;
   staleItems?: unknown[];
+  config?: ConfigService;
 }) {
   const prisma = {
     gameExternalId: {
@@ -66,6 +69,7 @@ function makeService(overrides: {
     igdbProvider,
     jobRunsStub,
     sagas as never,
+    overrides.config ?? allDomainsConfig(),
   );
   return { service, prisma, igdbProvider };
 }
@@ -108,6 +112,15 @@ describe("GameItemService.upsertFromSource", () => {
 
     expect(igdbProvider.getDetails).toHaveBeenCalledWith("42");
     expect(prisma.gameItem.create).toHaveBeenCalled();
+  });
+});
+
+describe("GameItemService.refreshStale", () => {
+  it("does nothing while the instance doesn't offer games, e.g. without its Twitch keys", async () => {
+    const { service, prisma } = makeService({ config: makeConfig() });
+
+    expect(await service.refreshStale()).toBe(0);
+    expect(prisma.gameItem.findMany).not.toHaveBeenCalled();
   });
 });
 

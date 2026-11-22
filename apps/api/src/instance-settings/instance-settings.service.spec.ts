@@ -8,6 +8,12 @@ import { setStoredInstanceSettings } from "./instance-settings.store";
 function setup(env: Record<string, string> = {}, { stored = true } = {}) {
   let row = { id: 1, ...DEFAULT_INSTANCE_SETTINGS, updatedAt: new Date() };
   const prisma = {
+    user: {
+      count: vi.fn(
+        ({ where }: { where: { enabledDomains: { has: string } } }) =>
+          Promise.resolve(where.enabledDomains.has === "MEDIA" ? 7 : 2),
+      ),
+    },
     instanceSettings: {
       findUnique: vi.fn(() => Promise.resolve(stored ? row : null)),
       create: vi.fn(({ data }: { data: object }) => {
@@ -78,6 +84,10 @@ describe("InstanceSettingsService", () => {
         socialEnabled: "SOCIAL_ENABLED",
         apiRateLimitFree: "API_RATE_LIMIT_FREE",
       },
+      missingEnv: {
+        mediaDomainEnabled: ["TMDB_API_TOKEN"],
+        gamesDomainEnabled: ["TWITCH_CLIENT_ID", "TWITCH_CLIENT_SECRET"],
+      },
     });
   });
 
@@ -89,6 +99,29 @@ describe("InstanceSettingsService", () => {
       service.update({ registrationEnabled: true }),
     ).rejects.toMatchObject({ code: "admin.setting_locked_by_env" });
     expect(prisma.instanceSettings.upsert).not.toHaveBeenCalled();
+  });
+
+  it("refuses a change that would leave the instance without a domain", async () => {
+    // No catalogue key: media and games are off already, whatever their toggle.
+    const { service, prisma } = setup();
+    await service.onModuleInit();
+
+    await service.update({ booksDomainEnabled: false });
+    await expect(
+      service.update({ musicDomainEnabled: false }),
+    ).rejects.toMatchObject({ code: "admin.no_domain_left" });
+    expect(prisma.instanceSettings.upsert).toHaveBeenCalledTimes(1);
+  });
+
+  it("counts, for each domain, the accounts that keep it enabled", async () => {
+    const { service } = setup();
+
+    await expect(service.domainAccounts()).resolves.toEqual({
+      MEDIA: 7,
+      GAMES: 2,
+      BOOKS: 2,
+      MUSIC: 2,
+    });
   });
 
   it("keeps the env-era parsing: registration open unless exactly false", async () => {

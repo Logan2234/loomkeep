@@ -1,6 +1,7 @@
 const NEW_BADGE_DAYS = 21;
 
 const SHIPPED = {
+  "instance-domains": "2026-11-22",
   "admin-user-page": "2026-11-22",
   "free-to-read": "2026-11-22",
   "acquisition-source": "2026-11-18",

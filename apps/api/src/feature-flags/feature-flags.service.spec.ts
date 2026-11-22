@@ -42,9 +42,9 @@ describe("FeatureFlagsService", () => {
     service.onModuleInit();
     fakeClient.isEnabled.mockReturnValue(true);
 
-    expect(service.isEnabled("MAINTENANCE_BOOKS")).toBe(true);
+    expect(service.isEnabled("NEWS_BANNER")).toBe(true);
     expect(fakeClient.isEnabled).toHaveBeenCalledWith(
-      "MAINTENANCE_BOOKS",
+      "NEWS_BANNER",
       undefined,
       false,
     );

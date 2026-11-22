@@ -14,7 +14,7 @@ import { LibraryService } from "../library/library.service";
 import { MusicItemService } from "../music/music-item.service";
 import { MusicLibraryService } from "../music/music-library.service";
 import type { PrismaService } from "../prisma/prisma.service";
-import { stubSagas } from "../test-utils/stubs";
+import { allDomainsConfig, stubSagas } from "../test-utils/stubs";
 
 /**
  * Parity across the four library domains. Each has its own services and
@@ -136,6 +136,7 @@ const FIRST_TRACK: Record<
         provider("ANILIST") as never,
         jobRuns,
         {} as never,
+        allDomainsConfig(),
       ).upsertFromSource("TMDB", "42", "MOVIE"),
   },
   GAMES: {
@@ -148,6 +149,7 @@ const FIRST_TRACK: Record<
         provider("IGDB") as never,
         jobRuns,
         {} as never,
+        allDomainsConfig(),
       ).persistDetails("IGDB", providerDetails("IGDB") as never),
   },
   BOOKS: {
@@ -159,6 +161,7 @@ const FIRST_TRACK: Record<
         prisma,
         provider("OPEN_LIBRARY") as never,
         jobRuns,
+        allDomainsConfig(),
       ).persistDetails(
         "OPEN_LIBRARY",
         providerDetails("OPEN_LIBRARY") as never,
@@ -220,6 +223,7 @@ const STALE_TRACK: Record<
         provider("ANILIST") as never,
         jobRuns,
         {} as never,
+        allDomainsConfig(),
       ).upsertFromSource("TMDB", "42", "MOVIE"),
   },
   GAMES: {
@@ -231,6 +235,7 @@ const STALE_TRACK: Record<
         { getDetails: vi.fn().mockRejectedValue(outage) } as never,
         jobRuns,
         {} as never,
+        allDomainsConfig(),
       ).upsertFromSource("IGDB", "42"),
   },
   BOOKS: {
@@ -241,6 +246,7 @@ const STALE_TRACK: Record<
         prisma,
         { getStoredDetails: vi.fn().mockRejectedValue(outage) } as never,
         jobRuns,
+        allDomainsConfig(),
       ).upsertFromSource("OPEN_LIBRARY", "42"),
   },
   MUSIC: {

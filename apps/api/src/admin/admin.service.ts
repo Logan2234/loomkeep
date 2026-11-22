@@ -92,7 +92,8 @@ export class AdminService {
         key: "tmdb",
         label: "TMDB",
         area: "Vidéo",
-        required: true,
+        // Without its key the domain is off (instanceDomains), not broken.
+        required: false,
         envKeys: ["TMDB_API_TOKEN"],
         keyUrl: "https://www.themoviedb.org/settings/api",
         probe: (signal) =>
@@ -136,7 +137,8 @@ export class AdminService {
         key: "igdb",
         label: "IGDB (Twitch)",
         area: "Jeux",
-        required: true,
+        // Without its key the domain is off (instanceDomains), not broken.
+        required: false,
         envKeys: ["TWITCH_CLIENT_ID", "TWITCH_CLIENT_SECRET"],
         keyUrl: "https://dev.twitch.tv/console/apps",
         // Exchanging the client credentials validates both the reachability of

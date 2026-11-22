@@ -213,6 +213,7 @@
   "apierr_api_disabled": "L'API pubblica è disattivata su questa istanza.",
   "apierr_api_secret_scanning_unauthorized": "Avviso di secret scanning non firmato da GitHub.",
   "apierr_admin_setting_locked_by_env": "Questa impostazione è fissata da una variabile d'ambiente.",
+  "apierr_admin_no_domain_left": "Disattivarlo lascerebbe l'istanza senza alcun dominio.",
   "apierr_auth_account_suspended": "Il tuo account è disattivato.",
   "apierr_library_game_not_released": "Questo gioco non è ancora uscito. Stato, sessioni, possesso, voti e recensioni saranno disponibili all’uscita.",
   "apierr_library_game_platform_invalid": "Questo gioco non è uscito su questa piattaforma.",

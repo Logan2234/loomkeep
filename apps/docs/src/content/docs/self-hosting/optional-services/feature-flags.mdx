@@ -1,6 +1,6 @@
 ---
 title: Feature flags
-description: Unleash, for per-domain maintenance and a site-wide news banner.
+description: Unleash, for a site-wide news banner.
 sidebar:
   order: 4
 ---
@@ -8,16 +8,12 @@ sidebar:
 import { Aside, Steps } from "@astrojs/starlight/components";
 
 [Unleash](https://www.getunleash.io) switches things on and off at runtime,
-without a redeploy. On Loomkeep it serves two things:
-
-- **Maintenance per domain**: a `MAINTENANCE_MEDIA` flag (or `_GAMES`,
-  `_BOOKS`, `_MUSIC`) takes that domain offline for everyone, live, while the
-  rest keeps working.
-- **A news banner** across the top of the site, from the `NEWS_BANNER` flag:
-  see [below](#the-news-banner).
+without a redeploy. On Loomkeep it serves a news banner across the top of
+the site, from the `NEWS_BANNER` flag: see [below](#the-news-banner).
 
 Permanent choices aren't flags: they live in
-[instance settings](/self-hosting/instance-settings/).
+[instance settings](/self-hosting/instance-settings/), turning a domain off
+included.
 
 ## Enabling it
 

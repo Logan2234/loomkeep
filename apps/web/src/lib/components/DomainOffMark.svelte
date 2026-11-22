@@ -11,10 +11,11 @@
   let { domain, class: className = "" }: { domain: Domain; class?: string } =
     $props();
 
-  // A maintenance isn't the viewer's to undo: don't send them to Settings.
+  // A domain the instance doesn't offer isn't the viewer's to turn back on:
+  // don't send them to Settings.
   const label = $derived(
-    domainOffReason(domain) === "maintenance"
-      ? m.common_work_domain_maintenance({ domain: DOMAINS[domain].label })
+    domainOffReason(domain) === "instance"
+      ? m.common_work_domain_not_offered({ domain: DOMAINS[domain].label })
       : m.common_work_domain_off({ domain: DOMAINS[domain].label }),
   );
 </script>

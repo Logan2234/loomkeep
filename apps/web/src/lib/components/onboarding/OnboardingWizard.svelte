@@ -34,6 +34,7 @@
   import { THEME_DEFINITIONS } from "#lib/constants/theme-definitions.js";
   import { debounce, SEARCH_DEBOUNCE_MS } from "#lib/debounce.js";
   import { createDomainToggle } from "#lib/domain-toggle.svelte.js";
+  import { isDomainOffered } from "#lib/domain-availability.js";
   import { formatDate, formatRegion } from "#lib/format.js";
   import { useOnboardingChecklist } from "#lib/gamification/onboarding-checklist.svelte.js";
   import { layout } from "#lib/layout.svelte.js";
@@ -670,7 +671,7 @@
   {:else if stepId === "domains"}
     {@render title(m.onboarding_domains_title(), m.onboarding_domains_intro())}
     <div class="grid max-w-4xl grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
-      {#each PICKABLE_DOMAINS as { id, example } (id)}
+      {#each PICKABLE_DOMAINS.filter( ({ id }) => isDomainOffered(id) ) as { id, example } (id)}
         {@const on = picked.includes(id)}
         {@const accent = DOMAINS[id].accent}
         <button

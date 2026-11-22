@@ -63,6 +63,10 @@ const PARSE: {
   updateCheckEnabled: parseBoolean,
   telemetryEnabled: parseBoolean,
   askAcquisitionSource: parseBoolean,
+  mediaDomainEnabled: parseBoolean,
+  gamesDomainEnabled: parseBoolean,
+  booksDomainEnabled: parseBoolean,
+  musicDomainEnabled: parseBoolean,
 };
 
 /** The env var's value when it's set and readable, else null. */

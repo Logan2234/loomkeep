@@ -1,15 +1,15 @@
 import { Domain } from "@loomkeep/shared";
+import type { ConfigService } from "@nestjs/config";
 import { vi } from "vitest";
 import { AppException } from "../common/app.exception";
 import type { EntitlementService } from "../entitlements/entitlement.service";
-import type { FeatureFlagsService } from "../feature-flags/feature-flags.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { DomainGateService } from "./domain-gate.service";
 
 describe("DomainGateService", () => {
   function makeService(
     enabledDomains: Domain[] | null,
-    maintenanceDomains: Domain[] = [],
+    instanceOffDomains: Domain[] = [],
     hasPremium = true,
   ) {
     const prisma = {
@@ -21,17 +21,21 @@ describe("DomainGateService", () => {
           ),
       },
     } as unknown as PrismaService;
-    const flags = {
-      isEnabled: vi.fn(
-        (name: string, fallback: boolean) =>
-          maintenanceDomains.some((d) => name === `MAINTENANCE_${d}`) ||
-          fallback,
+    const env: Record<string, string> = {
+      TMDB_API_TOKEN: "token",
+      TWITCH_CLIENT_ID: "id",
+      TWITCH_CLIENT_SECRET: "secret",
+      ...Object.fromEntries(
+        instanceOffDomains.map((d) => [`${d}_DOMAIN_ENABLED`, "false"]),
       ),
-    } as unknown as FeatureFlagsService;
+    };
+    const config = {
+      get: vi.fn((key: string) => env[key]),
+    } as unknown as ConfigService;
     const entitlements = {
       isEffectivelyPremium: vi.fn().mockResolvedValue(hasPremium),
     } as unknown as EntitlementService;
-    return new DomainGateService(prisma, flags, entitlements);
+    return new DomainGateService(prisma, config, entitlements);
   }
 
   it("resolves when the domain is enabled", async () => {
@@ -69,7 +73,7 @@ describe("DomainGateService", () => {
       await expect(service.getEnabledDomains("nope")).resolves.toEqual([]);
     });
 
-    it("excludes a domain under MAINTENANCE_<DOMAIN>, even if the user enabled it", async () => {
+    it("excludes a domain the instance doesn't offer, even if the user enabled it", async () => {
       const service = makeService([Domain.MEDIA, Domain.BOOKS], [Domain.BOOKS]);
       await expect(service.getEnabledDomains("u1")).resolves.toEqual([
         Domain.MEDIA,
@@ -77,11 +81,23 @@ describe("DomainGateService", () => {
     });
   });
 
-  it("throws 403 for a domain under maintenance, even if the user enabled it", async () => {
+  it("throws 403 for a domain the instance doesn't offer, even if the user enabled it", async () => {
     const service = makeService([Domain.BOOKS], [Domain.BOOKS]);
     await expect(
       service.assertEnabled("u1", Domain.BOOKS),
     ).rejects.toBeInstanceOf(AppException);
+  });
+
+  it("treats a domain without its catalogue key as not offered", async () => {
+    const service = makeService([Domain.MEDIA, Domain.GAMES]);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const get = (service as any).config.get as ReturnType<typeof vi.fn>;
+    get.mockImplementation((key: string) =>
+      key === "TMDB_API_TOKEN" ? undefined : "set",
+    );
+    await expect(service.getEnabledDomains("u1")).resolves.toEqual([
+      Domain.GAMES,
+    ]);
   });
 
   describe("premium-gated domains", () => {

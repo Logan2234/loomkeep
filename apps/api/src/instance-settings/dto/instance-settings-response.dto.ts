@@ -1,4 +1,5 @@
 import type {
+  InstanceDomainAccountsDto,
   InstanceSettingKey,
   InstanceSettingsDto,
   InstanceSettingsValues,
@@ -15,6 +16,10 @@ class InstanceSettingsValuesResponseDto implements InstanceSettingsValues {
   updateCheckEnabled!: boolean;
   telemetryEnabled!: boolean;
   askAcquisitionSource!: boolean;
+  mediaDomainEnabled!: boolean;
+  gamesDomainEnabled!: boolean;
+  booksDomainEnabled!: boolean;
+  musicDomainEnabled!: boolean;
 }
 
 class InstanceSettingsLocksResponseDto implements Partial<
@@ -30,9 +35,30 @@ class InstanceSettingsLocksResponseDto implements Partial<
   updateCheckEnabled?: string;
   telemetryEnabled?: string;
   askAcquisitionSource?: string;
+  mediaDomainEnabled?: string;
+  gamesDomainEnabled?: string;
+  booksDomainEnabled?: string;
+  musicDomainEnabled?: string;
+}
+
+class InstanceSettingsMissingEnvResponseDto implements Partial<
+  Record<InstanceSettingKey, string[]>
+> {
+  mediaDomainEnabled?: string[];
+  gamesDomainEnabled?: string[];
+  booksDomainEnabled?: string[];
+  musicDomainEnabled?: string[];
+}
+
+export class InstanceDomainAccountsResponseDto implements InstanceDomainAccountsDto {
+  MEDIA!: number;
+  GAMES!: number;
+  BOOKS!: number;
+  MUSIC!: number;
 }
 
 export class InstanceSettingsResponseDto implements InstanceSettingsDto {
   values!: InstanceSettingsValuesResponseDto;
   lockedBy!: InstanceSettingsLocksResponseDto;
+  missingEnv!: InstanceSettingsMissingEnvResponseDto;
 }

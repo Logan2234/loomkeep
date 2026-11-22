@@ -85,7 +85,7 @@
   "common_manage": "Manage",
   "common_work": "Work",
   "common_work_domain_off": "The {domain} domain is off: turn it on in Settings › Domains to open this page.",
-  "common_work_domain_maintenance": "The {domain} domain is under maintenance: this page isn't available for now.",
+  "common_work_domain_not_offered": "The {domain} domain isn't offered on this instance: this page can't be opened.",
   "common_season": "Season",
   "common_episode": "Episode",
   "common_sending": "Sending…",

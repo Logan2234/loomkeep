@@ -36,6 +36,16 @@ describe("PublicConfigController", () => {
     });
   });
 
+  it("offers only the domains turned on and with their catalogue key", async () => {
+    const { controller } = makeController({
+      TMDB_API_TOKEN: "token",
+      MUSIC_DOMAIN_ENABLED: "false",
+    });
+    await expect(controller.get()).resolves.toMatchObject({
+      domains: ["MEDIA", "BOOKS", "PODCASTS", "BOARDGAMES"],
+    });
+  });
+
   it('asks the acquisition source only when ASK_ACQUISITION_SOURCE is "true"', async () => {
     const on = makeController({ ASK_ACQUISITION_SOURCE: "true" });
     await expect(on.controller.get()).resolves.toMatchObject({
@@ -53,6 +63,7 @@ describe("PublicConfigController", () => {
       registrationEnabled: true,
       publicApiEnabled: true,
       askAcquisitionSource: false,
+      domains: ["BOOKS", "MUSIC", "PODCASTS", "BOARDGAMES"],
       erdEnabled: false,
       adminMfaEnforced: false,
       version: "9.9.9",
@@ -71,6 +82,7 @@ describe("PublicConfigController", () => {
       registrationEnabled: true,
       publicApiEnabled: true,
       askAcquisitionSource: false,
+      domains: ["BOOKS", "MUSIC", "PODCASTS", "BOARDGAMES"],
       erdEnabled: false,
       adminMfaEnforced: false,
       version: "9.9.9",
@@ -89,6 +101,7 @@ describe("PublicConfigController", () => {
       registrationEnabled: true,
       publicApiEnabled: true,
       askAcquisitionSource: false,
+      domains: ["BOOKS", "MUSIC", "PODCASTS", "BOARDGAMES"],
       erdEnabled: false,
       adminMfaEnforced: false,
       version: "9.9.9",
@@ -107,6 +120,7 @@ describe("PublicConfigController", () => {
       registrationEnabled: true,
       publicApiEnabled: true,
       askAcquisitionSource: false,
+      domains: ["BOOKS", "MUSIC", "PODCASTS", "BOARDGAMES"],
       erdEnabled: false,
       adminMfaEnforced: false,
       version: "9.9.9",
@@ -125,6 +139,7 @@ describe("PublicConfigController", () => {
       registrationEnabled: false,
       publicApiEnabled: true,
       askAcquisitionSource: false,
+      domains: ["BOOKS", "MUSIC", "PODCASTS", "BOARDGAMES"],
       erdEnabled: false,
       adminMfaEnforced: false,
       version: "9.9.9",
@@ -143,6 +158,7 @@ describe("PublicConfigController", () => {
       registrationEnabled: true,
       publicApiEnabled: true,
       askAcquisitionSource: false,
+      domains: ["BOOKS", "MUSIC", "PODCASTS", "BOARDGAMES"],
       erdEnabled: false,
       adminMfaEnforced: false,
       version: "9.9.9",
@@ -161,6 +177,7 @@ describe("PublicConfigController", () => {
       registrationEnabled: true,
       publicApiEnabled: true,
       askAcquisitionSource: false,
+      domains: ["BOOKS", "MUSIC", "PODCASTS", "BOARDGAMES"],
       erdEnabled: true,
       adminMfaEnforced: false,
       version: "9.9.9",
@@ -179,6 +196,7 @@ describe("PublicConfigController", () => {
       registrationEnabled: true,
       publicApiEnabled: true,
       askAcquisitionSource: false,
+      domains: ["BOOKS", "MUSIC", "PODCASTS", "BOARDGAMES"],
       erdEnabled: false,
       adminMfaEnforced: true,
       version: "9.9.9",
@@ -215,6 +233,7 @@ describe("PublicConfigController", () => {
       registrationEnabled: true,
       publicApiEnabled: true,
       askAcquisitionSource: false,
+      domains: ["BOOKS", "MUSIC", "PODCASTS", "BOARDGAMES"],
       erdEnabled: false,
       adminMfaEnforced: false,
       version: "9.9.9",

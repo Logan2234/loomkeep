@@ -5,6 +5,7 @@ import { AppException } from "../common/app.exception";
 import type { EventsGateway } from "../events/events.gateway";
 import type { JobRunService } from "../jobs/job-run.service";
 import type { PrismaService } from "../prisma/prisma.service";
+import { allDomainsConfig } from "../test-utils/stubs";
 import { NotificationService } from "./notification.service";
 import type { PushService } from "./push.service";
 
@@ -83,6 +84,7 @@ describe("NotificationService.scanAll", () => {
       eventsStub,
       pushStub,
       {} as never,
+      allDomainsConfig(),
     );
     return { service, prisma };
   }
@@ -246,6 +248,7 @@ describe("NotificationService.scan", () => {
       eventsStub,
       pushStub,
       {} as never,
+      allDomainsConfig(),
     );
     return { service, prisma };
   }
@@ -326,6 +329,7 @@ describe("NotificationService — bell and history", () => {
       events,
       pushStub,
       {} as never,
+      allDomainsConfig(),
     );
     return { service, prisma, events };
   }
@@ -530,6 +534,7 @@ describe("NotificationService.purge", () => {
       eventsStub,
       pushStub,
       {} as never,
+      allDomainsConfig(),
     );
     const now = new Date("2026-10-14T07:00:00Z");
 
@@ -569,6 +574,7 @@ describe("NotificationService.create — realtime push", () => {
       events,
       pushStub,
       {} as never,
+      allDomainsConfig(),
     );
     return { service, events, prisma };
   }
@@ -640,6 +646,7 @@ describe("NotificationService push", () => {
       eventsStub,
       push,
       {} as never,
+      allDomainsConfig(),
     );
     return { service, push };
   }
@@ -775,6 +782,7 @@ describe("NotificationService.createOrGroup", () => {
       eventsStub,
       push,
       {} as never,
+      allDomainsConfig(),
     );
     return { service, prisma, push };
   }

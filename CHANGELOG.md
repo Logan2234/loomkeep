@@ -28,6 +28,12 @@ history from before it was started.
   `on`/`off`.** `REGISTRATION_ENABLED=0` now closes registration and
   `SOCIAL_ENABLED=1` turns social on, where they used to do the opposite.
   A value Loomkeep can't read is ignored, with a warning in the logs.
+- **Self-hosting: the `MAINTENANCE_<DOMAIN>` Unleash flags no longer do
+  anything.** To take a domain out, turn it off in Admin › Instance settings
+  › Domains, or set `MEDIA_DOMAIN_ENABLED`, `GAMES_DOMAIN_ENABLED`,
+  `BOOKS_DOMAIN_ENABLED` or `MUSIC_DOMAIN_ENABLED` to `false`. Catalogue keys
+  are optional: without `TMDB_API_TOKEN`, films and series are off; without
+  the Twitch keys, games are.
 
 - Administrators get an alert (email, push optional) when someone's import
   fails, with a link to the failed imports in Admin › Imports.
@@ -37,6 +43,9 @@ history from before it was started.
 
 ### Added
 
+- Admin › Instance settings › Domains: turn a domain off for the whole
+  instance, with the number of accounts that use it. It disappears from the
+  app for everyone, and the libraries come back when it's turned on again.
 - Admin › Users: each account opens on its own page, with its journey,
   sign-in security, devices, API keys, preferences, imports and moderation
   history. The table adds library size, domains and second factor columns,

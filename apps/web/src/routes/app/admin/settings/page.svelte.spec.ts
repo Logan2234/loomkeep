@@ -23,9 +23,15 @@ beforeEach(() => {
   const dto: InstanceSettingsDto = {
     values: { ...DEFAULT_INSTANCE_SETTINGS, socialEnabled: true },
     lockedBy: { socialEnabled: "SOCIAL_ENABLED" },
+    missingEnv: {
+      gamesDomainEnabled: ["TWITCH_CLIENT_ID", "TWITCH_CLIENT_SECRET"],
+    },
   };
   server.use(
     http.get(apiUrl("/admin/instance-settings"), () => HttpResponse.json(dto)),
+    http.get(apiUrl("/admin/instance-settings/domain-accounts"), () =>
+      HttpResponse.json({ MEDIA: 12, GAMES: 1, BOOKS: 0, MUSIC: 3 }),
+    ),
     http.patch(apiUrl("/admin/instance-settings"), async ({ request }) => {
       patched = (await request.json()) as UpdateInstanceSettingsDto;
       return HttpResponse.json({
@@ -69,6 +75,7 @@ describe("Admin instance settings", () => {
           gamificationEnabled: false,
           registrationEnabled: false,
           publicApiEnabled: true,
+          domains: ["MEDIA", "BOOKS", "MUSIC"],
           erdEnabled: false,
           adminMfaEnforced: true,
           version: "",
@@ -84,6 +91,43 @@ describe("Admin instance settings", () => {
     await user.click(await toggle(m.admin_settings_chat()));
 
     await waitFor(() => expect(appConfig.chatEnabled).toBe(true));
+  });
+
+  it("shows a domain without its catalogue key as off, and names the key", async () => {
+    renderWithQuery(Page, {});
+
+    const games = await toggle(m.common_Games());
+    expect(games.disabled).toBe(true);
+    expect(games.getAttribute("aria-checked")).toBe("false");
+    expect(
+      screen.getByText(
+        m.admin_settings_domain_missing_key({
+          env: "TWITCH_CLIENT_ID, TWITCH_CLIENT_SECRET",
+        }),
+      ),
+    ).toBeTruthy();
+  });
+
+  it("says how many accounts each domain would touch", async () => {
+    renderWithQuery(Page, {});
+
+    expect(
+      await screen.findByText(
+        m.admin_settings_domain_accounts_many({ count: 12 }),
+      ),
+    ).toBeTruthy();
+    expect(
+      screen.getByText(m.admin_settings_domain_accounts_one({ count: 1 })),
+    ).toBeTruthy();
+  });
+
+  it("turns a domain off for the instance", async () => {
+    const user = userEvent.setup();
+    renderWithQuery(Page, {});
+
+    await user.click(await toggle(m.common_Music()));
+
+    await waitFor(() => expect(patched).toEqual({ musicDomainEnabled: false }));
   });
 
   it("saves a rate limit on change, and ignores an out-of-range one", async () => {

@@ -1,3 +1,5 @@
+import { Domain } from "@loomkeep/shared";
+
 /**
  * Global runtime config (Svelte 5 runes), loaded once at startup from
  * `GET /api/config` (see initConfig in api/config.ts). Drives which optional
@@ -5,7 +7,8 @@
  * registration OFF and erd OFF so nothing optional shows until the
  * deployment confirms its actual config — adminMfaEnforced defaults to true
  * instead, the safe direction for a security gate (fail closed, not open,
- * if the config fetch fails).
+ * if the config fetch fails). `domains` defaults to every domain: hiding them
+ * all on a failed fetch would empty the app, and the API enforces the gate.
  */
 class AppConfig {
   socialEnabled = $state(false);
@@ -14,6 +17,7 @@ class AppConfig {
   registrationEnabled = $state(false);
   publicApiEnabled = $state(false);
   askAcquisitionSource = $state(false);
+  domains = $state<Domain[]>(Object.values(Domain));
   erdEnabled = $state(false);
   adminMfaEnforced = $state(true);
   version = $state("");

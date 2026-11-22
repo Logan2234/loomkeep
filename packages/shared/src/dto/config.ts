@@ -1,3 +1,5 @@
+import type { Domain } from "../enums";
+
 /**
  * Public runtime configuration the web reads once at startup (no auth), served
  * by `GET /api/config`. Lets a single Docker image behave differently per
@@ -39,6 +41,12 @@ export interface PublicConfigDto {
 
   /** Whether onboarding asks how the user heard of Loomkeep. */
   askAcquisitionSource: boolean;
+
+  /**
+   * The domains this instance offers: turned on in Admin › Settings and with
+   * their catalogue key set. Any other is gone from the app for everyone.
+   */
+  domains: Domain[];
 
   /**
    * Whether the admin "Schéma" page (DB ERD) has content to

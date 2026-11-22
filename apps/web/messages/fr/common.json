@@ -85,7 +85,7 @@
   "common_manage": "Gérer",
   "common_work": "Œuvre",
   "common_work_domain_off": "Le domaine « {domain} » n'est pas activé : active-le dans Paramètres › Domaines pour ouvrir cette fiche.",
-  "common_work_domain_maintenance": "Le domaine « {domain} » est en maintenance : cette fiche n'est pas disponible pour le moment.",
+  "common_work_domain_not_offered": "Le domaine « {domain} » n'est pas proposé sur cette instance : cette fiche ne peut pas s'ouvrir.",
   "common_season": "Saison",
   "common_episode": "Épisode",
   "common_sending": "Envoi…",

@@ -16,6 +16,7 @@ export async function initConfig(): Promise<void> {
     appConfig.registrationEnabled = config.registrationEnabled;
     appConfig.publicApiEnabled = config.publicApiEnabled;
     appConfig.askAcquisitionSource = config.askAcquisitionSource;
+    appConfig.domains = config.domains;
     appConfig.erdEnabled = config.erdEnabled;
     appConfig.adminMfaEnforced = config.adminMfaEnforced;
     appConfig.version = config.version;

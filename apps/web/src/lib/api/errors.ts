@@ -142,6 +142,7 @@ const MESSAGES = {
   [ErrorCode.AdminAccountNotFound]: () => m.apierr_admin_account_not_found(),
   [ErrorCode.AdminSettingLockedByEnv]: () =>
     m.apierr_admin_setting_locked_by_env(),
+  [ErrorCode.AdminNoDomainLeft]: () => m.apierr_admin_no_domain_left(),
   [ErrorCode.AdminReportNotFound]: () => m.apierr_admin_report_not_found(),
   [ErrorCode.AdminCannotSelfDemote]: () => m.apierr_admin_cannot_self_demote(),
   [ErrorCode.AdminCannotSelfDelete]: () => m.apierr_admin_cannot_self_delete(),

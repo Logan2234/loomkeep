@@ -145,7 +145,6 @@
   "settings_domain_music_description": "Albums et artistes",
   "settings_domain_podcasts_description": "Émissions et épisodes",
   "settings_domain_boardgames_description": "Jeux de société et parties",
-  "settings_domain_temporarily_unavailable": "Temporairement indisponible.",
   "settings_domain_last_required": "Au moins un domaine doit rester actif.",
   "settings_nav_style_label": "Style de navigation",
   "settings_nav_style_description": "Change la mise en forme du rail et de la barre du bas. « Marquee » est inclus ; les deux autres sont réservés aux comptes premium.",
