@@ -75,6 +75,18 @@ history from before it was started.
 
 ### Fixed
 
+- Rewatching a series finished with "season watched" no longer counts
+  every episode as already seen again.
+- The monthly "paused" reminder and the stale-series list now include
+  series followed by ticking episodes, not only imported ones.
+- Signing out turns off push on that device, so a shared browser stops
+  showing the previous account's notifications.
+- An import with "overwrite" that fails part-way no longer leaves the
+  library missing every title it hadn't rewritten yet.
+- An import cut short by a server restart now shows as interrupted, in
+  the history and on its progress screen.
+- Book and Steam imports list the titles the catalogue no longer has, and
+  a catalogue outage fails the import instead of using up the free one.
 - Self-hosting: the offsite backup no longer stops at the first missing
   add-on database or at an unquoted `SMTP_FROM` in `.env`; it uploads what
   it could, checks the upload and pings the health check's `/fail` on error.
