@@ -19,10 +19,12 @@ import type { UnleashClient } from "unleash-proxy-client";
  */
 class LiveFlags {
   #client?: UnleashClient;
+  #starting?: Promise<void>;
   #version = $state(0);
 
   /**
-   * Called once from bootstrap.svelte.ts. No-op if Unleash isn't configured.
+   * Called from bootstrap.svelte.ts on every (re)start, idempotent. No-op if
+   * Unleash isn't configured.
    *
    * The SDK is pulled in with a dynamic import on purpose: a static one puts
    * `unleash-proxy-client` in the root layout's *server* chunk as an external
@@ -30,7 +32,14 @@ class LiveFlags {
    * every server-rendered route then 500s on ERR_MODULE_NOT_FOUND. Loading it
    * here keeps it in a browser-only chunk, where it belongs anyway.
    */
-  async start(): Promise<void> {
+  start(): Promise<void> {
+    // The reconnect screen's "Retry" restarts the bootstrap: a second client
+    // would poll alongside the first, which nothing ever stopped.
+    this.#starting ??= this.#start();
+    return this.#starting;
+  }
+
+  async #start(): Promise<void> {
     const url = env.PUBLIC_UNLEASH_FRONTEND_URL;
     const clientKey = env.PUBLIC_UNLEASH_FRONTEND_TOKEN;
     if (!url || !clientKey) return;
