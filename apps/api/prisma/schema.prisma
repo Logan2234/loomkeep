@@ -2450,6 +2450,9 @@ model BookItem {
   // Open Library series the work belongs to as a numbered volume ("OL326110L"):
   // the saga the library's sagas view groups it under.
   seriesKey       String?
+  // An Internet Archive scan anyone can read for free, for the edition the
+  // refresh picks: the library's "free to read" filter reads it.
+  readOnlineUrl   String?
   metadata        Json       @default("{}")
   lastSyncedAt    DateTime   @default(now())
   // Last failed background refresh: keeps the item out of the refresh

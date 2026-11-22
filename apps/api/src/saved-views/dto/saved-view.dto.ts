@@ -62,6 +62,10 @@ export class SavedViewFiltersBody implements SavedViewFiltersDto {
   platforms?: string[];
 
   @IsOptional()
+  @IsBoolean()
+  freeToRead?: boolean;
+
+  @IsOptional()
   @IsString()
   @MaxLength(KEY_LENGTH)
   sort?: string;
@@ -130,6 +134,12 @@ export class SavedViewFiltersResponseDto implements SavedViewFiltersDto {
    * @example ["Nintendo Switch"]
    */
   platforms?: string[];
+
+  /**
+   * Only books anyone can read online for free.
+   * @example true
+   */
+  freeToRead?: boolean;
 
   /**
    * The list's sort key.

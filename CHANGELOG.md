@@ -44,6 +44,8 @@ history from before it was started.
   "My services" filter.
 - Premium: subscribe to the series premieres from "Add to my calendar", with
   the same personal link as the release calendar.
+- Book library › Filters: "Free to read online" keeps the books an edition
+  of which anyone can read for free on the Internet Archive.
 - Ownership › Physical now asks for the format: DVD, Blu-ray, 4K or VHS for
   films and series, boxed, loose, sealed or collector's edition for games,
   pocket, paperback, hardcover or box set for books, vinyl, CD or cassette

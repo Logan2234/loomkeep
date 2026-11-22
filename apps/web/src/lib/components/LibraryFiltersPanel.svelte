@@ -14,6 +14,7 @@
   import Drawer from "./Drawer.svelte";
   import Icon from "./Icon.svelte";
   import LibraryDisplayPicker from "./LibraryDisplayPicker.svelte";
+  import NewBadge from "./NewBadge.svelte";
   import SegmentedControl from "./SegmentedControl.svelte";
   import SidePanel from "./SidePanel.svelte";
   import Switch from "./Switch.svelte";
@@ -28,6 +29,7 @@
     onExtra,
     favorites = true,
     favoritesOnly = $bindable(false),
+    switches = [],
     sorts,
     sort = $bindable(),
     reversed = $bindable(false),
@@ -51,6 +53,15 @@
     /** Whether the "favorites only" switch applies (not to a saga). */
     favorites?: boolean;
     favoritesOnly?: boolean;
+    /** The domain's own on/off filters, under "favorites only". */
+    switches?: {
+      key: string;
+      label: string;
+      hint?: string;
+      isNew?: boolean;
+      checked: boolean;
+      onChange: (next: boolean) => void;
+    }[];
     sorts: SelectOption[];
     sort: string;
     reversed?: boolean;
@@ -147,6 +158,25 @@
           onChange={(next) => (favoritesOnly = next)} />
       </label>
     {/if}
+
+    {#each switches as item (item.key)}
+      <label
+        class="flex min-h-11 cursor-pointer items-center justify-between gap-3"
+        class:mt-4={!favorites}>
+        <span class="flex flex-col">
+          <span class="font-medium"
+            >{item.label}{#if item.isNew}
+              <NewBadge />{/if}</span>
+          {#if item.hint}
+            <span class="text-dim text-xs">{item.hint}</span>
+          {/if}
+        </span>
+        <Switch
+          checked={item.checked}
+          label={item.label}
+          onChange={item.onChange} />
+      </label>
+    {/each}
 
     {@render heading(m.common_sort_by())}
     <div

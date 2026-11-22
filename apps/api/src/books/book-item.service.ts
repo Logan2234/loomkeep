@@ -342,6 +342,7 @@ export class BookItemService {
       pageCount: details.pageCount,
       isbn: details.isbn,
       seriesKey: details.seriesKey,
+      readOnlineUrl: details.readOnlineUrl,
       isAdult: details.summary.isAdult,
       lastSyncedAt: new Date(),
       syncFailedAt: null,

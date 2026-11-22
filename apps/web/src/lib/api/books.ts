@@ -24,6 +24,8 @@ export const searchBooks = (query: string) =>
 export interface ListBooksFilters {
   query?: string;
   favorite?: boolean;
+  /** Only books anyone can read online for free. */
+  freeToRead?: boolean;
   statuses?: BookFilterStatus[];
   sort?: BookSortKey;
   order?: SortOrder;
@@ -36,6 +38,7 @@ export function listBooks(filters: ListBooksFilters = {}) {
       lang: getLocale(),
       q: filters.query,
       favorite: filters.favorite ? "true" : undefined,
+      free: filters.freeToRead ? "true" : undefined,
       status: filters.statuses,
       sort: filters.sort,
       order: filters.order,
@@ -51,6 +54,7 @@ export function getBooksPile(filters: ListBooksFilters = {}) {
       lang: getLocale(),
       q: filters.query,
       favorite: filters.favorite ? "true" : undefined,
+      free: filters.freeToRead ? "true" : undefined,
       status: filters.statuses,
     },
   });

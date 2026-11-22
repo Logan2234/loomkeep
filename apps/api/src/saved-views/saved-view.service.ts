@@ -39,6 +39,7 @@ function understoodFilters(
     statuses: filters.statuses?.filter((s) => STATUSES[domain].includes(s)),
     types: domain === "MEDIA" ? filters.types : undefined,
     platforms: domain === "GAMES" ? filters.platforms : undefined,
+    freeToRead: domain === "BOOKS" ? filters.freeToRead : undefined,
   };
   return toJsonInput(understood);
 }

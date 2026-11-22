@@ -154,6 +154,35 @@ describe("BookLibraryService.getPile", () => {
   });
 });
 
+describe("BookLibraryService free-to-read filter", () => {
+  it("keeps only books with a free online scan, and leaves the rest unfiltered", async () => {
+    const findMany = vi.fn().mockResolvedValue([]);
+    const service = new BookLibraryService(
+      { bookEntry: { findMany } } as unknown as PrismaService,
+      {} as BookItemService,
+      {} as AgeGateService,
+      {} as import("../reviews/review.service").ReviewService,
+      {} as import("../social/activity.service").ActivityService,
+      stubXp(),
+      stubAchievements(),
+      stubEvents(),
+      {} as import("../lists/list.service").ListService,
+      stubSessionXp(),
+      stubSagas(),
+    );
+
+    await service.getPile("user-1", { freeToRead: true });
+    await service.getPile("user-1", {});
+
+    const [[filtered], [unfiltered]] = findMany.mock.calls;
+    expect(filtered.where.AND[0].bookItem).toEqual({
+      title: undefined,
+      readOnlineUrl: { not: null },
+    });
+    expect(unfiltered.where.AND[0].bookItem).toBeUndefined();
+  });
+});
+
 // Reading goals depend on finishedAt, while the UI only sends status.
 describe("BookLibraryService — finishedAt sync", () => {
   it("sets finishedAt when a book's status is patched to READ", async () => {
