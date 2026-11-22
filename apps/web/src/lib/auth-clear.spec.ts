@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { auth } from "./auth.svelte";
+import { chat, chatDrafts } from "./chat/chat.svelte";
 import { queryClient } from "./query-client";
 
 describe("auth.clear", () => {
@@ -10,5 +11,16 @@ describe("auth.clear", () => {
 
     expect(queryClient.getQueryData(["library", "list"])).toBeUndefined();
     expect(auth.user).toBeNull();
+  });
+
+  it("closes Messages and forgets its drafts, so the next account doesn't open the previous one's conversation", () => {
+    chat.show("conversation-1");
+    chatDrafts.set("conversation-1", "unsent text");
+
+    auth.clear();
+
+    expect(chat.open).toBe(false);
+    expect(chat.activeId).toBeNull();
+    expect(chatDrafts.size).toBe(0);
   });
 });

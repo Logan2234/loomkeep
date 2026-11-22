@@ -42,6 +42,9 @@ export class UpdateGameEntryDto implements UpdateGameEntryContract {
   @IsOptional()
   @IsInt()
   @Min(0)
+  // Over a century of play: anything above is a typo, and past 2^31 the
+  // Int column refused it with a 500.
+  @Max(60_000_000)
   playtimeMinutes?: number;
 
   @IsOptional()

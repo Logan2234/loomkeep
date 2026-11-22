@@ -83,6 +83,25 @@ describe("request() → GlitchTip reporting", { timeout: 20_000 }, () => {
     expect(captureException).not.toHaveBeenCalled();
   });
 
+  it("turns a 2xx page that isn't JSON (captive portal) into an ApiError", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response("<html>Sign in to the hotel Wi-Fi</html>", {
+          status: 200,
+          headers: { "Content-Type": "text/html" },
+        }),
+      ),
+    );
+    const request = await loadRequest(undefined);
+    const { ApiError } = await import("./core");
+
+    const failure = await request("/me").catch((err: unknown) => err);
+
+    expect(failure).toBeInstanceOf(ApiError);
+    expect(failure).toMatchObject({ code: "network.offline" });
+  });
+
   it("reports a network failure (fetch rejects) with no requestId", async () => {
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("offline")));
     const request = await loadRequest("https://glitchtip.example/1");

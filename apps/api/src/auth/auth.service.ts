@@ -1189,11 +1189,9 @@ export class AuthService {
   }
 
   /**
-   * Opens a new session (login/register): signs tokens and records the device.
-   * Drops any existing session already recorded for the same device first —
-   * otherwise logging back in from the same browser after its old tokens went
-   * stale (cleared storage, app restart, ...) just piles up another row next
-   * to the dead one instead of replacing it.
+   * Opens a new session (login/register): signs tokens and stores the
+   * refresh token's row. Earlier sessions of the same browser are left in
+   * place: they expire on their own, or are ended from Settings › Security.
    */
   private async startSession(
     user: User,

@@ -175,13 +175,18 @@ export class MusicLibraryService {
 
     const before = await this.prisma.musicEntry.findUnique({
       where: { userId_musicItemId: { userId, musicItemId: musicItem.id } },
-      select: { status: true, favorite: true },
+      select: { status: true, favorite: true, finishedAt: true },
     });
 
     const changes = {
       status: dto.status,
       notes: dto.notes,
       favorite: dto.favorite,
+      // Dated on first listen, as games and books are on completion: the
+      // "finished" sort and the year's stats read it.
+      ...(dto.status === MusicStatus.LISTENED && !before?.finishedAt
+        ? { finishedAt: new Date() }
+        : {}),
     };
     const entry = await retryAfterUniqueRace(() =>
       this.prisma.musicEntry.upsert({
@@ -433,7 +438,9 @@ export class MusicLibraryService {
           dto.startedAt === undefined ? undefined : toDateOrNull(dto.startedAt),
         finishedAt:
           dto.finishedAt === undefined
-            ? undefined
+            ? dto.status === MusicStatus.LISTENED && before?.finishedAt === null
+              ? new Date()
+              : undefined
             : toDateOrNull(dto.finishedAt),
         ownershipStatus: dto.ownershipStatus,
         ownershipSource: dto.ownershipSource,

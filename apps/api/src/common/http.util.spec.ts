@@ -168,4 +168,30 @@ describe("fetchJson", () => {
 
     vi.useRealTimers();
   });
+
+  it("keeps the timeout running while the body is read", async () => {
+    vi.useFakeTimers();
+    global.fetch = vi.fn(async (_url: unknown, init?: RequestInit) => ({
+      ok: true,
+      status: 200,
+      headers: new Headers(),
+      // Headers arrived, then the body stalls: only the abort can end it.
+      json: () =>
+        new Promise((_resolve, reject) => {
+          init?.signal?.addEventListener("abort", () => {
+            const err = new Error("aborted");
+            err.name = "AbortError";
+            reject(err);
+          });
+        }),
+    })) as unknown as typeof fetch;
+
+    const assertion = expect(
+      fetchJson("https://example.test", {}, { sourceLabel: "Test" }),
+    ).rejects.toMatchObject({ code: ErrorCode.CatalogProviderUnavailable });
+    await vi.advanceTimersByTimeAsync(10_000);
+    await assertion;
+
+    vi.useRealTimers();
+  });
 });

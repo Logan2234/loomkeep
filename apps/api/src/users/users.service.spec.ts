@@ -130,6 +130,30 @@ describe("UsersService — email change", () => {
       };
     }
 
+    it("answers a conflict when the address was taken since the request", async () => {
+      (prisma.user.findUnique as Mock).mockResolvedValueOnce({
+        id: userId,
+        email: "old@example.com",
+        locale: "fr",
+        passwordHash,
+      });
+      (prisma.emailChangeRequest.findFirst as Mock).mockResolvedValueOnce(
+        pendingRequest(),
+      );
+      // Someone registered new@example.com between the request and the code.
+      (prisma.$transaction as Mock).mockRejectedValueOnce(
+        new Prisma.PrismaClientKnownRequestError("Unique constraint failed", {
+          code: "P2002",
+          clientVersion: "test",
+          meta: { target: ["email"] },
+        }),
+      );
+
+      await expect(
+        service.confirmEmailChange(userId, { code: "123456" }),
+      ).rejects.toMatchObject({ code: ErrorCode.UserEmailAlreadyExists });
+    });
+
     it("applies the new email and notifies both addresses on a correct code", async () => {
       (prisma.user.findUnique as Mock).mockResolvedValueOnce({
         id: userId,

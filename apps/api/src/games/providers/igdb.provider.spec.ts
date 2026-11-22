@@ -39,6 +39,53 @@ describe("IgdbProvider", () => {
     vi.restoreAllMocks();
   });
 
+  describe("retries", () => {
+    function fetchSequence(gamesStatuses: number[]) {
+      const tokens: string[] = [];
+      const auths: string[] = [];
+      let n = 0;
+      global.fetch = vi.fn(async (url: string | URL, init?: RequestInit) => {
+        if (String(url).includes("id.twitch.tv")) {
+          tokens.push("t");
+          return new Response(
+            JSON.stringify({
+              access_token: `token-${tokens.length}`,
+              expires_in: 3600,
+            }),
+            { status: 200 },
+          );
+        }
+
+        auths.push((init?.headers as Record<string, string>).Authorization);
+        const status = gamesStatuses[Math.min(n++, gamesStatuses.length - 1)];
+        return new Response(status === 200 ? "[]" : "{}", { status });
+      }) as unknown as typeof fetch;
+      return { tokens, auths };
+    }
+
+    it("goes back through the throttle before every retry", async () => {
+      fetchSequence([429, 200]);
+      const wait = vi.spyOn(
+        (provider as unknown as { throttle: { wait: () => Promise<void> } })
+          .throttle,
+        "wait",
+      );
+
+      await provider.popularCovers();
+
+      expect(wait).toHaveBeenCalledTimes(2);
+    });
+
+    it("drops a token Twitch revoked early and retries with a new one", async () => {
+      const { tokens, auths } = fetchSequence([401, 200]);
+
+      await expect(provider.popularCovers()).resolves.toEqual([]);
+
+      expect(tokens).toHaveLength(2);
+      expect(auths).toEqual(["Bearer token-1", "Bearer token-2"]);
+    });
+  });
+
   it("maps search results to canonical summaries", async () => {
     mockFetchByUrl({
       "id.twitch.tv": TOKEN_RESPONSE,
