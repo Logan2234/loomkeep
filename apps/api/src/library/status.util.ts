@@ -55,3 +55,29 @@ export function deriveStatus(
 
   return "WATCHING";
 }
+
+/**
+ * `deriveStatus` from an entry's materialized counts (no rewatch): what the
+ * library list shows. A series' stored status is PLANNED or DROPPED whatever
+ * was watched, so a query asking for "in progress" filters on this, after a
+ * `watchedEpisodes > 0`, not-DROPPED prefilter in SQL.
+ */
+export function materializedStatus(entry: {
+  status: string;
+  watchedEpisodes: number;
+  mediaItem: { type: string; status: string | null; episodeCount: number };
+}): EntryStatus {
+  const { mediaItem } = entry;
+  return deriveStatus(
+    mediaItem.type as MediaType,
+    mediaItem.episodeCount > 0
+      ? {
+          watchedEpisodes: entry.watchedEpisodes,
+          totalEpisodes: mediaItem.episodeCount,
+          nextEpisode: null,
+        }
+      : null,
+    isAiringFinished(mediaItem.status),
+    entry.status as EntryStatus,
+  );
+}

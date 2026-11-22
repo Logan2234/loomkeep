@@ -107,12 +107,17 @@ describe("StatsService — advanced statistics", () => {
 });
 
 describe("StatsService in-progress staleness", () => {
+  // Two of five episodes ticked: in progress, though stored as PLANNED.
   const SERIES = {
+    status: "PLANNED",
+    watchedEpisodes: 2,
     mediaItem: {
       id: "m1",
       title: "Série",
       posterUrl: null,
       type: "SERIES",
+      status: "Ended",
+      episodeCount: 5,
       canonicalSource: "TMDB",
       externalIds: [],
     },
@@ -157,6 +162,7 @@ describe("StatsService in-progress staleness", () => {
 
   it("ignores movies, which have no episodes to be stale on", async () => {
     const movie = {
+      ...SERIES,
       mediaItem: { ...SERIES.mediaItem, id: "m2", type: "MOVIE" },
     };
     const { service, prisma } = make([SERIES, movie]);
