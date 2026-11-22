@@ -57,9 +57,7 @@ describe("Admin users table", () => {
 
     const link = await screen.findByRole("link", { name: /Camille/ });
     expect(link.getAttribute("href")).toBe("/app/admin/users/u1");
-    expect(screen.getAllByText(m.admin_users_online()).length).toBeGreaterThan(
-      0,
-    );
+    expect(screen.getAllByText(m.common_online()).length).toBeGreaterThan(0);
     expect(screen.getByText(m.admin_users_onboarding_badge())).toBeTruthy();
     expect(screen.getByText(m.admin_users_factor_passkey())).toBeTruthy();
   });

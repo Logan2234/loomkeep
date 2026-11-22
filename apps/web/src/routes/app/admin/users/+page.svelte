@@ -217,7 +217,7 @@
 
   const activityLabel = (u: AdminUserDto): string =>
     u.online
-      ? m.admin_users_online()
+      ? m.common_online()
       : u.lastActiveAt
         ? formatRelative(u.lastActiveAt)
         : m.admin_users_never_logged_in();
@@ -395,7 +395,7 @@
               changeFilter((v[0] as AdminUserFilter) ?? "all")} />
           <div class="md:hidden">
             <Combobox
-              label={m.admin_users_sort()}
+              label={m.common_sort()}
               options={SORTS}
               values={[sort]}
               onChange={(v) => {
@@ -536,7 +536,7 @@
                 <th class="hidden px-4 py-2.5 lg:table-cell"
                   >{m.common_domains()}</th>
                 <th class="hidden px-4 py-2.5 lg:table-cell"
-                  >{m.admin_users_security()}</th>
+                  >{m.common_security()}</th>
                 {#if appConfig.gamificationEnabled}
                   {@render sortHeader("xp", m.admin_users_xp())}
                 {/if}
@@ -559,7 +559,7 @@
                         {#if u.online}
                           <span
                             class="bg-success border-surface absolute -right-0.5 -bottom-0.5 h-3 w-3 rounded-full border-2"
-                            title={m.admin_users_online()}></span>
+                            title={m.common_online()}></span>
                         {/if}
                       </span>
                       <div class="min-w-0">

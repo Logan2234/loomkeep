@@ -140,8 +140,8 @@ describe("Admin account page", () => {
     });
 
     for (const label of [
-      m.admin_user_section_account(),
-      m.admin_users_security(),
+      m.common_account(),
+      m.common_security(),
       m.admin_user_section_preferences(),
       m.admin_user_section_moderation(),
     ]) {

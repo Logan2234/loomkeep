@@ -103,9 +103,9 @@
   }
 
   const SECTIONS = $derived([
-    { id: "account", label: m.admin_user_section_account() },
+    { id: "account", label: m.common_account() },
     { id: "library", label: m.common_library() },
-    { id: "security", label: m.admin_users_security() },
+    { id: "security", label: m.common_security() },
     { id: "preferences", label: m.admin_user_section_preferences() },
     { id: "social", label: m.common_social() },
     { id: "moderation", label: m.admin_user_section_moderation() },
@@ -428,7 +428,7 @@
       {#if user.online}
         <span
           class="bg-success border-bg absolute right-0 bottom-0 h-4 w-4 rounded-full border-2"
-          title={m.admin_users_online()}></span>
+          title={m.common_online()}></span>
       {/if}
     </button>
     <div class="min-w-0 flex-1">
@@ -507,7 +507,7 @@
           ? 'text-success'
           : ''}">
         {user.online
-          ? m.admin_users_online()
+          ? m.common_online()
           : user.lastActiveAt
             ? formatRelative(user.lastActiveAt)
             : m.admin_users_never_logged_in()}
@@ -562,7 +562,7 @@
 
     <div class="flex min-w-0 flex-col gap-8">
       <section id="account" class="scroll-mt-20" use:observeSection>
-        {@render sectionTitle(m.admin_user_section_account())}
+        {@render sectionTitle(m.common_account())}
 
         {#if user.suspendedUntil}
           <div
@@ -856,7 +856,7 @@
                         ? 'border-danger/40 text-danger'
                         : 'border-success/40 text-success'}">
                       {run.status === "FAILURE"
-                        ? m.admin_user_import_failure()
+                        ? m.common_failure()
                         : m.admin_user_import_success()}
                     </span>
                   </li>
@@ -876,7 +876,7 @@
       </section>
 
       <section id="security" class="scroll-mt-20" use:observeSection>
-        {@render sectionTitle(m.admin_users_security())}
+        {@render sectionTitle(m.common_security())}
         <div class="grid gap-3 md:grid-cols-2">
           <div class="card overflow-hidden">
             {@render panelTitle(m.admin_user_login())}
@@ -1093,10 +1093,10 @@
             {@render panelTitle(m.admin_user_locale_region())}
             <dl class="divide-border divide-y">
               {@render row(
-                m.admin_user_locale(),
+                m.common_language(),
                 languageName(preferences.locale),
               )}
-              {@render row(m.admin_user_timezone(), preferences.timezone)}
+              {@render row(m.common_timezone(), preferences.timezone)}
               {@render row(
                 m.admin_user_watch_region(),
                 preferences.watchRegion
@@ -1111,7 +1111,7 @@
           </div>
 
           <div class="card overflow-hidden">
-            {@render panelTitle(m.admin_user_notifications())}
+            {@render panelTitle(m.common_notifications())}
             <dl class="divide-border divide-y">
               {@render row(
                 m.admin_user_digest_email(),
@@ -1122,7 +1122,7 @@
                 CADENCE_LABELS[preferences.notifyPush](),
               )}
               {@render row(
-                m.admin_user_newsletter(),
+                m.common_newsletter(),
                 preferences.newsletter
                   ? preferences.newsletterOptInAt
                     ? m.admin_user_newsletter_on({
@@ -1136,7 +1136,7 @@
           </div>
 
           <div class="card overflow-hidden">
-            {@render panelTitle(m.admin_user_privacy())}
+            {@render panelTitle(m.common_privacy())}
             <dl class="divide-border divide-y">
               {@render row(
                 m.admin_user_profile_access(),
