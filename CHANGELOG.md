@@ -44,6 +44,9 @@ history from before it was started.
   "My services" filter.
 - Premium: subscribe to the series premieres from "Add to my calendar", with
   the same personal link as the release calendar.
+- Self-hosting: the Docker images carry a signed provenance and an SBOM, so
+  you can check where an image comes from and what it contains. See
+  "Checking an image" in the upgrade docs.
 
 ### Fixed
 

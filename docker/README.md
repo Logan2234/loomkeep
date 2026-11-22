@@ -24,8 +24,11 @@ tagged alone):
 `ghcr-cleanup.yml` keeps those named tags and the 30 newest commit tags,
 and deletes the rest every Monday, with the platform images and
 attestations that belong to them (the "untagged" versions in the package
-view). The `unknown/unknown` platform there is each image's provenance
-attestation, not an image.
+view). The `unknown/unknown` platform there is each image's provenance and
+SBOM attestation (BuildKit's, `sbom: true` in `docker-push`), not an image.
+`attest-images` then signs each tagged index's provenance with Sigstore and
+pushes it to GHCR as a referrer; it runs after `docker-tag`, outside
+`ready-to-ship`, so it never holds a deploy back.
 
 `.github/workflows/ci.yml` ends every `main` run by redeploying the VPS,
 once every check passed and the images are tagged (its `deploy` job; a run

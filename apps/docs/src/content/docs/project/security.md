@@ -44,6 +44,10 @@ Dependabot and Trivy for dependencies and images, gitleaks for committed
 secrets. The repository's [OpenSSF Scorecard](https://scorecard.dev/viewer/?uri=github.com/Logan2234/loomkeep)
 rates its practices publicly.
 
+The Docker images and the Android app are signed at build time with
+GitHub's identity (Sigstore), and each image lists its contents in an SBOM:
+see [Checking an image](/self-hosting/upgrades-and-backups/#checking-an-image).
+
 ## For self-hosters
 
 Two secrets can't be changed casually on a running instance:
