@@ -62,6 +62,11 @@ history from before it was started.
 
 ### Fixed
 
+- Self-hosting: the offsite backup no longer stops at the first missing
+  add-on database or at an unquoted `SMTP_FROM` in `.env`; it uploads what
+  it could, checks the upload and pings the health check's `/fail` on error.
+- A series with many seasons no longer fails to add when one season can't
+  be read from TMDB.
 - Importing a Goodreads, StoryGraph or Babelio CSV saved with Excel no longer
   comes out empty.
 - An inactive account now gets at least 30 days between the reminder email
