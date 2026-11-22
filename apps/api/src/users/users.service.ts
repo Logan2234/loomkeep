@@ -26,6 +26,7 @@ import { AppException } from "../common/app.exception";
 import { randomNumericCode, sha256Hex } from "../common/crypto.util";
 import { HibpService } from "../common/hibp.service";
 import { parseEnumParam } from "../common/parse-enum-param.util";
+import { isUniqueViolation } from "../common/prisma-error.util";
 import { EntitlementService } from "../entitlements/entitlement.service";
 import { EventsGateway } from "../events/events.gateway";
 import { XpService } from "../gamification/xp.service";
@@ -596,13 +597,23 @@ export class UsersService {
       );
     }
 
-    const [user] = await this.prisma.$transaction([
-      this.prisma.user.update({
-        where: { id: userId },
-        data: { email: stored.newEmail },
-      }),
-      this.prisma.emailChangeRequest.deleteMany({ where: { userId } }),
-    ]);
+    // The address was free when the code was sent; another account may have
+    // taken it since. That's the conflict the request itself would report.
+    const [user] = await this.prisma
+      .$transaction([
+        this.prisma.user.update({
+          where: { id: userId },
+          data: { email: stored.newEmail },
+        }),
+        this.prisma.emailChangeRequest.deleteMany({ where: { userId } }),
+      ])
+      .catch((err: unknown) => {
+        if (!isUniqueViolation(err, "email")) throw err;
+        throw new AppException(
+          HttpStatus.CONFLICT,
+          ErrorCode.UserEmailAlreadyExists,
+        );
+      });
     const occurredAt = await this.security.record({
       type: "EMAIL_CHANGED",
       userId,
