@@ -184,20 +184,6 @@ function materializedProgress(entry: {
 }
 
 /**
- * The rewatch column an update writes: unchanged when not asked, cleared on
- * stop, kept when already rewatching. A series' rewatch begins with the
- * viewing that prompted it (its latest one), a movie's right now.
- */
-function rewatchStartedAtFor(
-  rewatching: boolean | undefined,
-  entry: { rewatchStartedAt: Date | null; lastWatchedAt: Date | null },
-): Date | null | undefined {
-  if (rewatching === undefined) return undefined;
-  if (!rewatching) return null;
-  return entry.rewatchStartedAt ?? entry.lastWatchedAt ?? new Date();
-}
-
-/**
  * Whether a viewing belongs to the current one: any viewing outside a
  * rewatch, only those since it began during one. An undated (imported)
  * viewing always predates a rewatch.
@@ -838,7 +824,11 @@ export class LibraryService {
         ownershipStatus: dto.ownershipStatus,
         ownershipSource: dto.ownershipSource,
         episodeAlertsMuted: dto.episodeAlertsMuted,
-        rewatchStartedAt: rewatchStartedAtFor(dto.rewatching, owned),
+        rewatchStartedAt: await this.rewatchStartedAtFor(
+          userId,
+          owned,
+          dto.rewatching,
+        ),
       },
       include: ENTRY_INCLUDE,
     });
@@ -1863,6 +1853,69 @@ export class LibraryService {
         });
       }
     }
+  }
+
+  /**
+   * The rewatch column an update writes: unchanged when not asked, cleared on
+   * stop, kept when already rewatching. Only a title seen to the end starts
+   * one. A series' rewatch begins with the viewing that prompted it when its
+   * latest viewing saw an episode again (the page asks right after one), and
+   * right now otherwise: "season watched" writes a whole run with one
+   * timestamp, which would otherwise count as already seen again.
+   */
+  private async rewatchStartedAtFor(
+    userId: string,
+    entry: {
+      mediaItemId: string;
+      status: EntryStatus;
+      watchedEpisodes: number;
+      lastWatchedAt: Date | null;
+      rewatchStartedAt: Date | null;
+    },
+    rewatching: boolean | undefined,
+  ): Promise<Date | null | undefined> {
+    if (rewatching === undefined) return undefined;
+    if (!rewatching) return null;
+    if (entry.rewatchStartedAt) return entry.rewatchStartedAt;
+
+    const mediaItem = await this.prisma.mediaItem.findUniqueOrThrow({
+      where: { id: entry.mediaItemId },
+      select: { type: true, status: true, episodeCount: true },
+    });
+    const status = deriveStatus(
+      mediaItem.type,
+      materializedProgress({ ...entry, mediaItem }),
+      normalizeAiringFinished(mediaItem.status),
+      entry.status,
+    );
+
+    if (status !== "COMPLETED" && status !== "UP_TO_DATE") {
+      throw new AppException(
+        HttpStatus.CONFLICT,
+        ErrorCode.LibraryRewatchNotFinished,
+      );
+    }
+
+    const latest = entry.lastWatchedAt;
+    if (mediaItem.type === "MOVIE" || !latest) return new Date();
+
+    const latestViewings = await this.prisma.episodeWatch.findMany({
+      where: {
+        userId,
+        watchedAt: latest,
+        episode: { season: { mediaItemId: entry.mediaItemId } },
+      },
+      select: { episodeId: true },
+    });
+    // An undated (imported) viewing predates every dated one.
+    const seenBefore = await this.prisma.episodeWatch.count({
+      where: {
+        userId,
+        episodeId: { in: latestViewings.map((w) => w.episodeId) },
+        OR: [{ watchedAt: { lt: latest } }, { watchedAt: null }],
+      },
+    });
+    return seenBefore > 0 ? latest : new Date();
   }
 
   private assertEntryOwnership(userId: string, entryId: string) {

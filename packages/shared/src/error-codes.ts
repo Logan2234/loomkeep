@@ -191,6 +191,7 @@ export const ErrorCode = {
   LibraryEntryNotFound: "library.entry_not_found",
   LibraryEntryForbidden: "library.entry_forbidden",
   LibraryReplayNotMovie: "library.replay_not_movie",
+  LibraryRewatchNotFinished: "library.rewatch_not_finished",
   LibraryMovieNotReleased: "library.movie_not_released",
   LibraryAnimeNotAired: "library.anime_not_aired",
   LibraryGameNotReleased: "library.game_not_released",

@@ -37,6 +37,7 @@
   "apierr_library_calendar_unavailable": "This calendar is unavailable.",
   "apierr_library_episode_not_found": "This episode could not be found.",
   "apierr_library_season_empty": "This season could not be found or has no episodes.",
+  "apierr_library_rewatch_not_finished": "Only a title seen to the end can be rewatched.",
   "apierr_library_season_not_found": "This season could not be found.",
   "apierr_library_watch_batch_too_large": "Too many episodes at once: select fewer.",
   "apierr_library_no_watch_to_undo": "No watch to undo for this episode.",
