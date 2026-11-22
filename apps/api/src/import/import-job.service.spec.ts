@@ -537,6 +537,28 @@ describe("ImportJobService.commit — IMPORT_COMPLETED", () => {
     );
   });
 
+  it("answers a job pruned from memory with the report it recorded", async () => {
+    const { service } = makeCommitService(async () => ({
+      overwrite: false,
+      tiles: [],
+    }));
+    const report = { overwrite: false, tiles: [] };
+    (
+      service as unknown as { prisma: { importRun: Record<string, unknown> } }
+    ).prisma.importRun.findFirst = vi.fn().mockResolvedValue({
+      status: "SUCCESS",
+      error: null,
+      itemCount: 3,
+      details: { items: [], report },
+    });
+
+    await expect(service.pollJob("u1", "old-job")).resolves.toMatchObject({
+      status: "completed",
+      report,
+      errorCode: null,
+    });
+  });
+
   it("still answers not found for a job nobody recorded", async () => {
     const { service } = makeCommitService(async () => ({
       overwrite: false,

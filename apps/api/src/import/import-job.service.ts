@@ -430,7 +430,7 @@ export class ImportJobService {
 
     const run = await this.prisma.importRun.findFirst({
       where: { id: jobId, userId },
-      select: { status: true, error: true, itemCount: true },
+      select: { status: true, error: true, itemCount: true, details: true },
     });
     if (!run)
       throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.ImportJobNotFound);
@@ -441,7 +441,11 @@ export class ImportJobService {
       status: succeeded ? "completed" : "failed",
       progress: { done: run.itemCount, total: run.itemCount },
       plan: null,
-      report: null,
+      // The wizard shows the report of a finished commit: kept in the record.
+      report: succeeded
+        ? ((run.details as { report?: ImportReport | null } | null)?.report ??
+          null)
+        : null,
       errorCode: succeeded
         ? null
         : run.error === INTERRUPTED_IMPORT_ERROR

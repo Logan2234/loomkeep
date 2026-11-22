@@ -83,8 +83,8 @@ history from before it was started.
   showing the previous account's notifications.
 - An import with "overwrite" that fails part-way no longer leaves the
   library missing every title it hadn't rewritten yet.
-- An import cut short by a server restart now shows as interrupted, in
-  the history and on its progress screen.
+- An import cut short by a server restart now appears in the history as
+  failed, and its progress screen says the server restarted.
 - Book and Steam imports list the titles the catalogue no longer has, and
   a catalogue outage fails the import instead of using up the free one.
 - Self-hosting: the offsite backup no longer stops at the first missing
