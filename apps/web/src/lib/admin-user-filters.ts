@@ -7,6 +7,7 @@ export const ADMIN_USER_ADVANCED_KEYS = [
   "newsletter",
   "push",
   "session",
+  "domain",
 ] as const;
 
 export type AdminUserAdvancedKey = (typeof ADMIN_USER_ADVANCED_KEYS)[number];

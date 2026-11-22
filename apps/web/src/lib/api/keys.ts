@@ -323,7 +323,13 @@ export const keys = {
       newsletter: string;
       push: string;
       session: string;
+      domain: string;
+      sort: string;
+      dir: string;
     }) => ["admin", "users", filters] as const,
+    /** Every page and filter of the accounts list, for invalidation. */
+    allUsers: () => ["admin", "users"] as const,
+    user: (userId: string) => ["admin", "user", userId] as const,
     invitations: (filters?: { query: string; status: string }) =>
       filters
         ? (["admin", "invitations", filters] as const)

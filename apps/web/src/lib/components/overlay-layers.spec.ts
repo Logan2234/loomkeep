@@ -37,16 +37,9 @@ describe("overlay layers", () => {
 
   it("keeps elevated side panels on the reserved layer below modals", () => {
     const commentsPanel = componentSource("CommentsPanel.svelte");
-    const userDrawer = readFileSync(
-      new URL(
-        "../../routes/app/admin/users/components/UserDrawer.svelte",
-        import.meta.url,
-      ),
-      "utf8",
-    );
 
-    for (const source of [commentsPanel, userDrawer]) {
-      expect(source).toContain("zIndex={ELEVATED_SIDE_PANEL_BACKDROP_Z_INDEX}");
-    }
+    expect(commentsPanel).toContain(
+      "zIndex={ELEVATED_SIDE_PANEL_BACKDROP_Z_INDEX}",
+    );
   });
 });

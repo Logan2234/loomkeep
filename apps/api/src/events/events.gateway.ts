@@ -451,6 +451,10 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   /** Distinct accounts holding at least one open socket right now. */
   async connectedUserCount(): Promise<number> {
+    return (await this.connectedUserIds()).size;
+  }
+
+  async connectedUserIds(): Promise<Set<string>> {
     const sockets = await this.server.fetchSockets();
     const userIds = new Set<string>();
 
@@ -459,7 +463,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
       if (userId) userIds.add(userId);
     }
 
-    return userIds.size;
+    return userIds;
   }
 
   emitReportsCount(): void {

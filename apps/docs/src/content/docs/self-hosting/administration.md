@@ -20,7 +20,7 @@ going further. Set up an authenticator app, or email codes if
 | Section                     | What you find there                                                                                 |
 | --------------------------- | --------------------------------------------------------------------------------------------------- |
 | **Services**                | Which catalogue and service keys are set, whether each one answers, and quotas.                     |
-| **Users**                   | Accounts and their sessions, invitations, password reset links, roles.                              |
+| **Users**                   | Accounts, each on its own page (security, devices, imports, moderation), invitations, roles.        |
 | **Communications**          | Every email template, previewed and sent to you as a test; test and broadcast push.                 |
 | **Stats**                   | How the instance is used, and library sizes.                                                        |
 | **Instance settings**       | What's open to every account: see [Instance settings](/self-hosting/instance-settings/).            |
