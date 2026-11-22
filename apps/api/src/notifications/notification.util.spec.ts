@@ -7,6 +7,7 @@ const base: Omit<CandidateEpisode, "episodeId" | "airDate"> = {
   seasonNumber: 1,
   episodeNumber: 1,
   episodeTitle: "Pilot",
+  seasonFinale: false,
   mediaTitle: "My Show",
   mediaType: "SERIES",
   sourceId: "500",

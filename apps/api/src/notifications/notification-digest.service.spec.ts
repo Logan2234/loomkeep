@@ -350,6 +350,7 @@ describe("NotificationDigestService.runDigests", () => {
       body: "S1E7",
       url: "/app/media/series/7",
       dedupeKey: "episode:ep2",
+      data: {},
     };
     const { service, mail, prisma } = makeService({
       notifyEmail: DigestCadence.WEEKLY,
