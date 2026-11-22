@@ -44,7 +44,7 @@ export class ApiV1WorkResponseDto implements ApiV1WorkDto {
   coverUrl!: string | null;
 
   /**
-   * The catalogue the work comes from: TMDB, ANILIST, IGDB, OPEN_LIBRARY or
+   * The catalogue the work comes from: TMDB, IGDB, OPEN_LIBRARY or
    * MUSICBRAINZ.
    * @example "TMDB"
    */

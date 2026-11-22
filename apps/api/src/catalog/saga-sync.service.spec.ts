@@ -1,7 +1,6 @@
 import type { MediaSagaDto, SagaMemberDto } from "@loomkeep/shared";
 import { vi } from "vitest";
 import type { PrismaService } from "../prisma/prisma.service";
-import type { AnilistProvider } from "./providers/anilist.provider";
 import type { TmdbProvider } from "./providers/tmdb.provider";
 import { SagaSyncService } from "./saga-sync.service";
 
@@ -50,13 +49,11 @@ function makeService({
     getSaga: vi.fn().mockResolvedValue(saga),
     getCollection: vi.fn().mockResolvedValue(saga),
   };
-  const anilist = { getSaga: vi.fn().mockResolvedValue(saga) };
   const service = new SagaSyncService(
     prisma as unknown as PrismaService,
     tmdb as unknown as TmdbProvider,
-    anilist as unknown as AnilistProvider,
   );
-  return { service, prisma, tmdb, anilist };
+  return { service, prisma, tmdb };
 }
 
 const announced = (prisma: ReturnType<typeof makeService>["prisma"]) =>
@@ -68,13 +65,20 @@ const announced = (prisma: ReturnType<typeof makeService>["prisma"]) =>
   });
 
 describe("SagaSyncService", () => {
-  it("reads a franchise once for all of its works", async () => {
-    const { service, anilist } = makeService();
+  it("reads a collection once for all of its films", async () => {
+    const { service, tmdb } = makeService();
 
-    await service.read("ANIME", "1");
-    await service.read("ANIME", "2");
+    await service.read("MOVIE", "1");
+    await service.read("MOVIE", "2");
 
-    expect(anilist.getSaga).toHaveBeenCalledTimes(1);
+    expect(tmdb.getSaga).toHaveBeenCalledTimes(1);
+  });
+
+  it("has no saga for a show: TMDB only collects films", async () => {
+    const { service, tmdb } = makeService();
+
+    await expect(service.read("ANIME", "1")).resolves.toBeNull();
+    expect(tmdb.getSaga).not.toHaveBeenCalled();
   });
 
   it("announces a work that joins a saga already saved", async () => {

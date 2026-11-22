@@ -1,7 +1,7 @@
 /**
  * Decorative poster wall behind the hero — real cover art from the same
- * providers the app queries live (TMDB, AniList, IGDB, Open Library,
- * MusicBrainz), not invented artwork. Titles without a cover fall back to
+ * providers the app queries live (TMDB, IGDB, Open Library, MusicBrainz),
+ * not invented artwork. Titles without a cover fall back to
  * Poster's gradient like they do in the real library. Each URL asks for the
  * smallest size its CDN offers that still fills a cell (w342, medium, -M):
  * the wall weighs half what it did with the large sizes.
@@ -16,8 +16,7 @@ export const LANDING_LIBRARY: {
   },
   {
     title: "Frieren",
-    cover:
-      "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx154587-qQTzQnEJJ3oB.jpg",
+    cover: "https://image.tmdb.org/t/p/w342/dqZENchTd7lp5zht7BdlqM7RBhD.jpg",
   },
   {
     title: "Piranesi",
@@ -50,8 +49,7 @@ export const LANDING_LIBRARY: {
   },
   {
     title: "Chainsaw Man",
-    cover:
-      "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx127230-DdP4vAdssLoz.png",
+    cover: "https://image.tmdb.org/t/p/w342/npdB6eFzizki0WaZ1OvKcJrWe97.jpg",
   },
   {
     title: "In Rainbows",
@@ -76,8 +74,7 @@ export const LANDING_LIBRARY: {
   },
   {
     title: "Cyberpunk: Edgerunners",
-    cover:
-      "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx120377-ayZPoxiWt4Li.jpg",
+    cover: "https://image.tmdb.org/t/p/w342/v3JuB15WybKmxDeT1hWdK3j6eSJ.jpg",
   },
   {
     title: "Shōgun",
@@ -94,8 +91,7 @@ export const LANDING_LIBRARY: {
   },
   {
     title: "Vinland Saga",
-    cover:
-      "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx101348-2fhDFPCuMNiz.jpg",
+    cover: "https://image.tmdb.org/t/p/w342/vUHlpA5c1NXkds59reY3HMb4Abs.jpg",
   },
   {
     title: "Le Nom du vent",

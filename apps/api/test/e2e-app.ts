@@ -8,7 +8,6 @@ import { Test, TestingModule } from "@nestjs/testing";
 import { App } from "supertest/types";
 import { vi } from "vitest";
 import { AppModule } from "./../src/app.module";
-import { AnilistProvider } from "./../src/catalog/providers/anilist.provider";
 import type { ProviderMediaDetails } from "./../src/catalog/providers/provider.types";
 import { TmdbProvider } from "./../src/catalog/providers/tmdb.provider";
 import { enableApiVersioning } from "./../src/common/api-versioning";
@@ -26,7 +25,7 @@ import { PrismaService } from "./../src/prisma/prisma.service";
  */
 
 export const ANIME_SUMMARY = {
-  source: CatalogSource.ANILIST,
+  source: CatalogSource.TMDB,
   sourceId: "4242",
   type: MediaType.ANIME,
   title: "Test Anime",
@@ -45,11 +44,11 @@ const ANIME_DETAILS: ProviderMediaDetails = {
   overview: "An anime used by the e2e suite.",
   backdropUrl: null,
   genres: ["Fantasy"],
-  status: "FINISHED",
-  format: "TV",
+  status: "Ended",
+  format: null,
   releaseDate: "2024-01-05",
   runtimeMin: null,
-  externalIds: [{ source: MediaSource.ANILIST, externalId: "4242" }],
+  externalIds: [{ source: MediaSource.TMDB, externalId: "4242" }],
   seasons: [
     {
       number: 1,
@@ -113,48 +112,36 @@ const EMPTY_EXTRAS = {
 /** Catalogue providers are stubbed: no e2e run may depend on a live API. */
 function providerStubs() {
   return {
-    anilist: {
-      source: CatalogSource.ANILIST,
-      search: vi.fn().mockResolvedValue([ANIME_SUMMARY]),
-      getDetails: vi.fn().mockImplementation((sourceId: string) =>
-        Promise.resolve({
-          ...ANIME_DETAILS,
-          summary: { ...ANIME_SUMMARY, sourceId },
-          externalIds: [{ source: MediaSource.ANILIST, externalId: sourceId }],
-        }),
-      ),
-      getExtras: vi.fn().mockResolvedValue(EMPTY_EXTRAS),
-      // The MyAnimeList import resolves exclusively through AniList's `idMal`.
-      getSummaryByMalId: vi.fn().mockResolvedValue(ANIME_SUMMARY),
-      // The AniList import reads a user's list: one show, two episodes in.
-      getUserAnimeList: vi.fn().mockResolvedValue({
-        entries: [
-          {
-            status: "CURRENT",
-            score: 8,
-            progress: 2,
-            notes: null,
-            startedAt: { year: 2026, month: 1, day: 3 },
-            completedAt: null,
-            createdAt: null,
-            media: {
-              id: Number(ANIME_SUMMARY.sourceId),
-              title: { english: ANIME_SUMMARY.title, romaji: null },
-              seasonYear: ANIME_SUMMARY.year,
-              coverImage: { large: ANIME_SUMMARY.posterUrl },
-              isAdult: false,
-              format: "TV",
-            },
-          },
-        ],
-        customLists: [],
-      }),
-      getUserFavouriteAnimeIds: vi.fn().mockResolvedValue([]),
-    },
     tmdb: {
       source: CatalogSource.TMDB,
-      search: vi.fn().mockResolvedValue([]),
-      getDetails: vi.fn(),
+      // The catalogue knows one anime; a spec gives films and series its own.
+      search: vi
+        .fn()
+        .mockImplementation(async (_query: string, type?: MediaType) =>
+          type === undefined || type === MediaType.ANIME ? [ANIME_SUMMARY] : [],
+        ),
+      searchPage: vi
+        .fn()
+        .mockImplementation(async (_query: string, type?: MediaType) => ({
+          items:
+            type === undefined || type === MediaType.ANIME
+              ? [ANIME_SUMMARY]
+              : [],
+          hasMore: false,
+        })),
+      getDetails: vi
+        .fn()
+        .mockImplementation(async (sourceId: string, type: MediaType) =>
+          type === MediaType.MOVIE
+            ? undefined
+            : {
+                ...ANIME_DETAILS,
+                summary: { ...ANIME_SUMMARY, sourceId },
+                externalIds: [
+                  { source: MediaSource.TMDB, externalId: sourceId },
+                ],
+              },
+        ),
       getExtras: vi.fn().mockResolvedValue(EMPTY_EXTRAS),
       // The IMDb import's lookups; a spec gives them its own catalogue.
       findByImdbId: vi
@@ -179,8 +166,6 @@ export async function createE2eApp(): Promise<E2eApp> {
   })
     .overrideProvider(TmdbProvider)
     .useValue(stubs.tmdb)
-    .overrideProvider(AnilistProvider)
-    .useValue(stubs.anilist)
     .compile();
 
   // rawBody: signed webhooks are verified over the exact bytes, as in main.ts.

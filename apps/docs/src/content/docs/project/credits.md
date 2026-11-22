@@ -11,8 +11,7 @@ app lists them in **Settings › Data sources** too.
 
 | Source                                               | Provides                                                                 | Terms                                                           |
 | ---------------------------------------------------- | ------------------------------------------------------------------------ | --------------------------------------------------------------- |
-| [TMDB](https://www.themoviedb.org)                   | Films and series, cast, and where to watch                               | [TMDB's API terms](https://www.themoviedb.org/api-terms-of-use) |
-| [AniList](https://anilist.co)                        | Anime                                                                    | AniList's terms of use                                          |
+| [TMDB](https://www.themoviedb.org)                   | Films, series and anime, cast, and where to watch                        | [TMDB's API terms](https://www.themoviedb.org/api-terms-of-use) |
 | [IGDB](https://www.igdb.com)                         | Games, and their time to beat                                            | IGDB's terms of use                                             |
 | [Open Library](https://openlibrary.org)              | Books and covers, from the Internet Archive                              | Catalogue data under CC0                                        |
 | [MusicBrainz](https://musicbrainz.org)               | Music                                                                    | Core data under CC0, the rest under CC BY-NC-SA 3.0             |

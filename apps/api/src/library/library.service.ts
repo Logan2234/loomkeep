@@ -51,7 +51,10 @@ import type {
   MovieReplay,
   Prisma,
 } from "@prisma/client";
-import { MediaItemService } from "../catalog/media-item.service";
+import {
+  MediaItemService,
+  storedTypesFor,
+} from "../catalog/media-item.service";
 import { assertMediaReleased } from "../catalog/movie-release.util";
 import { resolveWatchRegion } from "../catalog/watch-region.util";
 import { AppException } from "../common/app.exception";
@@ -1920,15 +1923,16 @@ export class LibraryService {
 
     const statuses = new Map<string, EntryStatus>();
 
-    for (const type of ["MOVIE", "ANIME"] as const) {
-      const ids = saga.members
-        .filter((m) => m.type === type)
-        .map((m) => m.sourceId);
-      if (ids.length === 0) continue;
-      const source: CatalogSource = type === "ANIME" ? "ANILIST" : "TMDB";
-      const byId = await this.statusesBySourceId(userId, source, type, ids);
-      for (const [id, status] of byId) statuses.set(`${type}:${id}`, status);
-    }
+    const movieIds = saga.members
+      .filter((m) => m.type === "MOVIE")
+      .map((m) => m.sourceId);
+    const byId = await this.statusesBySourceId(
+      userId,
+      "TMDB",
+      "MOVIE",
+      movieIds,
+    );
+    for (const [id, status] of byId) statuses.set(`MOVIE:${id}`, status);
 
     const works = completedSagaWorks(
       saga.members.map((m) => ({
@@ -2360,20 +2364,31 @@ export class LibraryService {
     lang?: string,
     acceptLanguage?: string,
   ): Promise<MediaDetailDto> {
-    const source: CatalogSource = type === "ANIME" ? "ANILIST" : "TMDB";
-
-    const ref = await this.prisma.mediaExternalId.findUnique({
-      where: {
-        source_externalId_type: {
-          source: source as DbExternalSource,
+    const ref =
+      (await this.prisma.mediaExternalId.findFirst({
+        where: {
+          source: "TMDB",
           externalId: sourceId,
-          type,
+          type: { in: storedTypesFor(type) },
         },
-      },
-      include: { mediaItem: true },
-    });
+        include: { mediaItem: true },
+      })) ??
+      // An anime the AniList migration left behind keeps its AniList id in
+      // its links: served from the cache until it is resolved.
+      (type === "ANIME"
+        ? await this.prisma.mediaExternalId.findFirst({
+            where: {
+              source: "ANILIST",
+              externalId: sourceId,
+              mediaItem: { canonicalSource: "ANILIST" },
+            },
+            include: { mediaItem: true },
+          })
+        : null);
 
     if (ref) {
+      const source = ref.mediaItem.canonicalSource as CatalogSource;
+
       if (type === "MOVIE" && ref.mediaItem.movieReleaseDates === null) {
         ref.mediaItem = await this.mediaItemService.upsertFromSource(
           source,
@@ -2387,7 +2402,7 @@ export class LibraryService {
         source,
         sourceId,
         ref.mediaItem,
-        type,
+        ref.mediaItem.type as MediaType,
         lang,
         acceptLanguage,
       );
@@ -2397,7 +2412,7 @@ export class LibraryService {
     }
 
     const details = await this.mediaItemService.getLiveDetails(
-      source,
+      "TMDB",
       sourceId,
       type,
       lang,
@@ -2407,9 +2422,9 @@ export class LibraryService {
     const region =
       type === "MOVIE" ? await this.movieRegion(userId, acceptLanguage) : "US";
     return {
-      source,
+      source: "TMDB",
       sourceId,
-      type,
+      type: details.type,
       title: details.title,
       originalTitle: details.originalTitle ?? null,
       year: details.year,

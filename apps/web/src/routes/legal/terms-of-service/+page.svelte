@@ -390,7 +390,7 @@
     </p>
     <p>
       Selon la catégorie concernée, ces services peuvent notamment inclure TMDB,
-      AniList, OMDb, IGDB, Open Library et MusicBrainz.
+      OMDb, IGDB, Open Library et MusicBrainz.
     </p>
     <p>
       Loomkeep n'est pas propriétaire des bases de données ou contenus fournis

@@ -15,7 +15,6 @@
     season,
     title,
     tracked,
-    exactTime,
     canOpenPosters,
     watchedCount,
     hasPending,
@@ -30,7 +29,6 @@
     season: MediaDetailSeasonDto;
     title: string;
     tracked: boolean;
-    exactTime: boolean;
     /** TMDB only: its poster opens the season's gallery. */
     canOpenPosters: boolean;
     watchedCount: number;
@@ -85,14 +83,14 @@
   {/if}
   <div class="min-w-0 sm:col-start-2">
     <p class="timecode text-dim text-micro uppercase">
-      {exactTime ? m.media_anime_synopsis() : m.media_season_synopsis()}
+      {m.media_season_synopsis()}
     </p>
     <p
       class="timecode text-dim mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-[0.7rem]">
       {#if season.airDate}
         <span>
           {m.media_season_premiere({
-            date: airDateLabel(season.airDate, false, true),
+            date: airDateLabel(season.airDate),
           })}
         </span>
       {/if}

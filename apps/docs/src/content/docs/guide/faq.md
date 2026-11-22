@@ -20,7 +20,7 @@ and the premium plan will, once it exists.
 - **Its domain is off**: turn it on in **Settings › Domains**.
 - **It's an adult title**: those are hidden unless you allow them in
   **Settings › Content**, which needs your date of birth.
-- **It isn't in the catalogue**: Loomkeep searches TMDB, AniList, IGDB, Open
+- **It isn't in the catalogue**: Loomkeep searches TMDB, IGDB, Open
   Library and MusicBrainz live, and shows what they have. A title missing
   there is missing here; you can add it to that catalogue yourself.
 

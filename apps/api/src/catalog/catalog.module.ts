@@ -1,10 +1,10 @@
 import { Module } from "@nestjs/common";
 import { JobsModule } from "../jobs/jobs.module";
 import { UsersModule } from "../users/users.module";
+import { AnimeMigrationService } from "./anime-migration.service";
 import { CatalogController } from "./catalog.controller";
 import { MediaItemService } from "./media-item.service";
 import { OmdbService } from "./omdb.service";
-import { AnilistProvider } from "./providers/anilist.provider";
 import { TmdbProvider } from "./providers/tmdb.provider";
 import { SagaSyncService } from "./saga-sync.service";
 
@@ -14,12 +14,12 @@ import { SagaSyncService } from "./saga-sync.service";
   providers: [
     MediaItemService,
     TmdbProvider,
-    AnilistProvider,
     OmdbService,
     SagaSyncService,
+    AnimeMigrationService,
   ],
-  // Providers are exported for import reconciliation; each source keeps its
-  // catalogue boundary explicit (TVDB → TMDB for TV Time, MAL → AniList).
-  exports: [MediaItemService, TmdbProvider, AnilistProvider, SagaSyncService],
+  // Providers are exported for import reconciliation (TVDB → TMDB for TV
+  // Time, MAL titles → TMDB).
+  exports: [MediaItemService, TmdbProvider, SagaSyncService],
 })
 export class CatalogModule {}

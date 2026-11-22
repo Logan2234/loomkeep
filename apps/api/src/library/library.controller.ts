@@ -131,9 +131,7 @@ export class LibraryController {
     await this.domainGate.assertEnabled(user.sub, Domain.MEDIA);
     return this.sagas.listSagas(user.sub, {
       q,
-      types: (toQueryArray(type) as MediaType[]).filter(
-        (t) => t === "MOVIE" || t === "ANIME",
-      ),
+      types: (toQueryArray(type) as MediaType[]).filter((t) => t === "MOVIE"),
       sort: LIBRARY_SAGA_SORTS.find((s) => s === sort),
       order: order === "asc" ? "asc" : "desc",
       lang: Locale.includes(lang as Locale) ? lang : undefined,

@@ -95,7 +95,7 @@ describe("Collaborative lists (e2e)", () => {
     const tracked = await as("alice")
       .put("/api/library")
       .send({
-        source: "ANILIST",
+        source: "TMDB",
         sourceId: "4242",
         type: "ANIME",
         status: "PLANNED",

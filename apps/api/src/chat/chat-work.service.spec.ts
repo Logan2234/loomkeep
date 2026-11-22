@@ -4,7 +4,6 @@ import { type Mock, vi } from "vitest";
 import type { BookItemService } from "../books/book-item.service";
 import type { OpenLibraryProvider } from "../books/providers/open-library.provider";
 import type { MediaItemService } from "../catalog/media-item.service";
-import type { AnilistProvider } from "../catalog/providers/anilist.provider";
 import type { TmdbProvider } from "../catalog/providers/tmdb.provider";
 import { AppException } from "../common/app.exception";
 import type { GameItemService } from "../games/game-item.service";
@@ -23,8 +22,8 @@ function setup() {
   } as unknown as ConfigService;
   const links = new LinkResolverService(
     config,
+    {} as never,
     {} as TmdbProvider,
-    {} as AnilistProvider,
     {} as IgdbProvider,
     {} as OpenLibraryProvider,
     {} as MusicBrainzProvider,
@@ -81,11 +80,7 @@ describe("ChatWorkService", () => {
       href: "/app/media/anime/21",
       year: 2022,
     });
-    expect(media.upsertFromSource).toHaveBeenCalledWith(
-      "ANILIST",
-      "21",
-      "ANIME",
-    );
+    expect(media.upsertFromSource).toHaveBeenCalledWith("TMDB", "21", "ANIME");
   });
 
   // The recipient may not allow 18+ titles: no poster lands in their thread.

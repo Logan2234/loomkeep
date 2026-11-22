@@ -21,7 +21,6 @@ describe("MediaItemService.refreshStale", () => {
     const service = new MediaItemService(
       prisma,
       undefined as never,
-      undefined as never,
       jobRunsStub,
       sagas as never,
     );
@@ -36,6 +35,8 @@ describe("MediaItemService.refreshStale", () => {
     expect(prisma.mediaItem.findMany).toHaveBeenCalledWith({
       where: {
         entries: { some: { status: { not: "DROPPED" } } },
+        // A work still on AniList waits for the anime migration.
+        canonicalSource: "TMDB",
         // A failed refresh sits out one cycle (a day) before the next try.
         AND: [
           {
@@ -45,13 +46,13 @@ describe("MediaItemService.refreshStale", () => {
             ],
           },
         ],
-        // An ended series waits a week; anything else, a day.
+        // An ended series or anime waits a week; anything else, a day.
         OR: [
           { lastSyncedAt: { lt: new Date("2026-11-02T12:00:00Z") } },
           {
             lastSyncedAt: { lt: new Date("2026-11-08T12:00:00Z") },
             OR: [
-              { type: { not: "SERIES" } },
+              { type: "MOVIE" },
               { status: null },
               { status: { notIn: ["Ended", "Canceled"] } },
             ],
@@ -75,8 +76,8 @@ describe("MediaItemService.refreshStale", () => {
       {
         id: "m2",
         type: "ANIME",
-        canonicalSource: "ANILIST",
-        externalIds: [{ source: "ANILIST", externalId: "99" }],
+        canonicalSource: "TMDB",
+        externalIds: [{ source: "TMDB", externalId: "99" }],
       },
     ];
     const { service } = makeService(items);
@@ -88,10 +89,10 @@ describe("MediaItemService.refreshStale", () => {
 
     expect(refreshed).toBe(2);
     expect(upsert).toHaveBeenNthCalledWith(1, "TMDB", "42", "SERIES");
-    expect(upsert).toHaveBeenNthCalledWith(2, "ANILIST", "99", "ANIME");
+    expect(upsert).toHaveBeenNthCalledWith(2, "TMDB", "99", "ANIME");
   });
 
-  it("re-reads the saga of films and anime, never failing the refresh over it", async () => {
+  it("re-reads the saga of films only, never failing the refresh over it", async () => {
     const items = [
       {
         id: "m1",
@@ -108,24 +109,19 @@ describe("MediaItemService.refreshStale", () => {
       {
         id: "m3",
         type: "ANIME",
-        canonicalSource: "ANILIST",
-        externalIds: [{ source: "ANILIST", externalId: "16498" }],
+        canonicalSource: "TMDB",
+        externalIds: [{ source: "TMDB", externalId: "37854" }],
       },
     ];
     const { service, sagas } = makeService(items);
     vi.spyOn(service, "upsertFromSource").mockResolvedValue(undefined as never);
     vi.spyOn(service["logger"], "warn").mockImplementation(() => undefined);
-    sagas.sync
-      .mockRejectedValueOnce(new Error("AniList down"))
-      .mockResolvedValueOnce(undefined);
+    sagas.sync.mockRejectedValueOnce(new Error("TMDB down"));
 
     const refreshed = await service.refreshStale();
 
     expect(refreshed).toBe(3);
-    expect(sagas.sync.mock.calls).toEqual([
-      ["MOVIE", "438631"],
-      ["ANIME", "16498"],
-    ]);
+    expect(sagas.sync.mock.calls).toEqual([["MOVIE", "438631"]]);
   });
 
   it("sets aside items missing their canonical external id, failing a run that refreshed nothing", async () => {
@@ -177,6 +173,88 @@ describe("MediaItemService.refreshStale", () => {
   });
 });
 
+describe("MediaItemService.upsertFromSource series/anime type", () => {
+  function makeService(storedType: "SERIES" | "ANIME") {
+    const prisma = {
+      mediaExternalId: {
+        findFirst: vi.fn().mockResolvedValue({
+          mediaItemId: "m1",
+          mediaItem: {
+            id: "m1",
+            type: storedType,
+            lastSyncedAt: new Date("2020-01-01"),
+          },
+        }),
+        updateMany: vi.fn((args: unknown) => args),
+        upsert: vi.fn().mockResolvedValue({}),
+      },
+      mediaItem: {
+        update: vi.fn((args: unknown) => args),
+      },
+      mediaItemTranslation: { findMany: vi.fn().mockResolvedValue([]) },
+      $transaction: vi.fn().mockResolvedValue([]),
+    };
+    const tmdb = {
+      getDetails: vi.fn().mockResolvedValue({
+        summary: { type: "ANIME", title: "Frieren" },
+        externalIds: [{ source: "TMDB", externalId: "209867" }],
+        seasons: [],
+        genres: [],
+      }),
+    };
+    const service = new MediaItemService(
+      prisma as unknown as PrismaService,
+      tmdb as never,
+      jobRunsStub,
+      undefined as never,
+    );
+    return { service, prisma };
+  }
+
+  it("finds a show stored under either type and moves it to TMDB's current one", async () => {
+    const { service, prisma } = makeService("SERIES");
+
+    await service.upsertFromSource("TMDB", "209867", "SERIES");
+
+    expect(prisma.mediaExternalId.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          source: "TMDB",
+          externalId: "209867",
+          type: { in: ["SERIES", "ANIME"] },
+        },
+      }),
+    );
+    expect(prisma.mediaItem.update).toHaveBeenCalledWith({
+      where: { id: "m1" },
+      data: { type: "ANIME" },
+    });
+    expect(prisma.mediaExternalId.updateMany).toHaveBeenCalledWith({
+      where: { mediaItemId: "m1" },
+      data: { type: "ANIME" },
+    });
+    expect(prisma.mediaExternalId.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          source_externalId_type: {
+            source: "TMDB",
+            externalId: "209867",
+            type: "ANIME",
+          },
+        },
+      }),
+    );
+  });
+
+  it("leaves the type alone when TMDB still files it the same way", async () => {
+    const { service, prisma } = makeService("ANIME");
+
+    await service.upsertFromSource("TMDB", "209867", "ANIME");
+
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+});
+
 describe("MediaItemService refresh", () => {
   it("only marks the item fresh once its seasons and episodes are synced", async () => {
     const prisma = {
@@ -187,7 +265,6 @@ describe("MediaItemService refresh", () => {
     } as unknown as PrismaService;
     const service = new MediaItemService(
       prisma,
-      undefined as never,
       undefined as never,
       jobRunsStub,
       undefined as never,
@@ -227,7 +304,6 @@ describe("MediaItemService episode sync", () => {
     } as unknown as PrismaService;
     const service = new MediaItemService(
       prisma,
-      undefined as never,
       undefined as never,
       jobRunsStub,
       undefined as never,
@@ -393,7 +469,6 @@ describe("MediaItemService.translationFor", () => {
     const service = new MediaItemService(
       prisma,
       tmdbProvider as never,
-      undefined as never,
       jobRunsStub,
       undefined as never,
     );
@@ -416,7 +491,7 @@ describe("MediaItemService.translationFor", () => {
     expect(tmdbProvider.getDetails).not.toHaveBeenCalled();
   });
 
-  it("skips the DB and provider entirely for AniList (no localization support)", async () => {
+  it("skips the DB and provider entirely for a work not yet moved off AniList", async () => {
     const { service, prisma, tmdbProvider } = makeService({});
 
     const result = await service.translationFor(
@@ -537,7 +612,6 @@ describe("MediaItemService season and episode translations", () => {
     const service = new MediaItemService(
       prisma as unknown as PrismaService,
       { getDetails: vi.fn().mockResolvedValue(localized) } as never,
-      undefined as never,
       jobRunsStub,
       undefined as never,
     );
@@ -585,7 +659,6 @@ describe("MediaItemService.translatedTitles", () => {
     const service = new MediaItemService(
       prisma,
       undefined as never,
-      undefined as never,
       jobRunsStub,
       undefined as never,
     );
@@ -606,7 +679,6 @@ describe("MediaItemService.translatedTitles", () => {
     } as unknown as PrismaService;
     const service = new MediaItemService(
       prisma,
-      undefined as never,
       undefined as never,
       jobRunsStub,
       undefined as never,
@@ -650,7 +722,6 @@ describe("MediaItemService.forceRefresh (translation refresh)", () => {
     const service = new MediaItemService(
       prisma,
       tmdbProvider as never,
-      undefined as never,
       jobRunsStub,
       undefined as never,
     );
@@ -693,7 +764,6 @@ describe("MediaItemService.forceRefresh (translation refresh)", () => {
     const service = new MediaItemService(
       prisma,
       { getDetails } as never,
-      undefined as never,
       jobRunsStub,
       undefined as never,
     );

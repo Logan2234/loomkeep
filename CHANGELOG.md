@@ -15,6 +15,11 @@ history from before it was started.
 
 ### Breaking changes
 
+- **Anime come from TMDB now, not AniList.** To move the anime already
+  tracked, start the API once with `ANIME_MIGRATION=dry-run`, read the
+  report written to `BACKUP_DIR/anime-migration`, then once with
+  `ANIME_MIGRATION=apply`, and unset it. The public API no longer returns
+  `ANILIST` works.
 - **Self-hosting: your instance now tells loomkeep.app it exists.** The
   daily update check asks loomkeep.app for the latest version and sends a
   random instance id and the version, nothing else, so self-hosted instances
@@ -29,6 +34,10 @@ history from before it was started.
   `SOCIAL_ENABLED=1` turns social on, where they used to do the opposite.
   A value Loomkeep can't read is ignored, with a warning in the logs.
 
+- Anime come from TMDB: one entry per show instead of one per season, in
+  your language, with no more rate-limit failures. Sagas are for films only.
+- The AniList import is off until it can read AniList's data export; the
+  MyAnimeList import matches titles on TMDB.
 - Administrators get an alert (email, push optional) when someone's import
   fails, with a link to the failed imports in Admin › Imports.
 - An optional "How did you hear about Loomkeep?" at the end of the welcome

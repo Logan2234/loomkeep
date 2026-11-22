@@ -45,7 +45,7 @@ const CATALOG_PER_SOURCE = 8;
 const CATALOG_TIMEOUT_MS = 2_500;
 /**
  * The same query asked again within this delay is answered from memory:
- * AniList, IGDB and MusicBrainz queue every call of the instance, so
+ * IGDB and MusicBrainz queue every call of the instance, so
  * repeated searches would hold everyone else up.
  */
 const CATALOG_CACHE_TTL_MS = 10 * 60_000;
@@ -347,25 +347,18 @@ export class WorkSearchService {
 
     switch (domain) {
       case Domain.MEDIA: {
-        // Interleaved, so each source's first result ranks alike.
-        const [tmdb, anilist] = await Promise.all([
-          this.media
-            .providerFor(CatalogSource.TMDB)
-            .search(text, undefined, 1, lang),
-          this.media.providerFor(CatalogSource.ANILIST).search(text),
-        ]);
-        return [keep(tmdb), keep(anilist)]
-          .flatMap((list) => list.map((media, index) => ({ media, index })))
-          .sort((a, b) => a.index - b.index)
-          .map(({ media }) => ({
-            source: media.source,
-            sourceId: media.sourceId,
-            kind: media.type,
-            title: media.title,
-            imageUrl: media.posterUrl,
-            year: media.year,
-            isAdult: media.isAdult,
-          }));
+        const tmdb = await this.media
+          .providerFor(CatalogSource.TMDB)
+          .search(text, undefined, 1, lang);
+        return keep(tmdb).map((media) => ({
+          source: media.source,
+          sourceId: media.sourceId,
+          kind: media.type,
+          title: media.title,
+          imageUrl: media.posterUrl,
+          year: media.year,
+          isAdult: media.isAdult,
+        }));
       }
 
       case Domain.GAMES:

@@ -5,7 +5,6 @@ import { screen } from "@testing-library/svelte";
 import { http, HttpResponse } from "msw";
 import type { Component } from "svelte";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import AnilistPage from "./anilist/+page.svelte";
 import BabelioPage from "./babelio/+page.svelte";
 import GoodreadsPage from "./goodreads/+page.svelte";
 import ImdbPage from "./imdb/+page.svelte";
@@ -50,12 +49,6 @@ const INTROS: [string, Component, string, string][] = [
     MyAnimeListPage,
     m.settings_import_myanimelist_intro(),
     `. ${m.settings_import_myanimelist_hint()}`,
-  ],
-  [
-    "AniList",
-    AnilistPage,
-    m.settings_import_anilist_intro(),
-    `. ${m.settings_import_anilist_hint()}`,
   ],
   [
     "StoryGraph",

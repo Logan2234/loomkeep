@@ -90,9 +90,8 @@ export class CatalogController {
   }
 
   /**
-   * Live search. ANIME goes to AniList, MOVIE/SERIES to TMDB; without a type
-   * filter both sources are queried and merged. 18+ titles are stripped
-   * unless the account opted in and is confirmed 18+.
+   * Live search on TMDB, where an anime is a Japanese animation. 18+ titles
+   * are stripped unless the account opted in and is confirmed 18+.
    */
   @Get("search")
   @ApiOkResponse({ type: PagedResponseDto(MediaSummaryResponseDto) })
@@ -102,48 +101,33 @@ export class CatalogController {
   ): Promise<SearchResponseDto> {
     await this.domainGate.assertEnabled(user.sub, Domain.MEDIA);
 
-    const wantTmdb = query.type === undefined || query.type !== MediaType.ANIME;
-    const wantAnilist =
-      query.type === undefined || query.type === MediaType.ANIME;
-    const page = query.page ?? 1;
-
-    const [tmdbResults, anilistResults, allowAdult] = await Promise.all([
-      wantTmdb
-        ? this.mediaItemService
-            .providerFor(CatalogSource.TMDB)
-            .search(query.q, query.type, page, query.lang)
-            .catch((err) => this.searchFailed("TMDB", err))
-        : Promise.resolve([]),
-      wantAnilist
-        ? this.mediaItemService
-            .providerFor(CatalogSource.ANILIST)
-            .search(query.q, undefined, page)
-            .catch((err) => this.searchFailed("AniList", err))
-        : Promise.resolve([]),
+    const [results, allowAdult] = await Promise.all([
+      this.tmdb
+        .searchPage(query.q, query.type, query.page ?? 1, query.lang)
+        .catch((err) => this.searchFailed(err)),
       this.ageGate.allowsAdultContent(user.sub),
     ]);
 
-    // Each source returns its own popularity order, but concatenating movies +
-    // series + anime buries the searched title. Re-rank by title relevance so
-    // the actual match floats to the top (ties keep the source order).
+    // TMDB returns films and series each in its own popularity order, but
+    // concatenating them buries the searched title. Re-rank by title
+    // relevance so the actual match floats to the top (ties keep the order).
     const items = filterAdultContent(
-      rankBySearchRelevance([...anilistResults, ...tmdbResults], query.q),
+      rankBySearchRelevance(results.items, query.q),
       allowAdult,
     );
 
-    // Neither provider reports a total, so "more" just means this page
-    // wasn't empty — matches how a provider's own pagination ends (an empty
-    // page), same heuristic the client used before this moved server-side.
-    return { items, hasMore: items.length > 0 };
+    // TMDB reports no total here: "more" means its own page wasn't empty,
+    // even when the type filter kept nothing of it.
+    return { items, hasMore: results.hasMore };
   }
 
-  /** One source down still leaves the other's results; the log tells it from "no match". */
-  private searchFailed(source: string, err: unknown): [] {
-    this.logger.warn(`${source} search failed`, err);
-    return [];
+  /** TMDB down answers an empty page; the log tells it from "no match". */
+  private searchFailed(err: unknown): { items: []; hasMore: false } {
+    this.logger.warn("TMDB search failed", err);
+    return { items: [], hasMore: false };
   }
 
-  /** Live detail of a cast entity (TMDB person, or AniList staff) for the media-page modal. */
+  /** Live detail of a TMDB person for the media-page cast modal. */
   @Get(":source/person/:id")
   @ApiOkResponse({ type: CastDetailResponseDto })
   async getPerson(
@@ -217,7 +201,7 @@ export class CatalogController {
     @Headers("accept-language") acceptLanguage?: string,
   ): Promise<MediaExtrasDto> {
     const source = parseSource(sourceParam);
-    const resolvedType = resolveType(source, type);
+    const resolvedType = resolveType(type);
     const extras = await this.mediaItemService
       .providerFor(source)
       .getExtras(
@@ -235,25 +219,21 @@ export class CatalogController {
 }
 
 function parseSource(value: string): CatalogSource {
-  return parseEnumParam(
-    value,
-    [CatalogSource.TMDB, CatalogSource.ANILIST],
-    "catalog source",
-  );
+  return parseEnumParam(value, [CatalogSource.TMDB], "catalog source");
 }
 
-/** AniList only serves anime; TMDB needs the caller to disambiguate movie vs series. */
-function resolveType(source: CatalogSource, type?: MediaType): MediaType {
-  if (source === CatalogSource.ANILIST) {
-    return MediaType.ANIME;
-  }
-
-  if (type !== MediaType.MOVIE && type !== MediaType.SERIES) {
+/** TMDB ids are per namespace: the caller says whether it is a film. */
+function resolveType(type?: MediaType): MediaType {
+  if (
+    type !== MediaType.MOVIE &&
+    type !== MediaType.SERIES &&
+    type !== MediaType.ANIME
+  ) {
     throw new AppException(
       HttpStatus.BAD_REQUEST,
       ErrorCode.CatalogMediaTypeRequired,
       undefined,
-      "TMDB media require 'type' to be MOVIE or SERIES",
+      "TMDB media require 'type' to be MOVIE, SERIES or ANIME",
     );
   }
 

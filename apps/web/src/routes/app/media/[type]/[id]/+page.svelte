@@ -205,19 +205,12 @@
   // the route), independent of watch-state reloads. Best-effort: errors are
   // swallowed so a provider hiccup never breaks the page.
   const extrasQuery = createApiQuery(() => ({
-    key: keys.media.extras(
-      type === "ANIME" ? "anilist" : "tmdb",
-      id,
-      auth.user?.watchRegion ?? null,
-    ),
+    key: keys.media.extras("tmdb", id, auth.user?.watchRegion ?? null),
     fetch: () =>
-      getMediaExtras(
-        type === "ANIME" ? "anilist" : "tmdb",
-        id,
-        type,
-        auth.user?.watchRegion ?? undefined,
-      ),
-    enabled: !!type && !!id,
+      getMediaExtras("tmdb", id, type, auth.user?.watchRegion ?? undefined),
+    // An anime the AniList migration left behind has an AniList id: TMDB
+    // would answer with another work.
+    enabled: !!type && !!id && (type !== "ANIME" || detail?.source === "TMDB"),
   }));
   const extras = $derived(extrasQuery.data);
 
@@ -731,16 +724,13 @@
 
     {#snippet attribution()}
       <!-- Provider attribution: required for TMDB (logo + non-endorsement
-         notice, less prominent than Loomkeep's own branding), courtesy for
-         AniList. -->
+         notice, less prominent than Loomkeep's own branding). -->
       <p class="text-dim text-micro mt-4 flex items-center gap-1.5">
         <ProviderMark
-          brand={type === "ANIME" ? "anilist" : "tmdb"}
+          brand="tmdb"
           decorative
           class="h-3 w-3 shrink-0 opacity-70" />
-        {type === "ANIME"
-          ? m.media_anilist_notice()
-          : m.datasource_tmdb_notice()}
+        {m.datasource_tmdb_notice()}
       </p>
       {#if hasProviders && extras}
         <!-- Under the notice's text, in its type: one block, two sources. -->
@@ -759,7 +749,7 @@
           seasons={orderedSeasons}
           {entry}
           mediaType={detail.type}
-          sourceId={id}
+          sourceId={detail.source === "TMDB" ? id : null}
           {reload}
           onError={(m) => (episodesError = m)} />
       {/if}
@@ -806,9 +796,7 @@
 
     {#snippet cast()}
       {#if extras}
-        <CastSection
-          cast={extras.cast}
-          source={type === "ANIME" ? "anilist" : "tmdb"} />
+        <CastSection cast={extras.cast} source="tmdb" />
       {/if}
     {/snippet}
 

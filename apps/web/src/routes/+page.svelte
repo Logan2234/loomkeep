@@ -36,7 +36,7 @@
       id: "video",
       label: m.landing_salle_video_label,
       detail: m.landing_salle_video_detail,
-      catalog: "TMDB · AniList",
+      catalog: "TMDB",
       color: "var(--stat-media)",
       shipped: true,
     },
@@ -279,7 +279,6 @@
     { name: "Trakt", what: m.landing_import_done_trakt_what },
     { name: "Simkl", what: m.landing_import_done_simkl_what },
     { name: "MyAnimeList", what: m.landing_import_done_myanimelist_what },
-    { name: "AniList", what: m.landing_import_done_anilist_what },
     { name: "Steam", what: m.landing_import_done_steam_what },
     { name: "Goodreads", what: m.landing_import_done_goodreads_what },
     { name: "StoryGraph", what: m.landing_import_done_storygraph_what },
@@ -454,7 +453,6 @@
        Library and Cover Art Archive redirect to archive.org, where a
        preconnect gains little. -->
   <link rel="preconnect" href="https://image.tmdb.org" />
-  <link rel="preconnect" href="https://s4.anilist.co" />
   <link rel="preconnect" href="https://images.igdb.com" />
   <!-- eslint-disable-next-line svelte/no-at-html-tags -- static JSON, `<` escaped above -->
   {@html structuredDataTag}

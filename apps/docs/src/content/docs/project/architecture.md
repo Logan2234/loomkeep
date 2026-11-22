@@ -6,7 +6,7 @@ description: How Loomkeep is built, from the catalogues to the browser.
 ```
  Browser (PWA) ──► web (SvelteKit) ──► api (NestJS) ──► PostgreSQL
                                         │
-                                        ├──► TMDB, AniList, IGDB, Open Library, MusicBrainz
+                                        ├──► TMDB, IGDB, Open Library, MusicBrainz
                                         └──► SMTP, Web Push
 ```
 
@@ -31,8 +31,9 @@ Loomkeep doesn't mirror any catalogue. Search queries them live; a title is
 copied into the database, with its seasons, episodes and ids in other
 catalogues, only once someone tracks it. It is refreshed when it gets old,
 and its episodes are never deleted, so a viewing always keeps its target.
-Each domain has one catalogue: TMDB for films and series, AniList for anime,
-IGDB for games, Open Library for books, MusicBrainz for music.
+Each domain has one catalogue: TMDB for films, series and anime (a Japanese
+animation, the rule Trakt also uses), IGDB for games, Open Library for books,
+MusicBrainz for music.
 
 ## History as rows
 

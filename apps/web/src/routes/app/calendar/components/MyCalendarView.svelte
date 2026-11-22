@@ -218,10 +218,12 @@
     minute: "2-digit",
   };
 
-  /** Only an anime's air date is a broadcast time (AniList's schedule): TMDB
-   * dates a day, a film or a game its release. */
+  /** TMDB dates a day, stored at midnight UTC: any other time is a real
+   * broadcast time (an anime the AniList migration hasn't moved yet). */
   const airTime = (e: CalendarEntryDto) =>
-    e.mediaItem?.type === "ANIME" ? formatDate(e.airDate, TIME_OPTIONS) : null;
+    e.mediaItem && !e.airDate.endsWith("T00:00:00.000Z")
+      ? formatDate(e.airDate, TIME_OPTIONS)
+      : null;
 </script>
 
 {#snippet badges(e: CalendarEntryDto, behind: boolean)}

@@ -114,29 +114,14 @@ export const IMPORTS_DEFINITION = {
     guide: `${DOCS_URL}/guide/imports/myanimelist/`,
   },
   anilist: {
-    comingSoon: false,
+    // Back once it reads AniList's data export: its API may not feed a
+    // tracker like this one.
+    comingSoon: true,
     domain: Domain.MEDIA,
     label: IMPORT_SOURCE_NAMES.anilist,
     get description() {
-      return m.import_source_anilist_description();
+      return m.import_source_anime_description();
     },
-    href: "/app/settings/import/anilist",
-    input: {
-      type: "username",
-      get placeholder() {
-        return m.import_source_anilist_placeholder();
-      },
-    },
-    noun: {
-      get one() {
-        return m.library_title_one();
-      },
-      get many() {
-        return m.library_title_many();
-      },
-    },
-    newBadgeKey: "anilist-import",
-    guide: `${DOCS_URL}/guide/imports/anilist/`,
   },
   simkl: {
     comingSoon: false,

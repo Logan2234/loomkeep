@@ -17,7 +17,6 @@
     episode,
     seasonNumber,
     code,
-    exactTime,
     tracked,
     now,
     selected = false,
@@ -39,8 +38,6 @@
     seasonNumber: number;
     /** "S02E05". */
     code: string;
-    /** Anime: the air date carries a broadcast time. */
-    exactTime: boolean;
     /** In the viewer's library — tracking actions show. */
     tracked: boolean;
     now: Date;
@@ -72,7 +69,7 @@
   );
   const watched = $derived(episode.seen);
   const upcoming = $derived(
-    watched ? null : upcomingLabel(episode.airDate, now, exactTime),
+    watched ? null : upcomingLabel(episode.airDate, now),
   );
   const selectable = $derived(tracked && !!episode.id && isAired(episode, now));
   // With social features off, reviews are private: the count would always be
@@ -183,7 +180,7 @@
       </button>
       <p class="timecode text-dim mt-0.5 flex flex-wrap gap-x-2 text-[0.7rem]">
         {#if episode.airDate}
-          <span>{airDateLabel(episode.airDate, exactTime)}</span>
+          <span>{airDateLabel(episode.airDate)}</span>
         {/if}
         {#if episode.runtimeMin}
           <span>

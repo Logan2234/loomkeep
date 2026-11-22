@@ -35,6 +35,7 @@ import type {
   ProviderSeason,
 } from "./provider.types";
 import {
+  isTmdbAnime,
   tmdbPosterUrl,
   toCastDetail,
   toEpisodeMedia,
@@ -189,8 +190,22 @@ export class TmdbProvider implements CatalogProvider {
     page = 1,
     lang?: string,
   ): Promise<MediaSummaryDto[]> {
-    const wantMovies = type === undefined || type === MediaType.MOVIE;
-    const wantSeries = type === undefined || type === MediaType.SERIES;
+    return (await this.searchPage(query, type, page, lang)).items;
+  }
+
+  /**
+   * One page of results, with whether TMDB has more. The anime filter keeps
+   * the Japanese animations of both endpoints (films stay MOVIE), the series
+   * filter the rest: a page can come back empty while the next one is not.
+   */
+  async searchPage(
+    query: string,
+    type?: MediaType,
+    page = 1,
+    lang?: string,
+  ): Promise<{ items: MediaSummaryDto[]; hasMore: boolean }> {
+    const wantMovies = type !== MediaType.SERIES;
+    const wantSeries = type !== MediaType.MOVIE;
     // Adult movies are fetched too (flagged via `adult`) — the caller
     // (CatalogController) strips them per-account with the age gate.
     const params = {
@@ -209,10 +224,18 @@ export class TmdbProvider implements CatalogProvider {
         : Promise.resolve({ results: [] }),
     ]);
 
-    return [
-      ...movies.results.map((m) => toMovieSummary(m)),
-      ...series.results.map((s) => toTvSummary(s)),
-    ];
+    const keepMovie = (m: TmdbMovieResult) =>
+      type !== MediaType.ANIME || isTmdbAnime(m);
+    const keepSeries = (s: TmdbTvResult) =>
+      type === undefined || isTmdbAnime(s) === (type === MediaType.ANIME);
+
+    return {
+      items: [
+        ...movies.results.filter(keepMovie).map((m) => toMovieSummary(m)),
+        ...series.results.filter(keepSeries).map((s) => toTvSummary(s)),
+      ],
+      hasMore: movies.results.length > 0 || series.results.length > 0,
+    };
   }
 
   async getDetails(

@@ -1,6 +1,4 @@
 <script lang="ts">
-  import { type SelectOption } from "#lib/types/select-option.js";
-
   import { listLibrarySagas, upsertLibraryEntry } from "#lib/api/client.js";
   import { keys } from "#lib/api/keys.js";
   import SagasView, {
@@ -12,11 +10,6 @@
   import type { Snippet } from "svelte";
 
   let { modeSwitch }: { modeSwitch: Snippet } = $props();
-
-  const TYPE_OPTIONS: SelectOption<MediaType>[] = [
-    { label: m.media_movies(), value: "MOVIE" },
-    { label: m.media_anime(), value: "ANIME" },
-  ];
 
   // The works behind the rows, for "add" to know their source and type.
   const works = new Map<string, SagaMemberDto>();
@@ -36,9 +29,7 @@
       ...sagas.finished,
     ])
       for (const work of saga.members) works.set(work.sourceId, work);
-    return librarySagasView(sagas, mediaSagaMember, (saga) =>
-      saga.members[0]?.type === "ANIME" ? m.media_anime() : m.media_movies(),
-    );
+    return librarySagasView(sagas, mediaSagaMember, () => m.media_movies());
   }
 </script>
 
@@ -46,7 +37,6 @@
   {modeSwitch}
   icon="tv"
   title={m.common_Media()}
-  typeOptions={TYPE_OPTIONS}
   queryKey={(f) => keys.library.sagas(toRequest(f))}
   {load}
   addKey={["library", "sagas"]}

@@ -19,7 +19,6 @@ import { isUniqueViolation } from "../common/prisma-error.util";
 import { JOB_KEYS } from "../jobs/job-keys";
 import { JobRunService } from "../jobs/job-run.service";
 import { PrismaService } from "../prisma/prisma.service";
-import { AnilistProvider } from "./providers/anilist.provider";
 import type {
   CatalogProvider,
   ProviderEpisode,
@@ -33,21 +32,17 @@ import { SagaSyncService } from "./saga-sync.service";
 
 // Upper bound on how many stale media items one cron execution refreshes.
 // The cron runs every 6h; at this cap and the concurrency below, a full
-// batch (even at the ~1req/s TMDB/AniList throttle floor) finishes well
+// batch (even at the ~1req/s TMDB throttle floor) finishes well
 // within that window with headroom to spare, instead of an unbounded run
 // growing without limit as the tracked catalog grows.
 const MAX_REFRESHED_PER_RUN = 500;
 
-// Low concurrency on purpose: AniList already serializes every call behind
-// its own shared per-instance throttle (RequestThrottle, 700ms min interval —
-// see anilist.provider.ts), so raising this only queues more requests behind
-// that same throttle without finishing the batch any faster. It just lets a
-// few independent media items overlap their network latency instead of
-// refreshing one at a time.
+// Low concurrency on purpose: it just lets a few independent media items
+// overlap their network latency instead of refreshing one at a time.
 const REFRESH_CONCURRENCY = 3;
 
-// An ended or canceled series gets no new episodes and, unlike films and
-// anime, has no saga whose sequel must be spotted the same day: a week is
+// An ended or canceled series or anime gets no new episodes and, unlike
+// films, has no saga whose sequel must be spotted the same day: a week is
 // enough to catch a revival or a late fix. TMDB's own status strings.
 const ENDED_SERIES_SYNC_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const ENDED_SERIES_STATUSES = ["Ended", "Canceled"];
@@ -62,6 +57,14 @@ const EPISODE_UPDATE_CONCURRENCY = 3;
 // for the default locale would just duplicate the base row.
 const DEFAULT_LOCALE = "en";
 
+/**
+ * The types a work of `type` may be stored under: a TMDB show is a SERIES or
+ * an ANIME (never both), so a lookup by either finds it.
+ */
+export function storedTypesFor(type: MediaType): MediaType[] {
+  return type === "MOVIE" ? ["MOVIE"] : ["SERIES", "ANIME"];
+}
+
 export interface MediaTranslation {
   title: string;
   overview: string | null;
@@ -75,7 +78,6 @@ export class MediaItemService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly tmdbProvider: TmdbProvider,
-    private readonly anilistProvider: AnilistProvider,
     private readonly jobRuns: JobRunService,
     private readonly sagas: SagaSyncService,
   ) {}
@@ -84,8 +86,9 @@ export class MediaItemService {
    * Every 6h: re-sync tracked (non-dropped) media whose cache is stale, so
    * newly announced episodes reach the DB before the notification scan looks
    * for them. One upsert per distinct MediaItem, regardless of follower count.
-   * Films and anime get their saga re-read on the same pass, which is how a
-   * newly announced sequel is spotted.
+   * Films get their saga re-read on the same pass, which is how a newly
+   * announced sequel is spotted. Works still on AniList wait for the anime
+   * migration (AnimeMigrationService): their AniList id is no TMDB id.
    */
   @Cron(CronExpression.EVERY_6_HOURS, { name: JOB_KEYS.MEDIA_REFRESH_STALE })
   async refreshStale(): Promise<number> {
@@ -102,6 +105,7 @@ export class MediaItemService {
     const items = await this.prisma.mediaItem.findMany({
       where: {
         entries: { some: { status: { not: "DROPPED" } } },
+        canonicalSource: "TMDB",
         AND: [notFailedSince(new Date(now - CATALOG_SYNC_TTL_MS))],
         // Spelled as positives: a NOT over `status` would drop the rows
         // where it is null.
@@ -110,7 +114,7 @@ export class MediaItemService {
           {
             lastSyncedAt: { lt: new Date(now - CATALOG_SYNC_TTL_MS) },
             OR: [
-              { type: { not: "SERIES" } },
+              { type: "MOVIE" },
               { status: null },
               { status: { notIn: ENDED_SERIES_STATUSES } },
             ],
@@ -150,7 +154,7 @@ export class MediaItemService {
           return false;
         }
 
-        if (item.type !== "SERIES") {
+        if (item.type === "MOVIE") {
           try {
             await this.sagas.sync(item.type as MediaType, sourceId);
           } catch (err) {
@@ -208,7 +212,11 @@ export class MediaItemService {
   }
 
   providerFor(source: CatalogSource): CatalogProvider {
-    return source === "TMDB" ? this.tmdbProvider : this.anilistProvider;
+    if (source !== "TMDB") {
+      throw new Error(`${source} is no longer a catalogue source`);
+    }
+
+    return this.tmdbProvider;
   }
 
   /**
@@ -225,10 +233,9 @@ export class MediaItemService {
     type: MediaType,
     locale: string,
   ): Promise<MediaTranslation | null> {
-    // AniList has no localization support: a "French" fetch would return the
-    // exact same content as the English base row, so there's nothing to
-    // cache a translation for.
-    if (locale === DEFAULT_LOCALE || source === "ANILIST") return null;
+    // A work not yet migrated off AniList has nothing to fetch a
+    // translation from.
+    if (locale === DEFAULT_LOCALE || source !== "TMDB") return null;
 
     const existing = await this.prisma.mediaItemTranslation.findUnique({
       where: { mediaItemId_locale: { mediaItemId, locale } },
@@ -399,13 +406,11 @@ export class MediaItemService {
     sourceId: string,
     type: MediaType,
   ): Promise<MediaItem> {
-    const existingRef = await this.prisma.mediaExternalId.findUnique({
+    const existingRef = await this.prisma.mediaExternalId.findFirst({
       where: {
-        source_externalId_type: {
-          source: source,
-          externalId: sourceId,
-          type: type,
-        },
+        source,
+        externalId: sourceId,
+        type: { in: storedTypesFor(type) },
       },
       include: { mediaItem: true },
     });
@@ -438,18 +443,26 @@ export class MediaItemService {
       return existingRef.mediaItem;
     }
 
+    // The caller's type is a hint: a TMDB show is a series or an anime as
+    // TMDB classifies it now, and is stored under that type only.
+    const storedType = type === "MOVIE" ? type : details.summary.type;
+
     if (existingRef) {
+      if (existingRef.mediaItem.type !== storedType) {
+        await this.retype(existingRef.mediaItemId, storedType);
+      }
+
       return this.refresh(
         source,
         sourceId,
         existingRef.mediaItemId,
-        type,
+        storedType,
         details,
       );
     }
 
     try {
-      return await this.createFresh(source, type, details);
+      return await this.createFresh(source, storedType, details);
     } catch (err) {
       // Two requests can reach here for the same uncached media — a double
       // click, two tabs, or an import resolving titles in parallel — since the
@@ -461,13 +474,31 @@ export class MediaItemService {
 
       const winner = await this.prisma.mediaExternalId.findUnique({
         where: {
-          source_externalId_type: { source, externalId: sourceId, type },
+          source_externalId_type: {
+            source,
+            externalId: sourceId,
+            type: storedType,
+          },
         },
         include: { mediaItem: true },
       });
       if (winner) return winner.mediaItem;
       throw err;
     }
+  }
+
+  /** A show TMDB now files the other side of the series/anime line. */
+  private async retype(mediaItemId: string, type: MediaType): Promise<void> {
+    await this.prisma.$transaction([
+      this.prisma.mediaItem.update({
+        where: { id: mediaItemId },
+        data: { type },
+      }),
+      this.prisma.mediaExternalId.updateMany({
+        where: { mediaItemId },
+        data: { type },
+      }),
+    ]);
   }
 
   private async createFresh(

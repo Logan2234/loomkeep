@@ -40,15 +40,11 @@ export class WorkPageService {
 
     if (media) {
       const type = media[1].toUpperCase() as "MOVIE" | "SERIES" | "ANIME";
-      const item = await this.media.upsertFromSource(
-        type === "ANIME" ? "ANILIST" : "TMDB",
-        media[2],
-        type,
-      );
+      const item = await this.media.upsertFromSource("TMDB", media[2], type);
       return {
         targetType: "MEDIA",
         targetId: item.id,
-        kind: type,
+        kind: item.type,
         title: item.title,
         imageUrl: item.posterUrl,
         href,

@@ -21,7 +21,7 @@ import { authCookies, createE2eApp, e2eUser, progressDrift } from "./e2e-app";
  * first and the one real import last.
  *
  * MyAnimeList is the source used because its export is a single XML string —
- * no ZIP to build — and it resolves through AniList, which the suite stubs.
+ * no ZIP to build — and it resolves by title on TMDB, which the suite stubs.
  */
 const MAL_EXPORT = `<?xml version="1.0" encoding="UTF-8"?>
 <myanimelist>
