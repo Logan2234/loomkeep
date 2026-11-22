@@ -19,7 +19,7 @@ tagged alone):
 | ------------------------------- | ------------------------------------- | -------------------------------------- |
 | 12-character commit SHA         | every commit on `main`                | the deploy, pinning a build            |
 | `edge`                          | every commit on `main`                | following `main`; Trivy's weekly scan  |
-| `1.12.0`, `1.12`, `1`, `latest` | the first build of a new root version | self-hosters (`latest` is the default) |
+| `1.14.0`, `1.14`, `1`, `latest` | the first build of a new root version | self-hosters (`latest` is the default) |
 
 `ghcr-cleanup.yml` keeps those named tags and the 30 newest commit tags,
 and deletes the rest every Monday, with the platform images and
