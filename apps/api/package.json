@@ -68,7 +68,7 @@
     "sharp": "^0.35.5",
     "socket.io": "^4.8.4",
     "unleash-client": "^6.12.2",
-    "web-push": "^3.6.7"
+    "web-push": "^4.0.0"
   },
   "devDependencies": {
     "@fastify/static": "^10.1.12",
