@@ -95,7 +95,7 @@ function build(over: Partial<Mocks> = {}): {
     user: {
       findUnique: vi.fn().mockResolvedValue({ email: "test@example.com" }),
     },
-    importRun: { create: vi.fn() },
+    importRun: { create: vi.fn(), upsert: vi.fn() },
   };
   const config = { getOrThrow: vi.fn().mockReturnValue("steam-key") };
   const quota = { record: vi.fn() };
@@ -277,6 +277,52 @@ describe("SteamImportSource (via ImportJobService)", () => {
 
     expect(job.status).toBe("failed");
     expect(job.errorCode).toBe(ErrorCode.ImportSteamLibraryPrivate);
+  });
+
+  it("commit counts a matched game IGDB no longer returns as not found", async () => {
+    const { service } = build({
+      igdb: {
+        matchSteamAppIds: vi.fn().mockResolvedValue(
+          new Map([
+            ["10", "100"],
+            ["20", "200"],
+          ]),
+        ),
+        // Both found at analysis; by the commit, IGDB no longer has 200.
+        getDetailsByIds: vi
+          .fn()
+          .mockResolvedValueOnce([detail("100"), detail("200")])
+          .mockResolvedValue([detail("100")]),
+      },
+      gameItemService: {
+        persistDetails: vi.fn().mockResolvedValue({ id: "gi-100" }),
+      },
+    });
+    mockFetchByUrl({
+      GetOwnedGames: {
+        response: {
+          game_count: 2,
+          games: [
+            { appid: 10, playtime_forever: 60 },
+            { appid: 20, playtime_forever: 60 },
+          ],
+        },
+      },
+    });
+
+    const analyzed = await service.startAnalyze("user1", "steam", {
+      input: "76561197960287930",
+    });
+    await runToEnd(service, "user1", analyzed.id);
+    const committed = service.commit("user1", "steam", analyzed.id, {
+      include: ["g100", "g200"],
+    });
+    const job = await runToEnd(service, "user1", committed.id);
+
+    expect(job.status).toBe("completed");
+    expect(job.report!.tiles).toContainEqual(
+      expect.objectContaining({ id: "notFound", value: 1 }),
+    );
   });
 
   it("commit persists chosen games and skips adult titles disabled at commit time", async () => {

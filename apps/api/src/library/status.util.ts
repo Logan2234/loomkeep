@@ -1,5 +1,6 @@
 import type { EntryStatus, MediaType, ProgressDto } from "@loomkeep/shared";
 import { isAiringFinished } from "../catalog/airing-status.util";
+import type { PrismaService } from "../prisma/prisma.service";
 
 // Re-exported under this module's original name — the logic itself now
 // lives in catalog/airing-status.util.ts (see there for the rationale),
@@ -54,4 +55,60 @@ export function deriveStatus(
   }
 
   return "WATCHING";
+}
+
+/**
+ * `deriveStatus` from an entry's materialized counts (no rewatch): what the
+ * library list shows. A series' stored status is PLANNED or DROPPED whatever
+ * was watched, so a query asking for "in progress" filters on this, after a
+ * `watchedEpisodes > 0`, not-DROPPED prefilter in SQL.
+ */
+export function materializedStatus(entry: {
+  status: string;
+  watchedEpisodes: number;
+  mediaItem: { type: string; status: string | null; episodeCount: number };
+}): EntryStatus {
+  const { mediaItem } = entry;
+  return deriveStatus(
+    mediaItem.type as MediaType,
+    mediaItem.episodeCount > 0
+      ? {
+          watchedEpisodes: entry.watchedEpisodes,
+          totalEpisodes: mediaItem.episodeCount,
+          nextEpisode: null,
+        }
+      : null,
+    isAiringFinished(mediaItem.status),
+    entry.status as EntryStatus,
+  );
+}
+
+/**
+ * Of these works, the ones with a regular episode out and not yet seen by
+ * the user (an undated one counts as out, as AniList's generated episodes
+ * do). The materialized count also holds announced episodes, so a viewer
+ * caught up and waiting reads as "in progress" without this.
+ */
+export async function withEpisodeLeftToWatch(
+  prisma: PrismaService,
+  userId: string,
+  mediaItemIds: string[],
+  now: Date,
+): Promise<Set<string>> {
+  if (mediaItemIds.length === 0) return new Set();
+
+  const seasons = await prisma.season.findMany({
+    where: {
+      mediaItemId: { in: mediaItemIds },
+      number: { gt: 0 },
+      episodes: {
+        some: {
+          OR: [{ airDate: null }, { airDate: { lte: now } }],
+          watches: { none: { userId } },
+        },
+      },
+    },
+    select: { mediaItemId: true },
+  });
+  return new Set(seasons.map((s) => s.mediaItemId));
 }

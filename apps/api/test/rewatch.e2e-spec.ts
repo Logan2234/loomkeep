@@ -155,6 +155,50 @@ describe("Rewatch (e2e)", () => {
     ]);
   });
 
+  it("starts a rewatch asked without a viewing again from nothing seen", async () => {
+    // Every episode was seen in one go (one timestamp, as "season watched"
+    // writes them): none of those viewings belongs to the rewatch.
+    const { entryId, episodeIds } = await seed("SERIES", 3);
+
+    const started = await patch(`/api/library/entries/${entryId}`)
+      .send({ rewatching: true })
+      .expect(200);
+
+    expect(started.body).toMatchObject({
+      status: "WATCHING",
+      rewatching: true,
+      progress: { watchedEpisodes: 0, totalEpisodes: 3 },
+    });
+    expect(started.body.progress.nextEpisode.episodeId).toBe(episodeIds[0]);
+  });
+
+  it("refuses to start a rewatch on a title not seen to the end", async () => {
+    const { entryId, episodeIds } = await seed("SERIES", 3);
+    await prisma.episodeWatch.deleteMany({
+      where: { userId, episodeId: episodeIds[2] },
+    });
+
+    const refused = await patch(`/api/library/entries/${entryId}`)
+      .send({ rewatching: true })
+      .expect(409);
+    expect(refused.body.code).toBe("library.rewatch_not_finished");
+  });
+
+  it("keeps accepting rewatching on a title already being rewatched", async () => {
+    const { entryId, episodeIds } = await seed("SERIES", 2);
+    await post(`/api/library/episodes/${episodeIds[0]}/watches`)
+      .send({})
+      .expect(201);
+    await patch(`/api/library/entries/${entryId}`)
+      .send({ rewatching: true })
+      .expect(200);
+
+    const again = await patch(`/api/library/entries/${entryId}`)
+      .send({ rewatching: true })
+      .expect(200);
+    expect(again.body.progress.watchedEpisodes).toBe(1);
+  });
+
   it("stops a series' rewatch on demand", async () => {
     const { entryId, episodeIds } = await seed("SERIES", 2);
     await post(`/api/library/episodes/${episodeIds[0]}/watches`)

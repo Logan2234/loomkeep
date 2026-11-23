@@ -178,7 +178,9 @@ export interface ImportReportTile {
     | "movies"
     | "episodes"
     | "playtime"
-    | "lists";
+    | "lists"
+    /** Selected, but the catalogue no longer knows it: nothing written. */
+    | "notFound";
   /** Legacy heading for older clients and the admin audit log. */
   label: string;
   value: number;

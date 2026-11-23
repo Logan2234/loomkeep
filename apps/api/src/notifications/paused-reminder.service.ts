@@ -13,6 +13,10 @@ import {
 import { localDay, localParts } from "../common/local-day.util";
 import { JOB_KEYS } from "../jobs/job-keys";
 import { JobRunService } from "../jobs/job-run.service";
+import {
+  materializedStatus,
+  withEpisodeLeftToWatch,
+} from "../library/status.util";
 import { MailService, type PausedReminderItem } from "../mail/mail.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { notSuspended } from "../users/suspension.util";
@@ -148,22 +152,25 @@ export class PausedReminderService {
       take: 1,
     };
 
-    const [series, books, games] = await Promise.all([
+    const [started, books, games] = await Promise.all([
       this.prisma.libraryEntry.findMany({
         where: {
           userId,
-          status: "WATCHING",
+          status: { not: "DROPPED" },
+          watchedEpisodes: { gt: 0 },
           mediaItem: { type: { in: ["SERIES", "ANIME"] } },
           lastWatchedAt: { gt: ghostBefore, lt: pausedBefore },
         },
         select: {
           mediaItemId: true,
+          status: true,
           watchedEpisodes: true,
           lastWatchedAt: true,
           mediaItem: {
             select: {
               title: true,
               type: true,
+              status: true,
               episodeCount: true,
               ...CANONICAL_EXTERNAL_ID_SELECT,
             },
@@ -199,6 +206,21 @@ export class PausedReminderService {
         },
       }),
     ]);
+
+    // In progress the way the library derives it: the stored status says
+    // nothing about what was watched.
+    const inProgress = started.filter(
+      (entry) => materializedStatus(entry) === "WATCHING",
+    );
+    const leftToWatch = await withEpisodeLeftToWatch(
+      this.prisma,
+      userId,
+      inProgress.map((entry) => entry.mediaItemId),
+      now,
+    );
+    const series = inProgress.filter((entry) =>
+      leftToWatch.has(entry.mediaItemId),
+    );
 
     const daysSince = (date: Date) =>
       Math.floor((now.getTime() - date.getTime()) / DAY_MS);

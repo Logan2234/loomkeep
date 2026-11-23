@@ -1,4 +1,5 @@
 import { goto } from "$app/navigation";
+import { disablePush } from "../push";
 
 import { LEGACY_STORAGE_KEYS } from "#lib/constants/storage-keys.js";
 import { browser } from "$app/env";
@@ -412,7 +413,18 @@ export const getAccountSecurityEvents = (page: number) =>
     query: { page: pageParam(page) },
   });
 
+// Long enough for a push service that answers, short enough that a hung one
+// never holds the sign-out.
+const PUSH_UNSUBSCRIBE_TIMEOUT_MS = 3_000;
+
 async function logout(): Promise<void> {
+  // First, while the session still authenticates the API call: a browser
+  // left subscribed kept showing this account's notifications to whoever
+  // signed in next, and that account couldn't subscribe the same endpoint.
+  await Promise.race([
+    disablePush().catch(() => undefined),
+    new Promise((resolve) => setTimeout(resolve, PUSH_UNSUBSCRIBE_TIMEOUT_MS)),
+  ]);
   await typedRequest("/auth/logout", { method: "POST", withAuth: false }).catch(
     () => undefined,
   );
