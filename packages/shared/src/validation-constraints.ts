@@ -30,6 +30,7 @@ export const VALIDATION_CONSTRAINT_NAMES = [
   "arrayNotEmpty",
   "arrayUnique",
   "isPushEndpoint",
+  "isRatingStep",
 ] as const;
 
 export type ValidationConstraintName =

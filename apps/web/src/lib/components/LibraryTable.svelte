@@ -5,7 +5,7 @@
   // fit, so both render as rows: a thumbnail (table) or text only (compact)
   // with the status, rating and progress on one line.
   import { goto } from "$app/navigation";
-  import { joinMeta } from "#lib/format.js";
+  import { formatRating, joinMeta } from "#lib/format.js";
   import type {
     LibraryColumn,
     LibraryInlineEdit,
@@ -88,7 +88,7 @@
     return joinMeta(
       compact ? item.subtitle : null,
       item.status.label,
-      item.rating !== null ? `★ ${item.rating}` : null,
+      item.rating !== null ? `★ ${formatRating(item.rating)}` : null,
       item.progress?.label,
       item.progress?.paused ? pausedLabel(item) : null,
     );
@@ -220,7 +220,7 @@
 {#snippet ratingEdit(entry: T, item: LibraryItemView)}
   {#if item.upcoming}
     <span class="text-dim">
-      {item.rating === null ? "—" : `★ ${item.rating}`}
+      {item.rating === null ? "—" : `★ ${formatRating(item.rating)}`}
     </span>
   {:else if item.rating === null}
     <!-- Both labels share one grid cell, so the column keeps its width. -->
@@ -250,7 +250,7 @@
       <Icon
         name="edit"
         class="text-dim h-3.5 w-3.5 opacity-0 transition-opacity group-hover:opacity-100 group-has-[:focus-visible]:opacity-100" />
-      ★ {item.rating}
+      ★ {formatRating(item.rating)}
     </button>
   {/if}
 {/snippet}
@@ -412,7 +412,7 @@
                   {#if editing}
                     {@render ratingEdit(entry, item)}
                   {:else if item.rating !== null}
-                    ★ {item.rating}
+                    ★ {formatRating(item.rating)}
                   {:else}
                     <span class="text-dim">—</span>
                   {/if}

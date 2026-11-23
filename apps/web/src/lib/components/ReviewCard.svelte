@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { formatRating } from "#lib/format.js";
   import { page } from "$app/state";
   import { auth } from "#lib/auth.svelte.js";
   import { appConfig } from "#lib/config.svelte.js";
@@ -134,7 +135,7 @@
   <div class="flex items-center gap-2">
     <span
       class="bg-accent text-accent-fg rounded-[5px] px-[7px] py-px font-mono text-[0.8rem] font-bold tabular-nums">
-      {review.rating}
+      {formatRating(review.rating)}
     </span>
     <span class="text-[0.85rem] font-semibold">
       {ratingWord(review.rating)}

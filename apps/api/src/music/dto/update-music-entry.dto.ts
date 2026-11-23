@@ -16,6 +16,7 @@ import {
   MaxLength,
   Min,
 } from "class-validator";
+import { IsRatingStep } from "../../common/rating-step.validator";
 
 export class UpdateMusicEntryDto implements UpdateMusicEntryContract {
   @IsOptional()
@@ -26,6 +27,7 @@ export class UpdateMusicEntryDto implements UpdateMusicEntryContract {
   @IsNumber()
   @Min(0)
   @Max(10)
+  @IsRatingStep()
   rating?: number | null;
 
   @IsOptional()

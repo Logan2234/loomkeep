@@ -1,12 +1,14 @@
 <script lang="ts">
+  import { formatRating } from "#lib/format.js";
   import { ratingWord } from "#lib/rating-words.js";
   import { m } from "#lib/paraglide/messages.js";
+  import { RATING_STEP } from "@loomkeep/shared";
   import RollingNumber from "./RollingNumber.svelte";
 
   // 0–10 rating as a native range input, so keyboard and screen readers work
   // out of the box. "0" is a real score, so "Retirer la note" clears back to
-  // unrated (null) — a range input alone can't represent "no value". Legacy
-  // half-point values are shown rounded; any new pick writes an integer.
+  // unrated (null) — a range input alone can't represent "no value". Half
+  // points, as the rating scale goes; a stored value off that grid snaps to it.
   let {
     value = null,
     onChange,
@@ -18,7 +20,9 @@
   const TICKS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
   const UNSET_POSITION = 5;
 
-  const selected = $derived(value === null ? null : Math.round(value));
+  const selected = $derived(
+    value === null ? null : Math.round(value / RATING_STEP) * RATING_STEP,
+  );
   const word = $derived(selected === null ? null : ratingWord(selected));
 
   function pick(e: Event) {
@@ -67,7 +71,7 @@
     <span
       class="font-display text-[3.4rem] leading-none font-extrabold tracking-[-0.02em] tabular-nums"
       class:text-border={selected === null}>
-      <RollingNumber value={selected} />
+      <RollingNumber value={selected} format={formatRating} />
     </span>
     <span class="timecode text-[0.95rem]">/10</span>
     <span
@@ -83,7 +87,7 @@
     type="range"
     min="0"
     max="10"
-    step="1"
+    step={RATING_STEP}
     class="rating-range"
     class:unset={selected === null}
     style="--p: {selected === null ? 0 : selected * 10}%"
@@ -91,7 +95,10 @@
     aria-label={m.reviews_rating_out_of_ten()}
     aria-valuetext={selected === null
       ? m.reviews_rating_unrated()
-      : m.reviews_rating_value_word({ rating: selected, word: word! })}
+      : m.reviews_rating_value_word({
+          rating: formatRating(selected),
+          word: word!,
+        })}
     oninput={pick}
     onkeydown={startFromKeyboard}
     onpointerup={startFromPointer} />

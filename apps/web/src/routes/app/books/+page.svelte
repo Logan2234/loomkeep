@@ -34,7 +34,11 @@
     BOOK_STATUS_ORDER,
     LIBRARY_UNPICKED_STATUSES,
   } from "#lib/constants/status-labels.js";
-  import { DATE_MEDIUM_OPTIONS, formatDate } from "#lib/format.js";
+  import {
+    DATE_MEDIUM_OPTIONS,
+    formatDate,
+    formatRating,
+  } from "#lib/format.js";
   import {
     ownershipText,
     type LibraryBulkActions,
@@ -259,7 +263,9 @@
           {:else}
             <span class="timecode text-[0.7rem]">
               {BOOK_STATUS_LABELS[entry.status]}{#if entry.rating !== null}
-                · ★ {entry.rating}{/if}{#if isSessionPaused(entry, "READING")}
+                · ★ {formatRating(
+                  entry.rating,
+                )}{/if}{#if isSessionPaused(entry, "READING")}
                 {m.media_paused_suffix()}{/if}
             </span>
           {/if}

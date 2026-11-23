@@ -92,5 +92,8 @@ export const REVIEW_TARGET_DOMAIN: Record<ReviewTargetType, StatsDomain> = {
 /** Max length of a review's optional text (frontend + backend DTO). */
 export const REVIEW_TEXT_MAX_LENGTH = 2000;
 
+/** Ratings go from 0 to 10 in half points; imports keep this grid too. */
+export const RATING_STEP = 0.5;
+
 /** How many upvotes on one review trigger the aggregated notification. */
 export const REVIEW_VOTE_NOTIFY_THRESHOLD = 10;

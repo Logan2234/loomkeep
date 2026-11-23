@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { formatRating } from "#lib/format.js";
   import Poster from "#lib/components/Poster.svelte";
   import { activityPhrase, activityRating } from "#lib/activity-phrase.js";
   import Avatar from "#lib/components/Avatar.svelte";
@@ -34,7 +35,7 @@
     <p class="text-dim mt-0.5 flex items-center gap-2 text-xs">
       {#if rating !== null}
         <span class="text-accent font-mono font-bold tabular-nums">
-          {rating}/10
+          {formatRating(rating)}/10
         </span>
         <span aria-hidden="true">·</span>
       {/if}

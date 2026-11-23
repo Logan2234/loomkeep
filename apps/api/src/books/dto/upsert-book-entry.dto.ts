@@ -15,6 +15,7 @@ import {
   MaxLength,
   Min,
 } from "class-validator";
+import { IsRatingStep } from "../../common/rating-step.validator";
 
 export class UpsertBookEntryDto implements UpsertBookEntryContract {
   @IsIn(Object.values(BookSource))
@@ -31,6 +32,7 @@ export class UpsertBookEntryDto implements UpsertBookEntryContract {
   @IsNumber()
   @Min(0)
   @Max(10)
+  @IsRatingStep()
   rating?: number | null;
 
   @IsOptional()

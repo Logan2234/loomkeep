@@ -199,6 +199,7 @@
   "valerr_array_not_empty": "Ne peut pas être vide.",
   "valerr_array_unique": "Chaque élément doit être unique.",
   "valerr_is_push_endpoint": "Ce service de notifications n'est pas pris en charge.",
+  "valerr_is_rating_step": "Les notes vont par demi-points (7 ou 7,5).",
   "apierr_auth_invalid_invitation": "Ce lien d'invitation n'est pas (ou plus) valable.",
   "apierr_auth_invitation_expired": "Ce lien d'invitation a expiré. Demande-en un nouveau à la personne qui te l'a envoyé.",
   "apierr_auth_invitation_email_mismatch": "Cette invitation est réservée à une autre adresse e-mail.",

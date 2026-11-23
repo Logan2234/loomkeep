@@ -15,6 +15,7 @@ import {
   MaxLength,
   Min,
 } from "class-validator";
+import { IsRatingStep } from "../../common/rating-step.validator";
 
 export class UpdateEntryDto {
   @IsOptional()
@@ -25,6 +26,7 @@ export class UpdateEntryDto {
   @IsNumber()
   @Min(0)
   @Max(10)
+  @IsRatingStep()
   rating?: number | null;
 
   @IsOptional()

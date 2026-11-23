@@ -1,3 +1,4 @@
+import { formatRating } from "#lib/format.js";
 import { m } from "#lib/paraglide/messages.js";
 import { ratingWord } from "#lib/rating-words.js";
 import { fireEvent, render, screen } from "@testing-library/svelte";
@@ -15,7 +16,10 @@ function renderSlider(value: number | null) {
 }
 
 const spoken = (rating: number) =>
-  m.reviews_rating_value_word({ rating, word: ratingWord(rating) });
+  m.reviews_rating_value_word({
+    rating: formatRating(rating),
+    word: ratingWord(rating),
+  });
 
 describe("RatingSlider", () => {
   it("announces an unrated work and offers nothing to clear", () => {
@@ -57,11 +61,23 @@ describe("RatingSlider", () => {
     expect(onChange).toHaveBeenCalledWith(8);
   });
 
-  it("shows a legacy half-point score rounded", () => {
-    const { slider } = renderSlider(7.5);
+  it("rates in half points", async () => {
+    const { onChange, slider } = renderSlider(7.5);
 
-    expect(slider.value).toBe("8");
-    expect(slider.getAttribute("aria-valuetext")).toBe(spoken(8));
+    expect(slider.step).toBe("0.5");
+    expect(slider.value).toBe("7.5");
+    expect(slider.getAttribute("aria-valuetext")).toBe(spoken(7.5));
+
+    slider.value = "8.5";
+    await fireEvent.input(slider);
+
+    expect(onChange).toHaveBeenCalledWith(8.5);
+  });
+
+  it("snaps a stored score off the half-point grid", () => {
+    const { slider } = renderSlider(7.3);
+
+    expect(slider.value).toBe("7.5");
   });
 
   it.each([

@@ -199,6 +199,7 @@
   "valerr_array_not_empty": "Non può essere vuoto.",
   "valerr_array_unique": "Ogni elemento deve essere unico.",
   "valerr_is_push_endpoint": "Questo servizio di notifica non è supportato.",
+  "valerr_is_rating_step": "I voti vanno a mezzi punti (7 o 7,5).",
   "apierr_auth_invalid_invitation": "Questo link di invito non è (più) valido.",
   "apierr_auth_invitation_expired": "Questo link di invito è scaduto. Chiedine uno nuovo a chi te l'ha inviato.",
   "apierr_auth_invitation_email_mismatch": "Questo invito è riservato a un altro indirizzo email.",

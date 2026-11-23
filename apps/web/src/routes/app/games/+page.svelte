@@ -37,7 +37,12 @@
     GAME_STATUS_ORDER,
     LIBRARY_UNPICKED_STATUSES,
   } from "#lib/constants/status-labels.js";
-  import { DATE_MEDIUM_OPTIONS, formatDate, formatHours } from "#lib/format.js";
+  import {
+    DATE_MEDIUM_OPTIONS,
+    formatDate,
+    formatHours,
+    formatRating,
+  } from "#lib/format.js";
   import {
     ownershipText,
     type LibraryBulkActions,
@@ -252,7 +257,9 @@
             {entry.game.upcoming
               ? m.media_upcoming()
               : GAME_STATUS_LABELS[entry.status]}{#if entry.rating !== null}
-              · ★ {entry.rating}{/if}{#if isSessionPaused(entry, "PLAYING")}
+              · ★ {formatRating(
+                entry.rating,
+              )}{/if}{#if isSessionPaused(entry, "PLAYING")}
               {m.media_paused_suffix()}{/if}
           </span>
         {/snippet}

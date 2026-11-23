@@ -37,7 +37,11 @@
     LIBRARY_UNPICKED_STATUSES,
   } from "#lib/constants/status-labels.js";
   import { isFeatureNew } from "#lib/feature-badges.js";
-  import { DATE_MEDIUM_OPTIONS, formatDate } from "#lib/format.js";
+  import {
+    DATE_MEDIUM_OPTIONS,
+    formatDate,
+    formatRating,
+  } from "#lib/format.js";
   import {
     ownershipText,
     type LibraryBulkActions,
@@ -278,7 +282,7 @@
               {entry.mediaItem.upcoming
                 ? m.media_upcoming()
                 : STATUS_LABELS[entry.status]}{#if entry.rating !== null}
-                · ★ {entry.rating}{/if}
+                · ★ {formatRating(entry.rating)}{/if}
             </span>
           {/if}
         {/snippet}
