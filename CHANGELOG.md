@@ -15,6 +15,9 @@ history from before it was started.
 
 ### Added
 
+- Brand logos for the services Loomkeep talks to: import sources, export
+  cards, IMDb / Rotten Tomatoes / Metacritic score chips, Data sources and
+  the docs tables.
 - Series pages: a « Ratings » view in Episodes colours every episode by its
   rating, season by season, with a dot on the ones you rated.
 - Season finales are flagged in the calendar, the release email and the

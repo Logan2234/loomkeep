@@ -58,6 +58,18 @@
       href: MUSICBRAINZ_API,
       notice: m.settings_datasources_musicbrainz_notice(),
     },
+    {
+      brand: "coverartarchive",
+      name: "Cover Art Archive",
+      href: "https://coverartarchive.org/",
+      notice: m.settings_datasources_coverart_notice(),
+    },
+    {
+      brand: "justwatch",
+      name: "JustWatch",
+      href: "https://www.justwatch.com/",
+      notice: m.settings_datasources_justwatch_notice(),
+    },
   ];
 </script>
 

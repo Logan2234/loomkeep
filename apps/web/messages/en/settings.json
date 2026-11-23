@@ -86,6 +86,8 @@
   "settings_datasources_anilist_notice": "Anime data provided by AniList.",
   "settings_datasources_igdb_notice": "Video game data provided by IGDB.",
   "settings_datasources_musicbrainz_notice": "Music data provided by MusicBrainz — core data under CC0, the rest under CC BY-NC-SA 3.0.",
+  "settings_datasources_coverart_notice": "Album covers provided by the Cover Art Archive — each image stays under its own rights.",
+  "settings_datasources_justwatch_notice": "Where-to-watch offers provided by JustWatch, through TMDB.",
   "settings_export_body": "A JSON file with your profile, library and history.",
   "settings_export_json_title": "Complete archive",
   "settings_export_json_description": "Download your profile, library and watch history together in a portable JSON file.",

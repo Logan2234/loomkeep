@@ -3,19 +3,21 @@ title: Catalogue keys
 description: The API keys each catalogue and import needs, and where to get them.
 ---
 
+import BrandIcon from "../../../components/BrandIcon.astro";
+
 Loomkeep searches catalogues live and copies a title only once someone
 tracks it. Each catalogue has its own access rules:
 
-| Catalogue / feature   | Variables                                  | Needed for                                             |
-| --------------------- | ------------------------------------------ | ------------------------------------------------------ |
-| TMDB                  | `TMDB_API_TOKEN`                           | Films and series. Without it, that domain is off.      |
-| AniList               | —                                          | Anime. No key.                                         |
-| IGDB (through Twitch) | `TWITCH_CLIENT_ID`, `TWITCH_CLIENT_SECRET` | Games. Without it, that domain is off.                 |
-| Open Library          | — (`API_CONTACT` recommended)              | Books. No key.                                         |
-| MusicBrainz           | — (`API_CONTACT` recommended)              | Music. No key.                                         |
-| OMDb                  | `OMDB_API_KEY`                             | Optional: IMDb, Rotten Tomatoes and Metacritic scores. |
-| Steam                 | `STEAM_API_KEY`                            | The Steam import.                                      |
-| Simkl                 | `SIMKL_CLIENT_ID`, `SIMKL_CLIENT_SECRET`   | The Simkl import.                                      |
+| Catalogue / feature                             | Variables                                  | Needed for                                             |
+| ----------------------------------------------- | ------------------------------------------ | ------------------------------------------------------ |
+| <BrandIcon brand="tmdb" />TMDB                  | `TMDB_API_TOKEN`                           | Films and series. Without it, that domain is off.      |
+| <BrandIcon brand="anilist" />AniList            | —                                          | Anime. No key.                                         |
+| <BrandIcon brand="igdb" />IGDB (through Twitch) | `TWITCH_CLIENT_ID`, `TWITCH_CLIENT_SECRET` | Games. Without it, that domain is off.                 |
+| <BrandIcon brand="openlibrary" />Open Library   | — (`API_CONTACT` recommended)              | Books. No key.                                         |
+| <BrandIcon brand="musicbrainz" />MusicBrainz    | — (`API_CONTACT` recommended)              | Music. No key.                                         |
+| <BrandIcon brand="omdb" />OMDb                  | `OMDB_API_KEY`                             | Optional: IMDb, Rotten Tomatoes and Metacritic scores. |
+| <BrandIcon brand="steam" />Steam                | `STEAM_API_KEY`                            | The Steam import.                                      |
+| <BrandIcon brand="simkl" />Simkl                | `SIMKL_CLIENT_ID`, `SIMKL_CLIENT_SECRET`   | The Simkl import.                                      |
 
 An import whose key is missing is greyed out in the app; the rest keeps
 working. **Admin › Services** shows which keys are set and whether each

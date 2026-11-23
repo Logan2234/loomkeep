@@ -1,0 +1,49 @@
+---
+// A third-party brand's mark, inline before its name in a table or a page
+// heading. Always decorative: the name is written next to it.
+import { BRANDS, type BrandKey } from "../brands";
+
+interface Props {
+  brand: BrandKey;
+}
+
+const mark = BRANDS[Astro.props.brand];
+---
+
+{
+  "path" in mark ? (
+    <svg class="brand-icon" viewBox="0 0 24 24" fill={mark.color} aria-hidden="true">
+      <path d={mark.path} />
+    </svg>
+  ) : (
+    <span
+      class="brand-icon brand-icon-text"
+      style={`background-color:${mark.color};color:${mark.foreground}`}
+      aria-hidden="true"
+    >
+      {mark.monogram}
+    </span>
+  )
+}
+
+<style>
+  .brand-icon {
+    display: inline-block;
+    height: 1.1em;
+    width: 1.1em;
+    margin-inline-end: 0.4em;
+    vertical-align: -0.2em;
+  }
+
+  .brand-icon-text {
+    border-radius: 0.2em;
+    font-size: 0.6em;
+    font-weight: 900;
+    letter-spacing: -0.08em;
+    text-align: center;
+    vertical-align: -0.1em;
+    width: 1.8em;
+    height: 1.8em;
+    line-height: 1.8em;
+  }
+</style>

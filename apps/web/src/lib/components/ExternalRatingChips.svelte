@@ -1,15 +1,16 @@
 <script lang="ts">
   import type { RatingDto } from "@loomkeep/shared";
-  import { RATING_SOURCE_STYLES } from "#lib/provider-brands.js";
+  import {
+    RATING_SOURCE_BRANDS,
+    RATING_SOURCE_STYLES,
+  } from "#lib/provider-brands.js";
   import ProviderMark from "./ProviderMark.svelte";
   let {
     ratings,
     overlay = false,
-    providerMarks = false,
   }: {
     ratings: RatingDto[];
     overlay?: boolean;
-    providerMarks?: boolean;
   } = $props();
 </script>
 
@@ -25,8 +26,9 @@
       (overlay ? 'bg-white/15 text-white' : 'bg-surface-2 text-fg')} {rating.url
       ? 'transition-opacity hover:opacity-80'
       : ''}">
-    {#if providerMarks && rating.source === "Open Library"}<ProviderMark
-        brand="openlibrary"
+    {#if RATING_SOURCE_BRANDS[rating.source]}<ProviderMark
+        brand={RATING_SOURCE_BRANDS[rating.source]}
+        mono={rating.source !== "Open Library"}
         decorative
         class="h-3.5 w-3.5 shrink-0" />{/if}
     <span>{rating.source}</span><span class="tabular-nums opacity-90">
