@@ -413,6 +413,8 @@
             source={entry.ownershipSource}
             statusOptions={BOOK_OWNERSHIP_STATUS_OPTIONS}
             sourceOptionsByStatus={BOOK_OWNERSHIP_SOURCES}
+            loan={entry}
+            onLoanChange={(patch) => patchMut.mutate(patch)}
             onChange={(status, source) =>
               patchMut.mutate({
                 ownershipStatus: status as typeof entry.ownershipStatus,

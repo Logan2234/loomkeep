@@ -464,5 +464,11 @@
   "media_episode_ratings_mine": "il tuo voto {rating}",
   "media_episode_ratings_legend_mine": "votato da te",
   "game_where_to_play": "Dove giocare",
-  "music_listen_on": "Ascolta su"
+  "music_listen_on": "Ascolta su",
+  "ownership_lent_out": "Prestato al momento",
+  "ownership_lent_to": "Prestato a",
+  "ownership_borrowed_from": "Preso in prestito da",
+  "ownership_loan_since": "Dal",
+  "ownership_loan_person_placeholder": "Un amico, o un nome",
+  "ownership_loan_private": "Nota privata: nessuno viene avvisato."
 }

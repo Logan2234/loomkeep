@@ -148,6 +148,7 @@
     listMusic({
       query: params.query,
       favorite: params.favoritesOnly,
+      loan: params.loan ?? undefined,
       statuses: params.statuses as MusicStatus[],
       sort: params.sort as MusicSortKey,
       order: params.order,
@@ -158,6 +159,7 @@
     getMusicPile({
       query: params.query,
       favorite: params.favoritesOnly,
+      loan: params.loan ?? undefined,
       statuses: params.statuses as MusicStatus[],
     });
 </script>

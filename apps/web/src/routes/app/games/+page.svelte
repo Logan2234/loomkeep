@@ -182,6 +182,7 @@
     listGames({
       query: params.query,
       favorite: params.favoritesOnly,
+      loan: params.loan ?? undefined,
       statuses: params.statuses as GameFilterStatus[],
       platforms: params.extra as string[],
       sort: params.sort as GameSortKey,
@@ -193,6 +194,7 @@
     getGamesPile({
       query: params.query,
       favorite: params.favoritesOnly,
+      loan: params.loan ?? undefined,
       statuses: params.statuses as GameFilterStatus[],
       platforms: params.extra as string[],
     });

@@ -7,6 +7,7 @@ import {
   type BulkUpdateEntriesDto,
   type CreateBookSessionDto,
   type LibrarySagaSort,
+  type LoanFilter,
   type SortOrder,
   type UpdateBookEntryDto,
   type UpdateBookSessionDto,
@@ -22,6 +23,8 @@ export const searchBooks = (query: string) =>
   typedRequest("/books/search", { query: { q: query, lang: getLocale() } });
 
 export interface ListBooksFilters {
+  /** Only the entries lent out, or borrowed and to give back. */
+  loan?: LoanFilter;
   query?: string;
   favorite?: boolean;
   /** Only books anyone can read online for free. */
@@ -38,6 +41,7 @@ export function listBooks(filters: ListBooksFilters = {}) {
       lang: getLocale(),
       q: filters.query,
       favorite: filters.favorite ? "true" : undefined,
+      loan: filters.loan,
       free: filters.freeToRead ? "true" : undefined,
       status: filters.statuses,
       sort: filters.sort,
@@ -54,6 +58,7 @@ export function getBooksPile(filters: ListBooksFilters = {}) {
       lang: getLocale(),
       q: filters.query,
       favorite: filters.favorite ? "true" : undefined,
+      loan: filters.loan,
       free: filters.freeToRead ? "true" : undefined,
       status: filters.statuses,
     },

@@ -593,6 +593,8 @@
                 source={entry.ownershipSource}
                 statusOptions={MEDIA_OWNERSHIP_STATUS_OPTIONS}
                 sourceOptionsByStatus={MEDIA_OWNERSHIP_SOURCES}
+                loan={entry}
+                onLoanChange={(patch) => patchMut.mutate(patch)}
                 onChange={(status, source) =>
                   patchMut.mutate({
                     ownershipStatus: status as typeof entry.ownershipStatus,

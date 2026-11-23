@@ -27,6 +27,9 @@ history from before it was started.
 - Ratings go in half points, from 0 to 10. Half stars imported from
   Letterboxd, Goodreads or StoryGraph now show as they are (7.5) instead of
   rounded.
+- Loans: note who you borrowed a work from, or who has your physical copy,
+  and since when. Libraries gain « Lent out » and « To give back » filters.
+  Private: nobody is told.
 - Admin › Services lists, before an upgrade, what each release since yours
   asks self-hosters to do (renamed variables, long migrations…), as a
   checklist.

@@ -199,6 +199,7 @@
     listLibrary({
       query: params.query,
       favorite: params.favoritesOnly,
+      loan: params.loan ?? undefined,
       statuses: params.statuses as MediaFilterStatus[],
       types: params.extra as MediaType[],
       sort: params.sort as MediaSortKey,
@@ -210,6 +211,7 @@
     getLibraryPile({
       query: params.query,
       favorite: params.favoritesOnly,
+      loan: params.loan ?? undefined,
       statuses: params.statuses as MediaFilterStatus[],
       types: params.extra as MediaType[],
     });

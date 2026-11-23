@@ -181,6 +181,7 @@
     listBooks({
       query: params.query,
       favorite: params.favoritesOnly,
+      loan: params.loan ?? undefined,
       freeToRead: params.extra === true,
       statuses: params.statuses as BookFilterStatus[],
       sort: params.sort as BookSortKey,
@@ -192,6 +193,7 @@
     getBooksPile({
       query: params.query,
       favorite: params.favoritesOnly,
+      loan: params.loan ?? undefined,
       freeToRead: params.extra === true,
       statuses: params.statuses as BookFilterStatus[],
     });
