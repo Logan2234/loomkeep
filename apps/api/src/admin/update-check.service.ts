@@ -28,7 +28,7 @@ export const LATEST_PACKAGE_URL =
   "https://raw.githubusercontent.com/Logan2234/loomkeep/main/package.json";
 
 // Read for its "Breaking changes" sections, from the same branch as above.
-export const LATEST_CHANGELOG_URL =
+const LATEST_CHANGELOG_URL =
   "https://raw.githubusercontent.com/Logan2234/loomkeep/main/CHANGELOG.md";
 
 // Received by InstancePingController on the hosted instance, which answers
