@@ -19,25 +19,26 @@ HTTPS, and every request carries a personal API key you create yourself.
 2.  **Check it.** `GET /v1/me` works with any key and says which account and
     key you are using, and your rate limit.
 
+    {/* prettier-ignore */}
     <Tabs syncKey="language">
-  <TabItem label="curl">
-    ```sh
-    curl -H "Authorization: Bearer $LOOMKEEP_API_KEY" \
-      https://loomkeep.app/api/v1/me
-    ```
-  </TabItem>
-  <TabItem label="JavaScript">
-    ```js
-    const res = await fetch("https://loomkeep.app/api/v1/me", {
-      headers: { Authorization: `Bearer ${process.env.LOOMKEEP_API_KEY}` },
-    });
-    console.log(await res.json());
-    ```
-  </TabItem>
-  <TabItem label="Python">
-    ```python
-    import os
-    import requests
+      <TabItem label="curl">
+        ```sh
+        curl -H "Authorization: Bearer $LOOMKEEP_API_KEY" \
+          https://loomkeep.app/api/v1/me
+        ```
+      </TabItem>
+      <TabItem label="JavaScript">
+        ```js
+        const res = await fetch("https://loomkeep.app/api/v1/me", {
+          headers: { Authorization: `Bearer ${process.env.LOOMKEEP_API_KEY}` },
+        });
+        console.log(await res.json());
+        ```
+      </TabItem>
+      <TabItem label="Python">
+        ```python
+        import os
+        import requests
 
         res = requests.get(
             "https://loomkeep.app/api/v1/me",
@@ -47,7 +48,8 @@ HTTPS, and every request carries a personal API key you create yourself.
         ```
 
       </TabItem>
-</Tabs>
+
+    </Tabs>
 
 3.  **Read your library.** With `library:read`, `GET /v1/library` lists what
     you track, newest first. Keep what is under way with `?phase=IN_PROGRESS`:
