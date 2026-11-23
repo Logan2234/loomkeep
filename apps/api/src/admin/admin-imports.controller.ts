@@ -171,7 +171,12 @@ export class AdminImportsController {
       where.status === "RUNNING" || running.length > pageLimit
         ? []
         : await this.prisma.importRun.findMany({
-            where,
+            // A running commit already has its interrupted-until-done
+            // record (see INTERRUPTED_IMPORT_ERROR): listed once, as running.
+            where: {
+              ...where,
+              id: { notIn: this.imports.listRunningImports().map((r) => r.id) },
+            },
             select: IMPORT_SELECT,
             orderBy: { startedAt: "desc" },
             skip: Math.max(0, skip - active.length),

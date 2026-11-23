@@ -13,6 +13,20 @@ history from before it was started.
 
 ## [Unreleased]
 
+### Added
+
+- Series pages: a « Ratings » view in Episodes colours every episode by its
+  rating, season by season, with a dot on the ones you rated.
+- Season finales are flagged in the calendar, the release email and the
+  push digest.
+- Game pages list where to buy or play: Steam, GOG, Epic Games, itch.io,
+  App Store and Google Play.
+- Album pages list where to listen: Spotify, Apple Music, Deezer, YouTube
+  Music, Tidal, Qobuz, Bandcamp and Amazon. Pick yours in Settings ›
+  Streaming to see them first.
+
+## 1.15.0 — Admin overhaul, premieres calendar and instance hardening
+
 ### Breaking changes
 
 - **Self-hosting: your instance now tells loomkeep.app it exists.** The
@@ -35,23 +49,13 @@ history from before it was started.
   are optional: without `TMDB_API_TOKEN`, films and series are off; without
   the Twitch keys, games are.
 
+### Added
+
 - Administrators get an alert (email, push optional) when someone's import
   fails, with a link to the failed imports in Admin › Imports.
 - An optional "How did you hear about Loomkeep?" at the end of the welcome
   tour, with the answers in Admin › Stats. Off by default: turn it on in
   Admin › Instance settings or with `ASK_ACQUISITION_SOURCE=true`.
-
-### Added
-
-- Series pages: a « Ratings » view in Episodes colours every episode by its
-  rating, season by season, with a dot on the ones you rated.
-- Season finales are flagged in the calendar, the release email and the
-  push digest.
-- Game pages list where to buy or play: Steam, GOG, Epic Games, itch.io,
-  App Store and Google Play.
-- Album pages list where to listen: Spotify, Apple Music, Deezer, YouTube
-  Music, Tidal, Qobuz, Bandcamp and Amazon. Pick yours in Settings ›
-  Streaming to see them first.
 - Admin › Instance settings › Domains: turn a domain off for the whole
   instance, with the number of accounts that use it. It disappears from the
   app for everyone, and the libraries come back when it's turned on again.
@@ -84,6 +88,18 @@ history from before it was started.
 
 ### Fixed
 
+- Rewatching a series finished with "season watched" no longer counts
+  every episode as already seen again.
+- The monthly "paused" reminder and the stale-series list now include
+  series followed by ticking episodes, not only imported ones.
+- Signing out turns off push on that device, so a shared browser stops
+  showing the previous account's notifications.
+- An import with "overwrite" that fails part-way no longer leaves the
+  library missing every title it hadn't rewritten yet.
+- An import cut short by a server restart now appears in the history as
+  failed, and its progress screen says the server restarted.
+- Book and Steam imports list the titles the catalogue no longer has, and
+  a catalogue outage fails the import instead of using up the free one.
 - Self-hosting: the offsite backup no longer stops at the first missing
   add-on database or at an unquoted `SMTP_FROM` in `.env`; it uploads what
   it could, checks the upload and pings the health check's `/fail` on error.

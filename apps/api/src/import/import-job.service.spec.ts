@@ -9,7 +9,10 @@ import type { NotificationService } from "../notifications/notification.service"
 import type { PrismaService } from "../prisma/prisma.service";
 import { stubAchievements, stubEvents, stubXp } from "../test-utils/stubs";
 import type { ImportAlertService } from "./import-alert.service";
-import { ImportJobService } from "./import-job.service";
+import {
+  ImportJobService,
+  INTERRUPTED_IMPORT_ERROR,
+} from "./import-job.service";
 import type { ImportReq } from "./import-source";
 
 function stubNotifications(): NotificationService {
@@ -283,9 +286,11 @@ describe("ImportJobService.commit — IMPORT_COMPLETED", () => {
   ) {
     const source = fakeSource("tvtime");
     source.commit = commitImpl;
+    // The final record; the placeholder written at start goes through create.
     const importRunCreate = vi.fn().mockResolvedValue({});
+    const importRunStart = vi.fn().mockResolvedValue({});
     const prisma = {
-      importRun: { create: importRunCreate },
+      importRun: { create: importRunStart, upsert: importRunCreate },
       user: { findUnique: vi.fn().mockResolvedValue({ locale: "fr" }) },
     } as unknown as PrismaService;
     const xp = stubXp();
@@ -310,6 +315,7 @@ describe("ImportJobService.commit — IMPORT_COMPLETED", () => {
       xp,
       events,
       importRunCreate,
+      importRunStart,
       notifications,
       importAlerts,
     };
@@ -381,19 +387,22 @@ describe("ImportJobService.commit — IMPORT_COMPLETED", () => {
     await vi.waitFor(() =>
       expect(service.listRunningImports()).toHaveLength(0),
     );
-    expect(importRunCreate).toHaveBeenCalledWith({
-      data: expect.objectContaining({
-        id: job.id,
-        details: {
-          items: [
-            { title: "Selected", state: "selected" },
-            { title: "Skipped", state: "ignored" },
-            { title: "Unmatched", state: "unresolved" },
-          ],
-          report,
-        },
+    expect(importRunCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: job.id },
+        create: expect.objectContaining({
+          id: job.id,
+          details: {
+            items: [
+              { title: "Selected", state: "selected" },
+              { title: "Skipped", state: "ignored" },
+              { title: "Unmatched", state: "unresolved" },
+            ],
+            report,
+          },
+        }),
       }),
-    });
+    );
   });
 
   it("awards IMPORT_COMPLETED once a commit succeeds, even with zero items imported", async () => {
@@ -456,11 +465,112 @@ describe("ImportJobService.commit — IMPORT_COMPLETED", () => {
     expect(JSON.stringify(returned)).not.toContain("LibraryEntry");
     expect(importRunCreate).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({
+        create: expect.objectContaining({
           error: 'relation "LibraryEntry" does not exist',
         }),
       }),
     );
+  });
+
+  // A restart (every merge redeploys) kills the commit mid-way: a record
+  // written up front, as a failure, is what's left to tell (audit
+  // 2026-11-17, BUG-06). The final write replaces it.
+  it("records the commit as interrupted before it starts writing", async () => {
+    let recordedBeforeWriting: boolean | null = null;
+    const { service, importRunStart } = makeCommitService(async () => {
+      recordedBeforeWriting = importRunStart.mock.calls.length > 0;
+      return { overwrite: false, tiles: [] };
+    });
+    seedAnalyzedJob(service, "analyzed-1");
+
+    const job = service.commit("u1", "tvtime", "analyzed-1", {
+      include: [],
+    } as never);
+
+    await vi.waitFor(() => expect(recordedBeforeWriting).toBe(true));
+    expect(importRunStart).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        id: job.id,
+        userId: "u1",
+        status: "FAILURE",
+        error: INTERRUPTED_IMPORT_ERROR,
+      }),
+    });
+  });
+
+  it("still commits when the up-front record can't be written", async () => {
+    const { service, importRunStart, importRunCreate } = makeCommitService(
+      async () => ({ overwrite: false, tiles: [] }),
+    );
+    importRunStart.mockRejectedValue(new Error("db hiccup"));
+    seedAnalyzedJob(service, "analyzed-1");
+
+    const job = service.commit("u1", "tvtime", "analyzed-1", {
+      include: [],
+    } as never);
+
+    await vi.waitFor(() => expect(importRunCreate).toHaveBeenCalled());
+    expect(service.getJob("u1", job.id).status).toBe("completed");
+  });
+
+  it("answers a job lost to a restart as interrupted, not as unknown", async () => {
+    const { service } = makeCommitService(async () => ({
+      overwrite: false,
+      tiles: [],
+    }));
+    const findFirst = vi.fn().mockResolvedValue({
+      status: "FAILURE",
+      error: INTERRUPTED_IMPORT_ERROR,
+      itemCount: 12,
+    });
+    (
+      service as unknown as { prisma: { importRun: Record<string, unknown> } }
+    ).prisma.importRun.findFirst = findFirst;
+
+    await expect(service.pollJob("u1", "lost-job")).resolves.toMatchObject({
+      id: "lost-job",
+      status: "failed",
+      errorCode: ErrorCode.ImportInterrupted,
+    });
+    expect(findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: "lost-job", userId: "u1" } }),
+    );
+  });
+
+  it("answers a job pruned from memory with the report it recorded", async () => {
+    const { service } = makeCommitService(async () => ({
+      overwrite: false,
+      tiles: [],
+    }));
+    const report = { overwrite: false, tiles: [] };
+    (
+      service as unknown as { prisma: { importRun: Record<string, unknown> } }
+    ).prisma.importRun.findFirst = vi.fn().mockResolvedValue({
+      status: "SUCCESS",
+      error: null,
+      itemCount: 3,
+      details: { items: [], report },
+    });
+
+    await expect(service.pollJob("u1", "old-job")).resolves.toMatchObject({
+      status: "completed",
+      report,
+      errorCode: null,
+    });
+  });
+
+  it("still answers not found for a job nobody recorded", async () => {
+    const { service } = makeCommitService(async () => ({
+      overwrite: false,
+      tiles: [],
+    }));
+    (
+      service as unknown as { prisma: { importRun: Record<string, unknown> } }
+    ).prisma.importRun.findFirst = vi.fn().mockResolvedValue(null);
+
+    await expect(service.pollJob("u1", "nope")).rejects.toMatchObject({
+      code: ErrorCode.ImportJobNotFound,
+    });
   });
 
   it("alerts the administrators when a commit fails", async () => {
@@ -766,7 +876,7 @@ describe("ImportJobService.getLastRun", () => {
     });
     expect(findFirst).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { userId: "u1" },
+        where: { userId: "u1", id: { notIn: [] } },
         orderBy: { finishedAt: "desc" },
       }),
     );
@@ -821,7 +931,7 @@ describe("ImportJobService.getHistory", () => {
 
     expect(findMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { userId: "u1" },
+        where: { userId: "u1", id: { notIn: [] } },
         orderBy: { finishedAt: "desc" },
         skip: 0,
         take: 21,

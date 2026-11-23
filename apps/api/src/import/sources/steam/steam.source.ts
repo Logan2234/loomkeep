@@ -233,11 +233,20 @@ export class SteamImportSource implements ImportReq<SteamParsed> {
 
     const tally = new Map<GameStatus, number>();
     let totalMinutes = 0;
+    let notFound = 0;
 
     for (const { key, sourceId } of targets) {
       const detail = detailById.get(sourceId);
 
-      if (!detail || (detail.summary.isAdult && !allowAdult)) {
+      // IGDB answered without this id: it no longer has the game. Reported,
+      // not dropped in silence (an IGDB outage fails the whole fetch above).
+      if (!detail) {
+        notFound++;
+        progress.tick();
+        continue;
+      }
+
+      if (detail.summary.isAdult && !allowAdult) {
         progress.tick();
         continue;
       }
@@ -282,6 +291,16 @@ export class SteamImportSource implements ImportReq<SteamParsed> {
     });
     if (tiles.length === 0)
       tiles.push({ id: "games", label: "Games", value: 0, sub: null });
+
+    if (notFound > 0) {
+      tiles.push({
+        id: "notFound",
+        label: "Not found",
+        value: notFound,
+        sub: null,
+      });
+    }
+
     tiles.push({
       id: "playtime",
       label: "Playtime",

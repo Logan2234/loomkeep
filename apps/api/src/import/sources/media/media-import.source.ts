@@ -362,18 +362,37 @@ export abstract class MediaImportSource<
       listsCreated: 0,
     };
 
-    if (decisions.overwrite) {
+    // Overwrite replaces the library title by title: a title's old entry and
+    // watches go just before its new ones are written, whatever the export
+    // doesn't cover only once every title is in. A failed title or a restart
+    // then never costs a title that wasn't rewritten yet.
+    const replaced = new Set<string>();
+
+    const replaceTitle = async (match: ResolvedMatch): Promise<void> => {
+      if (!decisions.overwrite) return;
+      const media = await this.mediaItemService.upsertFromSource(
+        match.source,
+        match.sourceId,
+        match.type,
+      );
+      if (replaced.has(media.id)) return;
       await this.prisma.$transaction([
-        this.prisma.episodeWatch.deleteMany({ where: { userId } }),
-        this.prisma.libraryEntry.deleteMany({ where: { userId } }),
+        this.prisma.episodeWatch.deleteMany({
+          where: { userId, episode: { season: { mediaItemId: media.id } } },
+        }),
+        this.prisma.libraryEntry.deleteMany({
+          where: { userId, mediaItemId: media.id },
+        }),
       ]);
-    }
+      replaced.add(media.id);
+    };
 
     for (const show of includedShows) {
       const match = this.resolvedMatch(showKey(show), decisions, matchByKey);
 
       if (match) {
         try {
+          await replaceTitle(match);
           await this.writeShow(userId, show, match, tally);
         } catch (error) {
           throw this.contextualize(error, show.title);
@@ -388,6 +407,7 @@ export abstract class MediaImportSource<
 
       if (match) {
         try {
+          await replaceTitle(match);
           await this.writeMovie(userId, movie, match, tally);
         } catch (error) {
           throw this.contextualize(error, movie.title);
@@ -395,6 +415,23 @@ export abstract class MediaImportSource<
       }
 
       progress.tick();
+    }
+
+    // Nothing written (every title unresolved) replaces nothing: emptying
+    // the library then would be the old failure all over again.
+    if (decisions.overwrite && replaced.size > 0) {
+      const kept = [...replaced];
+      await this.prisma.$transaction([
+        this.prisma.episodeWatch.deleteMany({
+          where: {
+            userId,
+            episode: { season: { mediaItemId: { notIn: kept } } },
+          },
+        }),
+        this.prisma.libraryEntry.deleteMany({
+          where: { userId, mediaItemId: { notIn: kept } },
+        }),
+      ]);
     }
 
     if (parsed.lists && parsed.lists.length > 0) {

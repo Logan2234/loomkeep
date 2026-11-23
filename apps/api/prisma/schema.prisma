@@ -884,6 +884,9 @@ model ReviewVote {
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([reviewId, userId])
+  // The unique leads with the other key: without this, deleting an account
+  // scans the whole table for its cascade.
+  @@index([userId])
 }
 
 // One immutable snapshot per review edit (V1, V2, …), newest by createdAt.
@@ -952,6 +955,9 @@ model CommentReaction {
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([commentId, userId])
+  // The unique leads with the other key: without this, deleting an account
+  // scans the whole table for its cascade.
+  @@index([userId])
 }
 
 // An explicit recipient selected from the discussion's mention picker. A raw
@@ -1090,6 +1096,9 @@ model MessageReaction {
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([messageId, userId])
+  // The unique leads with the other key: without this, deleting an account
+  // scans the whole table for its cascade.
+  @@index([userId])
 }
 
 // A work, season or episode attached to a message (a recommendation card).
@@ -1155,6 +1164,9 @@ model MessagePollVote {
   user   User              @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([pollId, userId])
+  // The unique leads with the other key: without this, deleting an account
+  // scans the whole table for its cascade.
+  @@index([userId])
   @@index([optionId])
 }
 
@@ -1634,7 +1646,6 @@ model UserDevice {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, deviceKey])
-  @@index([userId])
 }
 
 enum UserTokenType {
@@ -1832,7 +1843,6 @@ model ApiCallCounter {
   count    Int      @default(0)
 
   @@unique([provider, day])
-  @@index([provider])
 }
 
 // One pending email change per row; a fresh request invalidates the previous
@@ -2343,6 +2353,8 @@ model GameItem {
   externalIds GameExternalId[]
   entries     GameEntry[]
 
+  // refreshStale filters and sorts on it, as MediaItem's does.
+  @@index([lastSyncedAt])
   @@index([sagaKey])
 }
 
@@ -2473,6 +2485,8 @@ model BookItem {
   externalIds BookExternalId[]
   entries     BookEntry[]
 
+  // refreshStale filters and sorts on it, as MediaItem's does.
+  @@index([lastSyncedAt])
   @@index([seriesKey])
 }
 

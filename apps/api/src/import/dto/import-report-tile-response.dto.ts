@@ -13,7 +13,8 @@ export class ImportReportTileResponseDto implements ImportReportTile {
     | "series"
     | "movies"
     | "episodes"
-    | "playtime";
+    | "playtime"
+    | "notFound";
 
   label!: string;
   value!: number;

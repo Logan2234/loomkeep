@@ -89,6 +89,8 @@ const MESSAGES = {
   [ErrorCode.LibraryEpisodeNotFound]: () =>
     m.apierr_library_episode_not_found(),
   [ErrorCode.LibrarySeasonEmpty]: () => m.apierr_library_season_empty(),
+  [ErrorCode.LibraryRewatchNotFinished]: () =>
+    m.apierr_library_rewatch_not_finished(),
   [ErrorCode.LibrarySeasonNotFound]: () => m.apierr_library_season_not_found(),
   [ErrorCode.LibraryNoWatchToUndo]: () => m.apierr_library_no_watch_to_undo(),
   [ErrorCode.LibraryWatchBatchTooLarge]: () =>
@@ -284,6 +286,7 @@ const MESSAGES = {
     m.apierr_import_anilist_list_private(),
   [ErrorCode.ImportMalformedExport]: () => m.apierr_import_malformed_export(),
   [ErrorCode.ImportJobNotFound]: () => m.apierr_import_job_not_found(),
+  [ErrorCode.ImportInterrupted]: () => m.apierr_import_interrupted(),
   [ErrorCode.ImportJobForbidden]: () => m.apierr_import_job_forbidden(),
   [ErrorCode.ImportJobSourceMismatch]: () =>
     m.apierr_import_job_source_mismatch(),

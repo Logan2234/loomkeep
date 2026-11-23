@@ -21,6 +21,14 @@ function make(
     bookEntry: { findMany: vi.fn().mockResolvedValue(rows.books ?? []) },
     gameEntry: { findMany: vi.fn().mockResolvedValue(rows.games ?? []) },
     episode: { count: vi.fn().mockResolvedValue(4) },
+    // Every series has an aired episode left to watch.
+    season: {
+      findMany: vi.fn(async () =>
+        (rows.series ?? []).map((row) => ({
+          mediaItemId: (row as { mediaItemId: string }).mediaItemId,
+        })),
+      ),
+    },
   } as unknown as PrismaService;
   const mail = { sendPausedReminder: vi.fn() } as unknown as MailService;
   const push = { sendToUser: vi.fn() } as unknown as PushService;

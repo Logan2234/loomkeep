@@ -107,12 +107,17 @@ describe("StatsService — advanced statistics", () => {
 });
 
 describe("StatsService in-progress staleness", () => {
+  // Two of five episodes ticked: in progress, though stored as PLANNED.
   const SERIES = {
+    status: "PLANNED",
+    watchedEpisodes: 2,
     mediaItem: {
       id: "m1",
       title: "Série",
       posterUrl: null,
       type: "SERIES",
+      status: "Ended",
+      episodeCount: 5,
       canonicalSource: "TMDB",
       externalIds: [],
     },
@@ -122,6 +127,14 @@ describe("StatsService in-progress staleness", () => {
     const prisma = {
       libraryEntry: { findMany: vi.fn().mockResolvedValue(entries) },
       episodeWatch: { findMany: vi.fn().mockResolvedValue(watches) },
+      // Every series has an aired episode left to watch.
+      season: {
+        findMany: vi.fn(async () =>
+          (entries as { mediaItem: { id: string } }[]).map((e) => ({
+            mediaItemId: e.mediaItem.id,
+          })),
+        ),
+      },
     };
     return { service: makeServiceWith(prisma), prisma };
   }
@@ -157,6 +170,7 @@ describe("StatsService in-progress staleness", () => {
 
   it("ignores movies, which have no episodes to be stale on", async () => {
     const movie = {
+      ...SERIES,
       mediaItem: { ...SERIES.mediaItem, id: "m2", type: "MOVIE" },
     };
     const { service, prisma } = make([SERIES, movie]);

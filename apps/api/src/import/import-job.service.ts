@@ -71,6 +71,14 @@ interface JobRecord {
 }
 
 /**
+ * What a commit's record says until it finishes: written as a failure before
+ * the first write, so a restart mid-way (every merge redeploys) leaves a
+ * trace instead of nothing. The final record replaces it.
+ */
+export const INTERRUPTED_IMPORT_ERROR =
+  "Interrupted before it finished: the server restarted";
+
+/**
  * The one async job engine behind every import. It owns the in-memory job
  * store, the analyze → poll → commit → poll lifecycle, progress and ownership
  * guards; each {@link ImportReq} plugs in its own parse/resolve/write. Jobs
@@ -150,7 +158,7 @@ export class ImportJobService {
    */
   async getLastRun(userId: string): Promise<ImportLastRunDto> {
     const run = await this.prisma.importRun.findFirst({
-      where: { userId },
+      where: { userId, id: { notIn: this.unrecordedCommitIds() } },
       orderBy: { finishedAt: "desc" },
       select: {
         sourceId: true,
@@ -182,7 +190,7 @@ export class ImportJobService {
   ): Promise<PagedResult<ImportHistoryRunDto>> {
     const { skip, take, limit } = page;
     const rows = await this.prisma.importRun.findMany({
-      where: { userId },
+      where: { userId, id: { notIn: this.unrecordedCommitIds() } },
       orderBy: { finishedAt: "desc" },
       skip,
       take: take + 1,
@@ -318,6 +326,14 @@ export class ImportJobService {
       overwrite: (dto.overwrite ?? false) && source.supportsOverwrite,
     };
 
+    // Replacing the library with nothing would only empty it.
+    if (decisions.overwrite && decisions.include.size === 0) {
+      throw new AppException(
+        HttpStatus.BAD_REQUEST,
+        ErrorCode.ValidationFailed,
+      );
+    }
+
     const { parsed, plan } = analyzed;
     const job = this.newJob(userId, sourceId, "commit", null);
     job.progress.total = decisions.include.size;
@@ -339,6 +355,7 @@ export class ImportJobService {
 
     const progress = this.progressFor(job);
     void this.run(job, async () => {
+      await this.recordStart(userId, job, decisions.overwrite);
       job.report = await source.commit(
         userId,
         parsed,
@@ -362,6 +379,16 @@ export class ImportJobService {
     });
 
     return toDto(job);
+  }
+
+  /**
+   * Commits still running: their record so far only says "interrupted"
+   * (see INTERRUPTED_IMPORT_ERROR), which the history must not show yet.
+   */
+  private unrecordedCommitIds(): string[] {
+    return [...this.jobs.values()]
+      .filter((job) => job.kind === "commit" && !job.recorded)
+      .map((job) => job.id);
   }
 
   listRunningImports(): AdminImportRunDto[] {
@@ -392,6 +419,39 @@ export class ImportJobService {
     return job?.kind === "commit" && !job.recorded
       ? (job.details ?? null)
       : null;
+  }
+
+  /**
+   * `getJob`, and once the job is gone from memory (a restart), what its
+   * record says: an interrupted commit answers as failed, not as unknown.
+   */
+  async pollJob(userId: string, jobId: string): Promise<ImportJobDto> {
+    if (this.jobs.has(jobId)) return this.getJob(userId, jobId);
+
+    const run = await this.prisma.importRun.findFirst({
+      where: { id: jobId, userId },
+      select: { status: true, error: true, itemCount: true, details: true },
+    });
+    if (!run)
+      throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.ImportJobNotFound);
+
+    const succeeded = run.status === "SUCCESS";
+    return {
+      id: jobId,
+      status: succeeded ? "completed" : "failed",
+      progress: { done: run.itemCount, total: run.itemCount },
+      plan: null,
+      // The wizard shows the report of a finished commit: kept in the record.
+      report: succeeded
+        ? ((run.details as { report?: ImportReport | null } | null)?.report ??
+          null)
+        : null,
+      errorCode: succeeded
+        ? null
+        : run.error === INTERRUPTED_IMPORT_ERROR
+          ? ErrorCode.ImportInterrupted
+          : ErrorCode.InternalError,
+    };
   }
 
   getJob(userId: string, jobId: string): ImportJobDto {
@@ -471,35 +531,66 @@ export class ImportJobService {
     };
   }
 
+  /** The interrupted-until-proven-otherwise record, see INTERRUPTED_IMPORT_ERROR. */
+  private async recordStart(
+    userId: string,
+    job: JobRecord,
+    overwrite: boolean,
+  ): Promise<void> {
+    try {
+      await this.prisma.importRun.create({
+        data: {
+          id: job.id,
+          userId,
+          sourceId: job.sourceId,
+          domain: this.sourceOrThrow(job.sourceId).searchDomain,
+          status: "FAILURE",
+          itemCount: job.progress.total,
+          overwrite,
+          error: INTERRUPTED_IMPORT_ERROR,
+          details: job.details ? toJsonInput(job.details) : undefined,
+          startedAt: new Date(job.startedAt),
+          finishedAt: new Date(job.startedAt),
+        },
+      });
+    } catch (err) {
+      // The import itself matters more than its breadcrumb: the final
+      // record is still written (as a create) once it ends.
+      this.logger.error(`Failed to record the start of import ${job.id}`, err);
+    }
+  }
+
   private async recordRun(
     userId: string,
     job: JobRecord,
     overwrite: boolean,
   ): Promise<void> {
     const domain = this.sourceOrThrow(job.sourceId).searchDomain;
+    const outcome = {
+      userId,
+      sourceId: job.sourceId,
+      domain,
+      status: job.status === "failed" ? "FAILURE" : "SUCCESS",
+      itemCount: job.progress.total,
+      overwrite,
+      summary: job.report
+        ? job.report.tiles.map((t) => `${t.value} ${t.label}`).join(" · ")
+        : null,
+      error: job.error,
+      details: job.details
+        ? toJsonInput({
+            ...job.details,
+            report: job.report,
+          })
+        : undefined,
+      startedAt: new Date(job.startedAt),
+      finishedAt: new Date(job.finishedAt ?? Date.now()),
+    };
 
-    await this.prisma.importRun.create({
-      data: {
-        id: job.id,
-        userId,
-        sourceId: job.sourceId,
-        domain,
-        status: job.status === "failed" ? "FAILURE" : "SUCCESS",
-        itemCount: job.progress.total,
-        overwrite,
-        summary: job.report
-          ? job.report.tiles.map((t) => `${t.value} ${t.label}`).join(" · ")
-          : null,
-        error: job.error,
-        details: job.details
-          ? toJsonInput({
-              ...job.details,
-              report: job.report,
-            })
-          : undefined,
-        startedAt: new Date(job.startedAt),
-        finishedAt: new Date(job.finishedAt ?? Date.now()),
-      },
+    await this.prisma.importRun.upsert({
+      where: { id: job.id },
+      create: { id: job.id, ...outcome },
+      update: outcome,
     });
 
     job.recorded = true;

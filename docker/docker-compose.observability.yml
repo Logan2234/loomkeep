@@ -23,7 +23,7 @@ x-logging: &default-logging
 
 services:
   loki:
-    image: grafana/loki:3.7.9
+    image: grafana/loki:3.7.10
     restart: unless-stopped
     logging: *default-logging
     command: -config.file=/etc/loki/loki-config.yaml
@@ -84,7 +84,7 @@ services:
   # Host-level metrics. No public port — scraped by Prometheus over the
   # compose network.
   node_exporter:
-    image: prom/node-exporter:v1.12.1
+    image: prom/node-exporter:v1.13.1
     restart: unless-stopped
     logging: *default-logging
     pid: host
@@ -111,7 +111,7 @@ services:
   # Reuses the app's own DB user — single-user self-host, not worth a
   # dedicated read-only monitoring role.
   postgres_exporter:
-    image: quay.io/prometheuscommunity/postgres-exporter:v0.20.1
+    image: quay.io/prometheuscommunity/postgres-exporter:v0.21.1
     restart: unless-stopped
     logging: *default-logging
     environment:
@@ -131,7 +131,7 @@ services:
 
   # Per-container metrics. No privileged flag needed on modern kernels.
   cadvisor:
-    image: ghcr.io/google/cadvisor:v0.60.6
+    image: ghcr.io/google/cadvisor:v0.61.1
     restart: unless-stopped
     logging: *default-logging
     volumes:

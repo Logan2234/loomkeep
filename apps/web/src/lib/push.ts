@@ -82,6 +82,9 @@ export async function isPushEnabledHere(): Promise<boolean> {
 export async function disablePush(): Promise<void> {
   if (!isPushSupported()) return;
   if (isNativeApp()) return disableNativePush();
+  // No subscription exists without the permission, and `ready` can wait
+  // for ever on a browser whose service worker never registered.
+  if (Notification.permission !== "granted") return;
 
   const registration = await navigator.serviceWorker.ready;
   const subscription = await registration.pushManager.getSubscription();

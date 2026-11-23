@@ -192,12 +192,6 @@ jobs:
           path: apps/api
       - name: Generate typed API client
         run: pnpm --filter @loomkeep/web generate:api-types
-      # Installed here rather than kept as a permanent devDependency: it's
-      # only ever invoked via --format in this one step, and knip has no way
-      # to see that CLI-flag usage, so a committed devDependency just sits
-      # there flagged as unused everywhere else in the repo.
-      - name: Install ESLint SARIF formatter
-        run: pnpm add --save-dev --workspace-root @microsoft/eslint-formatter-sarif@3.1.0
       - name: ESLint
         run: pnpm --filter @loomkeep/web lint --format @microsoft/eslint-formatter-sarif --output-file eslint-results.sarif
       # See the script's own docstring: drops results ESLint already
@@ -241,8 +235,6 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: ./.github/actions/setup
-      - name: Install ESLint SARIF formatter
-        run: pnpm add --save-dev --workspace-root @microsoft/eslint-formatter-sarif@3.1.0
       # Type-aware only here, never in the local hooks: building the type
       # graph roughly doubles ESLint (31s -> 55s on apps/api), which is
       # noise inside a 2-minute CI job and friction on every commit. Not
@@ -696,7 +688,15 @@ jobs:
   # pass; the Android jobs don't count, they never block the web.
   ready-to-ship:
     needs:
-      [docker-config, shellcheck, lint-test-web, lint-test-api, e2e, knip, docker-tag]
+      [
+        docker-config,
+        shellcheck,
+        lint-test-web,
+        lint-test-api,
+        e2e,
+        knip,
+        docker-tag,
+      ]
     if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
@@ -888,7 +888,7 @@ jobs:
           build-shared: false
       - name: Error page tests
         run: pnpm --filter @loomkeep/mobile test
-      - uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
+      - uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
         with:
           distribution: temurin
           java-version: 21

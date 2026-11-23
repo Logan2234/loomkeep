@@ -1202,3 +1202,57 @@ describe("ListService — XP wiring", () => {
     expect(xp.revokeBySource).toHaveBeenCalledWith("u1", "List", ["l1"]);
   });
 });
+
+// canEdit refuses an editor while Social is off; the "Add to a list" picker
+// and its ticks still offered that editor's lists, so every pick ended in a
+// 403 (audit 2026-11-17, DET-06).
+describe("ListService editable lists follow canEdit's Social gate", () => {
+  function make(socialEnabled: boolean) {
+    const prisma = {
+      list: { findMany: vi.fn().mockResolvedValue([]) },
+      listItem: { findMany: vi.fn().mockResolvedValue([]) },
+    };
+    const svc = new ListService(
+      prisma as unknown as PrismaService,
+      {} as VisibilityService,
+      {} as ActivityService,
+      fakeConfig(socialEnabled),
+      fakeNotifications(),
+      stubXp(),
+      stubAchievements(),
+      stubEvents(),
+      stubFollow(),
+    );
+    return { svc, prisma };
+  }
+
+  const memberOf = { members: { some: { userId: "u1" } } };
+
+  it("offers only the user's own lists while Social is off", async () => {
+    const { svc, prisma } = make(false);
+
+    await svc.listEditable("u1");
+    await svc.membershipFor("u1", "MEDIA" as never, "media-1");
+
+    expect(prisma.list.findMany.mock.calls[0][0].where).toEqual({
+      userId: "u1",
+    });
+    expect(prisma.listItem.findMany.mock.calls[0][0].where.list).toEqual({
+      userId: "u1",
+    });
+  });
+
+  it("adds the lists the user edits as a member while Social is on", async () => {
+    const { svc, prisma } = make(true);
+
+    await svc.listEditable("u1");
+    await svc.membershipFor("u1", "MEDIA" as never, "media-1");
+
+    expect(prisma.list.findMany.mock.calls[0][0].where).toEqual({
+      OR: [{ userId: "u1" }, memberOf],
+    });
+    expect(prisma.listItem.findMany.mock.calls[0][0].where.list).toEqual({
+      OR: [{ userId: "u1" }, memberOf],
+    });
+  });
+});

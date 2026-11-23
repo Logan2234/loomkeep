@@ -22,6 +22,10 @@ import {
   CANONICAL_EXTERNAL_ID_SELECT,
   canonicalExternalId,
 } from "../common/external-id.util";
+import {
+  materializedStatus,
+  withEpisodeLeftToWatch,
+} from "../library/status.util";
 import { PrismaService } from "../prisma/prisma.service";
 import { ReviewService } from "../reviews/review.service";
 import { DomainGateService } from "../users/domain-gate.service";
@@ -569,20 +573,42 @@ export class StatsService {
       staleness: WatchStaleness;
     }[]
   > {
-    const entries = await this.prisma.libraryEntry.findMany({
-      where: { userId, status: "WATCHING" },
-      select: {
-        mediaItem: {
-          select: {
-            id: true,
-            title: true,
-            posterUrl: true,
-            type: true,
-            ...CANONICAL_EXTERNAL_ID_SELECT,
+    // In progress the way the library derives it: a series' stored status
+    // stays PLANNED however many episodes were ticked.
+    const started = (
+      await this.prisma.libraryEntry.findMany({
+        where: {
+          userId,
+          status: { not: "DROPPED" },
+          watchedEpisodes: { gt: 0 },
+          mediaItem: { type: { in: ["SERIES", "ANIME"] } },
+        },
+        select: {
+          status: true,
+          watchedEpisodes: true,
+          mediaItem: {
+            select: {
+              id: true,
+              title: true,
+              posterUrl: true,
+              type: true,
+              status: true,
+              episodeCount: true,
+              ...CANONICAL_EXTERNAL_ID_SELECT,
+            },
           },
         },
-      },
-    });
+      })
+    ).filter((entry) => materializedStatus(entry) === "WATCHING");
+    const leftToWatch = await withEpisodeLeftToWatch(
+      this.prisma,
+      userId,
+      started.map((entry) => entry.mediaItem.id),
+      new Date(),
+    );
+    const entries = started.filter((entry) =>
+      leftToWatch.has(entry.mediaItem.id),
+    );
 
     // Only series still in progress are ever looked up below, so the watch
     // history is scoped to those rather than loaded whole. Sequential instead

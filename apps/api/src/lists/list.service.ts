@@ -274,7 +274,7 @@ export class ListService {
    */
   async listEditable(userId: string): Promise<MyListDto[]> {
     const rows = await this.prisma.list.findMany({
-      where: { OR: [{ userId }, { members: { some: { userId } } }] },
+      where: this.editableBy(userId),
       orderBy: { updatedAt: "desc" },
       include: {
         items: { orderBy: { position: "asc" }, take: PREVIEW_ITEM_COUNT },
@@ -514,7 +514,7 @@ export class ListService {
       where: {
         targetType,
         targetId,
-        list: { OR: [{ userId }, { members: { some: { userId } } }] },
+        list: this.editableBy(userId),
       },
       select: { id: true, listId: true },
     });
@@ -991,6 +991,16 @@ export class ListService {
     if (row.userId !== userId)
       throw new AppException(HttpStatus.FORBIDDEN, ErrorCode.ListForbidden);
     return row;
+  }
+
+  /**
+   * The lists `canEdit` lets this user edit, as a query: their own, and the
+   * ones they are a member of only while Social is on.
+   */
+  private editableBy(userId: string): Prisma.ListWhereInput {
+    return isSocialEnabled(this.config)
+      ? { OR: [{ userId }, { members: { some: { userId } } }] }
+      : { userId };
   }
 
   /**
