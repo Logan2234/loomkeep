@@ -22,6 +22,8 @@ import { Prisma, type User } from "@prisma/client";
 import * as bcrypt from "bcryptjs";
 import { ApiKeysService } from "../api-keys/api-keys.service";
 import { BCRYPT_ROUNDS, toUserDto } from "../auth/auth.service";
+import { SessionCacheService } from "../auth/session-cache.service";
+import { revokeSessionsWith } from "../auth/session-revocation.util";
 import { AppException } from "../common/app.exception";
 import { randomNumericCode, sha256Hex } from "../common/crypto.util";
 import { HibpService } from "../common/hibp.service";
@@ -84,6 +86,7 @@ export class UsersService {
     private readonly xp: XpService,
     private readonly events: EventsGateway,
     private readonly apiKeys: ApiKeysService,
+    private readonly sessionCache: SessionCacheService,
   ) {}
 
   async getMe(userId: string): Promise<UserDto> {
@@ -655,14 +658,13 @@ export class UsersService {
       );
     }
 
-    await this.prisma.$transaction([
+    await revokeSessionsWith(this, { userId }, [
       this.prisma.user.update({
         where: { id: userId },
         data: {
           passwordHash: await bcrypt.hash(dto.newPassword, BCRYPT_ROUNDS),
         },
       }),
-      this.prisma.refreshToken.deleteMany({ where: { userId } }),
     ]);
     const occurredAt = await this.security.record({
       type: "PASSWORD_CHANGED",

@@ -6,9 +6,11 @@ import type {
 } from "@prisma/client";
 import * as bcrypt from "bcryptjs";
 import { vi } from "vitest";
+import type { EventsGateway } from "../events/events.gateway";
 import type { PrismaService } from "../prisma/prisma.service";
 import type { SecurityEventService } from "../security/security-event.service";
 import type { MfaService } from "./mfa.service";
+import { SessionCacheService } from "./session-cache.service";
 import { WebauthnService } from "./webauthn.service";
 
 const CURRENT_PASSWORD = "correct";
@@ -160,6 +162,7 @@ function makeService() {
       }),
     },
     refreshToken: {
+      findMany: vi.fn().mockResolvedValue([{ id: "session-2" }]),
       deleteMany: vi.fn(),
     },
     $transaction: vi.fn((ops: Promise<unknown>[]) => Promise.all(ops)),
@@ -174,9 +177,20 @@ function makeService() {
   const mfa = {
     ensureRecoveryCodes: vi.fn().mockResolvedValue(undefined),
   } as unknown as MfaService;
+  const sessionCache = new SessionCacheService();
+  const events = { disconnectSession: vi.fn() };
 
   return {
-    service: new WebauthnService(prisma, configService, security, mfa),
+    service: new WebauthnService(
+      prisma,
+      configService,
+      security,
+      mfa,
+      sessionCache,
+      events as unknown as EventsGateway,
+    ),
+    sessionCache,
+    events,
     prisma,
     configService,
     challenges,
@@ -396,6 +410,20 @@ describe("WebauthnService.setPasswordless", () => {
     await service.setPasswordless("user-1", true, CURRENT_PASSWORD);
 
     expect(users.get("user-1")?.passwordlessEnabled).toBe(true);
+  });
+});
+
+// Audit 2026-11-17, SEC-07: deleting the rows alone kept the other
+// sessions live in the cache and their sockets open.
+describe("WebauthnService — revoking the other sessions", () => {
+  it("evicts them from the session cache and closes their sockets", async () => {
+    const { service, sessionCache, events } = makeService();
+    sessionCache.markLive("session-2");
+
+    await service.setPasswordless("user-1", false, "session-1");
+
+    expect(sessionCache.isKnownLive("session-2")).toBe(false);
+    expect(events.disconnectSession).toHaveBeenCalledWith("session-2");
   });
 });
 

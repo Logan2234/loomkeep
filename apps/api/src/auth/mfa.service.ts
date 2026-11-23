@@ -11,12 +11,15 @@ import { Secret, TOTP } from "otpauth";
 import { AppException } from "../common/app.exception";
 import { AchievementService } from "../gamification/achievements/achievement.service";
 
+import { EventsGateway } from "../events/events.gateway";
 import { ACHIEVEMENT_KEYS_ON_TOTP_ENABLED } from "../gamification/achievements/triggers";
 import { MailService } from "../mail/mail.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { SecurityEventService } from "../security/security-event.service";
 import { BCRYPT_ROUNDS } from "./auth.service";
 import { decryptTotpSecret, encryptTotpSecret } from "./mfa-crypto.util";
+import { SessionCacheService } from "./session-cache.service";
+import { otherSessions, revokeSessionsWith } from "./session-revocation.util";
 
 export const RECOVERY_CODE_COUNT = 10;
 // Excludes ambiguous characters (0/O, 1/I/L) so codes are easy to read/type back.
@@ -35,6 +38,8 @@ export class MfaService {
     private readonly mail: MailService,
     private readonly achievements: AchievementService,
     private readonly security: SecurityEventService,
+    private readonly sessionCache: SessionCacheService,
+    private readonly events: EventsGateway,
   ) {}
 
   private getEncryptionKey(): Buffer {
@@ -107,12 +112,11 @@ export class MfaService {
       );
     }
 
-    await this.prisma.$transaction([
+    await revokeSessionsWith(this, otherSessions(userId, currentSessionId), [
       this.prisma.user.update({
         where: { id: userId },
         data: { mfaTotpEnabled: true },
       }),
-      this.deleteOtherSessionsQuery(userId, currentSessionId),
     ]);
 
     const recoveryCodes = await this.ensureRecoveryCodes(userId);
@@ -130,7 +134,7 @@ export class MfaService {
     currentSessionId?: string,
     userAgent?: string,
   ): Promise<void> {
-    await this.prisma.$transaction([
+    await revokeSessionsWith(this, otherSessions(userId, currentSessionId), [
       this.prisma.user.update({
         where: { id: userId },
         data: {
@@ -139,7 +143,6 @@ export class MfaService {
           mfaTotpLastStep: null,
         },
       }),
-      this.deleteOtherSessionsQuery(userId, currentSessionId),
     ]);
     await this.security.record({
       type: "MFA_TOTP_DISABLED",
@@ -154,12 +157,11 @@ export class MfaService {
     currentSessionId?: string,
     userAgent?: string,
   ): Promise<{ recoveryCodes?: string[] }> {
-    await this.prisma.$transaction([
+    await revokeSessionsWith(this, otherSessions(userId, currentSessionId), [
       this.prisma.user.update({
         where: { id: userId },
         data: { mfaEmailEnabled: enabled },
       }),
-      this.deleteOtherSessionsQuery(userId, currentSessionId),
     ]);
 
     const recoveryCodes = enabled
@@ -248,27 +250,26 @@ export class MfaService {
       codes.map((code) => bcrypt.hash(code, BCRYPT_ROUNDS)),
     );
 
-    await this.prisma.$transaction([
+    const writes = [
       ...(deleteExisting
         ? [this.prisma.mfaRecoveryCode.deleteMany({ where: { userId } })]
         : []),
       ...hashed.map((codeHash) =>
         this.prisma.mfaRecoveryCode.create({ data: { userId, codeHash } }),
       ),
-      ...(revokeSessions
-        ? [this.deleteOtherSessionsQuery(userId, currentSessionId)]
-        : []),
-    ]);
+    ];
+
+    if (revokeSessions) {
+      await revokeSessionsWith(
+        this,
+        otherSessions(userId, currentSessionId),
+        writes,
+      );
+    } else {
+      await this.prisma.$transaction(writes);
+    }
 
     return codes;
-  }
-
-  private deleteOtherSessionsQuery(userId: string, currentSessionId?: string) {
-    return this.prisma.refreshToken.deleteMany({
-      where: currentSessionId
-        ? { userId, id: { not: currentSessionId } }
-        : { userId },
-    });
   }
 
   /** Normalizes (strips separators, uppercases), matches, and deletes the consumed row. */
