@@ -15,7 +15,6 @@ export const IMPORT_SOURCE_BRANDS: Partial<
   tvtime: "tvtime",
   trakt: "trakt",
   letterboxd: "letterboxd",
-  imdb: "imdb",
   myanimelist: "myanimelist",
   anilist: "anilist",
   simkl: "simkl",
