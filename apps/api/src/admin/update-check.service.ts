@@ -1,5 +1,6 @@
 import type {
   AdminUpdateStatusDto,
+  AdminUpgradeNotesDto,
   InstancePingDto,
   InstancePingResultDto,
 } from "@loomkeep/shared";
@@ -18,12 +19,17 @@ import { JobRunService } from "../jobs/job-run.service";
 import { MailService } from "../mail/mail.service";
 import { AdminAlertService } from "../notifications/admin-alert.service";
 import { PrismaService } from "../prisma/prisma.service";
+import { upgradeNotesBetween } from "./upgrade-notes.util";
 
 // The six package.json versions move in lockstep, and the images published
 // on GHCR are built from `main`: its root package.json is the version a
 // `docker compose pull` would bring.
 export const LATEST_PACKAGE_URL =
   "https://raw.githubusercontent.com/Logan2234/loomkeep/main/package.json";
+
+// Read for its "Breaking changes" sections, from the same branch as above.
+export const LATEST_CHANGELOG_URL =
+  "https://raw.githubusercontent.com/Logan2234/loomkeep/main/CHANGELOG.md";
 
 // Received by InstancePingController on the hosted instance, which answers
 // the latest version: LATEST_PACKAGE_URL is only the fallback when it can't.
@@ -56,6 +62,9 @@ export function isNewerVersion(candidate: string, current: string): boolean {
 export class UpdateCheckService {
   private readonly logger = new Logger(UpdateCheckService.name);
   private currentVersion: string | null = null;
+  // Keyed by "current→latest": the CHANGELOG is fetched once per pair.
+  private notesCache: { key: string; notes: AdminUpgradeNotesDto } | null =
+    null;
 
   constructor(
     private readonly prisma: PrismaService,
@@ -173,6 +182,41 @@ export class UpdateCheckService {
       nodeEnv !== "test" &&
       !isHostedOrigin(primaryWebOrigin(this.config.get<string>("WEB_ORIGIN")))
     );
+  }
+
+  /**
+   * What to do before upgrading to the latest known version. Empty when up
+   * to date, or when the CHANGELOG can't be fetched (the card keeps its
+   * link to the full notes).
+   */
+  async upgradeNotes(): Promise<AdminUpgradeNotesDto> {
+    const { currentVersion, latestVersion, updateAvailable } =
+      await this.status();
+    if (!updateAvailable || latestVersion === null) return { versions: [] };
+
+    const key = `${currentVersion}→${latestVersion}`;
+    if (this.notesCache?.key === key) return this.notesCache.notes;
+
+    try {
+      const response = await fetch(LATEST_CHANGELOG_URL, {
+        signal: AbortSignal.timeout(HTTP_TIMEOUT_MS),
+      });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const notes = {
+        versions: upgradeNotesBetween(
+          await response.text(),
+          currentVersion,
+          latestVersion,
+        ),
+      };
+      this.notesCache = { key, notes };
+      return notes;
+    } catch (err) {
+      this.logger.warn(
+        `Upgrade notes unavailable: ${err instanceof Error ? err.message : "unknown error"}`,
+      );
+      return { versions: [] };
+    }
   }
 
   private async ping(): Promise<string | null> {

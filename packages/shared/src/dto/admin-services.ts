@@ -118,6 +118,21 @@ export interface InstancePingResultDto {
   latestVersion: string;
 }
 
+/** What one version asks of a self-hoster before upgrading to it. */
+export interface AdminUpgradeNoteDto {
+  version: string;
+  /** Its CHANGELOG bullets, in English, Markdown kept (`code`, **bold**). */
+  items: string[];
+}
+
+/**
+ * The CHANGELOG's "Breaking changes" and "Before upgrading" bullets of every
+ * version after the running one, up to the latest, oldest first.
+ */
+export interface AdminUpgradeNotesDto {
+  versions: AdminUpgradeNoteDto[];
+}
+
 /** Admin › Services' "a newer version exists" card. */
 export interface AdminUpdateStatusDto {
   /** Whether the instance checks for a newer version (`updateCheckEnabled`). */
