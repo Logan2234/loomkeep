@@ -34,6 +34,7 @@ export function toAdminUserDto(
   u: AdminUserRow,
   extras: {
     plan: Plan;
+    planExpiresAt: string | null;
     libraryCounts: AdminUserLibraryCountsDto;
     online: boolean;
   },
@@ -52,6 +53,7 @@ export function toAdminUserDto(
     emailVerified: u.emailVerified,
     role: u.role,
     plan: extras.plan,
+    planExpiresAt: extras.planExpiresAt,
     createdAt: u.createdAt.toISOString(),
     lastActiveAt: u.lastActiveAt?.toISOString() ?? null,
     inactivityWarningSentAt: u.inactivityWarningSentAt?.toISOString() ?? null,

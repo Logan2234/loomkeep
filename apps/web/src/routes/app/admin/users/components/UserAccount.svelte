@@ -298,9 +298,23 @@
   }));
 
   const planMut = createApiMutation(() => ({
-    mutate: (plan: "FREE" | "PREMIUM") => updateAdminUserPlan(user.id, plan),
+    mutate: ({
+      plan,
+      expiresAt = null,
+    }: {
+      plan: "FREE" | "PREMIUM";
+      expiresAt?: string | null;
+    }) => updateAdminUserPlan(user.id, plan, expiresAt),
     invalidates: accountKeys,
   }));
+
+  // A grant ends at the close of the chosen day; empty means no end.
+  function setPlanEnd(day: string) {
+    planMut.mutate({
+      plan: "PREMIUM",
+      expiresAt: day ? `${day}T23:59:59.999Z` : null,
+    });
+  }
 
   let xpAmount = $state<number | null>(null);
 
@@ -671,8 +685,24 @@
                     values={[user.plan]}
                     disabled={planMut.loading}
                     onChange={(v) =>
-                      planMut.mutate(v[0] as "FREE" | "PREMIUM")} />
+                      planMut.mutate({ plan: v[0] as "FREE" | "PREMIUM" })} />
                 </div>
+                {#if user.plan === "PREMIUM"}
+                  <label
+                    class="mt-2 flex items-center justify-between gap-2 text-sm">
+                    <span class="text-dim">{m.admin_users_plan_until()}</span>
+                    <input
+                      class="input"
+                      type="date"
+                      value={user.planExpiresAt?.slice(0, 10) ?? ""}
+                      disabled={planMut.loading}
+                      onchange={(event) =>
+                        setPlanEnd(event.currentTarget.value)} />
+                  </label>
+                  <p class="text-dim mt-1 text-xs">
+                    {m.admin_users_plan_until_hint()}
+                  </p>
+                {/if}
                 <p class="text-dim mt-1.5 text-xs">
                   {m.admin_users_manual_plan()}
                 </p>
