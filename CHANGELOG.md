@@ -18,8 +18,9 @@ history from before it was started.
 - Admin: a premium grant can end at a date you set, after which the account
   is back on the free plan.
 - Brand logos for the services Loomkeep talks to: import sources, export
-  cards, IMDb / Rotten Tomatoes / Metacritic score chips, Data sources and
-  the docs tables.
+  cards, score chips, Data sources and the docs tables, with the official
+  TMDB logo. IMDb, Rotten Tomatoes and YouTube Music, whose owners require
+  permission, keep to a plain label.
 - Series pages: a « Ratings » view in Episodes colours every episode by its
   rating, season by season, with a dot on the ones you rated.
 - Season finales are flagged in the calendar, the release email and the

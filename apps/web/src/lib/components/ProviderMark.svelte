@@ -21,7 +21,12 @@
   const mark = $derived(PROVIDER_BRANDS[brand]);
 </script>
 
-{#if "path" in mark}
+{#if "src" in mark}
+  <img
+    src={mark.src}
+    alt={decorative ? "" : mark.name}
+    class="object-contain {mono ? 'brightness-0' : ''} {className}" />
+{:else if "path" in mark}
   <svg
     viewBox="0 0 24 24"
     class={className}
