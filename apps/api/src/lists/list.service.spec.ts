@@ -311,6 +311,9 @@ describe("ListService.addItem", () => {
         findFirst: vi.fn().mockResolvedValue(null),
         create,
       },
+      // addItem's per-list lock, then the callback against the same double.
+      $executeRaw: vi.fn(),
+      $transaction: vi.fn((fn: (tx: unknown) => unknown) => fn(prisma)),
       listMember: { findMany: vi.fn().mockResolvedValue([]) },
       mediaItem: { findMany: vi.fn().mockResolvedValue([]) },
     } as unknown as PrismaService;
@@ -451,6 +454,9 @@ describe("ListService.addItem notifications", () => {
           addedAt: new Date(),
         }),
       },
+      // addItem's per-list lock, then the callback against the same double.
+      $executeRaw: vi.fn(),
+      $transaction: vi.fn((fn: (tx: unknown) => unknown) => fn(prisma)),
       listMember: {
         // canEdit: ed1 is an editor.
         findUnique: vi.fn().mockResolvedValue({ id: "lm-ed1" }),
