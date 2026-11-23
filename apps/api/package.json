@@ -1,7 +1,7 @@
 {
   "name": "@loomkeep/api",
   "description": "Loomkeep's NestJS REST API — auth, catalog providers and library data behind the web client",
-  "version": "1.14.0",
+  "version": "1.15.0",
   "author": {
     "name": "Logan WILLEM",
     "email": "loganwi322.dev@gmail.com"
@@ -37,17 +37,17 @@
   "dependencies": {
     "@fastify/helmet": "^13.2.0",
     "@loomkeep/shared": "workspace:*",
-    "@nestjs/common": "^12.5.0",
+    "@nestjs/common": "^12.5.1",
     "@nestjs/config": "^12.1.1",
-    "@nestjs/core": "^12.5.0",
+    "@nestjs/core": "^12.5.1",
     "@nestjs/jwt": "^12.0.5",
-    "@nestjs/platform-fastify": "^12.5.0",
-    "@nestjs/platform-socket.io": "^12.5.0",
+    "@nestjs/platform-fastify": "^12.5.1",
+    "@nestjs/platform-socket.io": "^12.5.1",
     "@nestjs/schedule": "^12.0.4",
     "@nestjs/swagger": "^12.1.2",
     "@nestjs/terminus": "^12.1.0",
     "@nestjs/throttler": "^6.7.1",
-    "@nestjs/websockets": "^12.5.0",
+    "@nestjs/websockets": "^12.5.1",
     "@prisma/adapter-pg": "^7.10.1",
     "@prisma/client": "^7.10.1",
     "@sentry/node": "^11.12.0",
@@ -57,8 +57,8 @@
     "class-validator": "^0.15.1",
     "dotenv": "^18.0.10",
     "fastify": "^5.12.8",
-    "nestjs-pino": "^5.3.1",
-    "nodemailer": "^10.5.0",
+    "nestjs-pino": "^5.3.2",
+    "nodemailer": "^10.6.0",
     "otpauth": "^9.6.0",
     "pino-http": "^11.0.0",
     "prisma": "^7.10.1",
@@ -68,24 +68,24 @@
     "sharp": "^0.35.5",
     "socket.io": "^4.8.4",
     "unleash-client": "^6.12.2",
-    "web-push": "^3.6.7"
+    "web-push": "^4.0.0"
   },
   "devDependencies": {
-    "@fastify/static": "^10.1.11",
-    "@nestjs/cli": "^12.0.13",
-    "@nestjs/schematics": "^12.0.13",
-    "@nestjs/testing": "^12.5.0",
+    "@fastify/static": "^10.1.12",
+    "@nestjs/cli": "^12.0.15",
+    "@nestjs/schematics": "^12.0.16",
+    "@nestjs/testing": "^12.5.1",
     "@swc/core": "^1.16.22",
     "@types/node": "^26.6.6",
     "@types/nodemailer": "^8.0.2",
     "@types/supertest": "^7.2.1",
     "@types/web-push": "^3.6.4",
-    "@vitest/coverage-v8": "^5.1.0",
+    "@vitest/coverage-v8": "^5.1.1",
     "pino-pretty": "^13.2.0",
     "prisma-erd-generator": "^3.2.1",
     "supertest": "^7.3.2",
     "ts-node": "^10.9.2",
     "unplugin-swc": "^2.0.0",
-    "vitest": "^5.1.0"
+    "vitest": "^5.1.1"
   }
 }

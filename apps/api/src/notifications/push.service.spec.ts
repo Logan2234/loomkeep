@@ -1,11 +1,26 @@
 import { AlertGroup, ErrorCode } from "@loomkeep/shared";
 import { vi } from "vitest";
-import webpush from "web-push";
+import * as webpush from "web-push";
 import { AppException } from "../common/app.exception";
 import type { PrismaService } from "../prisma/prisma.service";
 import { FcmClient } from "./fcm.client";
 import { NotificationAction, verifyAction } from "./notification-action";
 import { PushService } from "./push.service";
+
+// web-push 4 is ESM-only: its module namespace can't be spied on, so the two
+// functions the tests observe are wrapped (still the real implementation).
+vi.mock("web-push", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("web-push")>();
+  return {
+    ...actual,
+    sendNotification: vi.fn(actual.sendNotification),
+    setVapidDetails: vi.fn(actual.setVapidDetails),
+  };
+});
+
+beforeEach(() => {
+  vi.mocked(webpush.setVapidDetails).mockClear();
+});
 
 // web-push validates the VAPID key's byte length at setVapidDetails() time —
 // a throwaway keypair is needed to exercise the `enabled` branch at all.
@@ -174,7 +189,7 @@ describe("PushService delivery timeout", () => {
     process.env.VAPID_PRIVATE_KEY = VAPID_KEYS.privateKey;
     process.env.VAPID_SUBJECT = "mailto:admin@example.com";
     const send = vi
-      .spyOn(webpush, "sendNotification")
+      .mocked(webpush.sendNotification)
       .mockResolvedValue({} as never);
     const prisma = {
       pushSubscription: {
@@ -214,7 +229,7 @@ describe("PushService app badge", () => {
     process.env.VAPID_PRIVATE_KEY = VAPID_KEYS.privateKey;
     process.env.VAPID_SUBJECT = "mailto:admin@example.com";
     const send = vi
-      .spyOn(webpush, "sendNotification")
+      .mocked(webpush.sendNotification)
       .mockResolvedValue({} as never);
     const prisma = {
       pushSubscription: {
@@ -272,7 +287,7 @@ describe("PushService VAPID subject", () => {
   it("falls back to the instance's own address, never a hardcoded one", () => {
     process.env.WEB_ORIGIN =
       "https://tracker.example.org,https://other.example.org";
-    const setVapidDetails = vi.spyOn(webpush, "setVapidDetails");
+    const setVapidDetails = vi.mocked(webpush.setVapidDetails);
 
     const { service } = makeService();
 
@@ -293,7 +308,7 @@ describe("PushService VAPID subject", () => {
 
   it("stays off without a subject when the instance isn't on HTTPS", () => {
     process.env.WEB_ORIGIN = "http://localhost:8080";
-    const setVapidDetails = vi.spyOn(webpush, "setVapidDetails");
+    const setVapidDetails = vi.mocked(webpush.setVapidDetails);
 
     const { service } = makeService();
 
