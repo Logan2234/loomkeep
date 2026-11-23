@@ -123,4 +123,22 @@ describe("HomeStatsService.myYear", () => {
       }),
     );
   });
+
+  it("counts finished games, session minutes and albums listened", async () => {
+    const service = makeService(["GAMES", "MUSIC"], {
+      gamePlaythrough: { count: vi.fn().mockResolvedValue(2) },
+      gameSession: {
+        aggregate: vi
+          .fn()
+          .mockResolvedValue({ _sum: { durationMinutes: null } }),
+      },
+      musicEntry: { count: vi.fn().mockResolvedValue(27) },
+    });
+
+    await expect(service.myYear("user-1", 2026)).resolves.toEqual({
+      year: 2026,
+      games: { finished: 2, minutes: 0 },
+      music: { listened: 27 },
+    });
+  });
 });
