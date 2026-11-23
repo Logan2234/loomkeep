@@ -90,8 +90,9 @@
         <Avatar seed={friend.username} url={friend.avatarUrl} size={40} />
         <span class="min-w-0">
           <span class="block truncate font-semibold">{friend.displayName}</span>
-          <span class="text-dim block truncate text-xs"
-            >@{friend.username}</span>
+          <span class="text-dim block truncate text-xs">
+            @{friend.username}
+          </span>
         </span>
       </button>
     </li>

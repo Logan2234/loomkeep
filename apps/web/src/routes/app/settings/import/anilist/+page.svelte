@@ -9,7 +9,8 @@
       href="https://anilist.co/home"
       target="_blank"
       rel="noopener noreferrer"
-      class="link-accent">{m.settings_import_anilist_intro()}</a
-    >. {m.settings_import_anilist_hint()}
+      class="link-accent">
+      {m.settings_import_anilist_intro()}
+    </a>. {m.settings_import_anilist_hint()}
   {/snippet}
 </ImportWizard>

@@ -163,11 +163,13 @@
           <span class="block truncate font-semibold">{thread.title}</span>
           {#if context}
             <span
-              class="text-accent text-micro block font-mono font-bold tracking-wider uppercase"
-              >{context}</span>
+              class="text-accent text-micro block font-mono font-bold tracking-wider uppercase">
+              {context}
+            </span>
           {/if}
-          <span class="text-dim block truncate text-[0.8rem]"
-            >{workThreadPreview(thread)}</span>
+          <span class="text-dim block truncate text-[0.8rem]">
+            {workThreadPreview(thread)}
+          </span>
         </span>
       </div>
       <div class="flex flex-col" data-menu-sheet role="menu">

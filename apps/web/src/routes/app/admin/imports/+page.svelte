@@ -223,9 +223,9 @@
     subtitle={m.admin_imports_subtitle()}
     back="/app/admin" />
 
-  {#if summaryQuery.error}<Banner variant="error" class="mb-4"
-      >{summaryQuery.error}</Banner
-    >{/if}
+  {#if summaryQuery.error}<Banner variant="error" class="mb-4">
+      {summaryQuery.error}
+    </Banner>{/if}
   {#if summary}
     <KpiStrip tiles={kpis} />
     {#if sourceBars.length > 0}
@@ -264,22 +264,24 @@
     <UserSelector
       value={accountId}
       onChange={(id) => changeFilters({ account: id })} />
-    <label class="text-dim flex items-center gap-2 text-sm"
-      >{m.admin_date_from()}<input
+    <label class="text-dim flex items-center gap-2 text-sm">
+      {m.admin_date_from()}<input
         class="input"
         type="date"
         value={from}
         max={to || undefined}
         onchange={(event) =>
-          changeFilters({ from: event.currentTarget.value || null })} /></label>
-    <label class="text-dim flex items-center gap-2 text-sm"
-      >{m.admin_date_to()}<input
+          changeFilters({ from: event.currentTarget.value || null })} />
+    </label>
+    <label class="text-dim flex items-center gap-2 text-sm">
+      {m.admin_date_to()}<input
         class="input"
         type="date"
         value={to}
         min={from || undefined}
         onchange={(event) =>
-          changeFilters({ to: event.currentTarget.value || null })} /></label>
+          changeFilters({ to: event.currentTarget.value || null })} />
+    </label>
   </AdminFilterBar>
 
   {#if error}
@@ -299,12 +301,14 @@
       {/each}
     </div>
   {:else if runs.length === 0}
-    <EmptyState
-      ><p>{activeFilters.length ? m.admin_no_matches() : m.admin_no_data()}</p>
+    <EmptyState>
+      <p>{activeFilters.length ? m.admin_no_matches() : m.admin_no_data()}</p>
       {#if activeFilters.length}<button
           class="btn btn-ghost mt-3"
-          onclick={resetFilters}>{m.admin_filters_reset()}</button
-        >{/if}</EmptyState>
+          onclick={resetFilters}>
+          {m.admin_filters_reset()}
+        </button>{/if}
+    </EmptyState>
   {:else}
     <ul class="space-y-2">
       {#each runs as run (run.id)}
@@ -318,9 +322,9 @@
                   : 'border-danger/40 bg-danger/10 text-danger'}">
               {STATUS_LABELS[run.status]}
             </span>
-            <span class="text-fg font-semibold"
-              >{sourceLabel(run.sourceId)}</span
-            ><span class="text-dim text-sm">·&nbsp;</span>
+            <span class="text-fg font-semibold">
+              {sourceLabel(run.sourceId)}
+            </span><span class="text-dim text-sm">·&nbsp;</span>
             {#if run.userId && run.identifier}
               <a
                 href="/app/admin/users?q={encodeURIComponent(run.identifier)}"
@@ -332,10 +336,11 @@
               <span class="text-dim text-sm">{run.identifier}</span>
             {/if}
             {#if run.overwrite}
-              <Tooltip text={m.admin_imports_overwrite_help()}
-                ><span class="pill border-accent/40 bg-accent/10 text-accent">
+              <Tooltip text={m.admin_imports_overwrite_help()}>
+                <span class="pill border-accent/40 bg-accent/10 text-accent">
                   {m.admin_imports_overwrite()}
-                </span></Tooltip>
+                </span>
+              </Tooltip>
             {/if}
             <span class="timecode ml-auto text-xs">
               {formatDateTime(run.startedAt)}
@@ -362,8 +367,9 @@
           </p>
           <button
             class="btn btn-ghost btn-sm mt-3"
-            onclick={() => (selectedRun = run.id)}
-            >{m.admin_imports_details()}</button>
+            onclick={() => (selectedRun = run.id)}>
+            {m.admin_imports_details()}
+          </button>
           {#if !run.userId}
             <p class="text-dim mt-1 text-xs italic">
               {m.admin_deleted_account()}

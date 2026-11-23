@@ -78,7 +78,6 @@ export default defineConfig(() => ({
       // Registered by hooks.client.ts instead, which skips it in the Android app.
       serviceWorker: { register: false },
     }),
-
   ],
   // @loomkeep/shared is a linked workspace package, so Vite treats it as
   // source and skips its usual CJS→ESM pre-bundling — but it's compiled to

@@ -136,8 +136,9 @@
       class="bg-accent text-accent-fg rounded-[5px] px-[7px] py-px font-mono text-[0.8rem] font-bold tabular-nums">
       {review.rating}
     </span>
-    <span class="text-[0.85rem] font-semibold"
-      >{ratingWord(review.rating)}</span>
+    <span class="text-[0.85rem] font-semibold">
+      {ratingWord(review.rating)}
+    </span>
     {#if mine}
       <span
         class="text-accent text-micro ml-1 font-mono tracking-[0.14em] uppercase">
@@ -199,10 +200,9 @@
             : m.common_friends()}
           {#if review.voteScore !== 0}
             <span aria-hidden="true">·</span>
-            <span aria-label={m.reviews_section_vote_score_label()}
-              >{review.voteScore > 0
-                ? `+${review.voteScore}`
-                : review.voteScore}</span>
+            <span aria-label={m.reviews_section_vote_score_label()}>
+              {review.voteScore > 0 ? `+${review.voteScore}` : review.voteScore}
+            </span>
           {/if}
         </span>
       {/if}
@@ -210,8 +210,9 @@
       <div class="flex min-w-0 items-center gap-2 text-[0.78rem]">
         {#if !review.author}
           <Avatar seed="utilisateur-supprime" size={20} />
-          <span class="text-dim truncate italic"
-            >{m.common_deleted_user()}</span>
+          <span class="text-dim truncate italic">
+            {m.common_deleted_user()}
+          </span>
         {:else if review.author.anonymized}
           <!-- Seeded on the derived pseudonym, never the real id — a stable
              seed would let the same identicon resurface across unrelated

@@ -371,10 +371,9 @@
       </span>
       {#if upcoming}
         <span
-          class="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-2.5 py-1 text-xs font-bold text-white backdrop-blur"
-          ><Icon
-            name="calendar"
-            class="h-3.5 w-3.5" />{m.media_upcoming()}</span>
+          class="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-2.5 py-1 text-xs font-bold text-white backdrop-blur">
+          <Icon name="calendar" class="h-3.5 w-3.5" />{m.media_upcoming()}
+        </span>
       {:else if entry}
         <TrackingStatusBadge domain="MEDIA" status={entry.status} onImage />
         {#if dormant}
@@ -629,8 +628,9 @@
                     <ul class="flex flex-col gap-1">
                       {#each entry.replays as replay (replay.id)}
                         <li class="text-dim flex items-center gap-2 text-xs">
-                          <span class="flex-1"
-                            >{formatDate(replay.finishedAt)}</span>
+                          <span class="flex-1">
+                            {formatDate(replay.finishedAt)}
+                          </span>
                           <button
                             type="button"
                             class="hover:text-danger"

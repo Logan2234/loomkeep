@@ -103,11 +103,12 @@
       <span class="h-3 w-3 shrink-0 rounded-sm" style="background:{s.color}"
       ></span>
       <span class="flex-1 truncate">{s.label}</span>
-      <span class="timecode"
-        >{formatValue(s.shown)} · {formatNumber(
+      <span class="timecode">
+        {formatValue(s.shown)} · {formatNumber(
           s.shown / total,
           PERCENT_OPTIONS,
-        )}</span>
+        )}
+      </span>
     </li>
   {/each}
 </ul>

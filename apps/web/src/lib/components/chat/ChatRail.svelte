@@ -133,7 +133,9 @@
           {#if unfolded}
             <span
               in:fade={{ duration: reduced ? 0 : 150, delay: reduced ? 0 : 80 }}
-              class="truncate">{tab.label}</span>
+              class="truncate">
+              {tab.label}
+            </span>
           {/if}
         </button>
       {/each}
@@ -217,17 +219,22 @@
                 <span
                   class="text-micro shrink-0 font-mono {thread.unread
                     ? 'text-accent'
-                    : 'text-dim'}">{workThreadTime(thread)}</span>
+                    : 'text-dim'}">
+                  {workThreadTime(thread)}
+                </span>
               </span>
               {#if context}
                 <span
-                  class="text-accent text-micro block font-mono font-bold tracking-wider uppercase"
-                  >{context}</span>
+                  class="text-accent text-micro block font-mono font-bold tracking-wider uppercase">
+                  {context}
+                </span>
               {/if}
               <span
                 class="block truncate text-[0.8rem] {thread.unread
                   ? 'text-fg'
-                  : 'text-dim'}">{workThreadPreview(thread)}</span>
+                  : 'text-dim'}">
+                {workThreadPreview(thread)}
+              </span>
             </span>
           {/if}
         </button>
@@ -300,12 +307,15 @@
               class="min-w-0 flex-1"
               aria-hidden="true">
               <span class="flex items-baseline justify-between gap-2">
-                <span class="truncate font-semibold"
-                  >{conversationName(conversation)}</span>
+                <span class="truncate font-semibold">
+                  {conversationName(conversation)}
+                </span>
                 <span
                   class="text-micro shrink-0 font-mono {unread
                     ? 'text-accent'
-                    : 'text-dim'}">{conversationTime(conversation)}</span>
+                    : 'text-dim'}">
+                  {conversationTime(conversation)}
+                </span>
               </span>
               <span
                 class="flex items-center gap-1 text-[0.8rem] {unread
@@ -314,8 +324,9 @@
                 {#if conversation.readOnly}
                   <Icon name="lock" class="h-3 w-3 shrink-0" />
                 {/if}
-                <span class="truncate"
-                  >{conversationPreview(conversation)}</span>
+                <span class="truncate">
+                  {conversationPreview(conversation)}
+                </span>
               </span>
             </span>
           {/if}
@@ -345,7 +356,9 @@
           <span
             in:fade={{ duration: reduced ? 0 : 150, delay: reduced ? 0 : 80 }}
             class="truncate"
-            aria-hidden="true">{m.chat_new_message()}</span>
+            aria-hidden="true">
+            {m.chat_new_message()}
+          </span>
         {/if}
       </button>
     </div>
@@ -363,16 +376,19 @@
     <span class="flex items-baseline justify-between gap-2">
       <b class="truncate font-semibold">{card.title}</b>
       <span
-        class="text-micro font-mono {card.unread ? 'text-accent' : 'text-dim'}"
-        >{workThreadTime(card)}</span>
+        class="text-micro font-mono {card.unread ? 'text-accent' : 'text-dim'}">
+        {workThreadTime(card)}
+      </span>
     </span>
     {#if context}
       <span
-        class="text-accent text-micro font-mono font-bold tracking-wider uppercase"
-        >{context}</span>
+        class="text-accent text-micro font-mono font-bold tracking-wider uppercase">
+        {context}
+      </span>
     {/if}
-    <span class="text-dim truncate text-[0.8rem]"
-      >{workThreadPreview(card)}</span>
+    <span class="text-dim truncate text-[0.8rem]">
+      {workThreadPreview(card)}
+    </span>
     {#if card.unread > 0}
       <span
         class="text-accent text-micro font-mono font-bold tracking-wider uppercase">
@@ -392,11 +408,13 @@
     aria-hidden="true">
     <span class="flex items-baseline justify-between gap-2">
       <b class="truncate font-semibold">{conversationName(card)}</b>
-      <span class="text-micro font-mono {unread ? 'text-accent' : 'text-dim'}"
-        >{conversationTime(card)}</span>
+      <span class="text-micro font-mono {unread ? 'text-accent' : 'text-dim'}">
+        {conversationTime(card)}
+      </span>
     </span>
-    <span class="text-dim truncate text-[0.8rem]"
-      >{conversationPreview(card)}</span>
+    <span class="text-dim truncate text-[0.8rem]">
+      {conversationPreview(card)}
+    </span>
     {#if unread > 0}
       <span
         class="text-accent text-micro font-mono font-bold tracking-wider uppercase">

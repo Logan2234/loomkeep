@@ -26,29 +26,34 @@
   <ul class="border-border divide-border mt-3 divide-y border-y text-sm">
     {#if impact.followersToRemove > 0}
       <li class="flex items-center justify-between gap-3 py-2">
-        <span
-          >{impact.followersToRemove > 1
+        <span>
+          {impact.followersToRemove > 1
             ? m.settings_privacy_removed_followers()
-            : m.settings_privacy_removed_follower()}</span>
-        <span class="timecode text-fg font-semibold"
-          >{impact.followersToRemove}</span>
+            : m.settings_privacy_removed_follower()}
+        </span>
+        <span class="timecode text-fg font-semibold">
+          {impact.followersToRemove}
+        </span>
       </li>
     {/if}
     {#if impact.outgoingFollowsToCancel > 0}
       <li class="flex items-center justify-between gap-3 py-2">
         <span>{m.settings_privacy_cancelled_following()}</span>
-        <span class="timecode text-fg font-semibold"
-          >{impact.outgoingFollowsToCancel}</span>
+        <span class="timecode text-fg font-semibold">
+          {impact.outgoingFollowsToCancel}
+        </span>
       </li>
     {/if}
     {#if impact.listsToDowngrade > 0}
       <li class="flex items-center justify-between gap-3 py-2">
-        <span
-          >{impact.listsToDowngrade > 1
+        <span>
+          {impact.listsToDowngrade > 1
             ? m.settings_privacy_private_lists()
-            : m.settings_privacy_private_list()}</span>
-        <span class="timecode text-fg font-semibold"
-          >{impact.listsToDowngrade}</span>
+            : m.settings_privacy_private_list()}
+        </span>
+        <span class="timecode text-fg font-semibold">
+          {impact.listsToDowngrade}
+        </span>
       </li>
     {/if}
     {#if impact.followersToRemove === 0 && impact.outgoingFollowsToCancel === 0 && impact.listsToDowngrade === 0}

@@ -48,8 +48,9 @@
           onclick={() => settingsSearch.clear()}
           class="hover:bg-surface-2 flex items-center gap-3.5 px-4 py-3.5 transition-colors">
           <span class="min-w-0 flex-1">
-            <span class="block truncate font-semibold"
-              >{group.section.label}</span>
+            <span class="block truncate font-semibold">
+              {group.section.label}
+            </span>
             {#if group.section.description}
               <span class="timecode block truncate text-[0.7rem]">
                 {group.section.description}

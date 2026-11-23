@@ -569,7 +569,9 @@
               compact />
             <span
               class="text-dim rotate-90 justify-self-center text-xl sm:mb-4 sm:rotate-0"
-              aria-hidden="true">→</span>
+              aria-hidden="true">
+              →
+            </span>
             <PageNumberControl
               bind:value={endPage}
               label={m.book_session_end_page()}
@@ -873,8 +875,9 @@
                           class="mt-3 flex flex-col gap-1.5 text-xs font-semibold">
                           <span>
                             {m.session_notes()}
-                            <span class="text-dim font-normal"
-                              >{m.common_optional_marker()}</span>
+                            <span class="text-dim font-normal">
+                              {m.common_optional_marker()}
+                            </span>
                           </span>
                           <textarea
                             class="input min-h-24 w-full resize-y"
@@ -956,14 +959,16 @@
             type="button"
             class="btn-text text-xs"
             disabled={page === 1}
-            onclick={() => changeHistoryPage(page - 1)}
-            >← {m.session_previous()}</button>
+            onclick={() => changeHistoryPage(page - 1)}>
+            ← {m.session_previous()}
+          </button>
           <button
             type="button"
             class="btn-text text-xs"
             disabled={!summary.hasMore}
-            onclick={() => changeHistoryPage(page + 1)}
-            >{m.session_next()} →</button>
+            onclick={() => changeHistoryPage(page + 1)}>
+            {m.session_next()} →
+          </button>
         </div>
       {/if}
     {:else if !sessionsQuery.loading}

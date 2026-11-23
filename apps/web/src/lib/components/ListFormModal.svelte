@@ -190,8 +190,9 @@
               {:else}
                 {#each [80, 62, 45] as width, i (i)}
                   <span class="flex items-center gap-1.5">
-                    <span class="timecode text-accent text-micro w-2 font-bold"
-                      >{i + 1}</span>
+                    <span class="timecode text-accent text-micro w-2 font-bold">
+                      {i + 1}
+                    </span>
                     <span
                       class="h-1.5 rounded-sm transition-colors {on
                         ? 'bg-accent/45'

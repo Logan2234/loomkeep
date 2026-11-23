@@ -124,24 +124,28 @@
           <div class="grid grid-cols-2 gap-2 text-xs">
             {#if longestFilm}
               <a href={longestFilm.href} class="hover:text-accent">
-                <span class="text-dim block uppercase"
-                  >{m.stats_video_longest()}</span>
+                <span class="text-dim block uppercase">
+                  {m.stats_video_longest()}
+                </span>
                 <span class="truncate font-semibold">{longestFilm.title}</span>
-                <span class="timecode block"
-                  >{Math.floor(
+                <span class="timecode block">
+                  {Math.floor(
                     longestFilm.minutes / 60,
                   )}{m.common_hours_short()}{(longestFilm.minutes % 60)
                     .toString()
-                    .padStart(2, "0")}</span>
+                    .padStart(2, "0")}
+                </span>
               </a>
             {/if}
             {#if shortestFilm}
               <a href={shortestFilm.href} class="hover:text-accent">
-                <span class="text-dim block uppercase"
-                  >{m.stats_video_shortest()}</span>
+                <span class="text-dim block uppercase">
+                  {m.stats_video_shortest()}
+                </span>
                 <span class="truncate font-semibold">{shortestFilm.title}</span>
-                <span class="timecode block"
-                  >{shortestFilm.minutes}{m.common_minutes_short()}</span>
+                <span class="timecode block">
+                  {shortestFilm.minutes}{m.common_minutes_short()}
+                </span>
               </a>
             {/if}
           </div>

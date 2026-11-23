@@ -79,12 +79,13 @@
         <h3 class="font-display text-lg font-bold">
           {m.stats_books_top_authors()}
         </h3>
-        <span class="text-dim text-xs"
-          >{books.distinctAuthorsCount === 1
+        <span class="text-dim text-xs">
+          {books.distinctAuthorsCount === 1
             ? m.stats_distinct_author({ count: 1 })
             : m.stats_distinct_authors({
                 count: books.distinctAuthorsCount,
-              })}</span>
+              })}
+        </span>
       </div>
       {#if authorItems.length > 0}
         <RankBars items={authorItems} />
@@ -97,20 +98,26 @@
         <div class="mt-4 grid grid-cols-2 gap-2 text-xs">
           {#if longestBook}
             <a href={longestBook.href} class="hover:text-accent">
-              <span class="text-dim block uppercase"
-                >{m.stats_books_longest()}</span>
+              <span class="text-dim block uppercase">
+                {m.stats_books_longest()}
+              </span>
               <span class="truncate font-semibold">{longestBook.title}</span>
-              <span class="timecode block"
-                >{longestBook.pages} {m.book_page_short()}</span>
+              <span class="timecode block">
+                {longestBook.pages}
+                {m.book_page_short()}
+              </span>
             </a>
           {/if}
           {#if shortestBook}
             <a href={shortestBook.href} class="hover:text-accent">
-              <span class="text-dim block uppercase"
-                >{m.stats_books_shortest()}</span>
+              <span class="text-dim block uppercase">
+                {m.stats_books_shortest()}
+              </span>
               <span class="truncate font-semibold">{shortestBook.title}</span>
-              <span class="timecode block"
-                >{shortestBook.pages} {m.book_page_short()}</span>
+              <span class="timecode block">
+                {shortestBook.pages}
+                {m.book_page_short()}
+              </span>
             </a>
           {/if}
         </div>

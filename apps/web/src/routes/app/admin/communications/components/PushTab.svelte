@@ -166,8 +166,9 @@
       {m.admin_communications_individual_test()}
     </h2>
     <div>
-      <span class="text-dim mb-1 block text-xs font-semibold"
-        >{m.common_account()}</span>
+      <span class="text-dim mb-1 block text-xs font-semibold">
+        {m.common_account()}
+      </span>
       <UserSelector
         value={email || null}
         valueMode="email"

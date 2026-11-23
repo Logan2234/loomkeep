@@ -35,8 +35,9 @@
 </script>
 
 <div class="flex flex-wrap items-center gap-3">
-  <button class="btn btn-ghost" onclick={() => (panelOpen = true)}
-    >SidePanel + Modal</button>
+  <button class="btn btn-ghost" onclick={() => (panelOpen = true)}>
+    SidePanel + Modal
+  </button>
   <button
     type="button"
     class="btn btn-primary"
@@ -151,11 +152,15 @@
       <button
         class="chip"
         class:chip-on={modalLong}
-        onclick={() => (modalLong = !modalLong)}>{m.common_details()}</button>
+        onclick={() => (modalLong = !modalLong)}>
+        {m.common_details()}
+      </button>
       <button
         class="chip"
         class:chip-on={modalError}
-        onclick={() => (modalError = !modalError)}>{m.common_error()}</button>
+        onclick={() => (modalError = !modalError)}>
+        {m.common_error()}
+      </button>
       <button
         class="chip"
         class:chip-on={modalLoading}
@@ -163,7 +168,9 @@
           clearTimeout(modalTimer);
           modalLoading = true;
           modalTimer = setTimeout(() => (modalLoading = false), 2000);
-        }}>{m.common_loading()}</button>
+        }}>
+        {m.common_loading()}
+      </button>
     </div>
     {#if modalLong}<div class="mt-4 space-y-3">
         {#each { length: 18 } as _, index (index)}<p class="text-dim text-sm">
@@ -263,12 +270,14 @@
       <h2 id="stress-panel-title" class="font-display text-xl font-bold">
         SidePanel
       </h2>
-      <button class="btn btn-ghost" onclick={() => (panelOpen = false)}
-        >{m.common_close()}</button>
+      <button class="btn btn-ghost" onclick={() => (panelOpen = false)}>
+        {m.common_close()}
+      </button>
     </div>
     <div class="min-h-0 flex-1 overflow-auto p-5">
-      <button class="btn btn-primary" onclick={() => (nestedModalOpen = true)}
-        >{m.admin_components_open_modal()}</button>
+      <button class="btn btn-primary" onclick={() => (nestedModalOpen = true)}>
+        {m.admin_components_open_modal()}
+      </button>
       <p class="text-dim mt-4">{m.admin_components_drawer_body().repeat(6)}</p>
     </div>
   </SidePanel>
@@ -276,10 +285,12 @@
 {#if nestedModalOpen && panelOpen}
   <Modal
     title={m.admin_components_modal_title()}
-    onclose={() => (nestedModalOpen = false)}
-    ><p>{m.admin_components_modal_body().repeat(4)}</p>
+    onclose={() => (nestedModalOpen = false)}>
+    <p>{m.admin_components_modal_body().repeat(4)}</p>
     {#snippet actions()}<button
         class="btn btn-primary"
-        onclick={() => (nestedModalOpen = false)}>{m.common_close()}</button
-      >{/snippet}</Modal>
+        onclick={() => (nestedModalOpen = false)}>
+        {m.common_close()}
+      </button>{/snippet}
+  </Modal>
 {/if}

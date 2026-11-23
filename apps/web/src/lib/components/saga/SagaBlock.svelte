@@ -184,8 +184,9 @@
       <p class="shrink-0 text-right font-mono">
         <span class="inline-flex text-2xl font-bold tabular-nums">
           {#key seenCount}
-            <span in:fly={{ y: -10, duration: ms(260), easing: cubicOut }}
-              >{seenCount}</span>
+            <span in:fly={{ y: -10, duration: ms(260), easing: cubicOut }}>
+              {seenCount}
+            </span>
           {/key}<span class="text-dim">/{released.length}</span>
         </span>
         <span class="timecode block text-xs">{m.media_saga_done()}</span>

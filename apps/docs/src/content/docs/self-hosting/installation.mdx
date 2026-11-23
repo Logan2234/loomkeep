@@ -18,15 +18,15 @@ import { Aside, Steps } from "@astrojs/starlight/components";
 
 2. **Fill in `.env`.** At least:
 
-   | Variable                                   | Value                                                        |
-   | ------------------------------------------ | ------------------------------------------------------------ |
-   | `POSTGRES_USER`, `POSTGRES_DB`             | Any name, e.g. `loomkeep`.                                   |
-   | `POSTGRES_PASSWORD`                        | A long random password.                                      |
-   | `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET`  | Two different values from `openssl rand -hex 32`.            |
-   | `MFA_ENCRYPTION_KEY`                       | `openssl rand -base64 32`. Needed once served over HTTPS, and never to be changed once someone uses two-factor authentication. |
-   | `TMDB_API_TOKEN`                           | Your TMDB token: see [Catalogue keys](/self-hosting/catalogues/). |
-   | `BACKUP_ENCRYPTION_PUBLIC_KEY`             | The public key backups are encrypted for: see [Backups](/self-hosting/upgrades-and-backups/#backups). |
-   | `ADMIN_EMAIL`                              | The email you will sign up with: that account becomes the administrator. |
+   | Variable                                  | Value                                                                                                                          |
+   | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+   | `POSTGRES_USER`, `POSTGRES_DB`            | Any name, e.g. `loomkeep`.                                                                                                     |
+   | `POSTGRES_PASSWORD`                       | A long random password.                                                                                                        |
+   | `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET` | Two different values from `openssl rand -hex 32`.                                                                              |
+   | `MFA_ENCRYPTION_KEY`                      | `openssl rand -base64 32`. Needed once served over HTTPS, and never to be changed once someone uses two-factor authentication. |
+   | `TMDB_API_TOKEN`                          | Your TMDB token: see [Catalogue keys](/self-hosting/catalogues/).                                                              |
+   | `BACKUP_ENCRYPTION_PUBLIC_KEY`            | The public key backups are encrypted for: see [Backups](/self-hosting/upgrades-and-backups/#backups).                          |
+   | `ADMIN_EMAIL`                             | The email you will sign up with: that account becomes the administrator.                                                       |
 
    Every other variable is optional: see [Configuration](/self-hosting/configuration/).
 
@@ -45,8 +45,8 @@ import { Aside, Steps } from "@astrojs/starlight/components";
 </Steps>
 
 <Aside title="On a NAS or another machine">
-  Open the ports to your network and point the two addresses at that machine
-  in `.env`, for instance `LOOMKEEP_BIND_ADDRESS=0.0.0.0`,
+  Open the ports to your network and point the two addresses at that machine in
+  `.env`, for instance `LOOMKEEP_BIND_ADDRESS=0.0.0.0`,
   `PUBLIC_API_URL=http://nas.local:3000/api` and
   `WEB_ORIGIN=http://nas.local:8080`, then run the two commands again.
 </Aside>

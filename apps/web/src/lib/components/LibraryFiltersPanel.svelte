@@ -164,9 +164,10 @@
         class="flex min-h-11 cursor-pointer items-center justify-between gap-3"
         class:mt-4={!favorites}>
         <span class="flex flex-col">
-          <span class="font-medium"
-            >{item.label}{#if item.isNew}
-              <NewBadge />{/if}</span>
+          <span class="font-medium">
+            {item.label}{#if item.isNew}
+              <NewBadge />{/if}
+          </span>
           {#if item.hint}
             <span class="text-dim text-xs">{item.hint}</span>
           {/if}

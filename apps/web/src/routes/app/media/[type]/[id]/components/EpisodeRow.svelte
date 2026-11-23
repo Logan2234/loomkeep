@@ -164,8 +164,9 @@
       <p class="flex items-baseline gap-1.5">
         <span class="timecode text-xs">{code}</span>
         {#if episode.watchCount > 1}
-          <span class="timecode text-success text-xs"
-            >×{episode.watchCount}</span>
+          <span class="timecode text-success text-xs">
+            ×{episode.watchCount}
+          </span>
         {/if}
       </p>
       <!-- Stretched over the row: touching anywhere but its actions opens it,
@@ -327,16 +328,18 @@
       <p
         class="timecode text-dim mt-1 flex items-center gap-x-1.5 overflow-hidden text-[0.7rem] whitespace-nowrap empty:hidden [&>*:not(:first-child)]:before:mr-1.5 [&>*:not(:first-child)]:before:content-['·']">
         {#if episode.voteAverage !== null}
-          <span
-            >{m.media_score_tmdb({
+          <span>
+            {m.media_score_tmdb({
               score: scoreLabel(episode.voteAverage),
-            })}</span>
+            })}
+          </span>
         {/if}
         {#if episode.reviewAverage !== null}
-          <span
-            >{m.media_score_loomkeep({
+          <span>
+            {m.media_score_loomkeep({
               score: scoreLabel(episode.reviewAverage),
-            })}</span>
+            })}
+          </span>
         {/if}
         {#if tracked && episode.id && reviewBadge}
           <span

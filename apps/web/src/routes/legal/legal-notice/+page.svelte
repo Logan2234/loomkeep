@@ -20,9 +20,9 @@
     <h2>Éditeur</h2>
     <p>
       Le site et le service Loomkeep, accessibles notamment à l'adresse
-      <a href="https://loomkeep.app" class="link-accent" target="_blank"
-        >https://loomkeep.app</a
-      >, sont édités par :
+      <a href="https://loomkeep.app" class="link-accent" target="_blank">
+        https://loomkeep.app
+      </a>, sont édités par :
     </p>
     <ul>
       <li><strong>Nom :</strong> Logan WILLEM</li>
@@ -36,8 +36,9 @@
       </li>
       <li>
         <strong>Adresse e-mail :</strong>
-        <a href="mailto:contact@loomkeep.app" class="link-accent"
-          >contact@loomkeep.app</a>
+        <a href="mailto:contact@loomkeep.app" class="link-accent">
+          contact@loomkeep.app
+        </a>
       </li>
     </ul>
     <h2>Directeur de la publication</h2>
@@ -52,7 +53,9 @@
       Site : <a
         href="https://www.ovhcloud.com/"
         class="link-accent"
-        target="_blank">https://www.ovhcloud.com/</a>
+        target="_blank">
+        https://www.ovhcloud.com/
+      </a>
     </p>
     <h2>Nom de domaine</h2>
     <p>
@@ -66,9 +69,9 @@
     </p>
     <h2>Propriété intellectuelle</h2>
     <p>
-      Le code source de Loomkeep est distribué sous licence <strong
-        >GNU Affero General Public License version 3 (AGPL-3.0)</strong
-      >.
+      Le code source de Loomkeep est distribué sous licence <strong>
+        GNU Affero General Public License version 3 (AGPL-3.0)
+      </strong>.
     </p>
     <p>
       Les conditions applicables au code source sont celles prévues par la
@@ -125,10 +128,11 @@
       les présentes mentions légales :
     </p>
     <p>
-      <strong
-        ><a href="mailto:contact@loomkeep.app" class="link-accent"
-          >contact@loomkeep.app</a
-        ></strong>
+      <strong>
+        <a href="mailto:contact@loomkeep.app" class="link-accent">
+          contact@loomkeep.app
+        </a>
+      </strong>
     </p>
   </article>
 </main>

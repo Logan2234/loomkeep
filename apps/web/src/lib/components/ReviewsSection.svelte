@@ -201,7 +201,9 @@
           <span
             class="font-display text-[2.6rem] leading-none font-extrabold tabular-nums">
             {formatAverage(summary.average!)}<span
-              class="timecode text-[0.8rem] font-normal">&nbsp;/10</span>
+              class="timecode text-[0.8rem] font-normal">
+              &nbsp;/10
+            </span>
           </span>
           <span class="text-dim mt-1 text-xs">
             {summary.count === 1

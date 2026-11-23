@@ -92,9 +92,9 @@
         <dd>{run.overwrite ? m.common_yes() : m.common_no()}</dd>
       </div>
     </dl>
-    {#if run.error}<Banner variant="error" class="mt-4"
-        ><p class="break-words whitespace-pre-wrap">{run.error}</p></Banner
-      >{/if}
+    {#if run.error}<Banner variant="error" class="mt-4">
+        <p class="break-words whitespace-pre-wrap">{run.error}</p>
+      </Banner>{/if}
     {#if run.details?.report}
       <ul class="mt-4 grid grid-cols-2 gap-3">
         {#each run.details.report.tiles as tile, i (i)}<li class="card p-3">
@@ -124,8 +124,9 @@
         </ul>
         {#if items.length > visible}<button
             class="btn btn-ghost mt-3"
-            onclick={() => (visible += 100)}>{m.common_load_more()}</button
-          >{/if}
+            onclick={() => (visible += 100)}>
+            {m.common_load_more()}
+          </button>{/if}
       </TabPanels>
     {:else}<p class="text-dim mt-5 text-sm">
         {run.phase === "analyze"
@@ -133,7 +134,7 @@
           : m.admin_imports_legacy_details()}
       </p>{/if}
   {/if}
-  {#snippet actions()}<button class="btn btn-ghost" onclick={onclose}
-      >{m.common_close()}</button
-    >{/snippet}
+  {#snippet actions()}<button class="btn btn-ghost" onclick={onclose}>
+      {m.common_close()}
+    </button>{/snippet}
 </Modal>

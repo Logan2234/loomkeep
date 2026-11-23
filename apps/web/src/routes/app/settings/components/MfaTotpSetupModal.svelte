@@ -40,8 +40,9 @@
       </p>
       {#if secret}
         <p class="w-full text-center">
-          <span class="text-dim text-xs"
-            >{m.settings_mfa_totp_manual_entry_label()}</span>
+          <span class="text-dim text-xs">
+            {m.settings_mfa_totp_manual_entry_label()}
+          </span>
           <span class="block font-mono text-sm tracking-widest select-all">
             {secret}
           </span>

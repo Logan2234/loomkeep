@@ -152,8 +152,9 @@
     <!-- Dim sentence, bright values: the date and the count are what the note
        is actually there to say. -->
     {#each note as segment, index (index)}{#if segment.strong}<b
-          class="text-fg font-semibold">{segment.text}</b
-        >{:else}{segment.text}{/if}{/each}
+          class="text-fg font-semibold">
+          {segment.text}
+        </b>{:else}{segment.text}{/if}{/each}
   </p>
 {/if}
 

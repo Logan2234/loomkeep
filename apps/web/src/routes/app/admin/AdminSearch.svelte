@@ -25,8 +25,9 @@
 
 <svelte:window onkeydown={shortcutKey} />
 <div class="relative mb-6 max-w-xl">
-  <label for="admin-search" class="sr-only"
-    >{m.admin_search_placeholder()}</label>
+  <label for="admin-search" class="sr-only">
+    {m.admin_search_placeholder()}
+  </label>
   <Icon
     name="search"
     class="text-dim pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
@@ -46,8 +47,9 @@
       }
     }} />
   <kbd
-    class="text-dim absolute top-1/2 right-3 hidden -translate-y-1/2 rounded border px-1.5 text-xs md:block"
-    >{shortcut}</kbd>
+    class="text-dim absolute top-1/2 right-3 hidden -translate-y-1/2 rounded border px-1.5 text-xs md:block">
+    {shortcut}
+  </kbd>
 </div>
 {#if query.trim()}
   <section aria-label={m.common_results()} aria-live="polite" class="space-y-6">
@@ -58,7 +60,9 @@
         onclick={() => {
           query = "";
           input?.focus();
-        }}>{m.common_clear()}</button>
+        }}>
+        {m.common_clear()}
+      </button>
     </div>
     {#each groups as group (group.label)}
       <section>
@@ -68,14 +72,16 @@
             <a
               href={item.href}
               onclick={() => (query = "")}
-              class="hover:bg-surface-2 flex items-center gap-3 p-4"
-              ><Icon
+              class="hover:bg-surface-2 flex items-center gap-3 p-4">
+              <Icon
                 name={item.icon}
-                class="text-accent h-5 w-5 shrink-0" /><span
-                ><span class="block font-semibold">{item.label}</span><span
-                  class="text-dim text-sm">{item.description}</span
-                ></span
-              ></a>
+                class="text-accent h-5 w-5 shrink-0" /><span>
+                <span class="block font-semibold">{item.label}</span><span
+                  class="text-dim text-sm">
+                  {item.description}
+                </span>
+              </span>
+            </a>
           {/each}
         </div>
       </section>

@@ -162,8 +162,9 @@
 {#if studioQuery.error}
   <div class="mx-auto max-w-5xl px-5 py-6 md:px-8">
     <Banner variant="error">{studioQuery.error}</Banner>
-    <a href="/app/media" onclick={goBack} class="btn btn-ghost mt-4"
-      >← {m.common_back()}</a>
+    <a href="/app/media" onclick={goBack} class="btn btn-ghost mt-4">
+      ← {m.common_back()}
+    </a>
   </div>
 {:else if studio}
   <div class="mx-auto max-w-5xl px-5 pt-2 pb-10 md:px-8 md:pt-8">
@@ -183,8 +184,9 @@
               class="max-h-full max-w-full object-contain" />
           {:else}
             <span
-              class="font-display text-center text-lg font-extrabold text-black"
-              >{studio.name}</span>
+              class="font-display text-center text-lg font-extrabold text-black">
+              {studio.name}
+            </span>
           {/if}
         </div>
         <div class="flex min-w-0 flex-col gap-1.5">
@@ -207,8 +209,9 @@
                 href={studio.homepage}
                 target="_blank"
                 rel="noopener noreferrer"
-                class="border-border text-dim hover:border-accent hover:text-accent rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors"
-                >{m.media_official_site()}</a>
+                class="border-border text-dim hover:border-accent hover:text-accent rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors">
+                {m.media_official_site()}
+              </a>
             </div>
           {/if}
           {#if studio.description}
@@ -246,8 +249,9 @@
                         ref: studio.parent,
                         studio: "COMPANY",
                       }}
-                      class="decoration-dim/50 hover:text-accent underline underline-offset-4 transition-colors hover:decoration-current"
-                      >{studio.parent.name}</a>
+                      class="decoration-dim/50 hover:text-accent underline underline-offset-4 transition-colors hover:decoration-current">
+                      {studio.parent.name}
+                    </a>
                   {:else}
                     {studio.parent.name}
                   {/if}

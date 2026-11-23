@@ -16,7 +16,7 @@
   "engines": {
     "node": ">=26"
   },
-  "packageManager": "pnpm@12.14.0",
+  "packageManager": "pnpm@12.23.0",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Logan2234/loomkeep.git"
@@ -61,20 +61,20 @@
     "@eslint/js": "^10.0.1",
     "@lhci/cli": "^0.16.1",
     "@microsoft/eslint-formatter-sarif": "3.1.0",
-    "@stylistic/eslint-plugin": "^5.10.0",
+    "@stylistic/eslint-plugin": "^6.0.1",
     "@typescript/native": "npm:typescript@^7.0.2",
     "eslint": "^10.15.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.7",
     "globals": "^17.14.0",
     "husky": "^9.1.7",
-    "knip": "^6.45.1",
-    "lint-staged": "^17.6.1",
+    "knip": "^6.47.0",
+    "lint-staged": "^17.6.2",
     "prettier": "^3.10.1",
     "prettier-plugin-organize-imports": "^4.3.0",
-    "prettier-plugin-svelte": "^4.1.1",
+    "prettier-plugin-svelte": "^4.2.0",
     "prettier-plugin-tailwindcss": "^0.8.1",
     "typescript": "npm:@typescript/typescript6@^6.0.2",
-    "typescript-eslint": "^8.72.2"
+    "typescript-eslint": "^8.73.0"
   }
 }

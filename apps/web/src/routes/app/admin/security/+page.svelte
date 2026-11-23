@@ -288,12 +288,14 @@
       {/each}
     </div>
   {:else if events.length === 0}
-    <EmptyState
-      ><p>{activeFilters.length ? m.admin_no_matches() : m.admin_no_data()}</p>
+    <EmptyState>
+      <p>{activeFilters.length ? m.admin_no_matches() : m.admin_no_data()}</p>
       {#if activeFilters.length}<button
           class="btn btn-ghost mt-3"
-          onclick={resetFilters}>{m.admin_filters_reset()}</button
-        >{/if}</EmptyState>
+          onclick={resetFilters}>
+          {m.admin_filters_reset()}
+        </button>{/if}
+    </EmptyState>
   {:else}
     <ul class="space-y-2">
       {#each events as e (e.id)}
@@ -325,8 +327,9 @@
                 {/if}
                 {#if e.userAgent}
                   <code
-                    class="bg-surface-2 text-dim block overflow-x-auto rounded px-2 py-1.5 break-words whitespace-pre-wrap"
-                    >{e.userAgent}</code>
+                    class="bg-surface-2 text-dim block overflow-x-auto rounded px-2 py-1.5 break-words whitespace-pre-wrap">
+                    {e.userAgent}
+                  </code>
                 {/if}
                 <button
                   type="button"

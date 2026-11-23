@@ -97,7 +97,9 @@
         href={`${DOCS_URL}/api/`}
         target="_blank"
         rel="noopener noreferrer"
-        class="link-accent">{m.settings_api_keys_docs_link()}</a>
+        class="link-accent">
+        {m.settings_api_keys_docs_link()}
+      </a>
       {#if quota}
         <br />
         {m.settings_api_keys_limit({ count: quota.perMinute })}
@@ -154,8 +156,9 @@
     <div class="mt-3 flex flex-col gap-2">
       <h3 class="text-sm font-semibold">
         {m.settings_api_keys_recipes_title()}
-        <span class="text-dim font-normal"
-          >· {m.settings_api_keys_recipes_hint()}</span>
+        <span class="text-dim font-normal">
+          · {m.settings_api_keys_recipes_hint()}
+        </span>
       </h3>
       <div class="grid gap-2 sm:grid-cols-3">
         {#each RECIPES as item (item.id)}
@@ -166,10 +169,12 @@
               recipe = item;
               creating = true;
             }}>
-            <span class="text-sm font-semibold"
-              >{RECIPE_LABELS[item.id].name()}</span>
-            <span class="text-dim text-xs"
-              >{RECIPE_LABELS[item.id].description()}</span>
+            <span class="text-sm font-semibold">
+              {RECIPE_LABELS[item.id].name()}
+            </span>
+            <span class="text-dim text-xs">
+              {RECIPE_LABELS[item.id].description()}
+            </span>
           </button>
         {/each}
       </div>

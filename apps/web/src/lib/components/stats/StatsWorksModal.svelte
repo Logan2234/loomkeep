@@ -50,11 +50,13 @@
               alt=""
               class="w-11! rounded" />
             <span class="min-w-0 flex-1">
-              <span class="block truncate text-sm font-semibold"
-                >{w.title}</span>
-              <span class="text-dim text-xs"
-                >{STATS_DOMAIN_LABEL[w.domain]}{#if w.rating !== null}
-                  &nbsp;· {w.rating}/10{/if}</span>
+              <span class="block truncate text-sm font-semibold">
+                {w.title}
+              </span>
+              <span class="text-dim text-xs">
+                {STATS_DOMAIN_LABEL[w.domain]}{#if w.rating !== null}
+                  &nbsp;· {w.rating}/10{/if}
+              </span>
             </span>
           </a>
         </li>

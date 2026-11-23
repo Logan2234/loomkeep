@@ -42,8 +42,9 @@
 <Modal title={m.profile_edit()} {onclose}>
   <div class="flex flex-col gap-4">
     <label class="block">
-      <span class="mb-1.5 block text-sm font-semibold"
-        >{m.common_display_name()}</span>
+      <span class="mb-1.5 block text-sm font-semibold">
+        {m.common_display_name()}
+      </span>
       <input
         type="text"
         name="displayName"

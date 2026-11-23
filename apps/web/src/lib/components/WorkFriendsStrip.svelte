@@ -190,8 +190,9 @@
       {#each list as p (p.key)}
         <li class="flex items-center gap-1.5">
           {@render face(p, 20)}
-          <a href={p.href} class="hover:text-fg transition-colors"
-            >{label(p)}</a>
+          <a href={p.href} class="hover:text-fg transition-colors">
+            {label(p)}
+          </a>
         </li>
       {/each}
     </ul>
@@ -243,8 +244,9 @@
               <span class="text-dim">· {formatHours(f.playtimeMinutes)}</span>
             {/if}
             {#if f.rating !== null}
-              · <span class="text-accent font-mono font-bold"
-                >{rating(f.rating)}</span>
+              · <span class="text-accent font-mono font-bold">
+                {rating(f.rating)}
+              </span>
             {/if}
             <span class="text-dim">· {formatRelative(f.updatedAt)}</span>
           </span>
@@ -263,8 +265,9 @@
               </span>
             {/each}
             {#if data.friends.length > 5}
-              <span class="text-dim ml-3 font-mono text-xs"
-                >+{data.friends.length - 5}</span>
+              <span class="text-dim ml-3 font-mono text-xs">
+                +{data.friends.length - 5}
+              </span>
             {/if}
           </span>
           <span class="min-w-0 truncate text-sm font-semibold">
@@ -329,8 +332,9 @@
                       {season === i + 1
                       ? 'bg-fg text-bg border-fg'
                       : 'border-border text-dim hover:text-fg bg-surface'}"
-                    onclick={() => (picked = i + 1)}
-                    >{m.work_friends_season_tab({ season: i + 1 })}</button>
+                    onclick={() => (picked = i + 1)}>
+                    {m.work_friends_season_tab({ season: i + 1 })}
+                  </button>
                 {/each}
               </span>
             {/if}
@@ -366,10 +370,11 @@
           </div>
           <div class="text-dim flex justify-between font-mono text-xs">
             <span>{m.work_friends_episode_tick({ episode: 1 })}</span>
-            <span
-              >{m.work_friends_episode_tick({
+            <span>
+              {m.work_friends_episode_tick({
                 episode: Math.ceil(episodes / 2),
-              })}</span>
+              })}
+            </span>
             <span>{m.work_friends_episode_tick({ episode: episodes })}</span>
           </div>
           {@render others(elsewhere)}

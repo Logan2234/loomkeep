@@ -9,7 +9,8 @@
       href="https://myanimelist.net/panel.php?go=export"
       target="_blank"
       rel="noopener noreferrer"
-      class="link-accent">{m.settings_import_myanimelist_intro()}</a
-    >. {m.settings_import_myanimelist_hint()}
+      class="link-accent">
+      {m.settings_import_myanimelist_intro()}
+    </a>. {m.settings_import_myanimelist_hint()}
   {/snippet}
 </ImportWizard>

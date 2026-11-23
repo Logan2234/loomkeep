@@ -141,12 +141,16 @@
           type="button"
           class="btn btn-primary"
           disabled={pauseMut.loading}
-          onclick={finish}>{m.common_finish()}</button>
+          onclick={finish}>
+          {m.common_finish()}
+        </button>
         <button
           type="button"
           class="btn btn-ghost"
           aria-label={m.session_timer_cancel()}
-          onclick={() => (confirmCancel = true)}>×</button>
+          onclick={() => (confirmCancel = true)}>
+          ×
+        </button>
       </div>
     </div>
   </div>

@@ -273,8 +273,9 @@
               {/if}
             </span>
             <span
-              class="text-xs font-bold whitespace-nowrap text-white [text-shadow:0_1px_6px_rgb(0_0_0/0.75)]"
-              >{action.label}</span>
+              class="text-xs font-bold whitespace-nowrap text-white [text-shadow:0_1px_6px_rgb(0_0_0/0.75)]">
+              {action.label}
+            </span>
           </svelte:element>
         </li>
       {/each}

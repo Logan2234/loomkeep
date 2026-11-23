@@ -50,8 +50,9 @@
       <span
         class="block min-w-0"
         in:fly={{ y: reduced ? 0 : 6, duration: reduced ? 0 : 180 }}>
-        <span class="timecode text-dim block truncate text-[0.7rem]"
-          >{label}</span>
+        <span class="timecode text-dim block truncate text-[0.7rem]">
+          {label}
+        </span>
         <span
           class="group-hover:text-accent block truncate text-sm font-semibold transition-colors duration-150">
           {episode.title ?? `${m.common_episode()} ${episode.number}`}

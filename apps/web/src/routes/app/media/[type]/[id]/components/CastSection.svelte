@@ -158,24 +158,27 @@
               href={castDetail.homepage}
               target="_blank"
               rel="noopener noreferrer"
-              class="border-border text-dim hover:border-accent hover:text-accent rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors"
-              >{m.media_official_site()}</a>
+              class="border-border text-dim hover:border-accent hover:text-accent rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors">
+              {m.media_official_site()}
+            </a>
           {/if}
           {#if castDetail.imdbId}
             <a
               href={`https://www.imdb.com/name/${castDetail.imdbId}/`}
               target="_blank"
               rel="noopener noreferrer"
-              class="border-border text-dim hover:border-accent hover:text-accent rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors"
-              >IMDb ↗</a>
+              class="border-border text-dim hover:border-accent hover:text-accent rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors">
+              IMDb ↗
+            </a>
           {/if}
           {#if castDetail.wikidataId}
             <a
               href={`https://www.wikidata.org/wiki/${castDetail.wikidataId}`}
               target="_blank"
               rel="noopener noreferrer"
-              class="border-border text-dim hover:border-accent hover:text-accent rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors"
-              >Wikidata ↗</a>
+              class="border-border text-dim hover:border-accent hover:text-accent rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors">
+              Wikidata ↗
+            </a>
           {/if}
         </div>
       {/if}

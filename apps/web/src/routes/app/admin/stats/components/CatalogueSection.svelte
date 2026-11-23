@@ -43,14 +43,18 @@
         <thead>
           <tr
             class="border-border text-dim border-b font-mono text-xs uppercase">
-            <th class="px-2 py-1.5 text-left font-normal"
-              >{m.common_domain()}</th>
-            <th class="px-2 py-1.5 text-right font-normal"
-              >{m.common_items()}</th>
-            <th class="px-2 py-1.5 text-right font-normal"
-              >{m.admin_catalogue_table_stale()}</th>
-            <th class="px-2 py-1.5 text-left font-normal"
-              >{m.admin_catalogue_table_trend()}</th>
+            <th class="px-2 py-1.5 text-left font-normal">
+              {m.common_domain()}
+            </th>
+            <th class="px-2 py-1.5 text-right font-normal">
+              {m.common_items()}
+            </th>
+            <th class="px-2 py-1.5 text-right font-normal">
+              {m.admin_catalogue_table_stale()}
+            </th>
+            <th class="px-2 py-1.5 text-left font-normal">
+              {m.admin_catalogue_table_trend()}
+            </th>
           </tr>
         </thead>
         <tbody>
@@ -85,9 +89,9 @@
     </div>
     <p class="text-dim mt-2.5 text-xs italic">
       {m.admin_catalogue_detail_hint()}
-      <a href="/app/admin/cache" class="link-accent not-italic"
-        >{m.admin_catalogue_cache_link()}</a
-      >.
+      <a href="/app/admin/cache" class="link-accent not-italic">
+        {m.admin_catalogue_cache_link()}
+      </a>.
     </p>
   </div>
 

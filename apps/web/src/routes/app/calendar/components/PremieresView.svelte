@@ -139,8 +139,9 @@
     <div
       class="card hover:border-accent relative overflow-hidden transition-[border-color]">
       <Poster src={p.posterUrl} title={p.title} alt="" />
-      <span class="absolute bottom-1.5 left-1.5"
-        >{@render networkBadge(p)}</span>
+      <span class="absolute bottom-1.5 left-1.5">
+        {@render networkBadge(p)}
+      </span>
     </div>
     <p class="timecode mt-1.5 text-xs">{dayLabel(p)}</p>
     <p class="font-display line-clamp-2 text-xs leading-snug font-semibold">

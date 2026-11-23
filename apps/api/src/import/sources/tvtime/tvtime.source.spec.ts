@@ -533,7 +533,7 @@ describe("TvTimeImportSource (via ImportJobService)", () => {
   // failing title, or a restart, left it amputated of every title not yet
   // rewritten (audit 2026-11-17, BUG-04).
   it("commit with overwrite replaces each title just before writing it, and the rest once all are in", async () => {
-    const { prisma, tmdb, mediaItemService, service } = makeService();
+    const { prisma, tmdb, service } = makeService();
     tmdb.findSeriesSummaryByTvdbId.mockResolvedValue({
       source: "TMDB",
       sourceId: "500",
@@ -646,7 +646,7 @@ describe("TvTimeImportSource (via ImportJobService)", () => {
   });
 
   it("refuses an overwrite with nothing selected, which would only empty the library", async () => {
-    const { prisma, tmdb, mediaItemService, service } = makeService();
+    const { prisma, tmdb, service } = makeService();
     tmdb.findSeriesSummaryByTvdbId.mockResolvedValue({
       source: "TMDB",
       sourceId: "500",

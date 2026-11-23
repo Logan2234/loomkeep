@@ -157,8 +157,9 @@
       style="left: {h.x}px; transform: {tooltipTransform(
         h.x,
       )} translateY(calc(-100% - 6px));">
-      <span class="text-fg font-semibold tabular-nums"
-        >{formatNumber(h.point.count)}</span>
+      <span class="text-fg font-semibold tabular-nums">
+        {formatNumber(h.point.count)}
+      </span>
       <span class="text-dim"> · {bucketLabel(h.point.periodStart)}</span>
     </div>
   {/if}

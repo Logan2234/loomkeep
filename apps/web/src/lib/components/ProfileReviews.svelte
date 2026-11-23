@@ -88,16 +88,18 @@
                 {/if}
               </div>
               <p class="text-dim flex flex-wrap items-center gap-x-2 text-xs">
-                <span class="timecode uppercase"
-                  >{seasonEpisodeLabel(review) ??
+                <span class="timecode uppercase">
+                  {seasonEpisodeLabel(review) ??
                     REVIEW_TARGET_LABEL[review.targetType] ??
-                    review.targetType}</span>
+                    review.targetType}
+                </span>
                 {#if appConfig.socialEnabled}
                   <span aria-hidden="true">·</span>
-                  <span
-                    >{review.visibility === "PUBLIC"
+                  <span>
+                    {review.visibility === "PUBLIC"
                       ? m.common_public()
-                      : m.common_friends()}</span>
+                      : m.common_friends()}
+                  </span>
                 {/if}
               </p>
               {#if review.text}

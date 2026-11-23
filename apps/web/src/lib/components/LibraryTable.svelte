@@ -219,8 +219,9 @@
      on row hover, the cell reading as plain text otherwise. -->
 {#snippet ratingEdit(entry: T, item: LibraryItemView)}
   {#if item.upcoming}
-    <span class="text-dim"
-      >{item.rating === null ? "—" : `★ ${item.rating}`}</span>
+    <span class="text-dim">
+      {item.rating === null ? "—" : `★ ${item.rating}`}
+    </span>
   {:else if item.rating === null}
     <!-- Both labels share one grid cell, so the column keeps its width. -->
     <button

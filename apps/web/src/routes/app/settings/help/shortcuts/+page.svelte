@@ -212,8 +212,9 @@
     <div class="flex items-center justify-between gap-4 py-3">
       <span class="flex items-center gap-3">
         <Icon name="check" class="text-dim h-4 w-4 shrink-0" />
-        <span class="font-semibold"
-          >{m.settings_shortcuts_library_select()}</span>
+        <span class="font-semibold">
+          {m.settings_shortcuts_library_select()}
+        </span>
       </span>
       <span class="flex items-center gap-1">
         <kbd
@@ -225,8 +226,9 @@
     <div class="flex items-center justify-between gap-4 py-3">
       <span class="flex items-center gap-3">
         <Icon name="check" class="text-dim h-4 w-4 shrink-0" />
-        <span class="font-semibold"
-          >{m.settings_shortcuts_library_range()}</span>
+        <span class="font-semibold">
+          {m.settings_shortcuts_library_range()}
+        </span>
       </span>
       <span class="flex items-center gap-1">
         <kbd
@@ -238,8 +240,9 @@
     <div class="flex items-center justify-between gap-4 py-3">
       <span class="flex items-center gap-3">
         <Icon name="check" class="text-dim h-4 w-4 shrink-0" />
-        <span class="font-semibold"
-          >{m.settings_shortcuts_library_select_all()}</span>
+        <span class="font-semibold">
+          {m.settings_shortcuts_library_select_all()}
+        </span>
       </span>
       <span class="flex items-center gap-1">
         <kbd
@@ -304,24 +307,27 @@
     </p>
     <section class="inset-card divide-border mb-4 divide-y p-5 md:p-6">
       <div class="flex items-center justify-between gap-4 py-3 first:pt-0">
-        <span class="font-semibold"
-          >{m.settings_shortcuts_mentions_previous()}</span>
+        <span class="font-semibold">
+          {m.settings_shortcuts_mentions_previous()}
+        </span>
         <kbd
           class="border-border text-dim rounded border px-1.5 py-0.5 font-mono text-xs whitespace-nowrap">
           ↑
         </kbd>
       </div>
       <div class="flex items-center justify-between gap-4 py-3">
-        <span class="font-semibold"
-          >{m.settings_shortcuts_mentions_next()}</span>
+        <span class="font-semibold">
+          {m.settings_shortcuts_mentions_next()}
+        </span>
         <kbd
           class="border-border text-dim rounded border px-1.5 py-0.5 font-mono text-xs whitespace-nowrap">
           ↓
         </kbd>
       </div>
       <div class="flex items-center justify-between gap-4 py-3">
-        <span class="font-semibold"
-          >{m.settings_shortcuts_mentions_choose()}</span>
+        <span class="font-semibold">
+          {m.settings_shortcuts_mentions_choose()}
+        </span>
         <span class="flex items-center gap-1">
           <kbd
             class="border-border text-dim rounded border px-1.5 py-0.5 font-mono text-xs whitespace-nowrap">
@@ -334,8 +340,9 @@
         </span>
       </div>
       <div class="flex items-center justify-between gap-4 py-3 last:pb-0">
-        <span class="font-semibold"
-          >{m.settings_shortcuts_mentions_close()}</span>
+        <span class="font-semibold">
+          {m.settings_shortcuts_mentions_close()}
+        </span>
         <kbd
           class="border-border text-dim rounded border px-1.5 py-0.5 font-mono text-xs whitespace-nowrap">
           {m.settings_shortcuts_escape()}
@@ -351,8 +358,9 @@
     <div class="flex items-center justify-between gap-4">
       <span class="flex items-center gap-3">
         <Icon name="x" class="text-dim h-4 w-4 shrink-0" />
-        <span class="font-semibold"
-          >{m.settings_shortcuts_overlays_close()}</span>
+        <span class="font-semibold">
+          {m.settings_shortcuts_overlays_close()}
+        </span>
       </span>
       <kbd
         class="border-border text-dim rounded border px-1.5 py-0.5 font-mono text-xs whitespace-nowrap">

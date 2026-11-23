@@ -224,8 +224,9 @@
         <Icon name={def.icon} class="text-accent h-5 w-5 shrink-0" />
         <span class="min-w-0 flex-1">
           <span class="block truncate font-semibold">{def.title()}</span>
-          <span class="text-dim block truncate text-sm"
-            >{def.description()}</span>
+          <span class="text-dim block truncate text-sm">
+            {def.description()}
+          </span>
         </span>
         <button
           type="button"

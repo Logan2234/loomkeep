@@ -9,5 +9,7 @@
   use:creatorPeek={{
     ref: { source: "tmdb", id: "137427", name: "Denis Villeneuve" },
     role: "Director",
-  }}>Denis Villeneuve</a>
+  }}>
+  Denis Villeneuve
+</a>
 <CreatorPeek />

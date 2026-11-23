@@ -9,7 +9,9 @@
       href="https://app.thestorygraph.com/user-export"
       target="_blank"
       rel="noopener noreferrer"
-      class="link-accent">{m.settings_import_storygraph_intro()}</a>
+      class="link-accent">
+      {m.settings_import_storygraph_intro()}
+    </a>
     {m.settings_import_storygraph_hint()}
   {/snippet}
 </ImportWizard>

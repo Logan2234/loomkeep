@@ -96,21 +96,24 @@
           })}
         </span>
       {/if}
-      <span
-        >{m.media_season_episode_count({
+      <span>
+        {m.media_season_episode_count({
           count: season.episodes.length,
-        })}</span>
+        })}
+      </span>
       {#if season.voteAverage !== null}
-        <span
-          >{m.media_score_tmdb({
+        <span>
+          {m.media_score_tmdb({
             score: scoreLabel(season.voteAverage),
-          })}</span>
+          })}
+        </span>
       {/if}
       {#if season.reviewAverage !== null}
-        <span
-          >{m.media_score_loomkeep({
+        <span>
+          {m.media_score_loomkeep({
             score: scoreLabel(season.reviewAverage),
-          })}</span>
+          })}
+        </span>
       {/if}
     </p>
   </div>
@@ -138,11 +141,13 @@
         onclick={onReview}>
         <Icon name="star" class="h-3.5 w-3.5" />
         {#if season.reviewCount !== null}
-          <span class="timecode leading-none tabular-nums"
-            >{season.reviewCount}</span>
+          <span class="timecode leading-none tabular-nums">
+            {season.reviewCount}
+          </span>
         {:else if season.myRating !== null}
-          <span class="timecode leading-none tabular-nums"
-            >{scoreLabel(season.myRating)}</span>
+          <span class="timecode leading-none tabular-nums">
+            {scoreLabel(season.myRating)}
+          </span>
         {/if}
       </button>
     {/if}

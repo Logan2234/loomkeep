@@ -29,7 +29,8 @@
         brand="openlibrary"
         decorative
         class="h-3.5 w-3.5 shrink-0" />{/if}
-    <span>{rating.source}</span><span class="tabular-nums opacity-90"
-      >{rating.score}</span>
+    <span>{rating.source}</span><span class="tabular-nums opacity-90">
+      {rating.score}
+    </span>
   </svelte:element>
 {/each}

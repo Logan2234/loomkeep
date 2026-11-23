@@ -205,26 +205,36 @@
     <button
       class="btn btn-ghost btn-sm"
       onclick={() => zoom(scale / 1.2)}
-      aria-label={m.common_zoom_out()}>−</button>
-    <span class="timecode min-w-12 text-center text-xs"
-      >{Math.round(scale * 100)}%</span>
+      aria-label={m.common_zoom_out()}>
+      −
+    </button>
+    <span class="timecode min-w-12 text-center text-xs">
+      {Math.round(scale * 100)}%
+    </span>
     <button
       class="btn btn-ghost btn-sm"
       onclick={() => zoom(scale * 1.2)}
-      aria-label={m.common_zoom_in()}>+</button>
-    <button class="btn btn-ghost btn-sm" onclick={reset}
-      >{m.common_reset()}</button>
-    <button class="btn btn-ghost btn-sm" onclick={fit} disabled={loading}
-      >{m.admin_diagram_fit()}</button>
-    <button class="btn btn-ghost btn-sm" onclick={fullscreen}
-      >{m.admin_diagram_fullscreen()}</button>
-    <button class="btn btn-ghost btn-sm" onclick={copy}
-      >{copied ? m.common_copied() : m.admin_diagram_copy()}</button>
+      aria-label={m.common_zoom_in()}>
+      +
+    </button>
+    <button class="btn btn-ghost btn-sm" onclick={reset}>
+      {m.common_reset()}
+    </button>
+    <button class="btn btn-ghost btn-sm" onclick={fit} disabled={loading}>
+      {m.admin_diagram_fit()}
+    </button>
+    <button class="btn btn-ghost btn-sm" onclick={fullscreen}>
+      {m.admin_diagram_fullscreen()}
+    </button>
+    <button class="btn btn-ghost btn-sm" onclick={copy}>
+      {copied ? m.common_copied() : m.admin_diagram_copy()}
+    </button>
     <button
       class="btn btn-ghost btn-sm"
       disabled={!svg || loading}
-      onclick={() => downloadBlob(svg, "image/svg+xml", "loomkeep-schema.svg")}
-      >{m.admin_diagram_export()}</button>
+      onclick={() => downloadBlob(svg, "image/svg+xml", "loomkeep-schema.svg")}>
+      {m.admin_diagram_export()}
+    </button>
   </div>
   <div class="flex flex-wrap items-center gap-2">
     <input
@@ -238,11 +248,13 @@
         class="input max-w-sm"
         aria-label={m.common_results()}
         value={selectedTable}
-        onchange={(event) => locateTable(event.currentTarget.value)}
-        ><option value="">{m.common_results()} ({results.length})</option
-        >{#each results as name (name)}<option value={name}>{name}</option
-          >{/each}</select
-      >{/if}
+        onchange={(event) => locateTable(event.currentTarget.value)}>
+        <option value="">
+          {m.common_results()} ({results.length})
+        </option>{#each results as name (name)}<option value={name}>
+            {name}
+          </option>{/each}
+      </select>{/if}
   </div>
   <p id="diagram-keyboard" class="text-dim text-xs">
     {m.admin_diagram_keyboard()}
@@ -250,8 +262,9 @@
   {#if error}<div
       role="alert"
       class="text-danger flex items-center gap-3 text-sm">
-      {error}<button class="btn btn-ghost btn-sm" onclick={() => revision++}
-        >{m.common_retry()}</button>
+      {error}<button class="btn btn-ghost btn-sm" onclick={() => revision++}>
+        {m.common_retry()}
+      </button>
     </div>{/if}
   {#if loading}<p role="status" class="text-dim">{m.common_loading()}</p>{/if}
   <!-- svelte-ignore a11y_no_noninteractive_tabindex, a11y_no_noninteractive_element_interactions (The diagram provides keyboard pan and zoom as an interactive application.) -->

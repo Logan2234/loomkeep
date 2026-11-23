@@ -99,8 +99,9 @@
                     </span>
                     {#if status}
                       <span
-                        class="bg-accent/15 text-accent rounded-full px-2 py-0.5 text-[0.68rem] font-bold"
-                        >{status}</span>
+                        class="bg-accent/15 text-accent rounded-full px-2 py-0.5 text-[0.68rem] font-bold">
+                        {status}
+                      </span>
                     {/if}
                   </span>
                 </span>

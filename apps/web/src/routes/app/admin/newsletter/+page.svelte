@@ -87,8 +87,9 @@
     </a>
     <a
       class="btn btn-ghost"
-      href="/app/admin/communications?tab=email&template=newsletter"
-      >{m.admin_newsletter_template()}</a>
+      href="/app/admin/communications?tab=email&template=newsletter">
+      {m.admin_newsletter_template()}
+    </a>
   </div>
   {#if subscribersQuery.error}<AdminQueryError
       message={subscribersQuery.error}
@@ -108,22 +109,23 @@
     placeholder={m.common_search()}
     class="input min-w-0 flex-1"
     oninput={(event) => update({ q: event.currentTarget.value || null })} />
-  <label class="text-dim flex items-center gap-2 text-sm"
-    >{m.admin_date_from()}<input
+  <label class="text-dim flex items-center gap-2 text-sm">
+    {m.admin_date_from()}<input
       type="date"
       value={from}
       max={to || undefined}
       class="input"
       onchange={(event) =>
-        update({ from: event.currentTarget.value || null })} /></label>
-  <label class="text-dim flex items-center gap-2 text-sm"
-    >{m.admin_date_to()}<input
+        update({ from: event.currentTarget.value || null })} />
+  </label>
+  <label class="text-dim flex items-center gap-2 text-sm">
+    {m.admin_date_to()}<input
       type="date"
       value={to}
       min={from || undefined}
       class="input"
-      onchange={(event) =>
-        update({ to: event.currentTarget.value || null })} /></label>
+      onchange={(event) => update({ to: event.currentTarget.value || null })} />
+  </label>
 </AdminFilterBar>
 <section class="card p-5 md:p-6">
   <h2 class="font-display mb-3 text-lg font-bold">{m.admin_sends()}</h2>
@@ -160,26 +162,28 @@
             class="btn btn-ghost btn-sm"
             href={`${CHANGELOG_URL}/${encodeURIComponent(send.quackbackChangelogId)}`}
             target="_blank"
-            rel="noopener noreferrer"
-            >{m.admin_changelog_open()}<span class="sr-only">
-              — {send.title}</span
-            ></a>
+            rel="noopener noreferrer">
+            {m.admin_changelog_open()}<span class="sr-only">
+              — {send.title}
+            </span>
+          </a>
         </li>
       {/each}
     </ul>
-  {:else}<EmptyState
-      ><p>
+  {:else}<EmptyState>
+      <p>
         {active.length ? m.admin_no_matches() : m.admin_newsletter_empty()}
       </p>
-      {#if active.length}<button class="btn btn-ghost mt-3" onclick={reset}
-          >{m.admin_filters_reset()}</button
-        >{:else}<a
+      {#if active.length}<button class="btn btn-ghost mt-3" onclick={reset}>
+          {m.admin_filters_reset()}
+        </button>{:else}<a
           class="btn btn-ghost mt-3"
           href={CHANGELOG_URL}
           target="_blank"
-          rel="noopener noreferrer">{m.admin_changelog_open()}</a
-        >{/if}</EmptyState
-    >{/if}
+          rel="noopener noreferrer">
+          {m.admin_changelog_open()}
+        </a>{/if}
+    </EmptyState>{/if}
 </section>
 
 {#if previewed}

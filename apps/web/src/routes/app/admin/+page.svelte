@@ -275,21 +275,24 @@
     <a
       href="/app/admin/backup"
       class="bg-surface hover:bg-surface-2 flex flex-col gap-1 p-4 transition-colors">
-      <span class="text-dim text-xs font-semibold"
-        >{m.admin_backup_title()}</span>
-      <span class="font-display text-xl font-extrabold"
-        >{backupsQuery.data
+      <span class="text-dim text-xs font-semibold">
+        {m.admin_backup_title()}
+      </span>
+      <span class="font-display text-xl font-extrabold">
+        {backupsQuery.data
           ? attention.latest
             ? formatRelative(attention.latest.createdAt)
             : m.admin_no_backups()
-          : loadingText(backupsQuery.loading)}</span>
-      <span class="text-dim text-xs"
-        >{backupsQuery.data
+          : loadingText(backupsQuery.loading)}
+      </span>
+      <span class="text-dim text-xs">
+        {backupsQuery.data
           ? m.admin_backup_available({ count: attention.available.length })
-          : loadingText(backupsQuery.loading)}</span>
-      {#if attention.anomalies}<span class="text-warning text-xs"
-          >{m.admin_backup_anomalies({ count: attention.anomalies })}</span
-        >{/if}
+          : loadingText(backupsQuery.loading)}
+      </span>
+      {#if attention.anomalies}<span class="text-warning text-xs">
+          {m.admin_backup_anomalies({ count: attention.anomalies })}
+        </span>{/if}
     </a>
   </div>
 

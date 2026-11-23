@@ -47,8 +47,9 @@
               </span>
             {/if}
           </span>
-          <span class="timecode shrink-0"
-            >{item.display ?? formatNumber(item.value)}</span>
+          <span class="timecode shrink-0">
+            {item.display ?? formatNumber(item.value)}
+          </span>
         </div>
         <ProgressBar
           value={(item.value / max) * 100}

@@ -124,8 +124,9 @@
           {/each}
         </div>
       {:else if entries.length === 0 && !viewerOutsideTop}
-        <EmptyState art="trophy"
-          >{m.gamification_leaderboard_empty()}</EmptyState>
+        <EmptyState art="trophy">
+          {m.gamification_leaderboard_empty()}
+        </EmptyState>
       {:else}
         <div class="card divide-border divide-y divide-dashed overflow-hidden">
           {#each entries as entry, i (entry.id)}

@@ -264,10 +264,11 @@
               {entry.progress.watchedEpisodes} / {entry.progress.totalEpisodes}
               {m.media_episode_short()}
               {#if isGhost(entry)}
-                <span class="text-dim inline-flex items-center gap-1"
-                  >· <Icon
+                <span class="text-dim inline-flex items-center gap-1">
+                  · <Icon
                     name="ghost"
-                    class="h-3 w-3" />{m.media_status_ghost()}</span>
+                    class="h-3 w-3" />{m.media_status_ghost()}
+                </span>
               {:else if isDormant(entry)}
                 <span class="text-dim">{m.media_paused_suffix()}</span>
               {/if}

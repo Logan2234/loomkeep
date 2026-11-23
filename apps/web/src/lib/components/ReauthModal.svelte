@@ -265,8 +265,9 @@
               onclick={() => pick(other)}>
               <Icon name={ICONS[other]} class="text-accent h-5 w-5 shrink-0" />
               <span class="min-w-0">
-                <span class="block text-sm font-semibold"
-                  >{NAMES[other]()}</span>
+                <span class="block text-sm font-semibold">
+                  {NAMES[other]()}
+                </span>
                 <span class="text-dim block text-xs">
                   {DESCRIPTIONS[other]()}
                 </span>

@@ -107,12 +107,14 @@
               </span>
             {/if}
             <span class="whitespace-nowrap">
-              <span class="font-display text-lg font-extrabold tabular-nums"
-                >{stat.count}</span>
-              <span class="text-dim ml-0.5 text-[0.6875rem]"
-                >{stat.count > 1
+              <span class="font-display text-lg font-extrabold tabular-nums">
+                {stat.count}
+              </span>
+              <span class="text-dim ml-0.5 text-[0.6875rem]">
+                {stat.count > 1
                   ? m.library_title_many()
-                  : m.library_title_one()}</span>
+                  : m.library_title_one()}
+              </span>
             </span>
           </span>
         {:else}

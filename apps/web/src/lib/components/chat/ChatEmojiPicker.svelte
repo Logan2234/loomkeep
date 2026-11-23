@@ -36,15 +36,20 @@
   {oncancel}>
   {#snippet row(emoji, highlighted)}
     {@const at = emoji.name.indexOf(typed)}
-    <span class="w-7 shrink-0 text-center text-[1.35rem] leading-none"
-      >{emoji.emoji}</span>
-    <span class="min-w-0 flex-1 truncate font-mono text-sm"
-      >:{#if at === -1}{emoji.name}{:else}{emoji.name.slice(0, at)}<b
-          class="text-accent">{emoji.name.slice(at, at + typed.length)}</b
-        >{emoji.name.slice(at + typed.length)}{/if}:</span>
+    <span class="w-7 shrink-0 text-center text-[1.35rem] leading-none">
+      {emoji.emoji}
+    </span>
+    <span class="min-w-0 flex-1 truncate font-mono text-sm">
+      :{#if at === -1}{emoji.name}{:else}{emoji.name.slice(0, at)}<b
+          class="text-accent">
+          {emoji.name.slice(at, at + typed.length)}
+        </b>{emoji.name.slice(at + typed.length)}{/if}:
+    </span>
     <span
       class="text-dim font-mono text-xs transition-opacity duration-150
         {highlighted ? 'opacity-100' : 'opacity-0'}"
-      aria-hidden="true">↵</span>
+      aria-hidden="true">
+      ↵
+    </span>
   {/snippet}
 </ChatPicker>

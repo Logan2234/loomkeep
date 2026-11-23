@@ -30,7 +30,8 @@ copyFileSync(
 
 const FONTS = [
   [
-    import.meta.resolve("@fontsource-variable/bricolage-grotesque/package.json"),
+    import.meta
+      .resolve("@fontsource-variable/bricolage-grotesque/package.json"),
     "bricolage-grotesque-{subset}-wght-normal.woff2",
   ],
   [

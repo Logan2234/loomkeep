@@ -9,7 +9,8 @@
       href="https://www.imdb.com/exports/"
       target="_blank"
       rel="noopener noreferrer"
-      class="link-accent">{m.settings_import_imdb_intro()}</a
-    >. {m.settings_import_imdb_hint()}
+      class="link-accent">
+      {m.settings_import_imdb_intro()}
+    </a>. {m.settings_import_imdb_hint()}
   {/snippet}
 </ImportWizard>

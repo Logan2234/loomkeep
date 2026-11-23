@@ -37,8 +37,9 @@
     <time datetime={iso} class="relative">{@render label()}</time>
   </button>
 {:else}
-  <time datetime={iso} class="relative {className}" title={absolute}
-    >{@render label()}</time>
+  <time datetime={iso} class="relative {className}" title={absolute}>
+    {@render label()}
+  </time>
 {/if}
 
 <!-- aria-label is ignored on a <time>: the absolute date is read as text. -->

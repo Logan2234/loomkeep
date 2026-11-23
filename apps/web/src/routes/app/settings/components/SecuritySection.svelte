@@ -420,8 +420,9 @@
             saveEmail();
           }}>
           <label class="block">
-            <span class="mb-1.5 block text-sm font-semibold"
-              >{m.settings_new_email_label()}</span>
+            <span class="mb-1.5 block text-sm font-semibold">
+              {m.settings_new_email_label()}
+            </span>
             <input
               type="email"
               name="email"
@@ -462,8 +463,9 @@
             {m.settings_confirmation_sent()} <strong>{emailInput}</strong>.
           </p>
           <label class="block">
-            <span class="mb-1.5 block text-sm font-semibold"
-              >{m.common_code()}</span>
+            <span class="mb-1.5 block text-sm font-semibold">
+              {m.common_code()}
+            </span>
             <input
               type="text"
               name="code"

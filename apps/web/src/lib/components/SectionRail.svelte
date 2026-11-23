@@ -32,10 +32,12 @@
         : 'text-dim hover:text-fg hover:bg-surface-2'}">
       {#if item.prefix}<span
           class="timecode shrink-0 text-xs"
-          aria-hidden="true">{item.prefix}</span
-        >{/if}
-      <span class="min-w-0 flex-1 truncate" title={item.label}
-        >{item.label}</span>
+          aria-hidden="true">
+          {item.prefix}
+        </span>{/if}
+      <span class="min-w-0 flex-1 truncate" title={item.label}>
+        {item.label}
+      </span>
       {#each item.markers ?? [] as marker (marker.kind)}
         <span
           title={marker.label}

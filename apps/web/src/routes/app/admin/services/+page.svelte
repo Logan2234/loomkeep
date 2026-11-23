@@ -251,8 +251,9 @@
                 <div class="flex items-center gap-3">
                   <div class="min-w-0 flex-1">
                     <div class="flex items-center gap-2">
-                      <span class="text-fg font-semibold"
-                        >{adminServiceLabel(s.key, s.label)}</span>
+                      <span class="text-fg font-semibold">
+                        {adminServiceLabel(s.key, s.label)}
+                      </span>
                       {#if s.required}
                         <span
                           class="border-border text-dim rounded-full border px-1.5 py-0.5 text-[0.55rem] font-bold uppercase">

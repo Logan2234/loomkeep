@@ -81,11 +81,13 @@
         {#each reviews as r (r.id)}
           <li class="border-border rounded-lg border p-3 text-sm">
             {#if r.target?.href}
-              <a href={r.target.href} class="font-semibold hover:underline"
-                >{r.target.title}</a>
+              <a href={r.target.href} class="font-semibold hover:underline">
+                {r.target.title}
+              </a>
             {:else}
-              <span class="font-semibold"
-                >{r.target?.title ?? m.admin_users_deleted_work()}</span>
+              <span class="font-semibold">
+                {r.target?.title ?? m.admin_users_deleted_work()}
+              </span>
             {/if}
             <span class="text-dim ml-2 text-xs">{r.rating}/10</span>
             {#if r.text}
@@ -133,10 +135,12 @@
               class="hover:bg-surface-2 flex items-center gap-3 rounded-lg px-2 py-2">
               <Avatar seed={u.username} url={u.avatarUrl} size={36} />
               <span class="min-w-0">
-                <span class="text-fg block truncate text-sm font-semibold"
-                  >{u.displayName}</span>
-                <span class="text-dim block truncate text-xs"
-                  >@{u.username}</span>
+                <span class="text-fg block truncate text-sm font-semibold">
+                  {u.displayName}
+                </span>
+                <span class="text-dim block truncate text-xs">
+                  @{u.username}
+                </span>
               </span>
             </a>
           </li>
@@ -152,11 +156,15 @@
           <li class="border-border rounded-lg border p-3 text-sm">
             <div class="flex items-center gap-2">
               <span class="text-fg font-semibold">{l.title}</span>
-              <span class="text-dim text-xs"
-                >· {l.itemCount} {m.admin_items_suffix()}</span>
+              <span class="text-dim text-xs">
+                · {l.itemCount}
+                {m.admin_items_suffix()}
+              </span>
               {#if l.role === "EDITOR"}
-                <span class="text-dim text-xs"
-                  >{m.admin_users_invited_by()} {l.author.displayName}</span>
+                <span class="text-dim text-xs">
+                  {m.admin_users_invited_by()}
+                  {l.author.displayName}
+                </span>
               {/if}
             </div>
             <p class="text-dim mt-0.5 text-xs">
@@ -174,15 +182,18 @@
         {#each reportsAgainst as r (r.id)}
           <li class="border-border rounded-lg border p-3 text-sm">
             <div class="flex items-center gap-2">
-              <span class="pill {REPORT_STATUS_COLORS[r.status]}"
-                >{REPORT_STATUS_LABELS[r.status]}</span>
-              <span class="text-dim ml-auto text-xs"
-                >{formatDate(r.createdAt)}</span>
+              <span class="pill {REPORT_STATUS_COLORS[r.status]}">
+                {REPORT_STATUS_LABELS[r.status]}
+              </span>
+              <span class="text-dim ml-auto text-xs">
+                {formatDate(r.createdAt)}
+              </span>
             </div>
             {#if r.target}
               {#if r.target.href}
-                <a href={r.target.href} class="mt-1.5 block hover:underline"
-                  >{reportTargetLabel(r.targetType, r.target)}</a>
+                <a href={r.target.href} class="mt-1.5 block hover:underline">
+                  {reportTargetLabel(r.targetType, r.target)}
+                </a>
               {:else}
                 <p class="mt-1.5">
                   {reportTargetLabel(r.targetType, r.target)}

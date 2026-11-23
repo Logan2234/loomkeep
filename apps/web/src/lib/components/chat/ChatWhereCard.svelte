@@ -58,8 +58,9 @@
       <span class="bg-surface-2 h-7 w-7 rounded-lg"></span>
     {/if}
     <span class="min-w-0">
-      <span class="block truncate text-sm font-semibold"
-        >{offer.provider.name}</span>
+      <span class="block truncate text-sm font-semibold">
+        {offer.provider.name}
+      </span>
       <span class="text-dim block text-xs">{KIND[offer.kind]()}</span>
     </span>
     <span class="flex gap-0.5">

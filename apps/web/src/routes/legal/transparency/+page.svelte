@@ -91,7 +91,9 @@
               ? 'border-accent bg-accent text-accent-fg'
               : 'border-border text-dim hover:text-fg'}"
             aria-pressed={y === data.year}
-            onclick={() => (year = y)}>{y}</button>
+            onclick={() => (year = y)}>
+            {y}
+          </button>
         {/each}
       </div>
     {/if}
@@ -251,12 +253,12 @@
 
       <p class="text-dim mt-10 text-sm" in:fly|global={enter(3)}>
         {m.transparency_appeal_prefix()}
-        <a href="mailto:contact@loomkeep.app" class="link-accent"
-          >contact@loomkeep.app</a
-        >{m.transparency_appeal_middle()}
-        <a href="/legal/terms-of-service#moderation" class="link-accent"
-          >{m.transparency_appeal_terms_link()}</a
-        >.
+        <a href="mailto:contact@loomkeep.app" class="link-accent">
+          contact@loomkeep.app
+        </a>{m.transparency_appeal_middle()}
+        <a href="/legal/terms-of-service#moderation" class="link-accent">
+          {m.transparency_appeal_terms_link()}
+        </a>.
       </p>
     {/if}
   </article>

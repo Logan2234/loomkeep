@@ -25,7 +25,9 @@
     fill={mark.color}
     role={decorative ? undefined : "img"}
     aria-label={decorative ? undefined : mark.name}
-    aria-hidden={decorative ? "true" : undefined}><path d={mark.path} /></svg>
+    aria-hidden={decorative ? "true" : undefined}>
+    <path d={mark.path} />
+  </svg>
 {:else}
   <span
     class="inline-grid place-items-center rounded-[0.2em] text-[0.52em] leading-none font-black tracking-[-0.08em] {className}"
@@ -33,5 +35,7 @@
     style:color={mark.foreground}
     role={decorative ? undefined : "img"}
     aria-label={decorative ? undefined : mark.name}
-    aria-hidden={decorative ? "true" : undefined}>{mark.monogram}</span>
+    aria-hidden={decorative ? "true" : undefined}>
+    {mark.monogram}
+  </span>
 {/if}

@@ -152,8 +152,9 @@
                   : undefined} />
             {/if}
             {#if !selfManage && rel?.isFriend}
-              <span class="chip chip-on py-1! text-xs"
-                >{m.common_friends()}</span>
+              <span class="chip chip-on py-1! text-xs">
+                {m.common_friends()}
+              </span>
             {:else if !selfManage && rel?.followsYou}
               <span class="chip py-1! text-xs">{m.profile_follows_you()}</span>
             {/if}

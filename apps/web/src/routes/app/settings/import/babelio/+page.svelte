@@ -10,7 +10,9 @@
       href="https://www.babelio.com"
       target="_blank"
       rel="noopener noreferrer"
-      class="link-accent">{m.settings_import_babelio_intro()}</a>
+      class="link-accent">
+      {m.settings_import_babelio_intro()}
+    </a>
     {m.settings_import_babelio_hint()}
     <Banner variant="warning" class="mt-4">
       {m.settings_import_babelio_limits()}

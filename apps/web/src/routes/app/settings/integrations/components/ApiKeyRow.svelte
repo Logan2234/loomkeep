@@ -60,7 +60,9 @@
         {summary} ·
         <span
           class:text-warning={status === "soon"}
-          class:text-danger={status === "expired"}>{expiry}</span>
+          class:text-danger={status === "expired"}>
+          {expiry}
+        </span>
         · {used}
       </span>
     </span>

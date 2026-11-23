@@ -40,8 +40,9 @@
           href="/legal/terms-of-service"
           target="_blank"
           rel="noopener noreferrer"
-          class="link-accent">{m.common_terms()}</a
-        >.
+          class="link-accent">
+          {m.common_terms()}
+        </a>.
       </span>
     </label>
     {#if acceptMut.error}<Banner variant="error">{acceptMut.error}</Banner>{/if}

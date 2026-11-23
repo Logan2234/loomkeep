@@ -88,11 +88,13 @@
             {#if entry.href}
               <a
                 href={entry.href}
-                class="text-fg block truncate font-semibold hover:underline"
-                >{entry.title}</a>
+                class="text-fg block truncate font-semibold hover:underline">
+                {entry.title}
+              </a>
             {:else}
-              <span class="text-fg block truncate font-semibold"
-                >{entry.title}</span>
+              <span class="text-fg block truncate font-semibold">
+                {entry.title}
+              </span>
             {/if}
             <p class="text-dim text-xs">
               {statusLabel(entry.status)} · {m.admin_users_library_added({

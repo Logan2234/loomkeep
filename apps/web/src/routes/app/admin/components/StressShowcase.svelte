@@ -38,17 +38,20 @@
       value={mode}
       onChange={(value) => (mode = value)} />
   </div>
-  {#if mode === "long"}<Banner variant="info"
-      >{m.admin_components_banner_info().repeat(8)}</Banner>
+  {#if mode === "long"}<Banner variant="info">
+      {m.admin_components_banner_info().repeat(8)}
+    </Banner>
   {:else if mode === "empty"}<EmptyState>{m.admin_no_matches()}</EmptyState>
   {:else if mode === "loading"}<div aria-label={m.common_loading()}>
       {#each { length: 3 } as _, index (index)}<CardRowSkeleton />{/each}
     </div>
-  {:else}<Banner variant="error"
-      ><div class="flex flex-wrap items-center justify-between gap-3">
+  {:else}<Banner variant="error">
+      <div class="flex flex-wrap items-center justify-between gap-3">
         <span>{m.admin_components_banner_error().repeat(4)}</span><button
           class="btn btn-ghost btn-sm"
-          onclick={() => (mode = "loading")}>{m.common_retry()}</button>
-      </div></Banner
-    >{/if}
+          onclick={() => (mode = "loading")}>
+          {m.common_retry()}
+        </button>
+      </div>
+    </Banner>{/if}
 </div>
