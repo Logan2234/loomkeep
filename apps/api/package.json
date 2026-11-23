@@ -71,21 +71,21 @@
     "web-push": "^3.6.7"
   },
   "devDependencies": {
-    "@fastify/static": "^10.1.11",
+    "@fastify/static": "^10.1.12",
     "@nestjs/cli": "^12.0.13",
     "@nestjs/schematics": "^12.0.13",
-    "@nestjs/testing": "^12.5.0",
+    "@nestjs/testing": "^12.5.1",
     "@swc/core": "^1.16.22",
     "@types/node": "^26.6.6",
     "@types/nodemailer": "^8.0.2",
     "@types/supertest": "^7.2.1",
     "@types/web-push": "^3.6.4",
-    "@vitest/coverage-v8": "^5.1.0",
+    "@vitest/coverage-v8": "^5.1.1",
     "pino-pretty": "^13.2.0",
     "prisma-erd-generator": "^3.2.1",
     "supertest": "^7.3.2",
     "ts-node": "^10.9.2",
     "unplugin-swc": "^2.0.0",
-    "vitest": "^5.1.0"
+    "vitest": "^5.1.1"
   }
 }
