@@ -9,12 +9,16 @@
   import { auth } from "#lib/auth.svelte.js";
   import { page } from "$app/state";
   import Icon from "#lib/components/Icon.svelte";
+  import ProviderMark from "#lib/components/ProviderMark.svelte";
   import EmptyState from "#lib/components/EmptyState.svelte";
   import NewBadge from "#lib/components/NewBadge.svelte";
   import RelativeTime from "#lib/components/RelativeTime.svelte";
   import Tooltip from "#lib/components/Tooltip.svelte";
   import { DOMAINS } from "#lib/constants/domains.js";
-  import { IMPORTS_DEFINITION } from "#lib/constants/import-sources.js";
+  import {
+    IMPORT_SOURCE_BRANDS,
+    IMPORTS_DEFINITION,
+  } from "#lib/constants/import-sources.js";
   import { isDomainEnabled, orderedDomains } from "#lib/domain-availability.js";
   import { isFeatureNew } from "#lib/feature-badges.js";
   import { m } from "#lib/paraglide/messages.js";
@@ -160,9 +164,7 @@
                   }}
                   href={source.href}
                   class="border-border bg-bg hover:border-accent hover:bg-surface-2 flex items-center gap-3 rounded-lg border p-4 transition-colors">
-                  <Icon
-                    name={DOMAINS[domain].icon}
-                    class="text-accent h-6 w-6" />
+                  {@render sourceMark(source.type, domain, "text-accent")}
                   <span class="flex-1">
                     <span class="flex items-center gap-2 font-semibold">
                       {source.label}
@@ -182,7 +184,7 @@
                     hash: page.url.hash,
                   }}
                   class="border-border bg-bg flex items-center gap-3 rounded-lg border p-4 opacity-60">
-                  <Icon name={DOMAINS[domain].icon} class="text-dim h-6 w-6" />
+                  {@render sourceMark(source.type, domain, "text-dim")}
                   <span class="flex-1">
                     <span class="flex items-center gap-2 font-semibold">
                       {source.label}
@@ -217,3 +219,12 @@
     {/each}
   </div>
 </SettingsSection>
+
+{#snippet sourceMark(type: ImportSource, domain: Domain, tone: string)}
+  {@const brand = IMPORT_SOURCE_BRANDS[type]}
+  {#if brand}
+    <ProviderMark {brand} decorative class="h-6 w-6 shrink-0" />
+  {:else}
+    <Icon name={DOMAINS[domain].icon} class="{tone} h-6 w-6" />
+  {/if}
+{/snippet}

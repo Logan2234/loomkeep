@@ -3,6 +3,7 @@
   import { exportForGoodreads, exportForLetterboxd } from "#lib/api/client.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import Icon from "#lib/components/Icon.svelte";
+  import ProviderMark from "#lib/components/ProviderMark.svelte";
   import NewBadge from "#lib/components/NewBadge.svelte";
   import Switch from "#lib/components/Switch.svelte";
   import { downloadBlob, datedFilename } from "#lib/download.js";
@@ -11,23 +12,27 @@
   import { toast } from "#lib/toast.svelte.js";
   import type { MigrationExportDto } from "@loomkeep/shared";
   import { flashAnchor } from "#lib/flash-anchor.js";
+  import type { ProviderBrandKey } from "#lib/provider-brands.js";
 
   type Service = "letterboxd" | "goodreads";
 
   const SERVICES: {
     id: Service;
+    brand: ProviderBrandKey;
     name: string;
     action: string;
     description: string;
   }[] = [
     {
       id: "letterboxd",
+      brand: "letterboxd",
       name: "Letterboxd",
       action: "Letterboxd",
       description: m.settings_export_letterboxd_description(),
     },
     {
       id: "goodreads",
+      brand: "goodreads",
       name: "Goodreads · StoryGraph",
       action: "Goodreads",
       description: m.settings_export_goodreads_description(),
@@ -105,9 +110,15 @@
   {#each SERVICES as service (service.id)}
     <div
       class="border-border flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-t py-4 last:pb-0">
-      <div class="min-w-0 flex-[1_1_14rem]">
-        <p class="font-medium">{service.name}</p>
-        <p class="text-dim text-sm">{service.description}</p>
+      <div class="flex min-w-0 flex-[1_1_14rem] items-start gap-3">
+        <ProviderMark
+          brand={service.brand}
+          decorative
+          class="mt-0.5 h-5 w-5 shrink-0" />
+        <div class="min-w-0">
+          <p class="font-medium">{service.name}</p>
+          <p class="text-dim text-sm">{service.description}</p>
+        </div>
       </div>
       <button
         class="btn btn-ghost"

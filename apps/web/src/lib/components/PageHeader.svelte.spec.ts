@@ -88,3 +88,13 @@ it("drops the chevron on a phone tab's own page", () => {
   render(PageHeader, { title: "Stats", back: "/app" });
   expect(screen.getByRole("link", { name: m.common_back() })).toBeTruthy();
 });
+
+it("draws a provider's mark in place of the icon", () => {
+  render(PageHeader, { title: "Import from Trakt", brand: "trakt" });
+
+  expect(
+    screen.getByRole("heading", { name: "Import from Trakt" }),
+  ).toBeTruthy();
+  const mark = document.querySelector("header svg[aria-hidden='true']");
+  expect(mark?.getAttribute("fill")).toBe("#ed1c24");
+});

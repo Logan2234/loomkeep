@@ -1,11 +1,29 @@
 import { DOCS_URL } from "#lib/constants/external-links.js";
 import { m } from "#lib/paraglide/messages.js";
+import type { ProviderBrandKey } from "#lib/provider-brands.js";
 import type { ImportSourceDescriptor } from "#lib/types/import-descriptor.js";
 import {
   Domain,
   IMPORT_SOURCE_NAMES,
   type ImportSource,
 } from "@loomkeep/shared";
+
+/** The brand mark of each import source that has one (the others fall back to their domain's icon). */
+export const IMPORT_SOURCE_BRANDS: Partial<
+  Record<ImportSource, ProviderBrandKey>
+> = {
+  tvtime: "tvtime",
+  trakt: "trakt",
+  letterboxd: "letterboxd",
+  imdb: "imdb",
+  myanimelist: "myanimelist",
+  anilist: "anilist",
+  simkl: "simkl",
+  steam: "steam",
+  storygraph: "storygraph",
+  goodreads: "goodreads",
+  babelio: "babelio",
+};
 
 export const IMPORTS_DEFINITION = {
   tvtime: {

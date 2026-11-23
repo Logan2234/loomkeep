@@ -298,7 +298,7 @@
             workImageUrl={detail.coverUrl}
             overlay />
         {/if}
-        <ExternalRatingChips ratings={detail.ratings} providerMarks overlay />
+        <ExternalRatingChips ratings={detail.ratings} overlay />
       </div>
     {/if}
   </WorkHero>
