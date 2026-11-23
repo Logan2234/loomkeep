@@ -132,7 +132,8 @@ services:
     # internet. LOOMKEEP_BIND_ADDRESS=0.0.0.0 opens it to the network (a NAS).
     ports:
       - "${LOOMKEEP_BIND_ADDRESS:-127.0.0.1}:3000:3000"
-    # GET /api/health (database ping + memory). The deploy workflow waits on
+    # GET /api/health (database ping only, see HealthController; /api/health/live
+    # checks nothing). The deploy workflow waits on
     # this status, so a container stuck re-running a failed migration fails
     # the deploy instead of hiding behind `up -d`. start_period covers
     # `prisma migrate deploy`, which runs before the server listens.
