@@ -548,23 +548,28 @@ export class ListService {
         "Already in this list",
       );
 
-    const last = await this.prisma.listItem.findFirst({
-      where: { listId },
-      orderBy: { position: "desc" },
-      select: { position: true },
-    });
-
     let row;
 
     try {
-      row = await this.prisma.listItem.create({
-        data: {
-          listId,
-          targetType: dto.targetType,
-          targetId: dto.targetId,
-          position: last ? last.position + 1 : 0,
-          addedById: userId,
-        },
+      // Read the last position and write the next under a per-list lock:
+      // two editors adding at the same moment otherwise got the same one,
+      // and a ranked list's order became arbitrary.
+      row = await this.prisma.$transaction(async (tx) => {
+        await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${listId}::text))`;
+        const last = await tx.listItem.findFirst({
+          where: { listId },
+          orderBy: { position: "desc" },
+          select: { position: true },
+        });
+        return tx.listItem.create({
+          data: {
+            listId,
+            targetType: dto.targetType,
+            targetId: dto.targetId,
+            position: last ? last.position + 1 : 0,
+            addedById: userId,
+          },
+        });
       });
     } catch (err) {
       // Another editor added the same work since the duplicate check above.

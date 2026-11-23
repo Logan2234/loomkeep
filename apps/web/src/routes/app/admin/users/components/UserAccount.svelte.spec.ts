@@ -21,6 +21,7 @@ const DETAIL: AdminUserDetailDto = {
     emailVerified: true,
     role: "USER",
     plan: "FREE",
+    planExpiresAt: null,
     createdAt: "2026-03-14T00:00:00.000Z",
     lastActiveAt: "2026-11-20T00:00:00.000Z",
     inactivityWarningSentAt: null,
@@ -107,9 +108,11 @@ const DETAIL: AdminUserDetailDto = {
 };
 
 let planPatched = false;
+let planBody: unknown = null;
 
 beforeEach(() => {
   planPatched = false;
+  planBody = null;
   auth.user = { id: "admin", role: "ADMIN" } as UserDto;
   server.use(
     http.get(apiUrl("/admin/users/u1/sessions"), () => HttpResponse.json([])),
@@ -124,9 +127,10 @@ beforeEach(() => {
         total: 5,
       }),
     ),
-    http.patch(apiUrl("/admin/users/u1/plan"), () => {
+    http.patch(apiUrl("/admin/users/u1/plan"), async ({ request }) => {
       planPatched = true;
-      return HttpResponse.json({ plan: "PREMIUM" });
+      planBody = await request.json();
+      return HttpResponse.json({ plan: "PREMIUM", expiresAt: null });
     }),
   );
 });
@@ -184,5 +188,31 @@ describe("Admin account page", () => {
     );
 
     await waitFor(() => expect(planPatched).toBe(true));
+  });
+
+  // A premium grant had no end: a trial stayed premium for good (audit
+  // 2026-11-17, PRM-05). The date is optional, the end of that day.
+  it("sets an optional end date on a premium grant", async () => {
+    const user = userEvent.setup();
+    renderWithQuery(UserAccount, {
+      detail: { ...DETAIL, user: { ...DETAIL.user, plan: "PREMIUM" } },
+    });
+
+    const until = screen.getByLabelText(m.admin_users_plan_until());
+    await user.type(until, "2026-12-31");
+    until.dispatchEvent(new Event("change", { bubbles: true }));
+
+    await waitFor(() =>
+      expect(planBody).toEqual({
+        plan: "PREMIUM",
+        expiresAt: "2026-12-31T23:59:59.999Z",
+      }),
+    );
+  });
+
+  it("offers no end date to a free account", () => {
+    renderWithQuery(UserAccount, { detail: DETAIL });
+
+    expect(screen.queryByLabelText(m.admin_users_plan_until())).toBeNull();
   });
 });

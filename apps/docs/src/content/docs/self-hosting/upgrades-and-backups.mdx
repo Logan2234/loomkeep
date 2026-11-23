@@ -7,17 +7,37 @@ import { Aside, Steps } from "@astrojs/starlight/components";
 
 ## Upgrading
 
-From the repository's root:
+<Steps>
 
-```sh
-git pull
-docker compose pull
-docker compose up -d
-```
+1. Make a backup: **Admin › Backup**, **Back up now**. The new version
+   migrates the database as it starts, and a migration can't be undone: going
+   back to the previous version means restoring this backup.
 
-`git pull` brings the compose files and `.env.example` up to date;
-`docker compose pull` fetches the new images. The API applies database
-migrations on its own as it starts: nothing else to run.
+2. From the repository's root, check out the files of the version you are
+   moving to, then fetch its images and start it:
+
+   ```sh
+   git fetch --tags
+   git checkout v1.15.0
+   docker compose pull
+   docker compose up -d
+   ```
+
+   Use the tag of the release your `IMAGE_TAG` points at (below): with the
+   default `latest`, the newest one on the
+   [releases page](https://github.com/Logan2234/loomkeep/releases). On
+   `edge`, check out `main` instead.
+
+</Steps>
+
+The compose files and `.env.example` come with the code, and the images
+with `IMAGE_TAG`: both have to match. `git pull` on `main` brings files
+written for changes not released yet, which a release image may not
+understand, or a variable it requires without using it.
+
+The API applies database migrations on its own as it starts: nothing else
+to run. Skipping several versions is fine; read the notes of each one you
+skip.
 
 Before upgrading, read the [changelog](https://feedback.loomkeep.app/changelog)
 and the notes below: a few releases ask for a step of your own.

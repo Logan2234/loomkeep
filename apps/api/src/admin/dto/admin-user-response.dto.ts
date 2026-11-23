@@ -30,6 +30,7 @@ export class AdminUserResponseDto implements AdminUserDto {
   emailVerified!: boolean;
   role!: Role;
   plan!: Plan;
+  planExpiresAt!: string | null;
   createdAt!: string;
   lastActiveAt!: string | null;
   inactivityWarningSentAt!: string | null;

@@ -382,6 +382,8 @@
   "admin_users_administrator": "Administrator",
   "admin_users_self_demote_hint": "You cannot remove your own admin access.",
   "admin_users_plan": "Plan",
+  "admin_users_plan_until": "Premium until",
+  "admin_users_plan_until_hint": "Optional. Left empty, premium has no end.",
   "admin_users_free": "Free",
   "admin_users_manual_plan": "Billing is not connected — manual grants only (see docs/adr/0001-open-core-agpl.md).",
   "admin_users_access": "Access",

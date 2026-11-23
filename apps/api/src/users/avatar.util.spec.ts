@@ -76,3 +76,28 @@ describe("reencodeAvatar", () => {
     expect(Buffer.from(cleaned).equals(original)).toBe(false);
   });
 });
+
+// A uniform image of tens of megapixels compresses to a few KB, passes the
+// byte limit, then costs about a gigabyte to decode (audit 2026-11-17,
+// SEC-15): sharp now refuses it before decoding.
+describe("reencodeAvatar pixel limit", () => {
+  const uniformPng = (width: number, height: number) =>
+    sharp({
+      create: { width, height, channels: 3, background: "#808080" },
+    })
+      .png()
+      .toBuffer();
+
+  it("refuses an image over 25 megapixels", async () => {
+    const huge = await uniformPng(6000, 5000);
+
+    expect(huge.length).toBeLessThan(2.5 * 1024 * 1024);
+    await expect(reencodeAvatar(huge)).rejects.toThrow();
+  });
+
+  it("still takes a large photo under the limit", async () => {
+    await expect(
+      reencodeAvatar(await uniformPng(4000, 3000)),
+    ).resolves.toBeInstanceOf(Uint8Array);
+  });
+});

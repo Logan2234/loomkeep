@@ -17,6 +17,7 @@
   "apierr_auth_refresh_superseded": "Ta session vient d’être renouvelée dans un autre onglet, réessaie.",
   "apierr_auth_invalid_reset_token": "Ce lien de réinitialisation est invalide ou a expiré.",
   "apierr_auth_mfa_totp_not_in_progress": "Aucune configuration TOTP en cours.",
+  "apierr_auth_mfa_totp_already_enabled": "La vérification en deux étapes par application est déjà active. Désactive-la d’abord pour configurer une nouvelle application.",
   "apierr_auth_current_password_incorrect": "Le mot de passe actuel est incorrect.",
   "apierr_auth_missing_access_token": "Authentification requise.",
   "apierr_auth_invalid_access_token": "Ta session a expiré, reconnecte-toi.",

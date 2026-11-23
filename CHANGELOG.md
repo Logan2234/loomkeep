@@ -15,6 +15,8 @@ history from before it was started.
 
 ### Added
 
+- Admin: a premium grant can end at a date you set, after which the account
+  is back on the free plan.
 - Brand logos for the services Loomkeep talks to: import sources, export
   cards, IMDb / Rotten Tomatoes / Metacritic score chips, Data sources and
   the docs tables.
@@ -30,6 +32,17 @@ history from before it was started.
 
 ### Fixed
 
+- Changing your password or two-step verification now signs your other
+  devices out at once, instead of up to 15 minutes later.
+- Reopening the authenticator app setup while it is already on no longer
+  breaks the codes of your current app.
+- Works added to a shared list at the same moment keep their own place in
+  it.
+- Adding or removing a work from its page now shows in your library right
+  away.
+- Self-hosting: `/api/health` no longer fails, and no longer rolls a deploy
+  back, when the API uses a lot of memory; `/api/health/live` answers as
+  long as the process runs.
 - Calendar: episodes airing the same day now always appear in order (7, 8, 9…)
   instead of sometimes being reversed.
 

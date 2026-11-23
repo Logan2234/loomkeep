@@ -333,8 +333,15 @@ export class AdminUsersController {
     @Param("userId") userId: string,
     @Body() dto: UpdateAdminUserPlanDto,
   ): Promise<AdminUserPlanDto> {
-    const entitlement = await this.entitlements.setPlan(userId, dto.plan);
-    return { plan: entitlement.plan };
+    const entitlement = await this.entitlements.setPlan(
+      userId,
+      dto.plan,
+      dto.expiresAt ? new Date(dto.expiresAt) : null,
+    );
+    return {
+      plan: entitlement.plan,
+      expiresAt: entitlement.expiresAt?.toISOString() ?? null,
+    };
   }
 
   /**

@@ -5,6 +5,7 @@ import { Prisma } from "@prisma/client";
 import * as bcrypt from "bcryptjs";
 import { vi, type Mock } from "vitest";
 import type { ApiKeysService } from "../api-keys/api-keys.service";
+import { SessionCacheService } from "../auth/session-cache.service";
 import { AppException } from "../common/app.exception";
 import { sha256Hex } from "../common/crypto.util";
 import type { HibpService } from "../common/hibp.service";
@@ -18,6 +19,9 @@ import type { ProfileService } from "../social/profile.service";
 import type { CsvExportService } from "./csv-export.service";
 import type { DataExportService } from "./data-export.service";
 import { UsersService } from "./users.service";
+
+// Only changePassword reads it; the other suites just satisfy the constructor.
+let sessionCache = new SessionCacheService();
 
 describe("UsersService — email change", () => {
   const userId = "user-1";
@@ -70,6 +74,7 @@ describe("UsersService — email change", () => {
       {
         reviewAfterPasswordChange: vi.fn().mockResolvedValue(0),
       } as unknown as ApiKeysService,
+      sessionCache,
     );
   });
 
@@ -283,6 +288,7 @@ describe("UsersService — home layout", () => {
       {
         reviewAfterPasswordChange: vi.fn().mockResolvedValue(0),
       } as unknown as ApiKeysService,
+      sessionCache,
     );
   });
 
@@ -394,6 +400,7 @@ describe("UsersService — updateMe newsletter opt-in timestamp", () => {
       {
         reviewAfterPasswordChange: vi.fn().mockResolvedValue(0),
       } as unknown as ApiKeysService,
+      sessionCache,
     );
   }
 
@@ -496,6 +503,7 @@ describe("UsersService — uploadAvatar", () => {
       {
         reviewAfterPasswordChange: vi.fn().mockResolvedValue(0),
       } as unknown as ApiKeysService,
+      sessionCache,
     );
   });
 
@@ -592,6 +600,7 @@ describe("UsersService — uploadAvatar", () => {
 });
 
 describe("UsersService — changePassword", () => {
+  let disconnectSession: Mock;
   const userId = "user-1";
   let prisma: PrismaService;
   let mail: MailService;
@@ -612,10 +621,13 @@ describe("UsersService — changePassword", () => {
         update: vi.fn(),
       },
       refreshToken: {
+        findMany: vi.fn().mockResolvedValue([{ id: "session-a" }]),
         deleteMany: vi.fn(),
       },
       $transaction: vi.fn((ops: Promise<unknown>[]) => Promise.all(ops)),
     } as unknown as PrismaService;
+    sessionCache = new SessionCacheService();
+    disconnectSession = vi.fn();
     mail = { sendPasswordChanged: vi.fn() } as unknown as MailService;
     hibp = {
       isPasswordPwned: vi.fn().mockResolvedValue(false),
@@ -635,10 +647,11 @@ describe("UsersService — changePassword", () => {
       } as unknown as EntitlementService,
       { getProfile: vi.fn() } as unknown as ProfileService,
       { award: vi.fn() } as unknown as XpService,
-      { emitToUser: vi.fn() } as unknown as EventsGateway,
+      { emitToUser: vi.fn(), disconnectSession } as unknown as EventsGateway,
       {
         reviewAfterPasswordChange: vi.fn().mockResolvedValue(0),
       } as unknown as ApiKeysService,
+      sessionCache,
     );
   });
 
@@ -677,6 +690,20 @@ describe("UsersService — changePassword", () => {
     ).rejects.toBeInstanceOf(AppException);
 
     expect(prisma.user.update).not.toHaveBeenCalled();
+  });
+
+  // Deleting the rows alone left a stolen access token accepted until the
+  // session cache expired, and the socket open (audit 2026-11-17, SEC-07).
+  it("cuts every session off at once: cache evicted, socket closed", async () => {
+    sessionCache.markLive("session-a");
+
+    await service.changePassword(userId, {
+      currentPassword: "correct-password",
+      newPassword: "Brand-new-pass1",
+    });
+
+    expect(sessionCache.isKnownLive("session-a")).toBe(false);
+    expect(disconnectSession).toHaveBeenCalledWith("session-a");
   });
 
   it("updates the password, revokes every session and notifies the user", async () => {
@@ -783,6 +810,7 @@ describe("UsersService — deletionSummary", () => {
       {
         reviewAfterPasswordChange: vi.fn().mockResolvedValue(0),
       } as unknown as ApiKeysService,
+      sessionCache,
     );
   });
 
@@ -896,6 +924,7 @@ describe("UsersService.getMyEntitlement", () => {
       {
         reviewAfterPasswordChange: vi.fn().mockResolvedValue(0),
       } as unknown as ApiKeysService,
+      sessionCache,
     );
   }
 
@@ -926,6 +955,7 @@ describe("UsersService — setAcquisitionSource", () => {
       {} as unknown as XpService,
       {} as unknown as EventsGateway,
       {} as unknown as ApiKeysService,
+      sessionCache,
     );
     vi.spyOn(service, "getMe").mockResolvedValue({} as never);
     return service;

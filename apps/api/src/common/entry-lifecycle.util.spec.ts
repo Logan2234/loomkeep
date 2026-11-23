@@ -4,6 +4,7 @@ import {
   ErrorCode,
   ReviewTargetType,
 } from "@loomkeep/shared";
+import { Prisma } from "@prisma/client";
 import { vi } from "vitest";
 import type { XpService } from "../gamification/xp.service";
 import type { PrismaService } from "../prisma/prisma.service";
@@ -328,6 +329,41 @@ describe("deleteOwnedReplay", () => {
     expect(xp.revokeBySource).toHaveBeenCalledWith("user-1", "BookReplay", [
       "replay-1",
     ]);
+  });
+
+  // Revoking after the delete left the XP for good when it failed in
+  // between: the retry 404s on the vanished replay (audit 2026-11-17, BUG-20).
+  it("revokes the XP before deleting, so a failed delete can be retried", async () => {
+    const xp = stubXp();
+    const remove = vi.fn().mockRejectedValue(new Error("connection lost"));
+
+    await expect(
+      deleteOwnedReplay(xp, {
+        userId: "user-1",
+        replayId: "replay-1",
+        xpSource: "BookReplay",
+        findOwnerId: () => Promise.resolve("user-1"),
+        remove,
+      }),
+    ).rejects.toThrow("connection lost");
+    expect(xp.revokeBySource).toHaveBeenCalled();
+  });
+
+  it("404s when a concurrent delete removed it first", async () => {
+    await expect(
+      deleteOwnedReplay(stubXp(), {
+        userId: "user-1",
+        replayId: "replay-1",
+        xpSource: "BookReplay",
+        findOwnerId: () => Promise.resolve("user-1"),
+        remove: vi.fn().mockRejectedValue(
+          new Prisma.PrismaClientKnownRequestError("Record not found", {
+            code: "P2025",
+            clientVersion: "test",
+          }),
+        ),
+      }),
+    ).rejects.toMatchObject({ code: ErrorCode.LibraryReplayNotFound });
   });
 
   it("refuses another user's replay without deleting anything", async () => {

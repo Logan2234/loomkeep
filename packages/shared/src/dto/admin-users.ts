@@ -22,8 +22,10 @@ export interface AdminUserDto {
   avatarUrl: string | null;
   emailVerified: boolean;
   role: Role;
-  /** Paid tier (docs/adr/0001-open-core-agpl.md) — set from this same panel. */
+  /** Paid tier (docs/adr/0001-open-core-agpl.md) — set from this same panel. A premium grant past its end reads FREE. */
   plan: Plan;
+  /** When the premium grant ends, null for FREE or a grant with no end. */
+  planExpiresAt: string | null;
   createdAt: string;
   /** `User.lastActiveAt` — bumped on register/login/refresh, null if never signed in. */
   lastActiveAt: string | null;
@@ -317,10 +319,13 @@ export interface AdminUserRoleDto {
 
 export interface UpdateAdminUserPlanRequestDto {
   plan: Plan;
+  /** ISO date-time a PREMIUM grant ends at; omitted or null for no end. Ignored for FREE. */
+  expiresAt?: string | null;
 }
 
 export interface AdminUserPlanDto {
   plan: Plan;
+  expiresAt: string | null;
 }
 
 export interface SecurityEventDto {
