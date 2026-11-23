@@ -224,6 +224,21 @@ describe("IgdbProvider", () => {
             { url: "https://store.playstation.com/en-us/concept/10000176" },
             {},
           ],
+          language_supports: [
+            {
+              language: { locale: "fr-FR" },
+              language_support_type: { name: "Interface" },
+            },
+            {
+              language: { locale: "fr-FR" },
+              language_support_type: { name: "Audio" },
+            },
+            {
+              language: { locale: "ja-JP" },
+              language_support_type: { name: "Subtitles" },
+            },
+            { language_support_type: { name: "Audio" } },
+          ],
         },
       ],
     });
@@ -258,6 +273,10 @@ describe("IgdbProvider", () => {
           store: "PLAYSTATION",
           url: "https://store.playstation.com/en-us/concept/10000176",
         },
+      ],
+      languages: [
+        { locale: "fr-FR", interface: true, subtitles: false, audio: true },
+        { locale: "ja-JP", interface: false, subtitles: true, audio: false },
       ],
       similarGames: [],
       developers: [],

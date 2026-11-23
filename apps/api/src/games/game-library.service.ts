@@ -842,6 +842,7 @@ export class GameLibraryService {
       upcoming: isGameItemUpcoming(item),
       website: null,
       stores: [],
+      languages: [],
       similarGames: [],
       developers: [],
       publishers: [],
