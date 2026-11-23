@@ -42,6 +42,7 @@
   import Modal from "./Modal.svelte";
   import NewBadge from "./NewBadge.svelte";
   import ProgressBar from "./ProgressBar.svelte";
+  import ProviderMark from "./ProviderMark.svelte";
   import SessionDurationPicker from "./SessionDurationPicker.svelte";
   import SessionTimerControl from "./SessionTimerControl.svelte";
   import SessionWeekChart from "./SessionWeekChart.svelte";
@@ -621,6 +622,10 @@
         </div>
         <div class="border-border border-t px-1 py-3 sm:border-t-0 sm:px-4">
           <dt class="text-dim flex items-center gap-1.5 text-xs">
+            <ProviderMark
+              brand="steam"
+              decorative
+              class="h-3.5 w-3.5 shrink-0" />
             <span>{m.game_session_steam_total()}</span>
             <Tooltip text={steamDetails} class="inline-flex">
               <button

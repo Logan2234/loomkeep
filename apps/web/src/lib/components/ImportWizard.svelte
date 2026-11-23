@@ -25,6 +25,7 @@
   import Poster from "#lib/components/Poster.svelte";
   import ProgressBar from "#lib/components/ProgressBar.svelte";
   import {
+    IMPORT_SOURCE_BRANDS,
     IMPORTS_DEFINITION,
     type AvailableImportSource,
   } from "#lib/constants/import-sources.js";
@@ -482,6 +483,7 @@
 
 <div class="mx-auto max-w-3xl px-5 py-6 md:px-8 md:py-10">
   <PageHeader
+    brand={IMPORT_SOURCE_BRANDS[source]}
     title={m.import_title({ source: descriptor.label })}
     back="/app/settings/import" />
 
