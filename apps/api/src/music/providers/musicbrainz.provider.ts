@@ -361,7 +361,7 @@ const LISTEN_HOSTS: Record<ListenService, RegExp> = {
 };
 
 /** One link per listening service, in `LISTEN_SERVICES` order. */
-export function listenLinksFrom(
+function listenLinksFrom(
   relations: MusicBrainzRelation[],
 ): ListenLinkDto[] {
   const found = new Map<ListenService, string>();

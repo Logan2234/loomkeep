@@ -50,6 +50,7 @@ describe("selectNewEpisodeNotifications", () => {
       seasonNumber: 1,
       episodeNumber: 1,
       episodeTitle: "Pilot",
+      seasonFinale: false,
       airDate: new Date("2026-07-05T00:00:00Z"),
     });
   });
