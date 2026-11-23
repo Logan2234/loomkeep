@@ -241,6 +241,36 @@ describe("MfaService.confirmTotp / setEmailMfaEnabled — recovery code generati
   });
 });
 
+// Reopening the setup modal on an account with TOTP on replaced the active
+// secret: the authenticator app's codes stopped working at the next login
+// (audit 2026-11-17, BUG-10).
+describe("MfaService.generateTotpSetup", () => {
+  it("refuses while TOTP is on, leaving the active secret alone", async () => {
+    const { service, prisma } = makeService();
+    (prisma.user as unknown as { updateMany: Mock }).updateMany = vi
+      .fn()
+      .mockResolvedValue({ count: 0 });
+
+    await expect(
+      service.generateTotpSetup("user-1", "a@example.com"),
+    ).rejects.toMatchObject({ code: "auth.mfa_totp_already_enabled" });
+    expect(prisma.user.update).not.toHaveBeenCalled();
+  });
+
+  it("stores a new pending secret while TOTP is off", async () => {
+    const { service, prisma } = makeService();
+    const updateMany = vi.fn().mockResolvedValue({ count: 1 });
+    (prisma.user as unknown as { updateMany: Mock }).updateMany = updateMany;
+
+    await service.generateTotpSetup("user-1", "a@example.com");
+
+    expect(updateMany).toHaveBeenCalledWith({
+      where: { id: "user-1", mfaTotpEnabled: false },
+      data: { mfaTotpSecretEnc: expect.any(String) },
+    });
+  });
+});
+
 describe("MfaService.disableTotp", () => {
   it("clears the stored secret, its last step and the flag", async () => {
     const { service, prisma } = makeService();

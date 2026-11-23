@@ -17,6 +17,7 @@
   "apierr_auth_refresh_superseded": "Your session was just renewed in another tab, please try again.",
   "apierr_auth_invalid_reset_token": "This reset link is invalid or has expired.",
   "apierr_auth_mfa_totp_not_in_progress": "No TOTP setup in progress.",
+  "apierr_auth_mfa_totp_already_enabled": "Two-step verification by app is already on. Turn it off first to set up a new app.",
   "apierr_auth_current_password_incorrect": "The current password is incorrect.",
   "apierr_auth_missing_access_token": "Authentication required.",
   "apierr_auth_invalid_access_token": "Your session has expired, please log in again.",

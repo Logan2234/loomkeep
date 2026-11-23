@@ -35,6 +35,8 @@ const MESSAGES = {
     m.apierr_auth_invalid_refresh_token(),
   [ErrorCode.AuthRefreshSuperseded]: () => m.apierr_auth_refresh_superseded(),
   [ErrorCode.AuthInvalidResetToken]: () => m.apierr_auth_invalid_reset_token(),
+  [ErrorCode.AuthMfaTotpAlreadyEnabled]: () =>
+    m.apierr_auth_mfa_totp_already_enabled(),
   [ErrorCode.AuthMfaTotpNotInProgress]: () =>
     m.apierr_auth_mfa_totp_not_in_progress(),
   [ErrorCode.AuthCurrentPasswordIncorrect]: () =>

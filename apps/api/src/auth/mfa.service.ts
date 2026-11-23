@@ -68,7 +68,8 @@ export class MfaService {
    * Generates a fresh TOTP secret and persists it encrypted right away, with
    * `mfaTotpEnabled` left false until `confirmTotp` validates a live code —
    * so a user who closes the setup modal without confirming just leaves an
-   * inert secret that the next setup attempt overwrites.
+   * inert secret that the next setup attempt overwrites. Refused while TOTP
+   * is on: the secret it would overwrite is then the active one.
    */
   async generateTotpSetup(
     userId: string,
@@ -84,8 +85,10 @@ export class MfaService {
       secret,
     });
 
-    await this.prisma.user.update({
-      where: { id: userId },
+    // One conditional write, so a confirmation landing in between can't
+    // have its fresh secret replaced either.
+    const { count } = await this.prisma.user.updateMany({
+      where: { id: userId, mfaTotpEnabled: false },
       data: {
         mfaTotpSecretEnc: encryptTotpSecret(
           secret.base32,
@@ -93,6 +96,13 @@ export class MfaService {
         ),
       },
     });
+
+    if (count === 0) {
+      throw new AppException(
+        HttpStatus.CONFLICT,
+        ErrorCode.AuthMfaTotpAlreadyEnabled,
+      );
+    }
 
     return { otpauthUri: totp.toString(), secret: secret.base32 };
   }
