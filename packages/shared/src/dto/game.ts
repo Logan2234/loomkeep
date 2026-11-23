@@ -54,6 +54,9 @@ export const GAME_STORES = [
   "GOG",
   "EPIC",
   "ITCH",
+  "PLAYSTATION",
+  "XBOX",
+  "NINTENDO",
   "APP_STORE",
   "GOOGLE_PLAY",
 ] as const;

@@ -220,6 +220,10 @@ describe("IgdbProvider", () => {
               category: 13,
             },
           ],
+          external_games: [
+            { url: "https://store.playstation.com/en-us/concept/10000176" },
+            {},
+          ],
         },
       ],
     });
@@ -249,6 +253,10 @@ describe("IgdbProvider", () => {
         {
           store: "EPIC",
           url: "https://store.epicgames.com/p/grand-theft-auto-v",
+        },
+        {
+          store: "PLAYSTATION",
+          url: "https://store.playstation.com/en-us/concept/10000176",
         },
       ],
       similarGames: [],

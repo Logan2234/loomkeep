@@ -20,7 +20,7 @@ history from before it was started.
 - Season finales are flagged in the calendar, the release email and the
   push digest.
 - Game pages list where to buy or play: Steam, GOG, Epic Games, itch.io,
-  App Store and Google Play.
+  PlayStation, Xbox, Nintendo eShop, App Store and Google Play.
 - Album pages list where to listen: Spotify, Apple Music, Deezer, YouTube
   Music, Tidal, Qobuz, Bandcamp and Amazon. Pick yours in Settings ›
   Streaming to see them first.
