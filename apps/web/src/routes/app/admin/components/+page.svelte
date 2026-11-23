@@ -213,8 +213,6 @@
     "igdb",
     "openlibrary",
     "musicbrainz",
-    "imdb",
-    "rottentomatoes",
     "metacritic",
     "trakt",
     "letterboxd",

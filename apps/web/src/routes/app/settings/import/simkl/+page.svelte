@@ -28,6 +28,7 @@
 
 <div class="mx-auto max-w-3xl px-5 py-6 md:px-8 md:py-10">
   <PageHeader
+    brand="simkl"
     title={m.settings_import_simkl_title()}
     subtitle={m.settings_import_simkl_description()}
     back="/app/settings/import" />

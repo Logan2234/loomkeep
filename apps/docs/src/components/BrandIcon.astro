@@ -11,7 +11,9 @@ const mark = BRANDS[Astro.props.brand];
 ---
 
 {
-  "path" in mark ? (
+  "src" in mark ? (
+    <img class="brand-icon" src={mark.src} alt="" />
+  ) : "path" in mark ? (
     <svg class="brand-icon" viewBox="0 0 24 24" fill={mark.color} aria-hidden="true">
       <path d={mark.path} />
     </svg>
@@ -33,6 +35,10 @@ const mark = BRANDS[Astro.props.brand];
     width: 1.1em;
     margin-inline-end: 0.4em;
     vertical-align: -0.2em;
+  }
+
+  img.brand-icon {
+    width: auto;
   }
 
   .brand-icon-text {
