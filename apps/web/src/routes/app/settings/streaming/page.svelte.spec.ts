@@ -54,4 +54,20 @@ describe("Streaming settings › music services", () => {
     );
     expect(spotify.getAttribute("aria-pressed")).toBe("true");
   });
+
+  it("keeps only the music half while video is off", async () => {
+    auth.user = { ...auth.user!, enabledDomains: ["MUSIC"] } as UserDto;
+    let catalogFetched = false;
+    server.use(
+      http.get(apiUrl("/catalog/watch-providers"), () => {
+        catalogFetched = true;
+        return HttpResponse.json({ region: "FR", regions: [], providers: [] });
+      }),
+    );
+    renderWithQuery(Page, {});
+
+    expect(screen.getByText(m.settings_streaming_music_title())).toBeTruthy();
+    expect(screen.queryByText(m.settings_streaming_region_label())).toBeNull();
+    expect(catalogFetched).toBe(false);
+  });
 });

@@ -278,7 +278,7 @@
   "settings_privacy_locked": "✓ (bloccato)",
   "settings_profile_visibility": "Visibilità del profilo",
   "settings_streaming_title": "I miei servizi",
-  "settings_streaming_description": "Le piattaforme che hai, messe in cima in “Dove guardarlo”.",
+  "settings_streaming_description": "I servizi che usi, messi in evidenza nella scheda di un titolo o di un album.",
   "settings_streaming_region_label": "Paese delle offerte",
   "settings_streaming_region_body": "Le offerte di streaming cambiano da un paese all'altro.",
   "settings_streaming_region_auto": "Automatico ({region})",

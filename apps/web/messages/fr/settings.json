@@ -278,7 +278,7 @@
   "settings_privacy_locked": "✓ (verrouillé)",
   "settings_profile_visibility": "Visibilité du profil",
   "settings_streaming_title": "Mes services",
-  "settings_streaming_description": "Les plateformes que tu as, mises en avant dans « Où regarder ».",
+  "settings_streaming_description": "Les services que tu utilises, mis en avant sur la fiche d'un titre ou d'un album.",
   "settings_streaming_region_label": "Pays des offres",
   "settings_streaming_region_body": "Les offres de streaming changent d'un pays à l'autre.",
   "settings_streaming_region_auto": "Automatique ({region})",
