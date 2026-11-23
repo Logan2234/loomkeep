@@ -108,7 +108,7 @@ describe("MusicBrainzProvider", () => {
     });
   });
 
-  it("maps details including genres, album type, release date, tags, links, label/catalog, tracks and same-artist albums", async () => {
+  it("maps details including genres, album type, release date, tags, links, listening links, label/catalog, tracks and same-artist albums", async () => {
     const otherAlbums = Array.from({ length: 12 }, (_, i) => ({
       id: `other-${i}`,
       title: `Album ${i}`,
@@ -131,6 +131,12 @@ describe("MusicBrainzProvider", () => {
           relations: [
             { type: "discogs", url: { resource: "https://discogs.com/1" } },
             { type: "wikidata", url: { resource: "https://wikidata.org/1" } },
+            {
+              type: "purchase for download",
+              url: {
+                resource: "https://daftpunk.bandcamp.com/album/discovery",
+              },
+            },
             // Unmapped relation types are dropped.
             { type: "allmusic", url: { resource: "https://allmusic.com/1" } },
           ],
@@ -141,8 +147,36 @@ describe("MusicBrainzProvider", () => {
         {
           releases: [
             {
+              id: "release0",
+              status: "Promotion",
+              relations: [
+                {
+                  type: "streaming",
+                  url: { resource: "https://www.deezer.com/album/302127" },
+                },
+              ],
+            },
+            {
               id: "release1",
               status: "Official",
+              relations: [
+                {
+                  type: "free streaming",
+                  url: {
+                    resource:
+                      "https://open.spotify.com/album/2noRn2Aes5aoNVsU6iWThc",
+                  },
+                },
+                {
+                  type: "streaming",
+                  url: { resource: "https://www.deezer.com/album/999" },
+                },
+                // Not a listening service.
+                {
+                  type: "discogs",
+                  url: { resource: "https://discogs.com/r1" },
+                },
+              ],
               "label-info": [
                 {
                   label: { name: "Virgin" },
@@ -215,6 +249,17 @@ describe("MusicBrainzProvider", () => {
       externalLinks: [
         { label: "Discogs", url: "https://discogs.com/1" },
         { label: "Wikidata", url: "https://wikidata.org/1" },
+      ],
+      listenLinks: [
+        {
+          service: "SPOTIFY",
+          url: "https://open.spotify.com/album/2noRn2Aes5aoNVsU6iWThc",
+        },
+        { service: "DEEZER", url: "https://www.deezer.com/album/302127" },
+        {
+          service: "BANDCAMP",
+          url: "https://daftpunk.bandcamp.com/album/discovery",
+        },
       ],
       label: "Virgin",
       catalogNumber: "7243 8496062 6",

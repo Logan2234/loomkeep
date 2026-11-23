@@ -30,6 +30,7 @@ const USER = {
   createdAt: "2026-11-05T00:00:00.000Z",
   enabledDomains: [Domain.MEDIA],
   watchProviderIds: [],
+  listenServices: [],
   watchRegion: null,
   notifyEmail: DigestCadence.WEEKLY,
   notifyPush: DigestCadence.DISABLED,

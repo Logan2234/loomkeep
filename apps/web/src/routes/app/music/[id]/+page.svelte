@@ -3,6 +3,10 @@
   import { buildGallery, galleryIndex } from "#lib/gallery.js";
 
   import DetailsCard from "#lib/components/DetailsCard.svelte";
+  import ServiceLinks from "#lib/components/ServiceLinks.svelte";
+  import NewBadge from "#lib/components/NewBadge.svelte";
+  import { isFeatureNew } from "#lib/feature-badges.js";
+  import { auth } from "#lib/auth.svelte.js";
   import WorkSocialSection from "#lib/components/WorkSocialSection.svelte";
   import { page } from "$app/state";
   import {
@@ -99,10 +103,24 @@
     return null;
   });
 
+  // The services the user listens on first, each group in display order.
+  const listenLinks = $derived.by(() => {
+    const mine = new Set(auth.user?.listenServices ?? []);
+    const links = (detail?.listenLinks ?? []).map((l) => ({
+      service: l.service,
+      url: l.url,
+    }));
+    return [
+      ...links.filter((l) => mine.has(l.service)),
+      ...links.filter((l) => !mine.has(l.service)),
+    ];
+  });
+
   const hasMeta = $derived(
     !!detail &&
       (detail.tags.length > 0 ||
         detail.externalLinks.length > 0 ||
+        detail.listenLinks.length > 0 ||
         !!detail.label ||
         !!detail.catalogNumber),
   );
@@ -412,6 +430,15 @@
               </button>
             {/if}
           </dd>
+        </div>
+      {/if}
+      {#if listenLinks.length > 0}
+        <div>
+          <dt class="timecode text-xs">
+            {m.music_listen_on()}
+            {#if isFeatureNew("listen-links")}<NewBadge />{/if}
+          </dt>
+          <dd class="mt-1.5"><ServiceLinks links={listenLinks} /></dd>
         </div>
       {/if}
       {#if detail && detail.externalLinks.length > 0}

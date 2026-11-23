@@ -32,6 +32,7 @@ function detail(id: string, adult = false): ProviderGameDetails {
     releaseDate: null,
     releaseDatePrecision: null,
     website: null,
+    stores: [],
     similarGames: [],
     developers: [],
     publishers: [],

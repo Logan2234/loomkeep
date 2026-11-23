@@ -24,6 +24,7 @@ const details: ProviderMusicDetails = {
   tags: [],
   disambiguation: null,
   externalLinks: [],
+  listenLinks: [],
   label: null,
   catalogNumber: null,
   tracks: [],

@@ -23,6 +23,7 @@ import type {
   ProviderGameDetails,
   ProviderGameSaga,
 } from "./game-provider.types";
+import { gameStoreLinks } from "./game-stores";
 
 export const IGDB_OAUTH_URL = "https://id.twitch.tv/oauth2/token";
 const API_URL = "https://api.igdb.com/v4";
@@ -132,6 +133,7 @@ interface IgdbGame {
   platforms?: IgdbNamed[];
   themes?: number[];
   websites?: IgdbWebsite[];
+  external_games?: { url?: string }[];
   similar_games?: IgdbGame[];
   involved_companies?: IgdbInvolvedCompany[];
   game_modes?: IgdbNamed[];
@@ -275,7 +277,7 @@ export class IgdbProvider implements GameCatalogProvider {
   }
 
   private static readonly DETAIL_FIELDS =
-    "name, slug, summary, storyline, first_release_date, release_dates.date, release_dates.date_format, cover.image_id, artworks.image_id, screenshots.image_id, genres.name, platforms.name, themes, websites.url, websites.category, websites.type, " +
+    "name, slug, summary, storyline, first_release_date, release_dates.date, release_dates.date_format, cover.image_id, artworks.image_id, screenshots.image_id, genres.name, platforms.name, themes, websites.url, websites.category, websites.type, external_games.url, " +
     "similar_games.name, similar_games.cover.image_id, similar_games.first_release_date, similar_games.themes, " +
     "involved_companies.company.id, involved_companies.company.name, involved_companies.developer, involved_companies.publisher, " +
     "game_modes.name, player_perspectives.name, " +
@@ -430,6 +432,12 @@ export class IgdbProvider implements GameCatalogProvider {
       website:
         game.websites?.find((w) => w.category === 1 || w.type === 1)?.url ??
         null,
+      // External games carry store links that websites lack (GOG, the
+      // current Epic URL…).
+      stores: gameStoreLinks([
+        ...(game.websites ?? []).map((w) => w.url),
+        ...(game.external_games ?? []).flatMap((e) => (e.url ? [e.url] : [])),
+      ]),
       similarGames: (game.similar_games ?? [])
         .slice(0, MAX_SIMILAR_GAMES)
         .map((g) => this.toSummary(g)),

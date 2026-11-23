@@ -11,6 +11,7 @@ import {
 } from "../enums";
 import type { Locale } from "../locale";
 import type { HomeLayoutDto, HomePhoneLayoutDto } from "./home-layout";
+import type { ListenService } from "./music";
 
 export const USER_LIMITS = { displayName: 50, username: 50, bio: 500 } as const;
 export const WEBAUTHN_NAME_MAX_LENGTH = 60;
@@ -124,6 +125,8 @@ export interface UserDto {
   watchRegion: string | null;
   /** TMDB ids of the watch providers the user has, see `WatchProviderDto.id`. */
   watchProviderIds: number[];
+  /** The music services the user listens on, put first on an album's page. */
+  listenServices: ListenService[];
   /**
    * The home page's widget grid, or null for the default one — which is
    * built from the enabled domains on the web rather than stored, so it
@@ -179,6 +182,8 @@ export interface UpdateUserRequestDto {
   watchRegion?: string | null;
   /** See `UserDto.watchProviderIds`. */
   watchProviderIds?: number[];
+  /** See `UserDto.listenServices`. */
+  listenServices?: ListenService[];
 }
 
 export interface UpdateUsernameRequestDto {

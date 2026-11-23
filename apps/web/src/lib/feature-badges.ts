@@ -1,6 +1,9 @@
 const NEW_BADGE_DAYS = 21;
 
 const SHIPPED = {
+  "game-stores": "2026-11-23",
+  "listen-links": "2026-11-23",
+  "episode-ratings": "2026-11-23",
   "instance-domains": "2026-11-22",
   "admin-user-page": "2026-11-22",
   "free-to-read": "2026-11-22",

@@ -215,6 +215,8 @@ export interface MailCopy {
     severalIntro: (period: string) => string;
     manySubject: (count: number, period: string) => string;
     manyIntro: (count: number, period: string) => string;
+    /** Marks the episode that ends its season. */
+    seasonFinale: string;
     preferences: string;
   };
   newsletter: {

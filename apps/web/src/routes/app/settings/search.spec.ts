@@ -1,4 +1,6 @@
+import { auth } from "#lib/auth.svelte.js";
 import { layout } from "#lib/layout.svelte.js";
+import type { UserDto } from "@loomkeep/shared";
 import { describe, expect, it } from "vitest";
 import { SETTINGS_SECTIONS } from "./nav";
 import { fold, groupSearchHits, hitHref, searchSettings } from "./search";
@@ -89,6 +91,18 @@ describe("settings search", () => {
     layout.compact = true;
 
     expect(hits.some((hit) => hit.entryId === "mobile-nav")).toBe(false);
+  });
+
+  it("leaves out a control whose domain is off", () => {
+    auth.user = { enabledDomains: ["MUSIC"] } as unknown as UserDto;
+    const spotify = searchSettings("spotify");
+    const netflix = searchSettings("netflix");
+    auth.user = null;
+
+    expect(spotify.some((hit) => hit.entryId === "streaming-music")).toBe(true);
+    expect(netflix.some((hit) => hit.entryId === "streaming-services")).toBe(
+      false,
+    );
   });
 
   it("indexes each import source as a result that lands on its card", () => {

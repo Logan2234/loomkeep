@@ -24,6 +24,7 @@ const details: ProviderGameDetails = {
   platforms: [],
   releaseDate: null,
   website: null,
+  stores: [],
   similarGames: [],
   developers: [],
   publishers: [],

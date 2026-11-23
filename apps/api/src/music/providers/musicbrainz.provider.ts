@@ -1,4 +1,10 @@
-import { MusicSource, MusicSummaryDto } from "@loomkeep/shared";
+import {
+  LISTEN_SERVICES,
+  type ListenLinkDto,
+  type ListenService,
+  MusicSource,
+  MusicSummaryDto,
+} from "@loomkeep/shared";
 import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import {
@@ -79,6 +85,7 @@ interface MusicBrainzLabelInfo {
 interface MusicBrainzRelease {
   id: string;
   status?: string;
+  relations?: MusicBrainzRelation[];
   "release-group"?: { id: string };
   "label-info"?: MusicBrainzLabelInfo[];
   media?: MusicBrainzMedium[];
@@ -92,7 +99,6 @@ interface MusicBrainzReleaseSearch {
 const EXTERNAL_LINK_LABELS: Record<string, string> = {
   "official homepage": "Site officiel",
   discogs: "Discogs",
-  bandcamp: "Bandcamp",
   wikidata: "Wikidata",
   wikipedia: "Wikipedia",
 };
@@ -139,7 +145,9 @@ export class MusicBrainzProvider implements MusicCatalogProvider {
 
     // Track listing, label and catalog number live on a release (a specific
     // edition), not the release-group — a deluxe edition/reissue can differ.
-    const release = await this.representativeRelease(releaseGroup.id);
+    const releases = await this.releases(releaseGroup.id);
+    const release =
+      releases.find((r) => r.status === "Official") ?? releases[0] ?? null;
     const tracks = trackListFrom(release);
     const knownDurations = tracks
       .map((t) => t.durationMs)
@@ -165,6 +173,10 @@ export class MusicBrainzProvider implements MusicCatalogProvider {
       tags: (releaseGroup.tags ?? []).map((t) => t.name),
       disambiguation: releaseGroup.disambiguation || null,
       externalLinks: externalLinksFrom(releaseGroup),
+      listenLinks: listenLinksFrom([
+        ...(releaseGroup.relations ?? []),
+        ...releases.flatMap((r) => r.relations ?? []),
+      ]),
       label: labelInfo?.label?.name ?? null,
       catalogNumber: labelInfo?.["catalog-number"] ?? null,
       tracks,
@@ -177,25 +189,23 @@ export class MusicBrainzProvider implements MusicCatalogProvider {
   }
 
   /**
-   * The release (specific edition) that best represents this release-group,
-   * for label/catalog/tracklist data the release-group itself doesn't carry.
-   * Prefers the "Official" release when there's a choice.
+   * The release-group's editions, for label/catalog/tracklist data the
+   * release-group itself doesn't carry (the "Official" one represents it),
+   * and for streaming and store links, which MusicBrainz files per edition.
    */
-  private async representativeRelease(
+  private async releases(
     releaseGroupId: string,
-  ): Promise<MusicBrainzRelease | null> {
+  ): Promise<MusicBrainzRelease[]> {
     const params = new URLSearchParams({
       "release-group": releaseGroupId,
-      inc: "labels+recordings+media",
+      inc: "labels+recordings+media+url-rels",
       fmt: "json",
       limit: "25",
     });
     const data = await this.get<MusicBrainzReleaseSearch>(
       `/release?${params}`,
     ).catch(() => null);
-    const releases = data?.releases ?? [];
-    if (releases.length === 0) return null;
-    return releases.find((r) => r.status === "Official") ?? releases[0];
+    return data?.releases ?? [];
   }
 
   /** The release group a release belongs to — album pages are keyed by it. */
@@ -334,6 +344,44 @@ function trackListFrom(
     title: t.title,
     durationMs: t.length ?? null,
   }));
+}
+
+// Matched on the link's host: MusicBrainz files the same service under
+// several relationship types ("streaming", "free streaming", "purchase for
+// download"…).
+const LISTEN_HOSTS: Record<ListenService, RegExp> = {
+  SPOTIFY: /^open\.spotify\.com$/,
+  APPLE_MUSIC: /^(music|itunes)\.apple\.com$/,
+  DEEZER: /(^|\.)deezer\.com$/,
+  YOUTUBE_MUSIC: /^music\.youtube\.com$/,
+  TIDAL: /^(listen\.)?tidal\.com$/,
+  QOBUZ: /(^|\.)qobuz\.com$/,
+  BANDCAMP: /(^|\.)bandcamp\.com$/,
+  AMAZON_MUSIC: /^(music\.)?amazon\.[a-z.]+$|^www\.amazon\.[a-z.]+$/,
+};
+
+/** One link per listening service, in `LISTEN_SERVICES` order. */
+function listenLinksFrom(relations: MusicBrainzRelation[]): ListenLinkDto[] {
+  const found = new Map<ListenService, string>();
+
+  for (const relation of relations) {
+    const url = relation.url?.resource;
+    if (!url) continue;
+    let host: string;
+
+    try {
+      host = new URL(url).hostname.toLowerCase();
+    } catch {
+      continue;
+    }
+
+    const service = LISTEN_SERVICES.find((s) => LISTEN_HOSTS[s].test(host));
+    if (service && !found.has(service)) found.set(service, url);
+  }
+
+  return LISTEN_SERVICES.flatMap((service) =>
+    found.has(service) ? [{ service, url: found.get(service)! }] : [],
+  );
 }
 
 function externalLinksFrom(

@@ -453,5 +453,16 @@
   "media_episode_play_video": "Riproduci il video",
   "media_episode_slide": "Immagine {index} di {count}",
   "media_episode_rewatched": "Rivisto",
-  "media_season_images": "Immagini della stagione"
+  "media_season_images": "Immagini della stagione",
+  "media_episodes_view": "Visualizzazione degli episodi",
+  "media_episodes_view_list": "Elenco",
+  "media_episodes_view_ratings": "Voti",
+  "media_episode_ratings_title": "Voti per episodio",
+  "media_season_short": "S{number}",
+  "media_episode_ratings_cell": "Stagione {season}, episodio {episode}: {rating}",
+  "media_episode_ratings_none": "ancora nessun voto",
+  "media_episode_ratings_mine": "il tuo voto {rating}",
+  "media_episode_ratings_legend_mine": "votato da te",
+  "game_where_to_play": "Dove giocare",
+  "music_listen_on": "Ascolta su"
 }

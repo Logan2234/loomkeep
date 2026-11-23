@@ -13,8 +13,18 @@
   import { formatRegion, compareText } from "#lib/format.js";
   import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
+  import { createListenServiceToggle } from "#lib/listen-service-toggle.svelte.js";
   import { createWatchProviderToggle } from "#lib/watch-provider-toggle.svelte.js";
-  import type { WatchProviderDto } from "@loomkeep/shared";
+  import NewBadge from "#lib/components/NewBadge.svelte";
+  import { isFeatureNew } from "#lib/feature-badges.js";
+  import ServiceMark from "#lib/components/ServiceMark.svelte";
+  import { SERVICE_BRANDS } from "#lib/service-brands.js";
+  import { isDomainEnabled } from "#lib/domain-availability.js";
+  import {
+    Domain,
+    LISTEN_SERVICES,
+    type WatchProviderDto,
+  } from "@loomkeep/shared";
   import { flip } from "svelte/animate";
   import { backOut } from "svelte/easing";
   import { scale, slide } from "svelte/transition";
@@ -25,10 +35,15 @@
   // Enough to hold the services most people have, one tap away.
   const FEATURED_COUNT = 20;
 
+  // The page shows from either domain; each half follows its own.
+  const videoOn = $derived(isDomainEnabled(Domain.MEDIA));
+  const musicOn = $derived(isDomainEnabled(Domain.MUSIC));
+
   const picked = $derived(auth.user?.watchRegion ?? null);
   const catalogQuery = createApiQuery(() => ({
     key: keys.catalog.watchProviders(picked),
     fetch: () => getWatchProviderCatalog(picked ?? undefined),
+    enabled: videoOn,
   }));
   const catalog = $derived(catalogQuery.data);
 
@@ -58,6 +73,8 @@
   }));
 
   const picker = createWatchProviderToggle();
+  const listenPicker = createListenServiceToggle();
+  const myListen = $derived(new Set(auth.user?.listenServices ?? []));
   const mine = $derived(new Set(auth.user?.watchProviderIds ?? []));
 
   // The featured grid also keeps the user's own picks from further down the
@@ -115,106 +132,149 @@
 
 <SettingsSection slug="streaming">
   <div class="space-y-3">
-    <section
-      id="streaming-region"
-      use:flashAnchor={{ anchor: "streaming-region", hash: page.url.hash }}
-      class="inset-card flex flex-wrap items-center justify-between gap-3 p-5 md:p-6">
-      <div class="min-w-0">
-        <p class="font-semibold">{m.settings_streaming_region_label()}</p>
+    {#if videoOn}
+      <section
+        id="streaming-region"
+        use:flashAnchor={{ anchor: "streaming-region", hash: page.url.hash }}
+        class="inset-card flex flex-wrap items-center justify-between gap-3 p-5 md:p-6">
+        <div class="min-w-0">
+          <p class="font-semibold">{m.settings_streaming_region_label()}</p>
+          <p class="text-dim mt-1 max-w-xl text-sm">
+            {m.settings_streaming_region_body()}
+          </p>
+        </div>
+        <Combobox
+          label={m.settings_streaming_region_label()}
+          options={regionChoices}
+          values={[picked ?? ""]}
+          searchable
+          disabled={!catalog || regionMut.loading}
+          onChange={([code]) => regionMut.mutate(code || null)} />
+        {#if regionMut.error}
+          <p class="text-danger w-full text-sm">{regionMut.error}</p>
+        {/if}
+      </section>
+
+      <section
+        id="streaming-services"
+        use:flashAnchor={{ anchor: "streaming-services", hash: page.url.hash }}
+        class="inset-card p-5 md:p-6">
+        <div class="flex flex-wrap items-baseline justify-between gap-2">
+          <p class="font-semibold">{m.settings_streaming_title()}</p>
+          <span class="timecode text-xs">{countLabel(mine.size)}</span>
+        </div>
         <p class="text-dim mt-1 max-w-xl text-sm">
-          {m.settings_streaming_region_body()}
+          {m.settings_streaming_services_body()}
         </p>
-      </div>
-      <Combobox
-        label={m.settings_streaming_region_label()}
-        options={regionChoices}
-        values={[picked ?? ""]}
-        searchable
-        disabled={!catalog || regionMut.loading}
-        onChange={([code]) => regionMut.mutate(code || null)} />
-      {#if regionMut.error}
-        <p class="text-danger w-full text-sm">{regionMut.error}</p>
-      {/if}
-    </section>
 
-    <section
-      id="streaming-services"
-      use:flashAnchor={{ anchor: "streaming-services", hash: page.url.hash }}
-      class="inset-card p-5 md:p-6">
-      <div class="flex flex-wrap items-baseline justify-between gap-2">
-        <p class="font-semibold">{m.settings_streaming_title()}</p>
-        <span class="timecode text-xs">{countLabel(mine.size)}</span>
-      </div>
-      <p class="text-dim mt-1 max-w-xl text-sm">
-        {m.settings_streaming_services_body()}
-      </p>
+        {#if catalogQuery.error}
+          <p class="text-danger mt-4 text-sm">{catalogQuery.error}</p>
+        {:else if !catalog}
+          <p class="timecode mt-4 text-xs">{m.common_loading()}</p>
+        {:else}
+          <div
+            class="mt-4 grid grid-cols-[repeat(auto-fill,minmax(4.25rem,1fr))] gap-2">
+            {#each featured as provider (provider.id)}
+              <div
+                class="grid"
+                animate:flip={{ duration: reduced ? 0 : 220 }}
+                in:scale={{
+                  start: 0.6,
+                  duration: reduced ? 0 : 260,
+                  easing: backOut,
+                }}>
+                {@render tile(provider)}
+              </div>
+            {/each}
+          </div>
 
-      {#if catalogQuery.error}
-        <p class="text-danger mt-4 text-sm">{catalogQuery.error}</p>
-      {:else if !catalog}
-        <p class="timecode mt-4 text-xs">{m.common_loading()}</p>
-      {:else}
+          {#if rest.length > 0}
+            <div class="border-border mt-4 border-t pt-3">
+              <button
+                type="button"
+                class="text-accent inline-flex items-center gap-1 text-sm font-semibold"
+                aria-expanded={showMore}
+                onclick={() => (showMore = !showMore)}>
+                <Icon
+                  name="chevron-right"
+                  class="h-4 w-4 transition-transform {showMore
+                    ? 'rotate-90'
+                    : ''}" />
+                {m.settings_streaming_more({ count: rest.length })}
+              </button>
+              {#if showMore}
+                <div transition:slide={{ duration: reduced ? 0 : 220 }}>
+                  <input
+                    type="search"
+                    class="input mt-3 w-full"
+                    enterkeyhint="search"
+                    placeholder={m.settings_streaming_search_placeholder()}
+                    aria-label={m.settings_streaming_search_placeholder()}
+                    bind:value={search} />
+                  <div
+                    class="relative mt-3 grid max-h-80 grid-cols-[repeat(auto-fill,minmax(4.25rem,1fr))] gap-2 overflow-y-auto p-0.5"
+                    use:flipChildren={{ duration: reduced ? 0 : 220 }}>
+                    {#each matchingRest as provider (provider.id)}
+                      {@render tile(provider)}
+                    {/each}
+                  </div>
+                </div>
+              {/if}
+            </div>
+          {/if}
+        {/if}
+
+        {#if picker.error}
+          <p class="text-danger mt-3 text-sm">{picker.error}</p>
+        {/if}
+
+        <p class="timecode text-dim text-micro mt-4">
+          {m.media_watch_attribution({
+            region: formatRegion(catalog?.region ?? picked ?? "US"),
+          })}
+        </p>
+      </section>
+    {/if}
+
+    {#if musicOn}
+      <section
+        id="streaming-music"
+        use:flashAnchor={{ anchor: "streaming-music", hash: page.url.hash }}
+        class="inset-card p-5 md:p-6">
+        <div class="flex flex-wrap items-baseline justify-between gap-2">
+          <p class="font-semibold">
+            {m.settings_streaming_music_title()}
+            {#if isFeatureNew("listen-links")}<NewBadge />{/if}
+          </p>
+          <span class="timecode text-xs">{countLabel(myListen.size)}</span>
+        </div>
+        <p class="text-dim mt-1 max-w-xl text-sm">
+          {m.settings_streaming_music_body()}
+        </p>
         <div
           class="mt-4 grid grid-cols-[repeat(auto-fill,minmax(4.25rem,1fr))] gap-2">
-          {#each featured as provider (provider.id)}
-            <div
-              class="grid"
-              animate:flip={{ duration: reduced ? 0 : 220 }}
-              in:scale={{
-                start: 0.6,
-                duration: reduced ? 0 : 260,
-                easing: backOut,
-              }}>
-              {@render tile(provider)}
-            </div>
-          {/each}
-        </div>
-
-        {#if rest.length > 0}
-          <div class="border-border mt-4 border-t pt-3">
+          {#each LISTEN_SERVICES as service (service)}
+            {@const brand = SERVICE_BRANDS[service]}
+            {@const isMine = myListen.has(service)}
             <button
               type="button"
-              class="text-accent inline-flex items-center gap-1 text-sm font-semibold"
-              aria-expanded={showMore}
-              onclick={() => (showMore = !showMore)}>
-              <Icon
-                name="chevron-right"
-                class="h-4 w-4 transition-transform {showMore
-                  ? 'rotate-90'
-                  : ''}" />
-              {m.settings_streaming_more({ count: rest.length })}
+              aria-pressed={isMine}
+              class="grid justify-items-center gap-1 rounded-lg border px-1 py-2 text-center text-[0.68rem] leading-tight transition-colors {isMine
+                ? 'border-accent bg-accent/10 text-fg'
+                : 'border-border text-dim hover:text-fg'}"
+              onclick={() => listenPicker.toggle(service)}>
+              <span
+                class="bg-surface-2 text-fg grid h-10 w-10 place-items-center rounded-lg">
+                <ServiceMark {service} class="h-6 w-6 text-xs" />
+              </span>
+              <span class="w-full truncate">{brand.name}</span>
             </button>
-            {#if showMore}
-              <div transition:slide={{ duration: reduced ? 0 : 220 }}>
-                <input
-                  type="search"
-                  class="input mt-3 w-full"
-                  enterkeyhint="search"
-                  placeholder={m.settings_streaming_search_placeholder()}
-                  aria-label={m.settings_streaming_search_placeholder()}
-                  bind:value={search} />
-                <div
-                  class="relative mt-3 grid max-h-80 grid-cols-[repeat(auto-fill,minmax(4.25rem,1fr))] gap-2 overflow-y-auto p-0.5"
-                  use:flipChildren={{ duration: reduced ? 0 : 220 }}>
-                  {#each matchingRest as provider (provider.id)}
-                    {@render tile(provider)}
-                  {/each}
-                </div>
-              </div>
-            {/if}
-          </div>
+          {/each}
+        </div>
+        {#if listenPicker.error}
+          <p class="text-danger mt-3 text-sm">{listenPicker.error}</p>
         {/if}
-      {/if}
-
-      {#if picker.error}
-        <p class="text-danger mt-3 text-sm">{picker.error}</p>
-      {/if}
-
-      <p class="timecode text-dim text-micro mt-4">
-        {m.media_watch_attribution({
-          region: formatRegion(catalog?.region ?? picked ?? "US"),
-        })}
-      </p>
-    </section>
+      </section>
+    {/if}
   </div>
 </SettingsSection>

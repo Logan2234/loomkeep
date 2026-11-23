@@ -181,6 +181,7 @@ export class GameItemService {
         details.releaseDatePrecision,
       ),
       website: details.website,
+      stores: details.stores,
       similarGames: details.similarGames,
       developers: details.developers,
       publishers: details.publishers,

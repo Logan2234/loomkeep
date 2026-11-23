@@ -278,7 +278,7 @@
   "settings_privacy_locked": "✓ (verrouillé)",
   "settings_profile_visibility": "Visibilité du profil",
   "settings_streaming_title": "Mes services",
-  "settings_streaming_description": "Les plateformes que tu as, mises en avant dans « Où regarder ».",
+  "settings_streaming_description": "Les services que tu utilises, mis en avant sur la fiche d'un titre ou d'un album.",
   "settings_streaming_region_label": "Pays des offres",
   "settings_streaming_region_body": "Les offres de streaming changent d'un pays à l'autre.",
   "settings_streaming_region_auto": "Automatique ({region})",
@@ -587,5 +587,7 @@
   "settings_app_lock_desc": "Demande ton empreinte, ton visage ou ton code à l'ouverture de l'app sur ce téléphone.",
   "settings_app_lock_unavailable": "Il faut Android 10 ou plus et un verrouillage d'écran sur ce téléphone.",
   "settings_help_onboarding_title": "Revoir l'accueil de Loomkeep",
-  "settings_help_onboarding_hint": "Le parcours du premier lancement, avec tes réglages actuels."
+  "settings_help_onboarding_hint": "Le parcours du premier lancement, avec tes réglages actuels.",
+  "settings_streaming_music_title": "Services de musique",
+  "settings_streaming_music_body": "Ceux que tu utilises passent en premier sur la fiche d'un album."
 }

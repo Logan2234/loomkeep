@@ -48,6 +48,25 @@ export interface GameTimeToBeatDto {
   submissions: number;
 }
 
+/** Stores a game page links to, in display order: PC, then mobile. */
+export const GAME_STORES = [
+  "STEAM",
+  "GOG",
+  "EPIC",
+  "ITCH",
+  "PLAYSTATION",
+  "XBOX",
+  "NINTENDO",
+  "APP_STORE",
+  "GOOGLE_PLAY",
+] as const;
+export type GameStore = (typeof GAME_STORES)[number];
+
+export interface GameStoreLinkDto {
+  store: GameStore;
+  url: string;
+}
+
 export interface GameDetailsDto extends GameSummaryDto {
   overview: string | null;
   /** Wide artwork/screenshot for the detail header, when available. */
@@ -67,6 +86,8 @@ export interface GameDetailsDto extends GameSummaryDto {
   upcoming: boolean;
   /** Official website of the game, when the source exposes one. */
   website: string | null;
+  /** Where to buy or play it, among the stores IGDB links to. */
+  stores: GameStoreLinkDto[];
   /** IGDB's own "similar games" recommendations, capped to a handful. */
   similarGames: GameSummaryDto[];
   developers: string[];

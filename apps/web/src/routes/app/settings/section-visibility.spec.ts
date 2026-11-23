@@ -11,12 +11,15 @@ afterEach(() => {
 });
 
 describe("isSectionVisible", () => {
-  // "Services" only feeds "Où regarder", a video page.
-  it("hides the streaming services while the video domain is off", () => {
+  // "My services" holds the video platforms and the music services.
+  it("shows my services while either video or music is on", () => {
     auth.user = { enabledDomains: ["BOOKS"] } as unknown as UserDto;
     expect(isSectionVisible(streaming)).toBe(false);
 
     auth.user = { enabledDomains: ["MEDIA"] } as unknown as UserDto;
+    expect(isSectionVisible(streaming)).toBe(true);
+
+    auth.user = { enabledDomains: ["MUSIC"] } as unknown as UserDto;
     expect(isSectionVisible(streaming)).toBe(true);
   });
 });

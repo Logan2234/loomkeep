@@ -838,6 +838,7 @@ export class GameLibraryService {
       releaseDatePrecision: item.releaseDatePrecision,
       upcoming: isGameItemUpcoming(item),
       website: null,
+      stores: [],
       similarGames: [],
       developers: [],
       publishers: [],

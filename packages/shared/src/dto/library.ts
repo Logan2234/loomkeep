@@ -203,6 +203,8 @@ export interface CalendarEntryDto {
   seasonNumber: number | null;
   episodeNumber: number | null;
   episodeTitle: string | null;
+  /** The episode ends its season (TMDB's `finale`). */
+  seasonFinale?: boolean;
   releaseRegion?: string;
   releaseType?: "cinema" | "digital";
   /** A game dated to a month sits on its 1st. */

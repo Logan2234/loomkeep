@@ -13,6 +13,18 @@ history from before it was started.
 
 ## [Unreleased]
 
+### Added
+
+- Series pages: a « Ratings » view in Episodes colours every episode by its
+  rating, season by season, with a dot on the ones you rated.
+- Season finales are flagged in the calendar, the release email and the
+  push digest.
+- Game pages list where to buy or play: Steam, GOG, Epic Games, itch.io,
+  PlayStation, Xbox, Nintendo eShop, App Store and Google Play.
+- Album pages list where to listen: Spotify, Apple Music, Deezer, YouTube
+  Music, Tidal, Qobuz, Bandcamp and Amazon. Pick yours in Settings ›
+  Streaming to see them first.
+
 ### Fixed
 
 - Calendar: episodes airing the same day now always appear in order (7, 8, 9…)

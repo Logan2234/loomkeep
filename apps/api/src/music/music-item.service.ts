@@ -54,6 +54,7 @@ export class MusicItemService {
       tags: details.tags,
       disambiguation: details.disambiguation,
       externalLinks: details.externalLinks,
+      listenLinks: details.listenLinks,
       label: details.label,
       catalogNumber: details.catalogNumber,
       tracks: details.tracks,

@@ -24,6 +24,7 @@ const pendingRow = {
   body: "S2E5 · The One With The Finale",
   url: "/app/media/series/42",
   dedupeKey: "episode:ep1",
+  data: {} as Record<string, unknown>,
 };
 
 function makeService(opts: {
@@ -165,6 +166,7 @@ describe("NotificationDigestService.runDigests", () => {
           title: "Severance",
           body: "S2E5 · The One With The Finale",
           url: "/app/media/series/42",
+          seasonFinale: false,
         },
       ],
       "weekly",
@@ -216,6 +218,42 @@ describe("NotificationDigestService.runDigests", () => {
     );
 
     vi.restoreAllMocks();
+    vi.useRealTimers();
+  });
+
+  it("announces a season finale in the push and flags it in the email", async () => {
+    const monday9amParis = new Date("2026-08-24T07:00:00.000Z");
+    vi.useFakeTimers().setSystemTime(monday9amParis);
+
+    const finale = {
+      ...pendingRow,
+      id: "n2",
+      title: "Andor",
+      dedupeKey: "episode:ep2",
+      data: { seasonFinale: true },
+    };
+    const { service, push, mail } = makeService({
+      notifyEmail: DigestCadence.WEEKLY,
+      notifyPush: DigestCadence.WEEKLY,
+      pending: [pendingRow, finale],
+    });
+    await service.runDigests();
+
+    expect(push.sendToUserDetailed).toHaveBeenCalledWith(
+      "u1",
+      expect.objectContaining({
+        body: "2 episodes came out in the last 7 days, including the season finale of Andor.",
+      }),
+    );
+    expect(mail.sendEpisodeDigest).toHaveBeenCalledWith(
+      expect.anything(),
+      [
+        expect.objectContaining({ title: "Severance", seasonFinale: false }),
+        expect.objectContaining({ title: "Andor", seasonFinale: true }),
+      ],
+      "weekly",
+    );
+
     vi.useRealTimers();
   });
 
@@ -312,6 +350,7 @@ describe("NotificationDigestService.runDigests", () => {
       body: "S1E7",
       url: "/app/media/series/7",
       dedupeKey: "episode:ep2",
+      data: {},
     };
     const { service, mail, prisma } = makeService({
       notifyEmail: DigestCadence.WEEKLY,

@@ -1,4 +1,5 @@
 import type {
+  ListenLinkDto,
   MusicExternalLinkDto,
   MusicSource,
   MusicSummaryDto,
@@ -20,6 +21,7 @@ export interface ProviderMusicDetails {
   tags: string[];
   disambiguation: string | null;
   externalLinks: MusicExternalLinkDto[];
+  listenLinks: ListenLinkDto[];
   label: string | null;
   catalogNumber: string | null;
   tracks: MusicTrackDto[];

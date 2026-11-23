@@ -27,6 +27,8 @@ interface SettingsEntryDef {
   label: string;
   /** Only shown on a phone's layout: the bottom bar exists nowhere else. */
   compactOnly?: boolean;
+  /** Left out of search while the member keeps this domain off. */
+  domain?: Domain;
   /**
    * Terms a user might type for this control that its label doesn't contain:
    * synonyms, the English word for a French label, the brand name of a
@@ -46,8 +48,8 @@ export interface SettingsSectionDef {
   entries: SettingsEntryDef[];
   /** Hidden when the deployment runs with social off. */
   social?: boolean;
-  /** Hidden while the member keeps this domain off. */
-  domain?: Domain;
+  /** Hidden while the member keeps all of these domains off. */
+  domains?: Domain[];
   newBadgeKey?: FeatureBadgeKey;
   /** Styled as destructive in the rail and on the index. */
   danger?: boolean;
@@ -598,7 +600,7 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
           "where to watch",
         ],
         newBadgeKey: "watch-providers",
-        domain: Domain.MEDIA,
+        domains: [Domain.MEDIA, Domain.MUSIC],
         entries: [
           {
             id: "streaming-region",
@@ -606,6 +608,7 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
               return m.settings_streaming_region_label();
             },
             keywords: ["pays", "country", "region"],
+            domain: Domain.MEDIA,
           },
           {
             id: "streaming-services",
@@ -613,6 +616,15 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
               return m.settings_streaming_title();
             },
             keywords: ["netflix", "canal", "disney", "prime", "crunchyroll"],
+            domain: Domain.MEDIA,
+          },
+          {
+            id: "streaming-music",
+            get label() {
+              return m.settings_streaming_music_title();
+            },
+            keywords: ["musique", "spotify", "deezer", "apple music", "tidal"],
+            domain: Domain.MUSIC,
           },
         ],
       },

@@ -173,6 +173,7 @@ export class NotificationService {
         id: true,
         number: true,
         title: true,
+        episodeType: true,
         airDate: true,
         season: {
           select: {
@@ -252,6 +253,7 @@ export class NotificationService {
           seasonNumber: e.season.number,
           episodeNumber: e.number,
           episodeTitle: e.title,
+          seasonFinale: e.episodeType === "finale",
           mediaTitle: e.season.mediaItem.title,
           mediaType: e.season.mediaItem.type as MediaType,
           sourceId: canonicalExternalId(
@@ -647,7 +649,10 @@ export class NotificationService {
       body: notificationBody(n),
       url: notificationUrl(n),
       dedupeKey: `episode:${n.episodeId}`,
-      data: { airDate: n.airDate.toISOString() },
+      data: {
+        airDate: n.airDate.toISOString(),
+        ...(n.seasonFinale ? { seasonFinale: true } : {}),
+      },
     }));
   }
 
@@ -746,6 +751,7 @@ export class NotificationService {
         seasonNumber: e.season.number,
         episodeNumber: e.number,
         episodeTitle: e.title,
+        seasonFinale: e.episodeType === "finale",
         mediaTitle: e.season.mediaItem.title,
         mediaType: e.season.mediaItem.type as MediaType,
         sourceId: canonicalExternalId(

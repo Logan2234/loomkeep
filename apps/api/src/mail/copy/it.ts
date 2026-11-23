@@ -407,6 +407,7 @@ export const IT_COPY: MailCopy = {
     manySubject: (count, period) => `${count} uscite ${period}`,
     manyIntro: (count, period) =>
       `Un programma fitto: ${count} nuove uscite ${period}.`,
+    seasonFinale: "Finale di stagione",
     preferences: "Gestisci le mie notifiche",
   },
   newsletter: {
