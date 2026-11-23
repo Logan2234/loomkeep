@@ -82,6 +82,7 @@ export class LibraryController {
     @Query("page") page?: string,
     @Query("limit") limit?: string,
     @Query("lang") lang?: string,
+    @Query("loan") loan?: string,
   ): Promise<PagedResult<LibraryEntryDto>> {
     await this.domainGate.assertEnabled(user.sub, Domain.MEDIA);
     return this.libraryService.listEntries(user.sub, {
@@ -94,6 +95,7 @@ export class LibraryController {
         page,
         limit,
         lang,
+        loan,
       }),
       types: toQueryArray(type) as MediaType[],
     });
@@ -109,10 +111,11 @@ export class LibraryController {
     @Query("status") status?: string | string[],
     @Query("type") type?: string | string[],
     @Query("lang") lang?: string,
+    @Query("loan") loan?: string,
   ): Promise<PileSummaryDto> {
     await this.domainGate.assertEnabled(user.sub, Domain.MEDIA);
     return this.libraryService.getPile(user.sub, {
-      ...parseListEntriesQuery({ q, favorite, status, lang }),
+      ...parseListEntriesQuery({ q, favorite, status, lang, loan }),
       types: toQueryArray(type) as MediaType[],
     });
   }

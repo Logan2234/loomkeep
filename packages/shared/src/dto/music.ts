@@ -114,6 +114,12 @@ export interface MusicEntryDto {
   ownershipStatus: MusicOwnershipStatus;
   /** Free-form detail for DIGITAL/STREAMING (e.g. "Spotify"); null otherwise. */
   ownershipSource: string | null;
+  /** A PHYSICAL copy currently lent to someone. */
+  lentOut: boolean;
+  /** Who it was borrowed from (BORROWED) or lent to (lentOut); a private note. */
+  loanPerson: string | null;
+  /** Since when the loan runs (YYYY-MM-DD). */
+  loanSince: string | null;
 }
 
 /** Body for creating/updating a library entry from a catalogue album. */
@@ -136,6 +142,11 @@ export interface UpdateMusicEntryDto {
   finishedAt?: string | null;
   ownershipStatus?: MusicOwnershipStatus;
   ownershipSource?: string | null;
+  /** See the entry's `lentOut`; only kept while the copy is PHYSICAL. */
+  lentOut?: boolean;
+  loanPerson?: string | null;
+  /** YYYY-MM-DD, not in the future. */
+  loanSince?: string | null;
 }
 
 /**

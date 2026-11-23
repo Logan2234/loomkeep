@@ -1,9 +1,13 @@
-import type { Domain, PagedResult, ReviewTargetType } from "@loomkeep/shared";
 import {
   ActivityType,
   DORMANT_AFTER_DAYS,
   ErrorCode,
+  LOAN_FILTERS,
   XpReason,
+  type Domain,
+  type LoanFilter,
+  type PagedResult,
+  type ReviewTargetType,
   type SortOrder,
 } from "@loomkeep/shared";
 import { HttpStatus } from "@nestjs/common";
@@ -52,6 +56,8 @@ export interface ListEntriesFilters {
   limit?: number;
   /** The signed-in user's locale, when known — drives alphabetical collation. */
   lang?: string;
+  /** Only the entries lent out, or borrowed and to give back. */
+  loan?: LoanFilter;
 }
 
 export function parseListEntriesQuery(query: {
@@ -63,6 +69,7 @@ export function parseListEntriesQuery(query: {
   page?: string;
   limit?: string;
   lang?: string;
+  loan?: string;
 }): ListEntriesFilters {
   const { page, limit } = parsePageQuery(
     query.page,
@@ -78,6 +85,7 @@ export function parseListEntriesQuery(query: {
     page,
     limit,
     lang: safeLang(query.lang),
+    loan: LOAN_FILTERS.find((filter) => filter === query.loan),
   };
 }
 

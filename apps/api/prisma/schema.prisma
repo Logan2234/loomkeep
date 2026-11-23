@@ -2257,6 +2257,12 @@ model LibraryEntry {
   ownershipStatus        MediaOwnershipStatus @default(NONE)
   // Free-form detail for DIGITAL/STREAMING (e.g. "Netflix"); null otherwise.
   ownershipSource        String?
+  // A PHYSICAL copy currently at someone else's place.
+  lentOut                Boolean   @default(false)
+  // Who it was borrowed from (BORROWED) or lent to (lentOut), and since
+  // when: private notes, nobody is told.
+  loanPerson             String?
+  loanSince              DateTime? @db.Date
   // Series/anime only: skip this show in the new-episode push/email digest.
   // It stays in the release calendar — only the alerts are silenced.
   episodeAlertsMuted     Boolean              @default(false)
@@ -2390,6 +2396,12 @@ model GameEntry {
   ownershipStatus        GameOwnershipStatus @default(NONE)
   // Free-form detail for DIGITAL/SUBSCRIPTION (e.g. "Steam"); null otherwise.
   ownershipSource        String?
+  // A PHYSICAL copy currently at someone else's place.
+  lentOut                Boolean   @default(false)
+  // Who it was borrowed from (BORROWED) or lent to (lentOut), and since
+  // when: private notes, nobody is told.
+  loanPerson             String?
+  loanSince              DateTime? @db.Date
   // The platform it's played on, one of GameItem.platforms (IGDB's names).
   platform               String?
   // Set when the user asked to be told of the release; a release dated
@@ -2522,6 +2534,12 @@ model BookEntry {
   ownershipStatus       BookOwnershipStatus @default(NONE)
   // Free-form detail for DIGITAL/AUDIO (e.g. "Kindle"); null otherwise.
   ownershipSource       String?
+  // A PHYSICAL copy currently at someone else's place.
+  lentOut               Boolean   @default(false)
+  // Who it was borrowed from (BORROWED) or lent to (lentOut), and since
+  // when: private notes, nobody is told.
+  loanPerson            String?
+  loanSince             DateTime? @db.Date
   createdAt             DateTime            @default(now())
   updatedAt             DateTime            @updatedAt
 
@@ -2671,6 +2689,12 @@ model MusicEntry {
   ownershipStatus MusicOwnershipStatus @default(NONE)
   // Free-form detail for DIGITAL/STREAMING (e.g. "Spotify"); null otherwise.
   ownershipSource String?
+  // A PHYSICAL copy currently at someone else's place.
+  lentOut         Boolean   @default(false)
+  // Who it was borrowed from (BORROWED) or lent to (lentOut), and since
+  // when: private notes, nobody is told.
+  loanPerson      String?
+  loanSince       DateTime? @db.Date
   createdAt       DateTime             @default(now())
   updatedAt       DateTime             @updatedAt
 

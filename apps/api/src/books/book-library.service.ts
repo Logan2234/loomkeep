@@ -60,6 +60,7 @@ import { compareTitles, timeMs } from "../common/sort.util";
 import { EventsGateway } from "../events/events.gateway";
 import { AchievementService } from "../gamification/achievements/achievement.service";
 
+import { loanFields, loanUpdate, loanWhere } from "../common/entry-loan.util";
 import { retryAfterUniqueRace } from "../common/prisma-error.util";
 import { ACHIEVEMENT_KEYS_BY_XP_REASON } from "../gamification/achievements/triggers";
 import { SessionXpService } from "../gamification/session-xp.service";
@@ -609,6 +610,7 @@ export class BookLibraryService {
       userId,
       AND: statusFilters.length > 0 ? [{ OR: statusFilters }] : undefined,
       favorite: filters.favorite ? true : undefined,
+      ...loanWhere(filters.loan),
       bookItem:
         q || filters.freeToRead
           ? {
@@ -672,6 +674,7 @@ export class BookLibraryService {
             : toDateOrNull(dto.finishedAt),
         ownershipStatus: dto.ownershipStatus,
         ownershipSource: dto.ownershipSource,
+        ...loanUpdate(before, dto),
       },
       include: ENTRY_INCLUDE,
     });
@@ -1082,5 +1085,6 @@ function toEntryDto(entry: EntryWithBook, rating: number | null): BookEntryDto {
     readings: entry.readings.map(toReadingDto),
     ownershipStatus: entry.ownershipStatus,
     ownershipSource: entry.ownershipSource,
+    ...loanFields(entry),
   };
 }

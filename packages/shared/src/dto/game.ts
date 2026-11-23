@@ -173,6 +173,12 @@ export interface GameEntryDto {
   platform: string | null;
   /** Free-form detail for DIGITAL/SUBSCRIPTION (e.g. "Steam"); null otherwise. */
   ownershipSource: string | null;
+  /** A PHYSICAL copy currently lent to someone. */
+  lentOut: boolean;
+  /** Who it was borrowed from (BORROWED) or lent to (lentOut); a private note. */
+  loanPerson: string | null;
+  /** Since when the loan runs (YYYY-MM-DD). */
+  loanSince: string | null;
   /** The user asked to be told when the game comes out. */
   releaseAlertsEnabled: boolean;
 }
@@ -199,6 +205,11 @@ export interface UpdateGameEntryDto {
   finishedAt?: string | null;
   ownershipStatus?: GameOwnershipStatus;
   ownershipSource?: string | null;
+  /** See the entry's `lentOut`; only kept while the copy is PHYSICAL. */
+  lentOut?: boolean;
+  loanPerson?: string | null;
+  /** YYYY-MM-DD, not in the future. */
+  loanSince?: string | null;
   /** One of the game's platforms; null clears it. */
   platform?: string | null;
   releaseAlertsEnabled?: boolean;

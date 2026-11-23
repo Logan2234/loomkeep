@@ -54,6 +54,7 @@ import { compareTitles, timeMs } from "../common/sort.util";
 import { EventsGateway } from "../events/events.gateway";
 import { AchievementService } from "../gamification/achievements/achievement.service";
 
+import { loanFields, loanUpdate, loanWhere } from "../common/entry-loan.util";
 import { retryAfterUniqueRace } from "../common/prisma-error.util";
 import { ACHIEVEMENT_KEYS_BY_XP_REASON } from "../gamification/achievements/triggers";
 import { SessionXpService } from "../gamification/session-xp.service";
@@ -557,6 +558,7 @@ export class GameLibraryService {
       userId,
       AND: statusFilters.length > 0 ? [{ OR: statusFilters }] : undefined,
       favorite: filters.favorite ? true : undefined,
+      ...loanWhere(filters.loan),
       platform: filters.platforms?.length
         ? { in: filters.platforms }
         : undefined,
@@ -656,6 +658,7 @@ export class GameLibraryService {
             : toDateOrNull(dto.finishedAt),
         ownershipStatus: dto.ownershipStatus,
         ownershipSource: dto.ownershipSource,
+        ...loanUpdate(owned, dto),
         platform: dto.platform === undefined ? undefined : platform,
         releaseReminderAt:
           dto.releaseAlertsEnabled === undefined
@@ -973,6 +976,7 @@ function toEntryDto(entry: EntryWithGame, rating: number | null): GameEntryDto {
     playthroughs: entry.playthroughs.map(toPlaythroughDto),
     ownershipStatus: entry.ownershipStatus,
     ownershipSource: entry.ownershipSource,
+    ...loanFields(entry),
     platform: entry.platform,
     releaseAlertsEnabled: entry.releaseReminderAt !== null,
   };

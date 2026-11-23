@@ -3,6 +3,7 @@ import {
   GAME_PLATFORM_MAX_LENGTH,
   GameOwnershipStatus,
   GameStatus,
+  LOAN_PERSON_MAX_LENGTH,
   OWNERSHIP_SOURCE_MAX_LENGTH,
   UpdateGameEntryDto as UpdateGameEntryContract,
 } from "@loomkeep/shared";
@@ -65,6 +66,19 @@ export class UpdateGameEntryDto implements UpdateGameEntryContract {
   @IsString()
   @MaxLength(OWNERSHIP_SOURCE_MAX_LENGTH)
   ownershipSource?: string | null;
+
+  @IsOptional()
+  @IsBoolean()
+  lentOut?: boolean;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(LOAN_PERSON_MAX_LENGTH)
+  loanPerson?: string | null;
+
+  @IsOptional()
+  @IsDateString({ strict: true })
+  loanSince?: string | null;
 
   @IsOptional()
   @IsString()

@@ -166,6 +166,7 @@ export class GamesController {
     @Query("limit") limit?: string,
     @Query("lang") lang?: string,
     @Query("platform") platform?: string | string[],
+    @Query("loan") loan?: string,
   ): Promise<PagedResult<GameEntryDto>> {
     await this.domainGate.assertEnabled(user.sub, Domain.GAMES);
     return this.gameLibraryService.listEntries(user.sub, {
@@ -179,6 +180,7 @@ export class GamesController {
         page,
         limit,
         lang,
+        loan,
       }),
     });
   }
@@ -210,11 +212,12 @@ export class GamesController {
     @Query("status") status?: string | string[],
     @Query("lang") lang?: string,
     @Query("platform") platform?: string | string[],
+    @Query("loan") loan?: string,
   ): Promise<PileSummaryDto> {
     await this.domainGate.assertEnabled(user.sub, Domain.GAMES);
     return this.gameLibraryService.getPile(user.sub, {
       platforms: toQueryArray(platform),
-      ...parseListEntriesQuery({ q, favorite, status, lang }),
+      ...parseListEntriesQuery({ q, favorite, status, lang, loan }),
     });
   }
 

@@ -82,6 +82,7 @@ import { compareTitles, timeMs } from "../common/sort.util";
 import { EventsGateway } from "../events/events.gateway";
 import { AchievementService } from "../gamification/achievements/achievement.service";
 
+import { loanFields, loanUpdate, loanWhere } from "../common/entry-loan.util";
 import { retryAfterUniqueRace } from "../common/prisma-error.util";
 import { ACHIEVEMENT_KEYS_BY_XP_REASON } from "../gamification/achievements/triggers";
 import {
@@ -679,6 +680,7 @@ export class LibraryService {
     const where: Prisma.LibraryEntryWhereInput = {
       userId,
       favorite: filters.favorite ? true : undefined,
+      ...loanWhere(filters.loan),
       mediaItem:
         filters.types && filters.types.length > 0
           ? { type: { in: filters.types } }
@@ -823,6 +825,7 @@ export class LibraryService {
             : toDateOrNull(dto.finishedAt),
         ownershipStatus: dto.ownershipStatus,
         ownershipSource: dto.ownershipSource,
+        ...loanUpdate(owned, dto),
         episodeAlertsMuted: dto.episodeAlertsMuted,
         rewatchStartedAt: await this.rewatchStartedAtFor(
           userId,
@@ -2321,6 +2324,7 @@ export class LibraryService {
       progress,
       ownershipStatus: entry.ownershipStatus,
       ownershipSource: entry.ownershipSource,
+      ...loanFields(entry),
       episodeAlertsMuted: entry.episodeAlertsMuted,
       rewatching: !!entry.rewatchStartedAt,
       ...(entry.movieReleaseReminderAt
