@@ -89,6 +89,15 @@ export class WebauthnService {
     private readonly events: EventsGateway,
   ) {}
 
+  /** What revokeSessionsWith reaches. */
+  private get sessionDeps() {
+    return {
+      prisma: this.prisma,
+      sessionCache: this.sessionCache,
+      events: this.events,
+    };
+  }
+
   /** WEB_ORIGIN is the browser-facing origin (comma-separated) — see main.ts's CORS setup. Its hostname doubles as the WebAuthn RP ID, so self-hosters need no extra config. */
   private origins(): string[] {
     return webOrigins(this.configService.getOrThrow<string>("WEB_ORIGIN"));
@@ -309,7 +318,10 @@ export class WebauthnService {
 
     // Removing a credential — like disabling any other MFA method — should
     // invalidate other sessions that were relying on it.
-    await revokeSessionsWith(this, otherSessions(userId, currentSessionId));
+    await revokeSessionsWith(
+      this.sessionDeps,
+      otherSessions(userId, currentSessionId),
+    );
 
     return { passwordlessDisabled };
   }
@@ -361,12 +373,16 @@ export class WebauthnService {
       );
     }
 
-    await revokeSessionsWith(this, otherSessions(userId, currentSessionId), [
-      this.prisma.user.update({
-        where: { id: userId },
-        data: { passwordlessEnabled: enabled },
-      }),
-    ]);
+    await revokeSessionsWith(
+      this.sessionDeps,
+      otherSessions(userId, currentSessionId),
+      [
+        this.prisma.user.update({
+          where: { id: userId },
+          data: { passwordlessEnabled: enabled },
+        }),
+      ],
+    );
 
     await this.security.record({
       type: enabled ? "MFA_PASSWORDLESS_ENABLED" : "MFA_PASSWORDLESS_DISABLED",

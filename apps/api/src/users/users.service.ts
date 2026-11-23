@@ -89,6 +89,15 @@ export class UsersService {
     private readonly sessionCache: SessionCacheService,
   ) {}
 
+  /** What revokeSessionsWith reaches. */
+  private get sessionDeps() {
+    return {
+      prisma: this.prisma,
+      sessionCache: this.sessionCache,
+      events: this.events,
+    };
+  }
+
   async getMe(userId: string): Promise<UserDto> {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
 
@@ -658,7 +667,7 @@ export class UsersService {
       );
     }
 
-    await revokeSessionsWith(this, { userId }, [
+    await revokeSessionsWith(this.sessionDeps, { userId }, [
       this.prisma.user.update({
         where: { id: userId },
         data: {

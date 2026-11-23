@@ -42,6 +42,15 @@ export class MfaService {
     private readonly events: EventsGateway,
   ) {}
 
+  /** What revokeSessionsWith reaches. */
+  private get sessionDeps() {
+    return {
+      prisma: this.prisma,
+      sessionCache: this.sessionCache,
+      events: this.events,
+    };
+  }
+
   private getEncryptionKey(): Buffer {
     const key = Buffer.from(
       this.configService.getOrThrow<string>("MFA_ENCRYPTION_KEY"),
@@ -112,12 +121,16 @@ export class MfaService {
       );
     }
 
-    await revokeSessionsWith(this, otherSessions(userId, currentSessionId), [
-      this.prisma.user.update({
-        where: { id: userId },
-        data: { mfaTotpEnabled: true },
-      }),
-    ]);
+    await revokeSessionsWith(
+      this.sessionDeps,
+      otherSessions(userId, currentSessionId),
+      [
+        this.prisma.user.update({
+          where: { id: userId },
+          data: { mfaTotpEnabled: true },
+        }),
+      ],
+    );
 
     const recoveryCodes = await this.ensureRecoveryCodes(userId);
     await this.achievements.evaluate(userId, ACHIEVEMENT_KEYS_ON_TOTP_ENABLED);
@@ -134,16 +147,20 @@ export class MfaService {
     currentSessionId?: string,
     userAgent?: string,
   ): Promise<void> {
-    await revokeSessionsWith(this, otherSessions(userId, currentSessionId), [
-      this.prisma.user.update({
-        where: { id: userId },
-        data: {
-          mfaTotpEnabled: false,
-          mfaTotpSecretEnc: null,
-          mfaTotpLastStep: null,
-        },
-      }),
-    ]);
+    await revokeSessionsWith(
+      this.sessionDeps,
+      otherSessions(userId, currentSessionId),
+      [
+        this.prisma.user.update({
+          where: { id: userId },
+          data: {
+            mfaTotpEnabled: false,
+            mfaTotpSecretEnc: null,
+            mfaTotpLastStep: null,
+          },
+        }),
+      ],
+    );
     await this.security.record({
       type: "MFA_TOTP_DISABLED",
       userId,
@@ -157,12 +174,16 @@ export class MfaService {
     currentSessionId?: string,
     userAgent?: string,
   ): Promise<{ recoveryCodes?: string[] }> {
-    await revokeSessionsWith(this, otherSessions(userId, currentSessionId), [
-      this.prisma.user.update({
-        where: { id: userId },
-        data: { mfaEmailEnabled: enabled },
-      }),
-    ]);
+    await revokeSessionsWith(
+      this.sessionDeps,
+      otherSessions(userId, currentSessionId),
+      [
+        this.prisma.user.update({
+          where: { id: userId },
+          data: { mfaEmailEnabled: enabled },
+        }),
+      ],
+    );
 
     const recoveryCodes = enabled
       ? await this.ensureRecoveryCodes(userId)
@@ -261,7 +282,7 @@ export class MfaService {
 
     if (revokeSessions) {
       await revokeSessionsWith(
-        this,
+        this.sessionDeps,
         otherSessions(userId, currentSessionId),
         writes,
       );
