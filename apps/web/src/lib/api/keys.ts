@@ -236,6 +236,7 @@ export const keys = {
         query: string;
         statuses: string[];
         favoritesOnly: boolean;
+        loan: string | null;
         extra: unknown;
         sort: string;
         order: string;
@@ -249,6 +250,7 @@ export const keys = {
         query: string;
         statuses: string[];
         favoritesOnly: boolean;
+        loan: string | null;
         extra: unknown;
       },
     ) => ["library", "browse", domain, "pile", filters] as const,
@@ -291,6 +293,8 @@ export const keys = {
     newsletterPreview: (id: string, locale: string) =>
       ["admin", "newsletter-preview", id, locale] as const,
     update: () => ["admin", "update"] as const,
+    upgradeNotes: (from: string, to: string) =>
+      ["admin", "upgrade-notes", from, to] as const,
     schema: () => ["admin", "schema"] as const,
     emailTemplates: () => ["admin", "email-templates"] as const,
     pushDevices: (email: string) => ["admin", "push-devices", email] as const,

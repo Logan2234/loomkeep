@@ -1,6 +1,7 @@
 import {
   ENTRY_NOTES_MAX_LENGTH,
   EntryStatus,
+  LOAN_PERSON_MAX_LENGTH,
   MediaOwnershipStatus,
   OWNERSHIP_SOURCE_MAX_LENGTH,
 } from "@loomkeep/shared";
@@ -15,6 +16,7 @@ import {
   MaxLength,
   Min,
 } from "class-validator";
+import { IsRatingStep } from "../../common/rating-step.validator";
 
 export class UpdateEntryDto {
   @IsOptional()
@@ -25,6 +27,7 @@ export class UpdateEntryDto {
   @IsNumber()
   @Min(0)
   @Max(10)
+  @IsRatingStep()
   rating?: number | null;
 
   @IsOptional()
@@ -64,4 +67,17 @@ export class UpdateEntryDto {
   @IsString()
   @MaxLength(OWNERSHIP_SOURCE_MAX_LENGTH)
   ownershipSource?: string | null;
+
+  @IsOptional()
+  @IsBoolean()
+  lentOut?: boolean;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(LOAN_PERSON_MAX_LENGTH)
+  loanPerson?: string | null;
+
+  @IsOptional()
+  @IsDateString({ strict: true })
+  loanSince?: string | null;
 }

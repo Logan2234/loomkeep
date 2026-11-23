@@ -34,7 +34,11 @@
     BOOK_STATUS_ORDER,
     LIBRARY_UNPICKED_STATUSES,
   } from "#lib/constants/status-labels.js";
-  import { DATE_MEDIUM_OPTIONS, formatDate } from "#lib/format.js";
+  import {
+    DATE_MEDIUM_OPTIONS,
+    formatDate,
+    formatRating,
+  } from "#lib/format.js";
   import {
     ownershipText,
     type LibraryBulkActions,
@@ -177,6 +181,7 @@
     listBooks({
       query: params.query,
       favorite: params.favoritesOnly,
+      loan: params.loan ?? undefined,
       freeToRead: params.extra === true,
       statuses: params.statuses as BookFilterStatus[],
       sort: params.sort as BookSortKey,
@@ -188,6 +193,7 @@
     getBooksPile({
       query: params.query,
       favorite: params.favoritesOnly,
+      loan: params.loan ?? undefined,
       freeToRead: params.extra === true,
       statuses: params.statuses as BookFilterStatus[],
     });
@@ -259,7 +265,9 @@
           {:else}
             <span class="timecode text-[0.7rem]">
               {BOOK_STATUS_LABELS[entry.status]}{#if entry.rating !== null}
-                · ★ {entry.rating}{/if}{#if isSessionPaused(entry, "READING")}
+                · ★ {formatRating(
+                  entry.rating,
+                )}{/if}{#if isSessionPaused(entry, "READING")}
                 {m.media_paused_suffix()}{/if}
             </span>
           {/if}

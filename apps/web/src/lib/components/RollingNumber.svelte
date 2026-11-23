@@ -9,10 +9,12 @@
 
   let {
     value,
+    format = String,
     class: cls = "",
   }: {
     /** `null` renders an en dash and counts as below every number. */
     value: number | null;
+    format?: (value: number) => string;
     class?: string;
   } = $props();
 
@@ -43,7 +45,7 @@
       class="[grid-area:1/1]"
       in:fly={{ ...motion(), y: `${direction * 70}%` }}
       out:fly={{ ...motion(), y: `${direction * -70}%` }}>
-      {safeValue ?? "–"}
+      {safeValue === null ? "–" : format(safeValue)}
     </span>
   {/key}
 </span>

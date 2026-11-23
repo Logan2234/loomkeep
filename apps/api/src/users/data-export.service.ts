@@ -7,6 +7,7 @@ import { ErrorCode, ReviewTargetType } from "@loomkeep/shared";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { toUserDto } from "../auth/auth.service";
 import { AppException } from "../common/app.exception";
+import { loanFields } from "../common/entry-loan.util";
 import {
   canonicalExternalId,
   toExternalIdDtos,
@@ -476,6 +477,7 @@ export class DataExportService {
         steamSyncedAt: entry.steamSyncedAt?.toISOString() ?? null,
         ownershipStatus: entry.ownershipStatus,
         ownershipSource: entry.ownershipSource,
+        ...loanFields(entry),
         startedAt: entry.startedAt?.toISOString() ?? null,
         finishedAt: entry.finishedAt?.toISOString() ?? null,
         createdAt: entry.createdAt.toISOString(),
@@ -517,6 +519,7 @@ export class DataExportService {
         trackedReadingMinutes: entry.trackedReadingMinutes,
         ownershipStatus: entry.ownershipStatus,
         ownershipSource: entry.ownershipSource,
+        ...loanFields(entry),
         startedAt: entry.startedAt?.toISOString() ?? null,
         finishedAt: entry.finishedAt?.toISOString() ?? null,
         createdAt: entry.createdAt.toISOString(),
@@ -561,6 +564,7 @@ export class DataExportService {
         favorite: entry.favorite,
         ownershipStatus: entry.ownershipStatus,
         ownershipSource: entry.ownershipSource,
+        ...loanFields(entry),
         startedAt: entry.startedAt?.toISOString() ?? null,
         finishedAt: entry.finishedAt?.toISOString() ?? null,
         createdAt: entry.createdAt.toISOString(),

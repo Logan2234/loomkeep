@@ -37,7 +37,11 @@
     LIBRARY_UNPICKED_STATUSES,
   } from "#lib/constants/status-labels.js";
   import { isFeatureNew } from "#lib/feature-badges.js";
-  import { DATE_MEDIUM_OPTIONS, formatDate } from "#lib/format.js";
+  import {
+    DATE_MEDIUM_OPTIONS,
+    formatDate,
+    formatRating,
+  } from "#lib/format.js";
   import {
     ownershipText,
     type LibraryBulkActions,
@@ -195,6 +199,7 @@
     listLibrary({
       query: params.query,
       favorite: params.favoritesOnly,
+      loan: params.loan ?? undefined,
       statuses: params.statuses as MediaFilterStatus[],
       types: params.extra as MediaType[],
       sort: params.sort as MediaSortKey,
@@ -206,6 +211,7 @@
     getLibraryPile({
       query: params.query,
       favorite: params.favoritesOnly,
+      loan: params.loan ?? undefined,
       statuses: params.statuses as MediaFilterStatus[],
       types: params.extra as MediaType[],
     });
@@ -278,7 +284,7 @@
               {entry.mediaItem.upcoming
                 ? m.media_upcoming()
                 : STATUS_LABELS[entry.status]}{#if entry.rating !== null}
-                · ★ {entry.rating}{/if}
+                · ★ {formatRating(entry.rating)}{/if}
             </span>
           {/if}
         {/snippet}

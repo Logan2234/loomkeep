@@ -2,6 +2,7 @@ import {
   BookOwnershipStatus,
   BookStatus,
   ENTRY_NOTES_MAX_LENGTH,
+  LOAN_PERSON_MAX_LENGTH,
   OWNERSHIP_SOURCE_MAX_LENGTH,
   UpdateBookEntryDto as UpdateBookEntryContract,
 } from "@loomkeep/shared";
@@ -17,6 +18,7 @@ import {
   MaxLength,
   Min,
 } from "class-validator";
+import { IsRatingStep } from "../../common/rating-step.validator";
 
 export class UpdateBookEntryDto implements UpdateBookEntryContract {
   @IsOptional()
@@ -27,6 +29,7 @@ export class UpdateBookEntryDto implements UpdateBookEntryContract {
   @IsNumber()
   @Min(0)
   @Max(10)
+  @IsRatingStep()
   rating?: number | null;
 
   @IsOptional()
@@ -69,4 +72,17 @@ export class UpdateBookEntryDto implements UpdateBookEntryContract {
   @IsString()
   @MaxLength(OWNERSHIP_SOURCE_MAX_LENGTH)
   ownershipSource?: string | null;
+
+  @IsOptional()
+  @IsBoolean()
+  lentOut?: boolean;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(LOAN_PERSON_MAX_LENGTH)
+  loanPerson?: string | null;
+
+  @IsOptional()
+  @IsDateString({ strict: true })
+  loanSince?: string | null;
 }

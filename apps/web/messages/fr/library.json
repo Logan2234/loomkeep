@@ -310,5 +310,9 @@
   "add_to_list_empty": "Tape un nom pour créer ta première liste.",
   "scan_isbn_invalid_code": "Ce code-barres n'est pas l'ISBN d'un livre.",
   "scan_unavailable": "Le scanner n'a pas pu démarrer. Réessaie dans un instant.",
-  "calendar_season_finale": "Final de saison"
+  "calendar_season_finale": "Final de saison",
+  "library_loan_lent": "Prêtés",
+  "library_loan_lent_hint": "Exemplaires physiques chez quelqu'un en ce moment",
+  "library_loan_borrowed": "À rendre",
+  "library_loan_borrowed_hint": "Empruntés à quelqu'un"
 }

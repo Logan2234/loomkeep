@@ -3,6 +3,7 @@ import type {
   AdminBackupInventoryDto,
   AdminOverviewDto,
   AdminUpdateStatusDto,
+  AdminUpgradeNotesDto,
   SchemaGraphResponseDto,
   ServiceStatusResponseDto,
 } from "@loomkeep/shared";
@@ -26,6 +27,7 @@ import { AdminBackupFileContentResponseDto } from "./dto/admin-backup-file-conte
 import { AdminBackupInventoryResponseDto } from "./dto/admin-backup-inventory-response.dto";
 import { AdminOverviewResponseDto } from "./dto/admin-overview-response.dto";
 import { AdminUpdateStatusResponseDto } from "./dto/admin-update-status-response.dto";
+import { AdminUpgradeNotesResponseDto } from "./dto/admin-upgrade-notes-response.dto";
 import { RestoreBackupDto } from "./dto/restore-backup.dto";
 import { SchemaGraphResultResponseDto } from "./dto/schema-graph-response.dto";
 import { ServiceStatusListResponseDto } from "./dto/service-status-response.dto";
@@ -99,6 +101,13 @@ export class AdminSystemController {
   @ApiOkResponse({ type: AdminUpdateStatusResponseDto })
   getUpdateStatus(): Promise<AdminUpdateStatusDto> {
     return this.updateCheck.status();
+  }
+
+  /** What the CHANGELOG asks before upgrading to the latest version. */
+  @Get("update/notes")
+  @ApiOkResponse({ type: AdminUpgradeNotesResponseDto })
+  getUpgradeNotes(): Promise<AdminUpgradeNotesDto> {
+    return this.updateCheck.upgradeNotes();
   }
 
   /** "Vérifier maintenant": runs the check outside its daily tick. */

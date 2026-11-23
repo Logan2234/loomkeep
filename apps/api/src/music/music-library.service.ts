@@ -46,6 +46,7 @@ import {
   searchTerm,
   titleContains,
 } from "../common/entry-lifecycle.util";
+import { loanFields, loanUpdate, loanWhere } from "../common/entry-loan.util";
 import { canonicalExternalId } from "../common/external-id.util";
 import { retryAfterUniqueRace } from "../common/prisma-error.util";
 import { compareTitles, timeMs } from "../common/sort.util";
@@ -400,6 +401,7 @@ export class MusicLibraryService {
           ? { in: filters.statuses as DbMusicStatus[] }
           : undefined,
       favorite: filters.favorite ? true : undefined,
+      ...loanWhere(filters.loan),
       musicItem: q ? { title: titleContains(q) } : undefined,
     };
   }
@@ -444,6 +446,7 @@ export class MusicLibraryService {
             : toDateOrNull(dto.finishedAt),
         ownershipStatus: dto.ownershipStatus,
         ownershipSource: dto.ownershipSource,
+        ...loanUpdate(before, dto),
       },
       include: ENTRY_INCLUDE,
     });
@@ -643,5 +646,6 @@ function toEntryDto(
     createdAt: entry.createdAt.toISOString(),
     ownershipStatus: entry.ownershipStatus,
     ownershipSource: entry.ownershipSource,
+    ...loanFields(entry),
   };
 }

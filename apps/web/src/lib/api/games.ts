@@ -8,6 +8,7 @@ import {
   type GameSortKey,
   type GameStatus,
   type LibrarySagaSort,
+  type LoanFilter,
   type SortOrder,
   type UpdateGameEntryDto,
   type UpdateGameSessionDto,
@@ -21,6 +22,8 @@ export const searchGames = (query: string) =>
   typedRequest("/games/search", { query: { q: query } });
 
 export interface ListGamesFilters {
+  /** Only the entries lent out, or borrowed and to give back. */
+  loan?: LoanFilter;
   query?: string;
   favorite?: boolean;
   statuses?: GameFilterStatus[];
@@ -37,6 +40,7 @@ export function listGames(filters: ListGamesFilters = {}) {
       lang: getLocale(),
       q: filters.query,
       favorite: filters.favorite ? "true" : undefined,
+      loan: filters.loan,
       status: filters.statuses,
       platform: filters.platforms,
       sort: filters.sort,
@@ -56,6 +60,7 @@ export function getGamesPile(filters: ListGamesFilters = {}) {
       lang: getLocale(),
       q: filters.query,
       favorite: filters.favorite ? "true" : undefined,
+      loan: filters.loan,
       status: filters.statuses,
       platform: filters.platforms,
     },

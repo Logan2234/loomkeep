@@ -82,6 +82,9 @@ export interface DataExportGameEntry {
   steamSyncedAt: string | null;
   ownershipStatus: GameOwnershipStatus;
   ownershipSource: string | null;
+  lentOut: boolean;
+  loanPerson: string | null;
+  loanSince: string | null;
   startedAt: string | null;
   finishedAt: string | null;
   createdAt: string;
@@ -123,6 +126,9 @@ export interface DataExportBookEntry {
   trackedReadingMinutes: number;
   ownershipStatus: BookOwnershipStatus;
   ownershipSource: string | null;
+  lentOut: boolean;
+  loanPerson: string | null;
+  loanSince: string | null;
   startedAt: string | null;
   finishedAt: string | null;
   createdAt: string;
@@ -167,6 +173,9 @@ export interface DataExportMusicEntry {
   favorite: boolean;
   ownershipStatus: MusicOwnershipStatus;
   ownershipSource: string | null;
+  lentOut: boolean;
+  loanPerson: string | null;
+  loanSince: string | null;
   startedAt: string | null;
   finishedAt: string | null;
   createdAt: string;

@@ -16,7 +16,7 @@ const WORDS = [
   m.reviews_rating_word_10,
 ];
 
-/** The qualitative label for a /10 rating ("Très bien" for 8); legacy half-points round. */
+/** The qualitative label for a /10 rating ("Très bien" for 8); a half point takes the word above. */
 export function ratingWord(rating: number): string {
   return WORDS[Math.min(10, Math.max(0, Math.round(rating)))]();
 }

@@ -310,5 +310,9 @@
   "add_to_list_empty": "Type a name to create your first list.",
   "scan_isbn_invalid_code": "This barcode isn't a book's ISBN.",
   "scan_unavailable": "The scanner couldn't start. Try again in a moment.",
-  "calendar_season_finale": "Season finale"
+  "calendar_season_finale": "Season finale",
+  "library_loan_lent": "Lent out",
+  "library_loan_lent_hint": "Physical copies someone else has right now",
+  "library_loan_borrowed": "To give back",
+  "library_loan_borrowed_hint": "Borrowed from someone"
 }

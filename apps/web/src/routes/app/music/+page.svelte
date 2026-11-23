@@ -27,7 +27,11 @@
     MUSIC_STATUS_META,
     MUSIC_STATUS_ORDER,
   } from "#lib/constants/status-labels.js";
-  import { DATE_MEDIUM_OPTIONS, formatDate } from "#lib/format.js";
+  import {
+    DATE_MEDIUM_OPTIONS,
+    formatDate,
+    formatRating,
+  } from "#lib/format.js";
   import {
     ownershipText,
     type LibraryBulkActions,
@@ -144,6 +148,7 @@
     listMusic({
       query: params.query,
       favorite: params.favoritesOnly,
+      loan: params.loan ?? undefined,
       statuses: params.statuses as MusicStatus[],
       sort: params.sort as MusicSortKey,
       order: params.order,
@@ -154,6 +159,7 @@
     getMusicPile({
       query: params.query,
       favorite: params.favoritesOnly,
+      loan: params.loan ?? undefined,
       statuses: params.statuses as MusicStatus[],
     });
 </script>
@@ -193,7 +199,7 @@
       {#snippet meta()}
         <span class="timecode text-[0.7rem]">
           {MUSIC_STATUS_LABELS[entry.status]}{#if entry.rating !== null}
-            · ★ {entry.rating}{/if}
+            · ★ {formatRating(entry.rating)}{/if}
         </span>
       {/snippet}
     </PosterCard>

@@ -32,6 +32,7 @@
     DATE_MEDIUM_OPTIONS,
     formatDate,
     formatNumber,
+    formatRating,
   } from "#lib/format.js";
   import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
@@ -355,7 +356,9 @@
           <div class="flex shrink-0 flex-col items-end gap-2">
             <span
               class="bg-accent/15 text-accent rounded-md px-2.5 py-1 font-mono text-lg font-bold tabular-nums">
-              {review.rating}<span class="text-accent/60 text-xs">/10</span>
+              {formatRating(review.rating)}<span class="text-accent/60 text-xs">
+                /10
+              </span>
             </span>
             <button
               class="btn-text"

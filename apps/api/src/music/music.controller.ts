@@ -92,6 +92,7 @@ export class MusicController {
     @Query("page") page?: string,
     @Query("limit") limit?: string,
     @Query("lang") lang?: string,
+    @Query("loan") loan?: string,
   ): Promise<PagedResult<MusicEntryDto>> {
     await this.domainGate.assertEnabled(user.sub, Domain.MUSIC);
     return this.musicLibraryService.listEntries(user.sub, {
@@ -104,6 +105,7 @@ export class MusicController {
         page,
         limit,
         lang,
+        loan,
       }),
     });
   }
@@ -117,10 +119,11 @@ export class MusicController {
     @Query("favorite") favorite?: string,
     @Query("status") status?: string | string[],
     @Query("lang") lang?: string,
+    @Query("loan") loan?: string,
   ): Promise<PileSummaryDto> {
     await this.domainGate.assertEnabled(user.sub, Domain.MUSIC);
     return this.musicLibraryService.getPile(user.sub, {
-      ...parseListEntriesQuery({ q, favorite, status, lang }),
+      ...parseListEntriesQuery({ q, favorite, status, lang, loan }),
     });
   }
 

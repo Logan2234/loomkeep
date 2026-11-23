@@ -35,6 +35,8 @@ export const getAdminServices = () => typedRequest("/admin/services");
 
 export const getAdminUpdateStatus = () => typedRequest("/admin/update");
 
+export const getAdminUpgradeNotes = () => typedRequest("/admin/update/notes");
+
 export const checkAdminUpdate = () =>
   typedRequest("/admin/update/check", { method: "POST" });
 

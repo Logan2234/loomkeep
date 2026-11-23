@@ -25,6 +25,9 @@ const common = {
   createdAt: "2026-10-01T00:00:00Z",
   ownershipStatus: "NONE" as const,
   ownershipSource: null,
+  lentOut: false,
+  loanPerson: null,
+  loanSince: null,
 };
 const game: GameEntryDto = {
   ...common,

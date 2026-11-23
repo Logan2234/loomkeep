@@ -67,6 +67,12 @@ export interface LibraryEntryDto {
   ownershipStatus: MediaOwnershipStatus;
   /** Free-form detail for DIGITAL/STREAMING (e.g. "Netflix"); null otherwise. */
   ownershipSource: string | null;
+  /** A PHYSICAL copy currently lent to someone. */
+  lentOut: boolean;
+  /** Who it was borrowed from (BORROWED) or lent to (lentOut); a private note. */
+  loanPerson: string | null;
+  /** Since when the loan runs (YYYY-MM-DD). */
+  loanSince: string | null;
   /** Series/anime: left out of the new-episode push/email digest (still in the calendar). */
   episodeAlertsMuted: boolean;
   movieReleaseAlertsEnabled?: boolean;
@@ -254,3 +260,10 @@ export const MEDIA_FILTER_STATUSES = [
   ...Object.values(MEDIA_SYNTHETIC_STATUS),
 ] as const;
 export type MediaFilterStatus = (typeof MEDIA_FILTER_STATUSES)[number];
+
+/** Longest name kept for who an entry was borrowed from or lent to. */
+export const LOAN_PERSON_MAX_LENGTH = 80;
+
+/** Library list filter on loans: lent out, or borrowed and to give back. */
+export const LOAN_FILTERS = ["LENT", "BORROWED"] as const;
+export type LoanFilter = (typeof LOAN_FILTERS)[number];

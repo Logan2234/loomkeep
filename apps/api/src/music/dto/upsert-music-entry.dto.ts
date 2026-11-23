@@ -14,6 +14,7 @@ import {
   MaxLength,
   Min,
 } from "class-validator";
+import { IsRatingStep } from "../../common/rating-step.validator";
 
 export class UpsertMusicEntryDto implements UpsertMusicEntryContract {
   @IsIn(Object.values(MusicSource))
@@ -30,6 +31,7 @@ export class UpsertMusicEntryDto implements UpsertMusicEntryContract {
   @IsNumber()
   @Min(0)
   @Max(10)
+  @IsRatingStep()
   rating?: number | null;
 
   @IsOptional()

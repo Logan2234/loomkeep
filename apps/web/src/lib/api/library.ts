@@ -6,6 +6,7 @@ import {
   type EpisodeWatchRestoreDto,
   type LibraryEntryDto,
   type LibrarySagaSort,
+  type LoanFilter,
   type MEDIA_BULK_STATUSES,
   type MediaFilterStatus,
   type MediaOwnershipStatus,
@@ -20,6 +21,8 @@ import { getLocale } from "../paraglide/runtime.js";
 import { typedRequest } from "./generated/typed-request";
 
 export interface ListLibraryFilters {
+  /** Only the entries lent out, or borrowed and to give back. */
+  loan?: LoanFilter;
   query?: string;
   favorite?: boolean;
   /** Includes the synthetic "DORMANT" and "GHOST" statuses alongside real `EntryStatus` values. */
@@ -62,6 +65,7 @@ export function listLibrary(filters: ListLibraryFilters = {}) {
       lang: getLocale(),
       q: filters.query,
       favorite: filters.favorite ? "true" : undefined,
+      loan: filters.loan,
       status: filters.statuses,
       type: filters.types,
       sort: filters.sort,
@@ -78,6 +82,7 @@ export function getLibraryPile(filters: ListLibraryFilters = {}) {
       lang: getLocale(),
       q: filters.query,
       favorite: filters.favorite ? "true" : undefined,
+      loan: filters.loan,
       status: filters.statuses,
       type: filters.types,
     },
@@ -98,6 +103,9 @@ export const updateLibraryEntry = (
       | "favorite"
       | "ownershipStatus"
       | "ownershipSource"
+      | "lentOut"
+      | "loanPerson"
+      | "loanSince"
       | "episodeAlertsMuted"
       | "movieReleaseAlertsEnabled"
       | "rewatching"

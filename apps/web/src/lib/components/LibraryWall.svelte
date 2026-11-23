@@ -2,7 +2,7 @@
   // The wall mode of LibraryBrowser: posters only, many per row. The title
   // and status show on hover or focus; a hairline at the bottom carries the
   // progress, so nothing but the artwork takes room.
-  import { joinMeta } from "#lib/format.js";
+  import { formatRating, joinMeta } from "#lib/format.js";
   import type { LibraryItemView, LibrarySelection } from "#lib/library-view.js";
   import { prefersReducedMotion } from "#lib/motion.js";
   import { flip } from "svelte/animate";
@@ -62,7 +62,7 @@
           <span class="text-micro line-clamp-2 font-mono opacity-85">
             {joinMeta(
               item.status.label,
-              item.rating !== null ? `★ ${item.rating}` : null,
+              item.rating !== null ? `★ ${formatRating(item.rating)}` : null,
               item.progress?.label,
             )}
           </span>

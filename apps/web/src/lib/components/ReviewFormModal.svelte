@@ -9,7 +9,11 @@
   import { createApiQuery } from "#lib/api/query.svelte.js";
   import { auth } from "#lib/auth.svelte.js";
   import { appConfig } from "#lib/config.svelte.js";
-  import { DATE_MEDIUM_OPTIONS, formatDate } from "#lib/format.js";
+  import {
+    DATE_MEDIUM_OPTIONS,
+    formatDate,
+    formatRating,
+  } from "#lib/format.js";
   import { m } from "#lib/paraglide/messages.js";
   import {
     clearReviewDraft,
@@ -270,7 +274,7 @@
           <li class="text-dim text-xs">
             <div class="flex items-center gap-2">
               <span class="timecode text-fg">
-                V{revisions.length - i} · {rev.rating}/10
+                V{revisions.length - i} · {formatRating(rev.rating)}/10
               </span>
               <span>{formatDate(rev.createdAt, DATE_MEDIUM_OPTIONS)}</span>
             </div>

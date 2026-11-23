@@ -30,6 +30,17 @@ history from before it was started.
 - Album pages list where to listen: Spotify, Apple Music, Deezer, YouTube
   Music, Tidal, Qobuz, Bandcamp and Amazon. Pick yours in Settings ›
   Streaming to see them first.
+- Ratings go in half points, from 0 to 10. Half stars imported from
+  Letterboxd, Goodreads or StoryGraph now show as they are (7.5) instead of
+  rounded.
+- Loans: note who you borrowed a work from, or who has your physical copy,
+  and since when. Libraries gain « Lent out » and « To give back » filters.
+  Private: nobody is told.
+- Admin › Services lists, before an upgrade, what each release since yours
+  asks self-hosters to do (renamed variables, long migrations…), as a
+  checklist.
+- Release notes end with the API and web images pinned by digest, for
+  self-hosters who want the exact signed image rather than a tag.
 
 ### Fixed
 

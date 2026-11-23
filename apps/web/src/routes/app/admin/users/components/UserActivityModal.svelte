@@ -18,7 +18,7 @@
     REPORT_STATUS_COLORS,
     REPORT_STATUS_LABELS,
   } from "#lib/constants/report-labels.js";
-  import { formatDate } from "#lib/format.js";
+  import { formatDate, formatRating } from "#lib/format.js";
   import { reportTargetLabel } from "#lib/report-target-label.js";
   import { m } from "#lib/paraglide/messages.js";
 
@@ -89,7 +89,9 @@
                 {r.target?.title ?? m.admin_users_deleted_work()}
               </span>
             {/if}
-            <span class="text-dim ml-2 text-xs">{r.rating}/10</span>
+            <span class="text-dim ml-2 text-xs">
+              {formatRating(r.rating)}/10
+            </span>
             {#if r.text}
               <p class="text-dim mt-1 line-clamp-2 text-xs">{r.text}</p>
             {/if}

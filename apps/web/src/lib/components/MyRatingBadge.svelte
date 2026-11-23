@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { formatRating } from "#lib/format.js";
   import { auth } from "#lib/auth.svelte.js";
   import { createMyReview } from "#lib/my-review.svelte.js";
   import { m } from "#lib/paraglide/messages.js";
@@ -42,7 +43,7 @@
     {#if myReview}
       <span>{m.reviews_my_rating()}</span>
       <span class="font-mono font-bold tabular-nums">
-        {myReview.rating}<span class="opacity-60">/10</span>
+        {formatRating(myReview.rating)}<span class="opacity-60">/10</span>
       </span>
     {:else}
       <span>{m.reviews_rate_cta()}</span>

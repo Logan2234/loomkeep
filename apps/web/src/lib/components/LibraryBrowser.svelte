@@ -12,12 +12,18 @@
 
   import { SEARCH_DEBOUNCE_MS } from "#lib/debounce.js";
 
-  import { type SortOrder } from "@loomkeep/shared";
+  import {
+    LOAN_FILTERS,
+    type LoanFilter,
+    type SortOrder,
+  } from "@loomkeep/shared";
 
   export interface LibraryLoadParams {
     query: string;
     statuses: string[];
     favoritesOnly: boolean;
+    /** Only the entries lent out, or borrowed and to give back. */
+    loan: LoanFilter | null;
     /** The domain's extra filter value (media's types, games' platforms), opaque here. */
     extra: unknown;
     sort: string;
@@ -213,6 +219,9 @@
   let platforms = $state<string[]>(
     initialParams.get("platform")?.split(",").filter(Boolean) ?? [],
   );
+  let loan = $state<LoanFilter | null>(
+    LOAN_FILTERS.find((value) => value === initialParams.get("loan")) ?? null,
+  );
   // BOOKS' extra filter: books anyone can read online for free.
   let freeToRead = $state(initialParams.get("free") === "1");
   // Each domain has at most one extra filter, opaque to the loaders.
@@ -340,6 +349,7 @@
       query: queryFilter,
       statuses: shownStatuses,
       favoritesOnly,
+      loan,
       extra,
       sort,
       order: reversed ? "asc" : "desc",
@@ -353,6 +363,7 @@
         query: queryFilter,
         statuses: shownStatuses,
         favoritesOnly,
+        loan,
         extra,
         sort,
         order: reversed ? "asc" : "desc",
@@ -369,6 +380,7 @@
     query: queryFilter,
     statuses: shownStatuses,
     favoritesOnly,
+    loan,
     extra,
   });
   const pileQuery = createApiQuery(() => ({
@@ -769,7 +781,11 @@
 
   const hasQuery = $derived(query.trim() !== "");
   const hasPanelFilters = $derived(
-    favoritesOnly || freeToRead || types.length > 0 || platforms.length > 0,
+    favoritesOnly ||
+      freeToRead ||
+      loan !== null ||
+      types.length > 0 ||
+      platforms.length > 0,
   );
   const hasFilters = $derived(statuses.length > 0 || hasPanelFilters);
   // The pills of what the list shows unpicked first, then, past a divider,
@@ -819,6 +835,7 @@
     statuses = [];
     favoritesOnly = false;
     freeToRead = false;
+    loan = null;
     types = [];
     platforms = [];
   }
@@ -835,7 +852,8 @@
     types.length +
       platforms.length +
       (favoritesOnly ? 1 : 0) +
-      (freeToRead ? 1 : 0),
+      (freeToRead ? 1 : 0) +
+      (loan !== null ? 1 : 0),
   );
 
   const savedViewsQuery = createApiQuery(() => ({
@@ -878,6 +896,18 @@
             key: "favorites",
             label: m.common_favorites(),
             remove: () => (favoritesOnly = false),
+          },
+        ]
+      : []),
+    ...(loan !== null
+      ? [
+          {
+            key: "loan",
+            label:
+              loan === "LENT"
+                ? m.library_loan_lent()
+                : m.library_loan_borrowed(),
+            remove: () => (loan = null),
           },
         ]
       : []),
@@ -1238,18 +1268,36 @@
       else types = values as MediaType[];
     }}
     bind:favoritesOnly
-    switches={domain === "BOOKS"
-      ? [
-          {
-            key: "free-to-read",
-            label: m.library_free_to_read(),
-            hint: m.library_free_to_read_hint(),
-            isNew: isFeatureNew("free-to-read"),
-            checked: freeToRead,
-            onChange: (next: boolean) => (freeToRead = next),
-          },
-        ]
-      : []}
+    switches={[
+      {
+        key: "loan-lent",
+        label: m.library_loan_lent(),
+        hint: m.library_loan_lent_hint(),
+        isNew: isFeatureNew("loans"),
+        checked: loan === "LENT",
+        onChange: (next: boolean) => (loan = next ? "LENT" : null),
+      },
+      {
+        key: "loan-borrowed",
+        label: m.library_loan_borrowed(),
+        hint: m.library_loan_borrowed_hint(),
+        isNew: isFeatureNew("loans"),
+        checked: loan === "BORROWED",
+        onChange: (next: boolean) => (loan = next ? "BORROWED" : null),
+      },
+      ...(domain === "BOOKS"
+        ? [
+            {
+              key: "free-to-read",
+              label: m.library_free_to_read(),
+              hint: m.library_free_to_read_hint(),
+              isNew: isFeatureNew("free-to-read"),
+              checked: freeToRead,
+              onChange: (next: boolean) => (freeToRead = next),
+            },
+          ]
+        : []),
+    ]}
     {sorts}
     bind:sort
     bind:reversed

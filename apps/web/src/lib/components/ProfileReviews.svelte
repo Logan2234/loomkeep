@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { formatRating } from "#lib/format.js";
   import Poster from "#lib/components/Poster.svelte";
   import {
     REVIEW_TARGET_LABEL,
@@ -112,7 +113,9 @@
 
           <span
             class="bg-accent/15 text-accent shrink-0 rounded-md px-2.5 py-1 font-mono font-bold tabular-nums">
-            {review.rating}<span class="text-accent/60 text-xs">/10</span>
+            {formatRating(review.rating)}<span class="text-accent/60 text-xs">
+              /10
+            </span>
           </span>
         </li>
       {/each}

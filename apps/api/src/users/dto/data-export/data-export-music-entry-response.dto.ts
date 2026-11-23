@@ -89,6 +89,24 @@ export class DataExportMusicEntryResponseDto implements DataExportMusicEntry {
   ownershipSource!: string | null;
 
   /**
+   * A physical copy currently lent to someone.
+   * @example false
+   */
+  lentOut!: boolean;
+
+  /**
+   * Who it was borrowed from, or lent to: a private note.
+   * @example "Julie"
+   */
+  loanPerson!: string | null;
+
+  /**
+   * Since when the loan runs (YYYY-MM-DD).
+   * @example "2026-03-08"
+   */
+  loanSince!: string | null;
+
+  /**
    * When it was started.
    * @example "2026-08-02T20:15:00.000Z"
    */

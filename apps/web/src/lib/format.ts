@@ -146,6 +146,11 @@ export function formatNumber(
   return getNumberFormat(resolveLocale(locale), options).format(value);
 }
 
+/** A /10 rating, with its half point when it has one ("7,5" in French). */
+export function formatRating(value: number, locale?: string): string {
+  return formatNumber(value, { maximumFractionDigits: 1 }, locale);
+}
+
 /** Compact technical duration with locale-aware decimals. */
 export function formatDurationMs(ms: number, locale?: string): string {
   if (ms < 1000) return `${formatNumber(ms, {}, locale)} ms`;

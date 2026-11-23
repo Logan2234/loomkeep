@@ -39,4 +39,7 @@ export class BookEntryResponseDto implements BookEntryDto {
   readings!: BookReadingResponseDto[];
   ownershipStatus!: BookOwnershipStatus;
   ownershipSource!: string | null;
+  lentOut!: boolean;
+  loanPerson!: string | null;
+  loanSince!: string | null;
 }

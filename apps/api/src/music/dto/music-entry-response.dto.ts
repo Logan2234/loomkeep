@@ -17,4 +17,7 @@ export class MusicEntryResponseDto implements MusicEntryDto {
   createdAt!: string;
   ownershipStatus!: MusicOwnershipStatus;
   ownershipSource!: string | null;
+  lentOut!: boolean;
+  loanPerson!: string | null;
+  loanSince!: string | null;
 }

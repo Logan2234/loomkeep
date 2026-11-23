@@ -3,6 +3,7 @@
     checkAdminUpdate,
     getAdminBackupFiles,
     getAdminUpdateStatus,
+    getAdminUpgradeNotes,
     runAdminJob,
   } from "#lib/api/client.js";
   import { keys } from "#lib/api/keys.js";
@@ -14,6 +15,7 @@
   import { isFeatureNew } from "#lib/feature-badges.js";
   import { CHANGELOG_URL } from "#lib/constants/external-links.js";
   import { formatDateTime, formatTime } from "#lib/format.js";
+  import { inlineSegments } from "#lib/markdown-inline.js";
   import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
   import type { AdminUpdateStatusDto } from "@loomkeep/shared";
@@ -30,6 +32,19 @@
     fetch: getAdminUpdateStatus,
   }));
   const status = $derived(updateQuery.data);
+
+  const notesQuery = createApiQuery(() => ({
+    key: keys.admin.upgradeNotes(
+      status?.currentVersion ?? "",
+      status?.latestVersion ?? "",
+    ),
+    fetch: getAdminUpgradeNotes,
+    enabled: !!status?.enabled && !!status.updateAvailable,
+  }));
+  const notes = $derived(notesQuery.data?.versions ?? null);
+  const noteCount = $derived(
+    (notes ?? []).reduce((sum, note) => sum + note.items.length, 0),
+  );
 
   const backupsQuery = createApiQuery(() => ({
     key: keys.admin.backups(),
@@ -108,6 +123,63 @@
           </button>
         </div>
       </div>
+
+      {#if notes !== null}
+        <section
+          class="flex flex-col gap-3 rounded-xl border p-4 {noteCount > 0
+            ? 'border-warning'
+            : 'border-surface-2'}"
+          aria-labelledby="admin-upgrade-notes-title">
+          <div class="flex flex-col gap-0.5">
+            <h3
+              id="admin-upgrade-notes-title"
+              class="font-display font-bold {noteCount > 0
+                ? 'text-warning'
+                : ''}">
+              {m.admin_update_notes_title()}
+              {#if isFeatureNew("upgrade-notes")}<NewBadge />{/if}
+            </h3>
+            <p class="text-dim text-sm">
+              {noteCount > 0
+                ? m.admin_update_notes_count({ count: noteCount })
+                : m.admin_update_notes_none()}
+            </p>
+          </div>
+          {#if noteCount > 0}
+            <ul class="flex flex-col gap-2.5">
+              {#each notes as note (note.version)}
+                {#each note.items as item, index (index)}
+                  <li class="grid grid-cols-[auto_minmax(0,1fr)] gap-x-3">
+                    <span
+                      class="timecode text-warning pt-0.5 text-xs font-bold">
+                      {note.version}
+                    </span>
+                    <label
+                      class="flex cursor-pointer items-start gap-2 text-sm">
+                      <input type="checkbox" class="mt-1 shrink-0" />
+                      <span class="min-w-0 break-words">
+                        {#each inlineSegments(item) as segment, i (i)}
+                          {#if segment.code}
+                            <code
+                              class="bg-surface-2 rounded px-1 font-mono text-xs"
+                              class:font-bold={segment.bold}>
+                              {segment.text}
+                            </code>
+                          {:else if segment.bold}
+                            <strong>{segment.text}</strong>
+                          {:else}
+                            {segment.text}
+                          {/if}
+                        {/each}
+                      </span>
+                    </label>
+                  </li>
+                {/each}
+              {/each}
+            </ul>
+          {/if}
+        </section>
+      {/if}
 
       <ol class="grid gap-3 md:grid-cols-2">
         <li

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { formatRating } from "#lib/format.js";
   import { m } from "#lib/paraglide/messages.js";
   import Modal from "#lib/components/Modal.svelte";
   import Poster from "#lib/components/Poster.svelte";
@@ -55,7 +56,7 @@
               </span>
               <span class="text-dim text-xs">
                 {STATS_DOMAIN_LABEL[w.domain]}{#if w.rating !== null}
-                  &nbsp;· {w.rating}/10{/if}
+                  &nbsp;· {formatRating(w.rating)}/10{/if}
               </span>
             </span>
           </a>

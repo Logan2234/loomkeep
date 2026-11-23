@@ -200,6 +200,7 @@
   "valerr_array_not_empty": "Can't be empty.",
   "valerr_array_unique": "Each item must be unique.",
   "valerr_is_push_endpoint": "This notification service isn't supported.",
+  "valerr_is_rating_step": "Ratings go in half points (7 or 7.5).",
   "apierr_auth_invalid_invitation": "This invitation link isn't valid (anymore).",
   "apierr_auth_invitation_expired": "This invitation link has expired. Ask whoever sent it for a new one.",
   "apierr_auth_invitation_email_mismatch": "This invitation is reserved for another email address.",

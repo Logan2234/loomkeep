@@ -63,6 +63,7 @@ const CONSTRAINT_MESSAGES = {
   // own PushManager.subscribe(), not a typed field — but every constraint a
   // DTO uses still needs an entry here (see the guard tests).
   isPushEndpoint: () => m.valerr_is_push_endpoint(),
+  isRatingStep: () => m.valerr_is_rating_step(),
 } satisfies Record<
   ValidationConstraintName,
   (params?: ConstraintParam[]) => string
@@ -100,6 +101,7 @@ export const VALERR_MESSAGE_KEYS = [
   "valerr_array_unique",
   "valerr_not_equals",
   "valerr_is_push_endpoint",
+  "valerr_is_rating_step",
   // Not produced by CONSTRAINT_MESSAGES itself — the fallback for a
   // constraint name it doesn't recognize (see fieldError() below).
   "valerr_generic",

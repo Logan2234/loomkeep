@@ -2,6 +2,7 @@ import { getLocale } from "#lib/paraglide/runtime.js";
 import {
   type BulkEntriesTargetDto,
   type BulkUpdateEntriesDto,
+  type LoanFilter,
   type MusicOwnershipStatus,
   type MusicSortKey,
   type MusicStatus,
@@ -17,6 +18,8 @@ export const searchMusic = (query: string) =>
   typedRequest("/music/search", { query: { q: query } });
 
 export interface ListMusicFilters {
+  /** Only the entries lent out, or borrowed and to give back. */
+  loan?: LoanFilter;
   query?: string;
   favorite?: boolean;
   statuses?: MusicStatus[];
@@ -31,6 +34,7 @@ export function listMusic(filters: ListMusicFilters = {}) {
       lang: getLocale(),
       q: filters.query,
       favorite: filters.favorite ? "true" : undefined,
+      loan: filters.loan,
       status: filters.statuses,
       sort: filters.sort,
       order: filters.order,
@@ -46,6 +50,7 @@ export function getMusicPile(filters: ListMusicFilters = {}) {
       lang: getLocale(),
       q: filters.query,
       favorite: filters.favorite ? "true" : undefined,
+      loan: filters.loan,
       status: filters.statuses,
     },
   });

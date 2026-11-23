@@ -412,6 +412,17 @@ describe("LibraryBrowser", () => {
     });
   });
 
+  it("lists only the works to give back once the filter is on", async () => {
+    const load = vi.fn(async () => pageOf([DUNE], { total: 1 }));
+    visit("/app/books?loan=BORROWED");
+    renderBrowser(load);
+
+    await screen.findByText(m.library_loan_borrowed());
+    expect(load).toHaveBeenLastCalledWith(
+      expect.objectContaining({ loan: "BORROWED" }),
+    );
+  });
+
   it("adds what's left in the pile to the header, summed over the list's filters", async () => {
     const pile: PileSummaryDto = {
       unit: "PAGES",
@@ -435,6 +446,7 @@ describe("LibraryBrowser", () => {
       query: "",
       statuses: ["READING"],
       favoritesOnly: true,
+      loan: null,
       // BOOKS' extra filter: "free to read online", off here.
       extra: false,
     });
