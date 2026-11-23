@@ -1,7 +1,7 @@
 import { type AlertGroup, ErrorCode, PushPlatform } from "@loomkeep/shared";
 import { HttpStatus, Injectable, Logger } from "@nestjs/common";
 import type { PushSubscription } from "@prisma/client";
-import webpush from "web-push";
+import * as webpush from "web-push";
 import { AppException } from "../common/app.exception";
 import { primaryWebOrigin } from "../common/web-origin.util";
 import { PrismaService } from "../prisma/prisma.service";
