@@ -343,8 +343,8 @@ importers:
         specifier: ^6.12.2
         version: 6.12.2(supports-color@10.2.2)
       web-push:
-        specifier: ^3.6.7
-        version: 3.6.7(supports-color@10.2.2)
+        specifier: ^4.0.0
+        version: 4.0.0(supports-color@10.2.2)
     devDependencies:
       '@fastify/static':
         specifier: ^10.1.12
@@ -6087,8 +6087,8 @@ packages:
     resolution: {integrity: sha512-2NxoveTT58mjYT4n3RPTEfCZGLMbidoO8XEieXfpSYxu+PQJ1qpx4ypwH6N+uF9twBPIvRRgvkvW5HUTYWENig==}
     engines: {node: '>= 20'}
 
-  http_ece@1.2.0:
-    resolution: {integrity: sha512-JrF8SSLVmcvc5NducxgyOrKXe3EsyHMgBFgSaIUGmArKe+rwr0uphRkRXvwiom3I+fpIfoItveHrfudL8/rxuA==}
+  http_ece@1.2.1:
+    resolution: {integrity: sha512-+tzLoMYgXvicu60sVFoswTiu6BiQ6EX3DORRJQ3W2dNpNWCyZ3tcmRFZZ3jgVyw8ziWUCeUARKCkYDY6JgFx+w==}
     engines: {node: '>=16'}
 
   https-proxy-agent@7.0.6:
@@ -8818,8 +8818,8 @@ packages:
   web-namespaces@2.0.1:
     resolution: {integrity: sha512-bKr1DkiNa2krS7qxNtdrtHAmzuYGFQLiQ13TsorsdT6ULTkPLKuu5+GsFpDlg6JFjUTwX2DyhMPG2be8uPrqsQ==}
 
-  web-push@3.6.7:
-    resolution: {integrity: sha512-OpiIUe8cuGjrj3mMBFWY+e4MMIkW3SVT+7vEIjvD9kejGUypv8GPDf84JdPWskK8zMRIJ6xYGm+Kxr8YkPyA0A==}
+  web-push@4.0.0:
+    resolution: {integrity: sha512-iKzGK/q3k+kjoPK+fkbs8ymYvEqu5RJNAypEskW+UAYsC44upqb0f+T8QSYW4naowl9bzjlHRe8CI0NFCBzZeQ==}
     engines: {node: '>= 16'}
     hasBin: true
 
@@ -14972,7 +14972,7 @@ snapshots:
       - kerberos
       - supports-color
 
-  http_ece@1.2.0: {}
+  http_ece@1.2.1: {}
 
   https-proxy-agent@7.0.6(supports-color@10.2.2):
     dependencies:
@@ -18059,14 +18059,14 @@ snapshots:
 
   web-namespaces@2.0.1: {}
 
-  web-push@3.6.7(supports-color@10.2.2):
+  web-push@4.0.0(supports-color@10.2.2):
     dependencies:
       asn1.js: 5.4.1
-      http_ece: 1.2.0
-      https-proxy-agent: 7.0.6(supports-color@10.2.2)
+      http_ece: 1.2.1
+      https-proxy-agent: 9.1.0(supports-color@10.2.2)
       jws: 4.0.1
-      minimist: 1.2.8
     transitivePeerDependencies:
+      - kerberos
       - supports-color
 
   web-vitals@6.2.3: {}
