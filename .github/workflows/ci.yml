@@ -806,7 +806,8 @@ jobs:
   # in the same run. It starts as a draft: the repository's releases are
   # immutable, so a published one takes no more assets (1.12.0 got no APK
   # that way). publish-release-apk attaches the APK, then publishes it as
-  # the latest one.
+  # the latest one. The notes end with each image pinned by digest: a tag
+  # like `1.12.0` can be moved, a digest names one image only.
   release:
     needs: ready-to-ship
     # See deploy.
@@ -819,6 +820,7 @@ jobs:
       cancel-in-progress: false
     permissions:
       contents: write
+      packages: read
     outputs:
       tag: ${{ steps.release.outputs.tag }}
       draft: ${{ steps.release.outputs.draft }}
@@ -829,6 +831,11 @@ jobs:
             package.json
             CHANGELOG.md
           sparse-checkout-cone-mode: false
+      - uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
       - name: Create the version's draft release if it doesn't exist yet
         id: release
         env:
@@ -853,6 +860,13 @@ jobs:
           {
             if [ -n "$subtitle" ]; then printf '# %s\n' "$subtitle"; fi
             awk -v h="$heading" '$0 == h {f=1; next} f && /^## / {exit} f' CHANGELOG.md
+            printf '\n## Images\n\nThe exact images of this release, signed by this workflow:\n\n```\n'
+            for name in api web; do
+              image="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/loomkeep-$name"
+              digest=$(docker buildx imagetools inspect "$image:${tag#v}" --format '{{json .Manifest}}' | jq -r .digest)
+              printf '%s:%s@%s\n' "$image" "${tag#v}" "$digest"
+            done
+            printf '```\n\nCheck one with `gh attestation verify oci://<image> -R %s`.\n' "$GITHUB_REPOSITORY"
           } > notes.md
           # The tag only exists once publish-release-apk publishes it.
           gh release create "$tag" \

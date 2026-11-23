@@ -27,6 +27,8 @@ history from before it was started.
 - Ratings go in half points, from 0 to 10. Half stars imported from
   Letterboxd, Goodreads or StoryGraph now show as they are (7.5) instead of
   rounded.
+- Release notes end with the API and web images pinned by digest, for
+  self-hosters who want the exact signed image rather than a tag.
 
 ### Fixed
 
