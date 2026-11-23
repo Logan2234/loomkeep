@@ -7,12 +7,15 @@
   let {
     brand,
     decorative = false,
+    mono = false,
     class: className = "h-4 w-4",
   }: {
     brand: ProviderBrandKey;
     /** Hide the mark when adjacent text already identifies the provider. */
     decorative?: boolean;
     class?: string;
+    /** Draw a logo in the surrounding text colour, for a chip that is already brand-coloured. */
+    mono?: boolean;
   } = $props();
 
   const mark = $derived(PROVIDER_BRANDS[brand]);
@@ -22,7 +25,7 @@
   <svg
     viewBox="0 0 24 24"
     class={className}
-    fill={mark.color}
+    fill={mono ? "currentColor" : mark.color}
     role={decorative ? undefined : "img"}
     aria-label={decorative ? undefined : mark.name}
     aria-hidden={decorative ? "true" : undefined}>

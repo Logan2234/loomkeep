@@ -1,4 +1,5 @@
 import type { QueryKey } from "@tanstack/svelte-query";
+import { keys } from "./api/keys";
 import { createApiMutation } from "./api/mutation.svelte";
 import { m } from "./paraglide/messages.js";
 
@@ -21,6 +22,15 @@ interface EntryTrackingMutationsOptions<TDetail, TChanges> {
 }
 
 /**
+ * What a change made from a work's page refreshes: the page, and the library
+ * (lists, counts, home widgets), as quick add does. With a 30 s staleTime,
+ * the library otherwise showed the old state right after.
+ */
+export function entryTrackingInvalidates(detailKey: QueryKey): QueryKey[] {
+  return [detailKey, keys.library.all()];
+}
+
+/**
  * The add/patch/remove(/replay) mutation set every media-detail page (books,
  * games, music, media) wires up identically against its own domain's entry
  * endpoints — only the endpoint functions and the upsert payload's shape
@@ -32,13 +42,13 @@ export function createEntryTrackingMutations<TDetail, TChanges>(
 ) {
   const addMut = createApiMutation(() => ({
     mutate: () => opts.upsert(opts.detail()!),
-    invalidates: [opts.detailKey()],
+    invalidates: entryTrackingInvalidates(opts.detailKey()),
     errorToast: true,
   }));
 
   const patchMut = createApiMutation(() => ({
     mutate: (changes: TChanges) => opts.update(opts.entryId()!, changes),
-    invalidates: [opts.detailKey()],
+    invalidates: entryTrackingInvalidates(opts.detailKey()),
     errorToast: true,
   }));
 
@@ -46,19 +56,19 @@ export function createEntryTrackingMutations<TDetail, TChanges>(
     mutate: () => opts.remove(opts.entryId()!),
     onSuccess: () => opts.onRemoveSuccess(),
     successToast: m.tracking_removed_toast(),
-    invalidates: [opts.detailKey()],
+    invalidates: entryTrackingInvalidates(opts.detailKey()),
     errorToast: true,
   }));
 
   const addReplayMut = createApiMutation(() => ({
     mutate: () => opts.addReplay!(opts.entryId()!),
-    invalidates: [opts.detailKey()],
+    invalidates: entryTrackingInvalidates(opts.detailKey()),
     errorToast: true,
   }));
 
   const removeReplayMut = createApiMutation(() => ({
     mutate: (replayId: string) => opts.removeReplay!(replayId),
-    invalidates: [opts.detailKey()],
+    invalidates: entryTrackingInvalidates(opts.detailKey()),
     errorToast: true,
   }));
 

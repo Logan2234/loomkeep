@@ -22,6 +22,7 @@ const ROW: AdminUserDto = {
   emailVerified: true,
   role: "USER",
   plan: "FREE",
+  planExpiresAt: null,
   createdAt: "2026-03-14T00:00:00.000Z",
   lastActiveAt: null,
   inactivityWarningSentAt: null,

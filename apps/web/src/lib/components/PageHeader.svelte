@@ -6,6 +6,8 @@
   // centered LOOMKEEP wordmark instead of this icon+title layout.
   import type { Snippet } from "svelte";
   import Icon from "./Icon.svelte";
+  import ProviderMark from "./ProviderMark.svelte";
+  import type { ProviderBrandKey } from "#lib/provider-brands.js";
 
   import { page } from "$app/state";
   import { goBack, goUp } from "#lib/back-nav.svelte.js";
@@ -19,6 +21,7 @@
 
   let {
     icon,
+    brand,
     title,
     subtitle,
     actions,
@@ -31,6 +34,8 @@
     class: cls = "mb-4 md:mb-8",
   }: {
     icon?: IconName;
+    /** A third-party brand's mark in place of `icon` (an import source). */
+    brand?: ProviderBrandKey;
     title: string;
     subtitle?: string;
     actions?: Snippet;
@@ -127,7 +132,9 @@
          than being cut. -->
     <div class="flex min-h-14 items-center gap-2 py-1">
       {#if backHref}{@render backLink("")}{/if}
-      {#if icon}
+      {#if brand}
+        <ProviderMark {brand} decorative class="h-5 w-5 shrink-0" />
+      {:else if icon}
         <Icon name={icon} class="text-accent h-5 w-5 shrink-0" />
       {/if}
       <h1
@@ -151,7 +158,11 @@
              first line at both text sizes. -->
         <div class="flex items-start gap-2 text-3xl md:text-4xl">
           {#if backHref}{@render backLink("h-lh")}{/if}
-          {#if icon}
+          {#if brand}
+            <span class="flex h-lh shrink-0 items-center">
+              <ProviderMark {brand} decorative class="h-7 w-7" />
+            </span>
+          {:else if icon}
             <span class="flex h-lh shrink-0 items-center">
               <Icon name={icon} class="text-accent h-7 w-7" />
             </span>

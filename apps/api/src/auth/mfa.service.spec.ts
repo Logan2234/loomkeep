@@ -4,12 +4,14 @@ import * as bcrypt from "bcryptjs";
 import { randomBytes } from "node:crypto";
 import { Secret, TOTP } from "otpauth";
 import { vi, type Mock } from "vitest";
+import type { EventsGateway } from "../events/events.gateway";
 import type { AchievementService } from "../gamification/achievements/achievement.service";
 import type { MailService } from "../mail/mail.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import type { SecurityEventService } from "../security/security-event.service";
 import { encryptTotpSecret } from "./mfa-crypto.util";
 import { MfaService, RECOVERY_CODE_COUNT } from "./mfa.service";
+import { SessionCacheService } from "./session-cache.service";
 
 const ENCRYPTION_KEY = randomBytes(32).toString("base64");
 const CURRENT_PASSWORD = "correct";
@@ -61,6 +63,7 @@ function makeService() {
       ),
     },
     refreshToken: {
+      findMany: vi.fn().mockResolvedValue([{ id: "session-2" }]),
       deleteMany: vi.fn(),
     },
     $transaction: vi.fn((ops: Promise<unknown>[]) => Promise.all(ops)),
@@ -75,6 +78,8 @@ function makeService() {
     evaluate: vi.fn().mockResolvedValue(undefined),
   } as unknown as AchievementService;
   const security = { record: vi.fn() } as unknown as SecurityEventService;
+  const sessionCache = new SessionCacheService();
+  const events = { disconnectSession: vi.fn() };
 
   return {
     service: new MfaService(
@@ -83,7 +88,11 @@ function makeService() {
       mail,
       achievements,
       security,
+      sessionCache,
+      events as unknown as EventsGateway,
     ),
+    sessionCache,
+    events,
     prisma,
     achievements,
     security,
@@ -232,6 +241,36 @@ describe("MfaService.confirmTotp / setEmailMfaEnabled — recovery code generati
   });
 });
 
+// Reopening the setup modal on an account with TOTP on replaced the active
+// secret: the authenticator app's codes stopped working at the next login
+// (audit 2026-11-17, BUG-10).
+describe("MfaService.generateTotpSetup", () => {
+  it("refuses while TOTP is on, leaving the active secret alone", async () => {
+    const { service, prisma } = makeService();
+    (prisma.user as unknown as { updateMany: Mock }).updateMany = vi
+      .fn()
+      .mockResolvedValue({ count: 0 });
+
+    await expect(
+      service.generateTotpSetup("user-1", "a@example.com"),
+    ).rejects.toMatchObject({ code: "auth.mfa_totp_already_enabled" });
+    expect(prisma.user.update).not.toHaveBeenCalled();
+  });
+
+  it("stores a new pending secret while TOTP is off", async () => {
+    const { service, prisma } = makeService();
+    const updateMany = vi.fn().mockResolvedValue({ count: 1 });
+    (prisma.user as unknown as { updateMany: Mock }).updateMany = updateMany;
+
+    await service.generateTotpSetup("user-1", "a@example.com");
+
+    expect(updateMany).toHaveBeenCalledWith({
+      where: { id: "user-1", mfaTotpEnabled: false },
+      data: { mfaTotpSecretEnc: expect.any(String) },
+    });
+  });
+});
+
 describe("MfaService.disableTotp", () => {
   it("clears the stored secret, its last step and the flag", async () => {
     const { service, prisma } = makeService();
@@ -249,6 +288,23 @@ describe("MfaService.disableTotp", () => {
     expect(prisma.refreshToken.deleteMany).toHaveBeenCalledWith({
       where: { userId: "user-1", id: { not: "session-1" } },
     });
+  });
+});
+
+// The other sessions' rows went, but their cached "still live" answer and
+// their sockets stayed (audit 2026-11-17, SEC-07).
+describe("MfaService — revoking the other sessions", () => {
+  it("evicts them from the session cache and closes their sockets", async () => {
+    const { service, sessionCache, events } = makeService();
+    sessionCache.markLive("session-1");
+    sessionCache.markLive("session-2");
+
+    await service.disableTotp("user-1", "session-1");
+
+    expect(sessionCache.isKnownLive("session-2")).toBe(false);
+    expect(sessionCache.isKnownLive("session-1")).toBe(true);
+    expect(events.disconnectSession).toHaveBeenCalledWith("session-2");
+    expect(events.disconnectSession).not.toHaveBeenCalledWith("session-1");
   });
 });
 

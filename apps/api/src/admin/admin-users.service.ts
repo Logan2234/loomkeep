@@ -8,12 +8,13 @@ import {
   ErrorCode,
 } from "@loomkeep/shared";
 import { HttpStatus, Injectable } from "@nestjs/common";
-import { Prisma } from "@prisma/client";
+import { type Plan, Prisma } from "@prisma/client";
 import { AppException } from "../common/app.exception";
 import {
   CANONICAL_EXTERNAL_ID_SELECT,
   canonicalExternalId,
 } from "../common/external-id.util";
+import { effectivePlan } from "../entitlements/entitlement.service";
 import { EventsGateway } from "../events/events.gateway";
 import { PrismaService } from "../prisma/prisma.service";
 import { ageBracket } from "./admin-accounts-stats.util";
@@ -98,16 +99,16 @@ export class AdminUsersService {
     const [entitlements, counts, online] = await Promise.all([
       this.prisma.userEntitlement.findMany({
         where: { userId: { in: userIds } },
-        select: { userId: true, plan: true },
+        select: { userId: true, plan: true, expiresAt: true },
       }),
       this.libraryCounts(userIds),
       this.events.connectedUserIds(),
     ]);
-    const planByUserId = new Map(entitlements.map((e) => [e.userId, e.plan]));
+    const entitlementByUserId = new Map(entitlements.map((e) => [e.userId, e]));
 
     return users.map((u) =>
       toAdminUserDto(u, {
-        plan: planByUserId.get(u.id) ?? "FREE",
+        ...planOf(entitlementByUserId.get(u.id)),
         libraryCounts: counts.get(u.id) ?? EMPTY_LIBRARY_COUNTS,
         online: online.has(u.id),
       }),
@@ -377,4 +378,19 @@ export class AdminUsersService {
       .sort((a, b) => b.addedAt.localeCompare(a.addedAt))
       .slice(0, RECENT_COUNT);
   }
+}
+
+/** The plan in force for the admin views, with the end of a premium grant. */
+function planOf(
+  entitlement: { plan: Plan; expiresAt: Date | null } | undefined,
+): { plan: Plan; planExpiresAt: string | null } {
+  if (!entitlement) return { plan: "FREE", planExpiresAt: null };
+  const plan = effectivePlan(entitlement);
+  return {
+    plan,
+    planExpiresAt:
+      plan === "PREMIUM"
+        ? (entitlement.expiresAt?.toISOString() ?? null)
+        : null,
+  };
 }

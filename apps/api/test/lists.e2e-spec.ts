@@ -7,6 +7,7 @@ import { ProfileAccess } from "@loomkeep/shared";
 import { INestApplication } from "@nestjs/common";
 import request from "supertest";
 import { App } from "supertest/types";
+import type { PrismaService } from "./../src/prisma/prisma.service";
 import { authCookies, createE2eApp, e2eUser } from "./e2e-app";
 
 /**
@@ -19,6 +20,7 @@ import { authCookies, createE2eApp, e2eUser } from "./e2e-app";
 describe("Collaborative lists (e2e)", () => {
   let app: INestApplication<App>;
   let http: App;
+  let prisma: PrismaService;
 
   const users = {
     alice: e2eUser("e2e-list-alice"),
@@ -62,7 +64,7 @@ describe("Collaborative lists (e2e)", () => {
   }
 
   beforeAll(async () => {
-    ({ app, http } = await createE2eApp());
+    ({ app, http, prisma } = await createE2eApp());
 
     for (const who of Object.keys(users) as Who[]) {
       const registered = await request(http)
@@ -232,5 +234,49 @@ describe("Collaborative lists (e2e)", () => {
     expect(detail.body.items).toHaveLength(1);
     const library = await as("carol").get("/api/library").expect(200);
     expect(library.body.items).toEqual([]);
+  });
+
+  // The next position was read, then written, outside any lock: works added
+  // at the same moment (two editors) shared one, and a ranked list's order
+  // became arbitrary (audit 2026-11-17, BUG-35).
+  it("gives works added at the same moment each their own position", async () => {
+    const own = await as("alice")
+      .post("/api/lists")
+      .send({ title: "Rush", kind: "RANKED", visibility: "PRIVATE" })
+      .expect(201);
+    const works = await Promise.all(
+      Array.from({ length: 6 }, (_, i) =>
+        prisma.mediaItem.create({
+          data: {
+            type: "MOVIE",
+            canonicalSource: "TMDB",
+            title: `Rush ${i}`,
+            status: "Released",
+            externalIds: {
+              create: {
+                source: "TMDB",
+                externalId: `rush-${i}`,
+                type: "MOVIE",
+              },
+            },
+          },
+        }),
+      ),
+    );
+
+    await Promise.all(
+      works.map((work) =>
+        as("alice")
+          .post(`/api/lists/${own.body.id}/items`)
+          .send({ targetType: "MEDIA", targetId: work.id })
+          .expect(201),
+      ),
+    );
+
+    const items = await prisma.listItem.findMany({
+      where: { listId: own.body.id },
+      select: { position: true },
+    });
+    expect(new Set(items.map((i) => i.position)).size).toBe(works.length);
   });
 });

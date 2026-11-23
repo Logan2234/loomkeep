@@ -17,6 +17,7 @@
   "apierr_auth_refresh_superseded": "La tua sessione è appena stata rinnovata in un’altra scheda, riprova.",
   "apierr_auth_invalid_reset_token": "Questo link di reimpostazione non è valido o è scaduto.",
   "apierr_auth_mfa_totp_not_in_progress": "Nessuna configurazione TOTP in corso.",
+  "apierr_auth_mfa_totp_already_enabled": "La verifica in due passaggi tramite app è già attiva. Disattivala prima di configurare una nuova app.",
   "apierr_auth_current_password_incorrect": "La password attuale non è corretta.",
   "apierr_auth_missing_access_token": "Autenticazione richiesta.",
   "apierr_auth_invalid_access_token": "La tua sessione è scaduta, accedi di nuovo.",

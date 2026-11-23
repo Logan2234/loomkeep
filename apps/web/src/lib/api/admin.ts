@@ -253,11 +253,15 @@ export const updateAdminUserRole = (userId: string, role: Role) =>
     body: { role },
   });
 
-export const updateAdminUserPlan = (userId: string, plan: Plan) =>
+export const updateAdminUserPlan = (
+  userId: string,
+  plan: Plan,
+  expiresAt: string | null = null,
+) =>
   typedRequest("/admin/users/{userId}/plan", {
     method: "PATCH",
     params: { userId },
-    body: { plan },
+    body: { plan, expiresAt },
   });
 
 /** Adds (positive) or removes (negative) XP by hand; returns the new total. */

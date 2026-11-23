@@ -660,8 +660,35 @@ describe("AdminUsersController.updateUserPlan", () => {
       plan: "PREMIUM",
     });
 
-    expect(entitlements.setPlan).toHaveBeenCalledWith("user-2", "PREMIUM");
-    expect(result).toEqual({ plan: "PREMIUM" });
+    expect(entitlements.setPlan).toHaveBeenCalledWith(
+      "user-2",
+      "PREMIUM",
+      null,
+    );
+    expect(result).toEqual({ plan: "PREMIUM", expiresAt: null });
+  });
+
+  it("passes on the end date an admin grants premium until", async () => {
+    const { controller, entitlements } = makeController();
+    (entitlements.setPlan as Mock).mockResolvedValueOnce({
+      plan: "PREMIUM",
+      expiresAt: new Date("2026-12-31T23:59:59.999Z"),
+    });
+
+    const result = await controller.updateUserPlan("user-2", {
+      plan: "PREMIUM",
+      expiresAt: "2026-12-31T23:59:59.999Z",
+    });
+
+    expect(entitlements.setPlan).toHaveBeenCalledWith(
+      "user-2",
+      "PREMIUM",
+      new Date("2026-12-31T23:59:59.999Z"),
+    );
+    expect(result).toEqual({
+      plan: "PREMIUM",
+      expiresAt: "2026-12-31T23:59:59.999Z",
+    });
   });
 });
 

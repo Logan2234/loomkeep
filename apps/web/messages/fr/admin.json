@@ -382,6 +382,8 @@
   "admin_users_administrator": "Administrateur",
   "admin_users_self_demote_hint": "Tu ne peux pas retirer ton propre accès admin.",
   "admin_users_plan": "Plan",
+  "admin_users_plan_until": "Premium jusqu’au",
+  "admin_users_plan_until_hint": "Facultatif. Laissé vide, le premium n’a pas de fin.",
   "admin_users_free": "Gratuit",
   "admin_users_manual_plan": "Pas de facturation branchée — octroi manuel uniquement (voir docs/adr/0001-open-core-agpl.md).",
   "admin_users_access": "Accès",

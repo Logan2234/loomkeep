@@ -27,6 +27,7 @@ export const ErrorCode = {
   AuthRefreshSuperseded: "auth.refresh_superseded",
   AuthInvalidResetToken: "auth.invalid_reset_token",
   AuthMfaTotpNotInProgress: "auth.mfa_totp_not_in_progress",
+  AuthMfaTotpAlreadyEnabled: "auth.mfa_totp_already_enabled",
   AuthCurrentPasswordIncorrect: "auth.current_password_incorrect",
   // A sensitive action asked for a confirmation this session doesn't have, or
   // has had for too long (see RecentAuthGuard).

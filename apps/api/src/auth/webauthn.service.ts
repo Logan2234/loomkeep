@@ -24,10 +24,13 @@ import {
 import { createHmac } from "node:crypto";
 import { AppException } from "../common/app.exception";
 import { androidAppOrigins, webOrigins } from "../common/web-origin.util";
+import { EventsGateway } from "../events/events.gateway";
 import { notificationCopy } from "../notifications/notification-copy";
 import { PrismaService } from "../prisma/prisma.service";
 import { SecurityEventService } from "../security/security-event.service";
 import { MfaService } from "./mfa.service";
+import { SessionCacheService } from "./session-cache.service";
+import { otherSessions, revokeSessionsWith } from "./session-revocation.util";
 
 const RP_NAME = "Loomkeep";
 /** Ceremony window — matches the other short-lived challenge tables (MfaLoginChallenge, EmailChangeRequest). */
@@ -82,7 +85,18 @@ export class WebauthnService {
     private readonly configService: ConfigService,
     private readonly security: SecurityEventService,
     private readonly mfa: MfaService,
+    private readonly sessionCache: SessionCacheService,
+    private readonly events: EventsGateway,
   ) {}
+
+  /** What revokeSessionsWith reaches. */
+  private get sessionDeps() {
+    return {
+      prisma: this.prisma,
+      sessionCache: this.sessionCache,
+      events: this.events,
+    };
+  }
 
   /** WEB_ORIGIN is the browser-facing origin (comma-separated) — see main.ts's CORS setup. Its hostname doubles as the WebAuthn RP ID, so self-hosters need no extra config. */
   private origins(): string[] {
@@ -304,11 +318,10 @@ export class WebauthnService {
 
     // Removing a credential — like disabling any other MFA method — should
     // invalidate other sessions that were relying on it.
-    await this.prisma.refreshToken.deleteMany({
-      where: currentSessionId
-        ? { userId, id: { not: currentSessionId } }
-        : { userId },
-    });
+    await revokeSessionsWith(
+      this.sessionDeps,
+      otherSessions(userId, currentSessionId),
+    );
 
     return { passwordlessDisabled };
   }
@@ -360,17 +373,16 @@ export class WebauthnService {
       );
     }
 
-    await this.prisma.$transaction([
-      this.prisma.user.update({
-        where: { id: userId },
-        data: { passwordlessEnabled: enabled },
-      }),
-      this.prisma.refreshToken.deleteMany({
-        where: currentSessionId
-          ? { userId, id: { not: currentSessionId } }
-          : { userId },
-      }),
-    ]);
+    await revokeSessionsWith(
+      this.sessionDeps,
+      otherSessions(userId, currentSessionId),
+      [
+        this.prisma.user.update({
+          where: { id: userId },
+          data: { passwordlessEnabled: enabled },
+        }),
+      ],
+    );
 
     await this.security.record({
       type: enabled ? "MFA_PASSWORDLESS_ENABLED" : "MFA_PASSWORDLESS_DISABLED",

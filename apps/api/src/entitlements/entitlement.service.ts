@@ -10,9 +10,9 @@ import { PrismaService } from "../prisma/prisma.service";
  * on first touch instead, so a pre-existing account (or one created before
  * this table existed) never ends up without one.
  *
- * `hasPremium` only looks at `plan` for now — `expiresAt` isn't enforced
- * yet (no billing/webhook writes it), so an admin-granted PREMIUM plan
- * stays in effect until changed by hand.
+ * A PREMIUM plan ends at `expiresAt` when one is set (an admin grant can
+ * carry one; no billing writes it yet), and lasts until changed by hand
+ * otherwise.
  */
 @Injectable()
 export class EntitlementService {
@@ -55,10 +55,9 @@ export class EntitlementService {
     });
   }
 
-  async hasPremium(userId: string): Promise<boolean> {
+  async hasPremium(userId: string, now = new Date()): Promise<boolean> {
     if (this.instancePremium()) return true;
-    const entitlement = await this.getEntitlement(userId);
-    return entitlement.plan === "PREMIUM";
+    return effectivePlan(await this.getEntitlement(userId), now) === "PREMIUM";
   }
 
   /**
@@ -74,16 +73,42 @@ export class EntitlementService {
     return this.hasPremium(userId);
   }
 
-  /** Admin-only write path (see AdminUsersController) — no billing behind it. */
-  async setPlan(userId: string, plan: Plan): Promise<UserEntitlement> {
+  /**
+   * Admin-only write path (see AdminUsersController) — no billing behind it.
+   * `expiresAt` ends a PREMIUM grant (null: no end); FREE never keeps one.
+   */
+  async setPlan(
+    userId: string,
+    plan: Plan,
+    expiresAt: Date | null = null,
+  ): Promise<UserEntitlement> {
+    const until = plan === "PREMIUM" ? expiresAt : null;
     return this.prisma.userEntitlement.upsert({
       where: { userId },
-      create: { userId, plan, source: "ADMIN_GRANT", grantedAt: new Date() },
+      create: {
+        userId,
+        plan,
+        source: "ADMIN_GRANT",
+        grantedAt: new Date(),
+        expiresAt: until,
+      },
       update: {
         plan,
         source: "ADMIN_GRANT",
         grantedAt: plan === "PREMIUM" ? new Date() : null,
+        expiresAt: until,
       },
     });
   }
+}
+
+/** The plan in force: a PREMIUM one past its `expiresAt` is over. */
+export function effectivePlan(
+  entitlement: Pick<UserEntitlement, "plan" | "expiresAt">,
+  now = new Date(),
+): Plan {
+  return entitlement.plan === "PREMIUM" &&
+    (!entitlement.expiresAt || entitlement.expiresAt > now)
+    ? "PREMIUM"
+    : "FREE";
 }

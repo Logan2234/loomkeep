@@ -213,6 +213,20 @@
     "igdb",
     "openlibrary",
     "musicbrainz",
+    "imdb",
+    "rottentomatoes",
+    "metacritic",
+    "trakt",
+    "letterboxd",
+    "simkl",
+    "myanimelist",
+    "goodreads",
+    "storygraph",
+    "babelio",
+    "steam",
+    "tvtime",
+    "justwatch",
+    "coverartarchive",
   ];
   const LONG_CAROUSEL_ITEMS = Array.from({ length: 30 }, (_, i) => `${i + 1}`);
   const CAROUSEL_ITEMS = [

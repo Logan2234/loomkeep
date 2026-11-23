@@ -19,6 +19,11 @@ export function matchesMimeType(buffer: Buffer, mimeType: string): boolean {
   return MAGIC_BYTES[mimeType]?.(buffer) ?? false;
 }
 
+// Far above any photo an avatar needs (a 24-megapixel camera fits), and the
+// bound that matters: the byte limit doesn't stop a uniform image of tens of
+// megapixels, which compresses to a few KB and decodes into a gigabyte.
+const AVATAR_MAX_INPUT_PIXELS = 25_000_000;
+
 /** What every avatar is stored as, whatever was uploaded. */
 export const STORED_AVATAR_MIME_TYPE = "image/webp";
 
@@ -50,7 +55,9 @@ export const STORED_AVATAR_MIME_TYPE = "image/webp";
 export async function reencodeAvatar(
   buffer: Buffer,
 ): Promise<Uint8Array<ArrayBuffer>> {
-  const encoded = await sharp(buffer)
+  const encoded = await sharp(buffer, {
+    limitInputPixels: AVATAR_MAX_INPUT_PIXELS,
+  })
     .rotate()
     .resize({
       width: AVATAR_MAX_DIMENSION,
