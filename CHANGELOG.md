@@ -44,7 +44,6 @@ history from before it was started.
 - An optional "How did you hear about Loomkeep?" at the end of the welcome
   tour, with the answers in Admin › Stats. Off by default: turn it on in
   Admin › Instance settings or with `ASK_ACQUISITION_SOURCE=true`.
-
 - Admin › Instance settings › Domains: turn a domain off for the whole
   instance, with the number of accounts that use it. It disappears from the
   app for everyone, and the libraries come back when it's turned on again.
