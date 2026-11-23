@@ -36,6 +36,8 @@
   {#if !layout.compact && !value}
     <kbd
       class="border-border text-dim pointer-events-none absolute inset-y-0 right-3 my-auto h-fit rounded border px-1.5 font-mono text-[0.68rem]"
-      aria-hidden="true">/</kbd>
+      aria-hidden="true">
+      /
+    </kbd>
   {/if}
 </div>

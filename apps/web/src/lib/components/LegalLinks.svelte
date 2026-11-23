@@ -25,7 +25,9 @@
       href="/legal/legal-notice"
       target="_blank"
       rel="noopener noreferrer"
-      class="btn-text font-normal">{m.common_legal_notice()}</a>
+      class="btn-text font-normal">
+      {m.common_legal_notice()}
+    </a>
 
     <span class="mx-1.5">·</span>
 
@@ -33,7 +35,9 @@
       href="/legal/privacy-policy"
       target="_blank"
       rel="noopener noreferrer"
-      class="btn-text font-normal">{m.common_privacy()}</a>
+      class="btn-text font-normal">
+      {m.common_privacy()}
+    </a>
 
     <span class="mx-1.5">·</span>
 
@@ -41,7 +45,9 @@
       href="/legal/terms-of-service"
       target="_blank"
       rel="noopener noreferrer"
-      class="btn-text font-normal">{m.common_terms()}</a>
+      class="btn-text font-normal">
+      {m.common_terms()}
+    </a>
 
     {#if appConfig.socialEnabled}
       <span class="mx-1.5">·</span>
@@ -50,7 +56,9 @@
         href="/legal/transparency"
         target="_blank"
         rel="noopener noreferrer"
-        class="btn-text font-normal">{m.common_transparency()}</a>
+        class="btn-text font-normal">
+        {m.common_transparency()}
+      </a>
     {/if}
   </nav>
 

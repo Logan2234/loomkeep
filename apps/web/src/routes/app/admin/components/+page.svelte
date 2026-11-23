@@ -363,8 +363,9 @@
 
 {#snippet familyHeading(index: number, title: string, description: string)}
   <div class="mb-6 grid gap-2 md:grid-cols-[7rem_1fr] md:gap-6">
-    <span class="timecode text-xs"
-      >{String(index + 1).padStart(2, "0")} / {SECTIONS.length}</span>
+    <span class="timecode text-xs">
+      {String(index + 1).padStart(2, "0")} / {SECTIONS.length}
+    </span>
     <div>
       <h2
         class="font-display text-2xl font-extrabold tracking-tight md:text-3xl">
@@ -607,8 +608,9 @@
                   class="border-border aspect-square rounded-lg border"
                   style:background={`var(--${swatch})`}>
                 </div>
-                <code class="text-dim text-micro mt-1 block truncate"
-                  >{swatch}</code>
+                <code class="text-dim text-micro mt-1 block truncate">
+                  {swatch}
+                </code>
               </div>
             {/each}
           </div>
@@ -621,8 +623,9 @@
 {#snippet buttons()}
   <div class="flex flex-wrap items-center gap-3">
     {#each BUTTONS.filter((button) => !componentSearch || matches(button.className) || matches(".btn")) as button (button.label)}
-      <button type="button" class={button.className} disabled={button.disabled}
-        >{button.label}</button>
+      <button type="button" class={button.className} disabled={button.disabled}>
+        {button.label}
+      </button>
     {/each}
     <button type="button" class="btn-icon" aria-label={m.common_edit()}>
       <Icon name="edit" class="h-3.5 w-3.5" />
@@ -809,8 +812,9 @@
       <Avatar seed="Bastien" size={40} />
       <Avatar seed="Chloé" size={40} />
     </div>
-    <span class="text-dim text-sm"
-      ><RelativeTime iso={relativeDate} class="timecode" /></span>
+    <span class="text-dim text-sm">
+      <RelativeTime iso={relativeDate} class="timecode" />
+    </span>
   </div>
 {/snippet}
 

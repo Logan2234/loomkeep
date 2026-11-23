@@ -319,9 +319,9 @@
     title={m.admin_social_reports_title()}
     back="/app/admin" />
 
-  {#if !appConfig.socialEnabled}<Banner variant="info" class="mb-4"
-      >{m.admin_social_disabled()}</Banner
-    >{/if}
+  {#if !appConfig.socialEnabled}<Banner variant="info" class="mb-4">
+      {m.admin_social_disabled()}
+    </Banner>{/if}
   {#if summaryQuery.error}<AdminQueryError
       message={summaryQuery.error}
       queryKey={keys.admin.reportsSummary()} />{/if}
@@ -384,16 +384,18 @@
       {/each}
     </div>
   {:else if reports.length === 0}
-    <EmptyState
-      ><p>
+    <EmptyState>
+      <p>
         {activeFilters.length
           ? m.admin_no_matches()
           : m.admin_no_matching_reports()}
       </p>
       {#if activeFilters.length}<button
           class="btn btn-ghost mt-3"
-          onclick={resetFilters}>{m.admin_filters_reset()}</button
-        >{/if}</EmptyState>
+          onclick={resetFilters}>
+          {m.admin_filters_reset()}
+        </button>{/if}
+    </EmptyState>
   {:else}
     <ul class="space-y-2">
       {#each reports as r (r.id)}
@@ -442,14 +444,16 @@
               {#if r.target.targetOwnerUsername}
                 <a
                   href="/app/admin/users?q={r.target.targetOwnerUsername}"
-                  class="font-semibold hover:underline"
-                  >@{r.target.targetOwnerUsername}</a>
+                  class="font-semibold hover:underline">
+                  @{r.target.targetOwnerUsername}
+                </a>
                 {#if reportTargetLabel(r.targetType, r.target)}·
                 {/if}
               {/if}
               {#if r.target.href}
-                <a href={r.target.href} class="hover:underline"
-                  >{reportTargetLabel(r.targetType, r.target)}</a>
+                <a href={r.target.href} class="hover:underline">
+                  {reportTargetLabel(r.targetType, r.target)}
+                </a>
               {:else}
                 {reportTargetLabel(r.targetType, r.target)}
               {/if}
@@ -466,11 +470,12 @@
                     <span class="shrink-0 font-mono">
                       {formatDateTime(line.createdAt)}
                     </span>
-                    <span class="shrink-0"
-                      >@{line.authorUsername ??
-                        m.admin_reports_deleted_user()}</span>
-                    <span class="min-w-0 break-words whitespace-pre-wrap"
-                      >{line.text ?? m.chat_message_deleted()}</span>
+                    <span class="shrink-0">
+                      @{line.authorUsername ?? m.admin_reports_deleted_user()}
+                    </span>
+                    <span class="min-w-0 break-words whitespace-pre-wrap">
+                      {line.text ?? m.chat_message_deleted()}
+                    </span>
                   </li>
                 {/each}
               </ol>
@@ -480,8 +485,9 @@
               {#if r.targetOwner}
                 <a
                   href="/app/admin/users?q={r.targetOwner.username}"
-                  class="font-semibold not-italic hover:underline"
-                  >@{r.targetOwner.username}</a> ·
+                  class="font-semibold not-italic hover:underline">
+                  @{r.targetOwner.username}
+                </a> ·
               {/if}
               {m.admin_reports_target_missing()}
             </p>
@@ -492,7 +498,9 @@
             {#if r.reporter}
               <a
                 href="/app/admin/users?q={r.reporter.username}"
-                class="hover:underline">@{r.reporter.username}</a>
+                class="hover:underline">
+                @{r.reporter.username}
+              </a>
             {:else}
               <span class="italic">{m.admin_reports_deleted_user()}</span>
             {/if}

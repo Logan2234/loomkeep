@@ -144,8 +144,9 @@
                 caption={false} />
             </span>
             <span class="min-w-0 flex-1">
-              <span class="block truncate text-sm font-semibold"
-                >{hit.title}</span>
+              <span class="block truncate text-sm font-semibold">
+                {hit.title}
+              </span>
               <span class="timecode text-micro block">
                 {workKindLabel(hit.kind)}{hit.year ? ` · ${hit.year}` : ""}
               </span>

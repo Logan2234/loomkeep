@@ -125,8 +125,9 @@
           class="text-accent text-micro block font-mono font-bold tracking-wider uppercase">
           {workKindLabel(work.kind)}{work.year ? ` · ${work.year}` : ""}
         </span>
-        <span class="font-display block truncate font-extrabold"
-          >{work.title}</span>
+        <span class="font-display block truncate font-extrabold">
+          {work.title}
+        </span>
       </span>
     </div>
 

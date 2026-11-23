@@ -40,7 +40,8 @@ started, with how far along you are.
 
    for (const entry of items) {
      const { current, total } = entry.progress ?? {};
-     const progress = current === undefined ? "" : ` · ${current}/${total ?? "?"}`;
+     const progress =
+       current === undefined ? "" : ` · ${current}/${total ?? "?"}`;
      const line = widget.addText(entry.work.title + progress);
      line.font = Font.systemFont(12);
      line.lineLimit = 1;

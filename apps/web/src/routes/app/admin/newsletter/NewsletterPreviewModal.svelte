@@ -52,7 +52,9 @@
         class="link-accent text-sm font-semibold"
         href={`${CHANGELOG_URL}/${encodeURIComponent(send.quackbackChangelogId)}`}
         target="_blank"
-        rel="noopener noreferrer">{m.admin_changelog_open()}</a>
+        rel="noopener noreferrer">
+        {m.admin_changelog_open()}
+      </a>
     </div>
   </div>
 </Modal>

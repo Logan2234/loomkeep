@@ -208,8 +208,9 @@
               out:fade={{ duration: reduced ? 0 : 100 }}>
               {#if mode === "email"}
                 <label class="flex flex-col gap-1.5">
-                  <span class="text-sm font-semibold"
-                    >{m.admin_invitations_email_label()}</span>
+                  <span class="text-sm font-semibold">
+                    {m.admin_invitations_email_label()}
+                  </span>
                   <input
                     bind:this={emailInput}
                     type="email"
@@ -249,7 +250,9 @@
                       class="btn-icon h-8 w-8 rounded-full text-lg leading-none"
                       aria-label={m.admin_invitations_places_decrease()}
                       disabled={places <= 1}
-                      onclick={() => changePlaces(-1)}>−</button>
+                      onclick={() => changePlaces(-1)}>
+                      −
+                    </button>
                     <span
                       class="font-display w-7 text-center text-lg font-bold tabular-nums"
                       aria-live="polite">
@@ -273,8 +276,9 @@
         <label class="flex flex-col gap-1.5">
           <span class="text-sm font-semibold">
             {m.admin_invitations_label_label()}
-            <span class="text-dim font-normal"
-              >· {m.admin_invitations_label_optional()}</span>
+            <span class="text-dim font-normal">
+              · {m.admin_invitations_label_optional()}
+            </span>
           </span>
           <input
             type="text"

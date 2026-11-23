@@ -709,8 +709,9 @@
       <span class="min-w-0 flex-1 truncate">
         {#if linked}
           <span
-            class="text-dim text-micro mr-1 font-mono font-bold tracking-wider uppercase"
-            >{m.chat_link_preview()}</span>
+            class="text-dim text-micro mr-1 font-mono font-bold tracking-wider uppercase">
+            {m.chat_link_preview()}
+          </span>
         {/if}
         <b class="font-semibold">{title}</b>
         <span class="text-dim">· {detail}</span>
@@ -862,8 +863,9 @@
               <Icon name={DOMAINS[choice.domain].icon} class="h-4 w-4" />
             </span>
             <span class="min-w-0">
-              <span class="block text-sm font-semibold"
-                >{`/pick ${choice.name}`}</span>
+              <span class="block text-sm font-semibold">
+                {`/pick ${choice.name}`}
+              </span>
               <span class="text-dim block text-xs">
                 {choice.label} · {choice.pile}
               </span>
@@ -916,8 +918,9 @@
                 <Icon name={command.icon} class="h-4 w-4" />
               </span>
               <span class="min-w-0">
-                <span class="flex items-center gap-1.5 text-sm font-semibold"
-                  >{command.label}{#if command.isNew}<NewBadge />{/if}</span>
+                <span class="flex items-center gap-1.5 text-sm font-semibold">
+                  {command.label}{#if command.isNew}<NewBadge />{/if}
+                </span>
                 <span class="text-dim block text-xs">{command.hint}</span>
               </span>
             </button>

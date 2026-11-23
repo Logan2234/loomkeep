@@ -90,9 +90,9 @@
   <p
     class="font-display flex items-center gap-2.5 font-extrabold tracking-tight {cls}">
     <BrandMark class="h-[1.3em] w-[1.3em] shrink-0" />
-    <span
-      >{m.common_LOOM()}<span class="text-accent">{m.common_KEEP()}</span
-      ></span>
+    <span>
+      {m.common_LOOM()}<span class="text-accent">{m.common_KEEP()}</span>
+    </span>
   </p>
 {/snippet}
 

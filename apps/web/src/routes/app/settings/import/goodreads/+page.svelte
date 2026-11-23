@@ -9,7 +9,9 @@
       href="https://help.goodreads.com/s/article/How-do-I-import-or-export-my-books-1553870934590"
       target="_blank"
       rel="noopener noreferrer"
-      class="link-accent">{m.settings_import_goodreads_intro()}</a>
+      class="link-accent">
+      {m.settings_import_goodreads_intro()}
+    </a>
     {m.settings_import_goodreads_hint()}
   {/snippet}
 </ImportWizard>

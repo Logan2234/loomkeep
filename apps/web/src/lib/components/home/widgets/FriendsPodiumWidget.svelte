@@ -107,8 +107,9 @@
     </div>
   {:else}
     <div class="flex h-full items-center">
-      <EmptyState compact art="trophy"
-        >{m.gamification_podium_empty()}</EmptyState>
+      <EmptyState compact art="trophy">
+        {m.gamification_podium_empty()}
+      </EmptyState>
     </div>
   {/if}
 </WidgetShell>

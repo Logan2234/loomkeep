@@ -267,8 +267,9 @@
     {#if shelves.series.length > 0}
       <h2 class="font-display mt-8 mb-3 text-lg font-bold">
         {m.creator_other_works()}
-        <span class="timecode text-dim ml-1 text-xs"
-          >{shelves.others.length}</span>
+        <span class="timecode text-dim ml-1 text-xs">
+          {shelves.others.length}
+        </span>
       </h2>
     {/if}
     <div class={shelves.series.length > 0 ? "" : "mt-5"}>
@@ -322,8 +323,9 @@
 {#if personQuery.error}
   <div class="mx-auto max-w-5xl px-5 py-6 md:px-8">
     <Banner variant="error">{personQuery.error}</Banner>
-    <a href={home} onclick={goBack} class="btn btn-ghost mt-4"
-      >← {m.common_back()}</a>
+    <a href={home} onclick={goBack} class="btn btn-ghost mt-4">
+      ← {m.common_back()}
+    </a>
   </div>
 {:else if person}
   <div class="mx-auto max-w-5xl px-5 pt-2 pb-10 md:px-8 md:pt-8">
@@ -355,24 +357,27 @@
                 href={person.homepage}
                 target="_blank"
                 rel="noopener noreferrer"
-                class="border-border text-dim hover:border-accent hover:text-accent rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors"
-                >{m.media_official_site()}</a>
+                class="border-border text-dim hover:border-accent hover:text-accent rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors">
+                {m.media_official_site()}
+              </a>
             {/if}
             {#if person.imdbId}
               <a
                 href={`https://www.imdb.com/name/${person.imdbId}/`}
                 target="_blank"
                 rel="noopener noreferrer"
-                class="border-border text-dim hover:border-accent hover:text-accent rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors"
-                >IMDb ↗</a>
+                class="border-border text-dim hover:border-accent hover:text-accent rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors">
+                IMDb ↗
+              </a>
             {/if}
             {#if person.wikidataId}
               <a
                 href={`https://www.wikidata.org/wiki/${person.wikidataId}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                class="border-border text-dim hover:border-accent hover:text-accent rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors"
-                >Wikidata ↗</a>
+                class="border-border text-dim hover:border-accent hover:text-accent rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors">
+                Wikidata ↗
+              </a>
             {/if}
           </div>
           {#if person.description}
@@ -444,8 +449,9 @@
           class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2">
           <h2 class="font-display text-xl font-bold">
             {isAuthor ? m.creator_collections() : m.creator_mentions()}
-            <span class="timecode text-dim ml-1 text-xs"
-              >{credits.mentions.length}</span>
+            <span class="timecode text-dim ml-1 text-xs">
+              {credits.mentions.length}
+            </span>
           </h2>
           {#if mentionKinds.length > 1}
             <div
@@ -507,7 +513,9 @@
           href={`https://openlibrary.org/authors/${person.id}`}
           target="_blank"
           rel="noopener noreferrer"
-          class="link-accent decoration-1">{m.book_open_library_link()}</a>
+          class="link-accent decoration-1">
+          {m.book_open_library_link()}
+        </a>
       </p>
     {/if}
 

@@ -53,8 +53,9 @@
       {/if}
 
       <p class="text-center">
-        <a href="/login" class="link-accent text-sm"
-          >{m.auth_back_to_login()}</a>
+        <a href="/login" class="link-accent text-sm">
+          {m.auth_back_to_login()}
+        </a>
       </p>
     </div>
   </div>

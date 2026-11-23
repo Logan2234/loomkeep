@@ -379,13 +379,14 @@
           <button
             class="btn btn-ghost btn-sm"
             aria-pressed={previewWidth === "phone"}
-            onclick={() => (previewWidth = "phone")}
-            >{m.admin_preview_phone()}</button
-          ><button
+            onclick={() => (previewWidth = "phone")}>
+            {m.admin_preview_phone()}
+          </button><button
             class="btn btn-ghost btn-sm"
             aria-pressed={previewWidth === "desktop"}
-            onclick={() => (previewWidth = "desktop")}
-            >{m.admin_preview_desktop()}</button>
+            onclick={() => (previewWidth = "desktop")}>
+            {m.admin_preview_desktop()}
+          </button>
         </div>{/if}
       {#if previewError}
         <Banner variant="error">
@@ -394,7 +395,9 @@
             <button
               type="button"
               class="btn btn-ghost btn-sm"
-              onclick={() => void loadPreview()}>{m.common_retry()}</button>
+              onclick={() => void loadPreview()}>
+              {m.common_retry()}
+            </button>
           </div>
         </Banner>
       {/if}

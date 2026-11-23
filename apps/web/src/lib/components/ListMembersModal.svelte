@@ -128,8 +128,9 @@
               class="border-border flex items-center gap-3 rounded-xl border p-3">
               <Avatar seed={owner.username} url={owner.avatarUrl} size={36} />
               <span class="min-w-0 flex-1">
-                <span class="block truncate font-semibold"
-                  >{owner.displayName}</span>
+                <span class="block truncate font-semibold">
+                  {owner.displayName}
+                </span>
                 <span class="timecode text-xs">{m.list_members_owner()}</span>
               </span>
             </li>

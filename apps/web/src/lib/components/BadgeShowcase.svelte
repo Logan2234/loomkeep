@@ -24,8 +24,9 @@
           <span class="lift-med block translate-z-4">
             <AchievementMedallion icon={entryIcon(badge)} {tier} />
           </span>
-          <span class="lift-name block translate-z-3 text-xs font-bold"
-            >{achievementName(badge)}</span>
+          <span class="lift-name block translate-z-3 text-xs font-bold">
+            {achievementName(badge)}
+          </span>
         </div>
       </Tooltip>
     {/each}

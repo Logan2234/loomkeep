@@ -206,8 +206,9 @@
                   style="width: {Math.round(levelShare * 100)}%"></span>
               </span>
             {:else}
-              <span class="text-dim mt-0.5 block text-sm"
-                >{m.nav_profile()}</span>
+              <span class="text-dim mt-0.5 block text-sm">
+                {m.nav_profile()}
+              </span>
             {/if}
           </span>
           <Icon name="chevron-right" class="text-dim h-4 w-4 shrink-0" />
@@ -242,8 +243,9 @@
                 <span class="min-w-0 flex-1">
                   <span class="block truncate font-semibold">{item.label}</span>
                   {#if item.hint && !minor}
-                    <span class="text-dim block truncate text-sm"
-                      >{item.hint()}</span>
+                    <span class="text-dim block truncate text-sm">
+                      {item.hint()}
+                    </span>
                   {/if}
                 </span>
                 {#if item.newBadgeKey && isFeatureNew(item.newBadgeKey)}

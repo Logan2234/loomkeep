@@ -15,8 +15,9 @@
 </script>
 
 <label class="flex flex-col gap-1.5">
-  <span class="timecode text-micro tracking-[0.18em] uppercase"
-    >{m.notefield_label()}</span>
+  <span class="timecode text-micro tracking-[0.18em] uppercase">
+    {m.notefield_label()}
+  </span>
 
   <textarea
     name="notes"

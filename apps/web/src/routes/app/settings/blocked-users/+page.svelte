@@ -51,8 +51,9 @@
             href="/app/u/{user.username}"
             class="min-w-0 flex-1 rounded-sm focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--color-accent)]">
             <span class="block truncate font-semibold">{user.displayName}</span>
-            <span class="text-dim block truncate text-sm"
-              >@{user.username}</span>
+            <span class="text-dim block truncate text-sm">
+              @{user.username}
+            </span>
           </a>
           <button
             class="btn btn-ghost shrink-0"

@@ -158,21 +158,23 @@
           <p class="text-dim flex flex-wrap items-center gap-x-1.5 text-xs">
             <span class="timecode uppercase">{LIST_KIND_LABEL[list.kind]}</span>
             <span aria-hidden="true">·</span>
-            <span
-              >{list.itemCount}
+            <span>
+              {list.itemCount}
               {list.itemCount > 1
                 ? m.lists_works_plural()
-                : m.lists_works_singular()}</span>
+                : m.lists_works_singular()}
+            </span>
             {#if appConfig.socialEnabled}
               <span aria-hidden="true">·</span>
               <span>{LIST_VISIBILITY_LABEL[list.visibility]}</span>
             {/if}
             {#if list.role === "EDITOR"}
               <span aria-hidden="true">·</span>
-              <span
-                >{m.list_owned_by_editor({
+              <span>
+                {m.list_owned_by_editor({
                   name: list.author.displayName,
-                })}</span>
+                })}
+              </span>
             {/if}
           </p>
         </a>

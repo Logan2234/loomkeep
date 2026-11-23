@@ -112,33 +112,36 @@
     <span class="truncate">
       <span class={inline ? "" : "font-semibold"}>{meta.label}</span>
       {#if entry.progress}
-        · <span class="timecode text-dim"
-          >{m.media_watched_of({
+        · <span class="timecode text-dim">
+          {m.media_watched_of({
             watched: entry.progress.watchedEpisodes,
             total: entry.progress.totalEpisodes,
-          })}</span>
+          })}
+        </span>
       {/if}
     </span>
   {:else if entry && isMovie && upcoming}
-    <span class="truncate {digestOff ? 'text-dim' : ''}"
-      >{entry.movieReleaseAlertsEnabled
+    <span class="truncate {digestOff ? 'text-dim' : ''}">
+      {entry.movieReleaseAlertsEnabled
         ? m.media_movie_reminder_active()
-        : m.media_movie_reminder_enable()}</span>
+        : m.media_movie_reminder_enable()}
+    </span>
     {#if !inline && isFeatureNew("movie-releases")}<NewBadge />{/if}
   {:else if entry && isMovie}
     <span class="truncate">
       {#if isWatched}
         {m.home_mark_seen()}
-        {#if movieViewings > 1}<span class="timecode text-dim"
-            >×{movieViewings}</span
-          >{/if}
-        {#if entry.finishedAt}<span class="timecode text-dim"
-            >{formatDate(entry.finishedAt, shortDate(entry.finishedAt))}</span
-          >{/if}
+        {#if movieViewings > 1}<span class="timecode text-dim">
+            ×{movieViewings}
+          </span>{/if}
+        {#if entry.finishedAt}<span class="timecode text-dim">
+            {formatDate(entry.finishedAt, shortDate(entry.finishedAt))}
+          </span>{/if}
       {:else if entry.rewatching}
         {m.media_movie_rewatching()}
-        <span class="timecode text-dim"
-          >{m.media_movie_seen_times({ count: movieViewings })}</span>
+        <span class="timecode text-dim">
+          {m.media_movie_seen_times({ count: movieViewings })}
+        </span>
       {:else}
         {m.media_not_watched()}
       {/if}

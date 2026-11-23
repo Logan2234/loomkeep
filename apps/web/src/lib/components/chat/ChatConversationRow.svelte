@@ -121,8 +121,9 @@
   </span>
   <span class="min-w-0 flex-1">
     <span class="flex items-baseline justify-between gap-2">
-      <span class="truncate font-semibold"
-        >{conversationName(conversation)}</span>
+      <span class="truncate font-semibold">
+        {conversationName(conversation)}
+      </span>
       <span
         class="text-micro flex shrink-0 items-center gap-1 font-mono {unread
           ? 'text-accent'
@@ -161,10 +162,12 @@
       <div class="flex items-center gap-3 px-5 pb-1">
         <Avatar seed={peer?.username ?? "?"} url={peer?.avatarUrl} size={40} />
         <span class="min-w-0">
-          <span class="block truncate font-semibold"
-            >{conversationName(conversation)}</span>
-          <span class="text-dim block truncate text-[0.8rem]"
-            >{conversationPreview(conversation)}</span>
+          <span class="block truncate font-semibold">
+            {conversationName(conversation)}
+          </span>
+          <span class="text-dim block truncate text-[0.8rem]">
+            {conversationPreview(conversation)}
+          </span>
         </span>
       </div>
       <div class="flex flex-col" data-menu-sheet role="menu">

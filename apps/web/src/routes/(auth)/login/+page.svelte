@@ -304,8 +304,9 @@
           bind:value={password}
           required />
         <p class="text-dim -mt-2 text-right text-sm">
-          <a href="/forgot-password" class="link-accent text-sm"
-            >{m.auth_forgot_password()}</a>
+          <a href="/forgot-password" class="link-accent text-sm">
+            {m.auth_forgot_password()}
+          </a>
         </p>
         <!-- On a phone the submit sits at the bottom, over the keyboard once
            it opens. -->
@@ -326,7 +327,9 @@
                 {m.auth_suspended_contact()}
                 <a
                   href="mailto:{appConfig.supportEmail}"
-                  class="link-accent text-sm">{appConfig.supportEmail}</a>
+                  class="link-accent text-sm">
+                  {appConfig.supportEmail}
+                </a>
               </p>
             {/if}
           </div>
@@ -356,8 +359,9 @@
         {#if appConfig.registrationEnabled}
           <p class="text-dim text-center text-sm">
             {m.auth_no_account()}
-            <a href="/register" class="link-accent text-sm"
-              >{m.common_register()}</a>
+            <a href="/register" class="link-accent text-sm">
+              {m.common_register()}
+            </a>
           </p>
         {:else}
           <p class="text-dim text-center text-sm">
@@ -416,8 +420,9 @@
         </div>
         {#if sendEmailCodeMut.error || webauthnMfaMut.error}
           <div out:slide={{ duration: reduced ? 0 : 150 }}>
-            <Banner variant="error"
-              >{sendEmailCodeMut.error ?? webauthnMfaMut.error}</Banner>
+            <Banner variant="error">
+              {sendEmailCodeMut.error ?? webauthnMfaMut.error}
+            </Banner>
           </div>
         {/if}
         <div class="flex-1 lg:hidden"></div>
@@ -492,8 +497,9 @@
         <div class="flex-1 lg:hidden"></div>
         {#if verifyMut.error || resendEmailCodeMut.error}
           <div out:slide={{ duration: reduced ? 0 : 150 }}>
-            <Banner variant="error"
-              >{verifyMut.error ?? resendEmailCodeMut.error}</Banner>
+            <Banner variant="error">
+              {verifyMut.error ?? resendEmailCodeMut.error}
+            </Banner>
           </div>
         {/if}
 

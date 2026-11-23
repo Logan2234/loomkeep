@@ -44,12 +44,12 @@ that already ran, create it once with the command at the top of
 `docker/docker-compose.unleash.yml`.
 
 <Aside type="caution" title="Behind a login proxy">
-  Unleash's open-source edition has no single sign-on, and two of its paths
-  must stay reachable without a login: `/api/client/*`, which the API polls,
-  and `/api/frontend/*`, which every visitor's browser polls. Each already
-  requires its own token. Behind Cloudflare Access or a similar gate, let
-  those two paths through, or every flag silently falls back to its default:
-  see [Behind Cloudflare](/self-hosting/cloudflare/#cloudflare-access).
+  Unleash's open-source edition has no single sign-on, and two of its paths must
+  stay reachable without a login: `/api/client/*`, which the API polls, and
+  `/api/frontend/*`, which every visitor's browser polls. Each already requires
+  its own token. Behind Cloudflare Access or a similar gate, let those two paths
+  through, or every flag silently falls back to its default: see [Behind
+  Cloudflare](/self-hosting/cloudflare/#cloudflare-access).
 </Aside>
 
 ## The news banner
@@ -75,7 +75,7 @@ of that flag with a **JSON** payload:
 
 | Field                 | Required | Meaning                                                                                                                                                                         |
 | --------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `key`                 | yes      | Which message: `maintenance_scheduled` (needs `data.start` and `data.end`, shown in each reader's time zone), `degraded_service`, or `custom`.                                   |
+| `key`                 | yes      | Which message: `maintenance_scheduled` (needs `data.start` and `data.end`, shown in each reader's time zone), `degraded_service`, or `custom`.                                  |
 | `id`                  | no       | A closed banner stays closed for that id only, so a new announcement needs a new id. Without one, it is derived from the content: editing the text brings a closed banner back. |
 | `severity`            | no       | `info` (default) or `warning`.                                                                                                                                                  |
 | `dismissible`         | no       | `true` by default; `false` keeps it on screen.                                                                                                                                  |

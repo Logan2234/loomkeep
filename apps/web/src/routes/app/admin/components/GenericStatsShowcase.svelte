@@ -31,10 +31,9 @@
     onclick={() => {
       empty = !empty;
       selected = "";
-    }}
-    >{empty
-      ? m.admin_components_show_sample()
-      : m.admin_components_show_empty()}</button>
+    }}>
+    {empty ? m.admin_components_show_sample() : m.admin_components_show_empty()}
+  </button>
   <article
     id="specimen-statfigure"
     hidden={!matches("StatFigure")}

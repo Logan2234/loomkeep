@@ -28,9 +28,9 @@
       class="w-full border-separate border-spacing-0.75 font-mono text-xs tabular-nums">
       <thead>
         <tr>
-          <th scope="col" class="text-dim p-0.5 font-normal"
-            ><span class="sr-only">{m.admin_cohort_signup_month_sr()}</span
-            ></th>
+          <th scope="col" class="text-dim p-0.5 font-normal">
+            <span class="sr-only">{m.admin_cohort_signup_month_sr()}</span>
+          </th>
           {#each columns as c (c)}
             <th scope="col" class="text-dim p-0.5 font-normal">+{c}</th>
           {/each}

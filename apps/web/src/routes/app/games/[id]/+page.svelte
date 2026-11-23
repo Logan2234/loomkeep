@@ -245,8 +245,9 @@
 {#if error}
   <div class="mx-auto max-w-4xl px-5 py-6 md:px-8">
     <Banner variant="error">{error}</Banner>
-    <a href="/app/games" onclick={goBack} class="btn btn-ghost mt-4"
-      >← {m.common_Games()}</a>
+    <a href="/app/games" onclick={goBack} class="btn btn-ghost mt-4">
+      ← {m.common_Games()}
+    </a>
   </div>
 {/if}
 
@@ -267,10 +268,9 @@
       </span>
       {#if upcoming}
         <span
-          class="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-2.5 py-1 text-xs font-bold text-white backdrop-blur"
-          ><Icon
-            name="calendar"
-            class="h-3.5 w-3.5" />{m.media_upcoming()}</span>
+          class="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-2.5 py-1 text-xs font-bold text-white backdrop-blur">
+          <Icon name="calendar" class="h-3.5 w-3.5" />{m.media_upcoming()}
+        </span>
       {:else if entry}
         <TrackingStatusBadge domain="GAMES" status={entry.status} onImage />
       {/if}

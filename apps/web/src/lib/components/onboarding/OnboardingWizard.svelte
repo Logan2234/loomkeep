@@ -556,9 +556,9 @@
   <p
     class="font-display mb-10 ml-2.5 flex items-center gap-2 text-xl font-extrabold tracking-tight">
     <BrandMark class="h-6 w-6" />
-    <span
-      >{m.common_LOOM()}<span class="text-accent">{m.common_KEEP()}</span
-      ></span>
+    <span>
+      {m.common_LOOM()}<span class="text-accent">{m.common_KEEP()}</span>
+    </span>
   </p>
 {/snippet}
 
@@ -635,10 +635,11 @@
           <p
             class="font-display absolute bottom-1.5 left-5 z-10 flex items-center gap-2 text-lg font-extrabold">
             <BrandMark class="h-5 w-5" />
-            <span
-              >{m.common_LOOM()}<span class="text-accent"
-                >{m.common_KEEP()}</span
-              ></span>
+            <span>
+              {m.common_LOOM()}<span class="text-accent">
+                {m.common_KEEP()}
+              </span>
+            </span>
           </p>
         </div>
         {@render title(
@@ -771,13 +772,15 @@
             {#if usernameCheck === "checking"}
               <span class="text-dim">{m.common_verifying()}</span>
             {:else if usernameCheck === "available"}
-              <span class="text-success"
-                >{m.settings_username_available()}</span>
+              <span class="text-success">
+                {m.settings_username_available()}
+              </span>
             {:else if usernameCheck === "taken"}
               <span class="text-danger">{m.settings_username_taken()}</span>
             {:else if usernameCheck === "error"}
-              <span class="text-danger"
-                >{m.settings_username_check_error()}</span>
+              <span class="text-danger">
+                {m.settings_username_check_error()}
+              </span>
             {:else if saveUsernameMut.error}
               <span class="text-danger">{saveUsernameMut.error}</span>
             {/if}
@@ -1002,8 +1005,9 @@
             class="member-stamp timecode text-accent border-accent rounded-md border-2 px-1.5 py-1.5 text-center text-[0.62rem] leading-tight font-bold tracking-[0.06em] uppercase md:text-xs">
             {m.common_welcome()}
           </span>
-          <span class="timecode text-xs"
-            >{m.onboarding_done_number({ number: memberNumber })}</span>
+          <span class="timecode text-xs">
+            {m.onboarding_done_number({ number: memberNumber })}
+          </span>
         </div>
       </div>
       {#if firstSteps.length > 0}

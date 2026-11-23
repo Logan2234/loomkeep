@@ -914,8 +914,9 @@
                   class="text-accent my-1 flex items-center gap-2">
                   <span class="bg-accent h-px flex-1"></span>
                   <span
-                    class="text-micro font-mono font-bold tracking-widest uppercase"
-                    >{m.common_new()}</span>
+                    class="text-micro font-mono font-bold tracking-widest uppercase">
+                    {m.common_new()}
+                  </span>
                   <span class="bg-accent h-px flex-1"></span>
                 </div>
               {/if}

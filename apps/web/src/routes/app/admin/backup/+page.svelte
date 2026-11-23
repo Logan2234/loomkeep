@@ -263,11 +263,12 @@
       {m.admin_backup_restore_intro()}
       <strong>{m.admin_backup_restore_entire()}</strong>
       {m.admin_backup_restore_encrypted()}<code
-        class="bg-surface-2 rounded px-1 py-0.5 text-xs">.sql.age</code
-      >{m.admin_backup_restore_decrypt()}<code
-        class="bg-surface-2 rounded px-1 py-0.5 text-xs"
-        >age -d -o dump.sql fichier.sql.age</code
-      >{m.admin_backup_restore_select()}
+        class="bg-surface-2 rounded px-1 py-0.5 text-xs">
+        .sql.age
+      </code>{m.admin_backup_restore_decrypt()}<code
+        class="bg-surface-2 rounded px-1 py-0.5 text-xs">
+        age -d -o dump.sql fichier.sql.age
+      </code>{m.admin_backup_restore_select()}
       <code class="bg-surface-2 rounded px-1 py-0.5 text-xs">.sql</code>
       {m.admin_backup_restore_warning()}
     </p>
@@ -335,8 +336,9 @@
         {m.admin_backup_overwrite_intro()}
         <strong>{m.admin_backup_overwrite_all()}</strong>
         {m.admin_backup_overwrite_warning()}
-        <code class="bg-surface-2 rounded px-1.5 py-0.5 text-xs font-bold"
-          >{CONFIRM_PHRASE}</code>
+        <code class="bg-surface-2 rounded px-1.5 py-0.5 text-xs font-bold">
+          {CONFIRM_PHRASE}
+        </code>
         {m.admin_confirmation_below()}
       </p>
       <input

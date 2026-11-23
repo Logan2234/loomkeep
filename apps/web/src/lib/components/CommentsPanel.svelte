@@ -135,8 +135,9 @@
       openPanel();
     }}>
     <Icon name="message" class="h-3.5 w-3.5" />
-    <span class="timecode self-center leading-none tabular-nums"
-      >{count.data?.count ?? 0}</span>
+    <span class="timecode self-center leading-none tabular-nums">
+      {count.data?.count ?? 0}
+    </span>
   </button>
 {:else}
   <button

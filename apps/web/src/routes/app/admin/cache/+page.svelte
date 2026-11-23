@@ -282,8 +282,9 @@
       </div>
     </div>
 
-    <button class="chip" class:chip-on={orphansOnly} onclick={toggleOrphans}
-      >{m.admin_cache_orphans_only()}</button>
+    <button class="chip" class:chip-on={orphansOnly} onclick={toggleOrphans}>
+      {m.admin_cache_orphans_only()}
+    </button>
   </AdminFilterBar>
   <!-- Bulk actions, scoped to the active domain. -->
   <div class="mb-5 flex flex-wrap items-center gap-2">
@@ -322,8 +323,9 @@
       </p>
       {#if activeFilters.length}<button
           class="btn btn-ghost mt-3"
-          onclick={resetFilters}>{m.admin_filters_reset()}</button
-        >{/if}
+          onclick={resetFilters}>
+          {m.admin_filters_reset()}
+        </button>{/if}
     </EmptyState>
   {:else}
     <p class="text-dim mb-2 text-xs">

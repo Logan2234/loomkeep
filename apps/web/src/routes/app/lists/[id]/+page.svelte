@@ -401,7 +401,8 @@
       <Banner variant="info" class="mb-5">
         {m.list_moderating()}
         <a href="/app/admin/reports" class="link-accent">
-          {m.list_moderating_back()}</a>
+          {m.list_moderating_back()}
+        </a>
       </Banner>
     {/if}
     <div class="flex flex-wrap items-start justify-between gap-4">

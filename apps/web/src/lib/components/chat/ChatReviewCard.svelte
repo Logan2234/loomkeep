@@ -46,9 +46,11 @@
     <blockquote
       in:fade={{ duration: reduced ? 0 : 150 }}
       class="font-display line-clamp-6 text-[1.02rem] leading-snug font-semibold whitespace-pre-line">
-      <span class="text-accent">{m.chat_review_quote_open()}</span
-      >{review.text}<span class="text-accent"
-        >{m.chat_review_quote_close()}</span>
+      <span class="text-accent">
+        {m.chat_review_quote_open()}
+      </span>{review.text}<span class="text-accent">
+        {m.chat_review_quote_close()}
+      </span>
     </blockquote>
   {/if}
 
@@ -78,7 +80,9 @@
           <a
             href={review.target.href}
             class="text-fg hover:text-accent font-semibold no-underline transition-colors duration-150"
-            onclick={() => chat.close()}>{title}</a>
+            onclick={() => chat.close()}>
+            {title}
+          </a>
         {:else}
           <b class="text-fg font-semibold">{title}</b>
         {/if}

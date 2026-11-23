@@ -41,8 +41,9 @@
     <Icon name="star" class="h-3.5 w-3.5" />
     {#if myReview}
       <span>{m.reviews_my_rating()}</span>
-      <span class="font-mono font-bold tabular-nums"
-        >{myReview.rating}<span class="opacity-60">/10</span></span>
+      <span class="font-mono font-bold tabular-nums">
+        {myReview.rating}<span class="opacity-60">/10</span>
+      </span>
     {:else}
       <span>{m.reviews_rate_cta()}</span>
       <span class="font-mono opacity-60">–/10</span>

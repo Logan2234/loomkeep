@@ -375,10 +375,12 @@
               url={candidate.avatarUrl}
               size={24} />
             <span class="min-w-0">
-              <span class="block truncate text-xs font-semibold"
-                >{candidate.displayName}</span>
-              <span class="text-dim text-micro block truncate"
-                >@{candidate.username}</span>
+              <span class="block truncate text-xs font-semibold">
+                {candidate.displayName}
+              </span>
+              <span class="text-dim text-micro block truncate">
+                @{candidate.username}
+              </span>
             </span>
           </button>
         {/each}
@@ -409,8 +411,9 @@
           </span>
           <span class="min-w-0">
             <span class="block text-sm font-semibold">{SPOILER_COMMAND}</span>
-            <span class="text-dim block text-xs"
-              >{m.chat_command_spoiler()}</span>
+            <span class="text-dim block text-xs">
+              {m.chat_command_spoiler()}
+            </span>
           </span>
         </button>
       </div>

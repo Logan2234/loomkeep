@@ -57,8 +57,9 @@
     </span>
     <span class="min-w-0 flex-1">
       <span class="flex items-center gap-1.5">
-        <span class="truncate text-sm font-semibold"
-          >{reviewedTitle(review.target)}</span>
+        <span class="truncate text-sm font-semibold">
+          {reviewedTitle(review.target)}
+        </span>
         {#if review.spoilerTag}
           <span
             class="border-accent text-accent shrink-0 rounded-full border px-1.5 font-mono text-[0.6rem] font-bold tracking-wider uppercase">

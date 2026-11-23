@@ -9,7 +9,9 @@
       href="https://trakt.tv/settings/data"
       target="_blank"
       rel="noopener noreferrer"
-      class="link-accent">{m.settings_import_trakt_intro()}</a>
+      class="link-accent">
+      {m.settings_import_trakt_intro()}
+    </a>
     {m.settings_import_trakt_hint()}
   {/snippet}
 </ImportWizard>

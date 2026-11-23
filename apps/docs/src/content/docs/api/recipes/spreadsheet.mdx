@@ -27,8 +27,20 @@ refreshes it every day.
    const API = "https://loomkeep.app/api/v1";
 
    function syncLoomkeep() {
-     const key = PropertiesService.getScriptProperties().getProperty("LOOMKEEP_API_KEY");
-     const rows = [["Title", "Creators", "Domain", "Status", "Rating", "Favourite", "Added", "Finished"]];
+     const key =
+       PropertiesService.getScriptProperties().getProperty("LOOMKEEP_API_KEY");
+     const rows = [
+       [
+         "Title",
+         "Creators",
+         "Domain",
+         "Status",
+         "Rating",
+         "Favourite",
+         "Added",
+         "Finished",
+       ],
+     ];
 
      for (let page = 1; ; page++) {
        const res = UrlFetchApp.fetch(`${API}/library?limit=100&page=${page}`, {
@@ -52,7 +64,8 @@ refreshes it every day.
      }
 
      const book = SpreadsheetApp.getActive();
-     const sheet = book.getSheetByName("Loomkeep") ?? book.insertSheet("Loomkeep");
+     const sheet =
+       book.getSheetByName("Loomkeep") ?? book.insertSheet("Loomkeep");
      sheet.clearContents();
      sheet.getRange(1, 1, rows.length, rows[0].length).setValues(rows);
    }

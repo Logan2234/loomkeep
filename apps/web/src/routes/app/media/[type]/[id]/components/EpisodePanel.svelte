@@ -270,8 +270,9 @@
           <dt class="timecode text-dim text-micro uppercase">TMDB</dt>
           <dd class="mt-0.5 text-sm">
             {#if episode.voteAverage !== null}
-              <span class="timecode text-accent"
-                >{scoreLabel(episode.voteAverage)}</span>
+              <span class="timecode text-accent">
+                {scoreLabel(episode.voteAverage)}
+              </span>
               <span class="text-dim ml-1.5 text-xs">
                 {m.media_episode_votes({ count: episode.voteCount ?? 0 })}
               </span>
@@ -311,10 +312,11 @@
             class="timecode text-dim flex items-center justify-between text-[0.7rem] uppercase">
             {m.media_episode_history()}
             {#if episode.watches.length > 1}
-              <span
-                >{m.media_episode_times({
+              <span>
+                {m.media_episode_times({
                   count: episode.watches.length,
-                })}</span>
+                })}
+              </span>
             {/if}
           </h3>
           {#if episode.watches.length > 0}

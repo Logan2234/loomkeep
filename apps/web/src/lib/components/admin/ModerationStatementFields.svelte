@@ -31,7 +31,9 @@
 
 <label
   class="{reasonMargin} block text-sm font-semibold"
-  for="{idPrefix}-reason">{m.admin_moderation_facts()}</label>
+  for="{idPrefix}-reason">
+  {m.admin_moderation_facts()}
+</label>
 <textarea
   id="{idPrefix}-reason"
   name="reasonText"
@@ -43,8 +45,9 @@
 {#if inlineErrors}<FieldError
     message={fieldErrors.reasonText}
     class="mt-1" />{/if}
-<span class="mt-3 block text-sm font-semibold"
-  >{m.admin_moderation_basis()}</span>
+<span class="mt-3 block text-sm font-semibold">
+  {m.admin_moderation_basis()}
+</span>
 <Combobox
   label={m.admin_moderation_basis()}
   name="legalBasis"
@@ -58,8 +61,9 @@
     message={fieldErrors.legalBasis}
     class="mt-1" />{/if}
 {#if legalBasis === "TOS_BREACH"}
-  <label class="mt-3 block text-sm font-semibold" for="{idPrefix}-clause"
-    >{m.admin_moderation_terms_clause()}</label>
+  <label class="mt-3 block text-sm font-semibold" for="{idPrefix}-clause">
+    {m.admin_moderation_terms_clause()}
+  </label>
   <input
     id="{idPrefix}-clause"
     type="text"

@@ -210,14 +210,17 @@
           href="/legal/terms-of-service"
           target="_blank"
           rel="noopener noreferrer"
-          class="link-accent">{m.common_terms()}</a>
+          class="link-accent">
+          {m.common_terms()}
+        </a>
         {m.auth_register_accept_terms_and()}
         <a
           href="/legal/privacy-policy"
           target="_blank"
           rel="noopener noreferrer"
-          class="link-accent">{m.common_privacy()}</a
-        >.
+          class="link-accent">
+          {m.common_privacy()}
+        </a>.
       </span>
     </label>
     <FieldError message={registerMut.fieldErrors.acceptedTerms} />

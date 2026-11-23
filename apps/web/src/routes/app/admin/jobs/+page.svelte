@@ -248,13 +248,14 @@
                     ? m.common_ok()
                     : m.common_failure()}
                 </span>
-                <span
-                  >{m.admin_jobs_last_run({
+                <span>
+                  {m.admin_jobs_last_run({
                     date: formatDate(last.startedAt, {
                       ...DAY_MONTH_TIME_OPTIONS,
                       timeZone: job.timeZone ?? undefined,
                     }),
-                  })}</span>
+                  })}
+                </span>
                 {#if last.summary}<span>· {last.summary}</span>{/if}
               </div>
             {/if}
@@ -286,10 +287,11 @@
                     <div class="max-h-96 overflow-y-auto overscroll-contain">
                       <div
                         class="border-border text-dim grid grid-cols-[6rem_minmax(0,1fr)_4rem] gap-2 border-b px-4 py-2 text-xs sm:grid-cols-[9rem_minmax(0,1fr)_5rem] sm:px-5">
-                        <span>{m.admin_jobs_history_date()}</span><span
-                          >{m.admin_jobs_history_result()}</span
-                        ><span class="text-right"
-                          >{m.admin_jobs_history_duration()}</span>
+                        <span>{m.admin_jobs_history_date()}</span><span>
+                          {m.admin_jobs_history_result()}
+                        </span><span class="text-right">
+                          {m.admin_jobs_history_duration()}
+                        </span>
                       </div>
                       {#each job.runs as run (run.id)}
                         <div

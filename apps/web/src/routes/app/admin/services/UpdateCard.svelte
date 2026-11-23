@@ -140,8 +140,9 @@
           <p class="text-sm">{m.admin_update_command_hint()}</p>
           <div
             class="bg-fg text-bg flex min-w-0 items-center gap-2 rounded-lg py-2 pr-2 pl-3">
-            <code class="min-w-0 flex-1 overflow-x-auto font-mono text-xs"
-              >{UPDATE_COMMAND}</code>
+            <code class="min-w-0 flex-1 overflow-x-auto font-mono text-xs">
+              {UPDATE_COMMAND}
+            </code>
             <button
               type="button"
               class="btn btn-primary btn-sm shrink-0"

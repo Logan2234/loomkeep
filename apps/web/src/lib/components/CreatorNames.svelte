@@ -30,9 +30,9 @@
       <a
         {href}
         use:creatorPeek={{ ref, studio }}
-        class="decoration-dim/50 hover:text-accent underline underline-offset-4 transition-colors hover:decoration-current"
-        >{ref.name}</a
-      >{comma}
+        class="decoration-dim/50 hover:text-accent underline underline-offset-4 transition-colors hover:decoration-current">
+        {ref.name}
+      </a>{comma}
     </span>
   {:else}
     <span>{ref.name}{comma}</span>

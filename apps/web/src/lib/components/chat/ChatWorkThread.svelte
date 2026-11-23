@@ -242,7 +242,9 @@
         <a
           href={thread.href}
           class="underline decoration-transparent underline-offset-4 transition-[text-decoration-color] duration-150 hover:decoration-current"
-          onclick={() => chat.close()}>{thread.title}</a>
+          onclick={() => chat.close()}>
+          {thread.title}
+        </a>
       {:else if thread}
         {thread.title}
       {:else}

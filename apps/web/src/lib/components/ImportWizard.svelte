@@ -490,8 +490,9 @@
   {:else if premiumLocked && quotaUsed}
     <Banner variant="warning" class="mb-4">{m.import_free_quota_used()}</Banner>
   {:else if premiumLocked}
-    <Banner variant="info" class="mb-4"
-      >{m.import_free_quota_reminder()}</Banner>
+    <Banner variant="info" class="mb-4">
+      {m.import_free_quota_reminder()}
+    </Banner>
   {/if}
 
   {#if phase === "input"}
@@ -533,16 +534,19 @@
           <span class="timecode text-sm">{m.import_file_change_hint()}</span>
         {:else}
           <!-- A phone has nothing to drop a file from. -->
-          <span class="font-semibold [@media(hover:none)]:hidden"
-            >{descriptor.input.multiple
+          <span class="font-semibold [@media(hover:none)]:hidden">
+            {descriptor.input.multiple
               ? m.import_files_drop()
-              : m.import_file_drop()}</span>
-          <span class="text-dim text-sm [@media(hover:none)]:hidden"
-            >{m.import_file_browse()}</span>
-          <span class="font-semibold [@media(hover:hover)]:hidden"
-            >{descriptor.input.multiple
+              : m.import_file_drop()}
+          </span>
+          <span class="text-dim text-sm [@media(hover:none)]:hidden">
+            {m.import_file_browse()}
+          </span>
+          <span class="font-semibold [@media(hover:hover)]:hidden">
+            {descriptor.input.multiple
               ? m.import_files_choose()
-              : m.import_file_choose()}</span>
+              : m.import_file_choose()}
+          </span>
         {/if}
       </label>
       {#if fileError}
@@ -611,18 +615,23 @@
               <details class="card p-4" open={filterUnresolved || gi === 0}>
                 <summary
                   class="font-display flex cursor-pointer items-center pr-32 font-bold">
-                  <span
-                    >{importGroupLabel(g.id)} ({visibleItems.length}{#if filterUnresolved}
-                      / {g.items.length}{/if})</span>
+                  <span>
+                    {importGroupLabel(g.id)} ({visibleItems.length}{#if filterUnresolved}
+                      / {g.items.length}{/if})
+                  </span>
                 </summary>
                 {@render groupBody(visibleItems)}
               </details>
               <span
                 class="absolute top-4 right-4 flex gap-2 text-xs font-normal">
-                <button class="chip" onclick={() => setAll(visibleItems, true)}
-                  >{m.common_all()}</button>
-                <button class="chip" onclick={() => setAll(visibleItems, false)}
-                  >{m.common_none()}</button>
+                <button class="chip" onclick={() => setAll(visibleItems, true)}>
+                  {m.common_all()}
+                </button>
+                <button
+                  class="chip"
+                  onclick={() => setAll(visibleItems, false)}>
+                  {m.common_none()}
+                </button>
               </span>
             </div>
           {/if}
@@ -636,10 +645,12 @@
             <ul class="divide-border mt-3 flex flex-col divide-y">
               {#each plan.lists as list, i (i)}
                 <li class="flex items-center justify-between gap-3 py-2.5">
-                  <span class="truncate text-sm font-semibold"
-                    >{list.name}</span>
-                  <span class="timecode shrink-0 text-xs"
-                    >{importListSubtitle(list)}</span>
+                  <span class="truncate text-sm font-semibold">
+                    {list.name}
+                  </span>
+                  <span class="timecode shrink-0 text-xs">
+                    {importListSubtitle(list)}
+                  </span>
                 </li>
               {/each}
             </ul>
@@ -651,8 +662,9 @@
     <div
       class="border-border bg-surface sticky bottom-[calc(var(--bottom-bar-space)+0.75rem)] z-10 flex flex-wrap items-center justify-between gap-x-6 gap-y-3 rounded-xl border px-4 py-3 shadow-lg md:bottom-3">
       <p class="flex items-baseline gap-2">
-        <span class="font-display text-xl font-extrabold tabular-nums"
-          >{selectedCount}</span>
+        <span class="font-display text-xl font-extrabold tabular-nums">
+          {selectedCount}
+        </span>
         <span class="text-dim text-sm">
           {m.import_selected_label({
             noun: plural(selectedCount),
@@ -725,8 +737,9 @@
         <p class="text-dim mt-4 text-sm">{m.import_steam_no_sessions()}</p>
       {/if}
       <div class="mt-5 flex gap-2">
-        <a href={DOMAINS[descriptor.domain].href} class="btn btn-primary"
-          >{m.library_view_own()}</a>
+        <a href={DOMAINS[descriptor.domain].href} class="btn btn-primary">
+          {m.library_view_own()}
+        </a>
         <button class="btn btn-ghost" onclick={reset}>{m.import_new()}</button>
       </div>
     </section>
@@ -840,16 +853,16 @@
                       <span class="min-w-0 flex-1 truncate">
                         {r.title}
                         {#if r.year}<span class="text-dim">
-                            · {r.year}</span
-                          >{/if}
+                            · {r.year}
+                          </span>{/if}
                       </span>
-                      {#if r.type}<span class="timecode text-xs"
-                          >{r.type === "MOVIE"
+                      {#if r.type}<span class="timecode text-xs">
+                          {r.type === "MOVIE"
                             ? m.media_movie()
                             : r.type === "SERIES"
                               ? m.media_series()
-                              : m.media_anime_label()}</span
-                        >{/if}
+                              : m.media_anime_label()}
+                        </span>{/if}
                     </button>
                   </li>
                 {/each}

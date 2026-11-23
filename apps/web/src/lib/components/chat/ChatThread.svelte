@@ -429,7 +429,9 @@
         <a
           href="/app/u/{peer.username}"
           class="truncate underline decoration-transparent underline-offset-4 transition-[text-decoration-color] duration-150 hover:decoration-current"
-          onclick={() => chat.close()}>{peerName}</a>
+          onclick={() => chat.close()}>
+          {peerName}
+        </a>
       {:else}
         <span class="truncate">{peerName}</span>
       {/if}
@@ -462,8 +464,9 @@
           onclick={toggle}>
           <Icon name="pin" class="h-4.5 w-4.5" />
           <span
-            class="text-accent text-micro absolute -top-0.5 -right-0.5 font-mono font-bold"
-            >{pins.length}</span>
+            class="text-accent text-micro absolute -top-0.5 -right-0.5 font-mono font-bold">
+            {pins.length}
+          </span>
         </button>
       {/snippet}
       {#snippet children({ close })}
@@ -645,8 +648,9 @@
               class="text-accent my-2 flex items-center gap-2">
               <span class="bg-accent h-px flex-1"></span>
               <span
-                class="text-micro font-mono font-bold tracking-widest uppercase"
-                >{m.common_new()}</span>
+                class="text-micro font-mono font-bold tracking-widest uppercase">
+                {m.common_new()}
+              </span>
               <span class="bg-accent h-px flex-1"></span>
             </div>
           {/if}

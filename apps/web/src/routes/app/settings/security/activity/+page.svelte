@@ -125,14 +125,16 @@
               </time>
               <span aria-hidden="true" class="bg-dim h-1 w-1 rounded-full"
               ></span>
-              <span
-                >{deviceLabel(event.userAgent) ??
-                  m.settings_sessions_unknown_device()}</span>
+              <span>
+                {deviceLabel(event.userAgent) ??
+                  m.settings_sessions_unknown_device()}
+              </span>
               {#if event.ip}
                 <span aria-hidden="true" class="bg-dim h-1 w-1 rounded-full"
                 ></span>
-                <span class="font-mono text-xs"
-                  >{m.settings_activity_ip({ ip: event.ip })}</span>
+                <span class="font-mono text-xs">
+                  {m.settings_activity_ip({ ip: event.ip })}
+                </span>
               {/if}
             </p>
           </div>

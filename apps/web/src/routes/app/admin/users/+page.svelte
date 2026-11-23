@@ -533,10 +533,12 @@
                 {@render sortHeader("active", m.common_active())}
                 {@render sortHeader("created", m.admin_users_created())}
                 {@render sortHeader("library", m.common_library())}
-                <th class="hidden px-4 py-2.5 lg:table-cell"
-                  >{m.common_domains()}</th>
-                <th class="hidden px-4 py-2.5 lg:table-cell"
-                  >{m.common_security()}</th>
+                <th class="hidden px-4 py-2.5 lg:table-cell">
+                  {m.common_domains()}
+                </th>
+                <th class="hidden px-4 py-2.5 lg:table-cell">
+                  {m.common_security()}
+                </th>
                 {#if appConfig.gamificationEnabled}
                   {@render sortHeader("xp", m.admin_users_xp())}
                 {/if}
@@ -565,8 +567,9 @@
                       <div class="min-w-0">
                         <div
                           class="flex flex-wrap items-center gap-x-2 gap-y-1">
-                          <span class="text-fg truncate font-semibold"
-                            >{u.displayName}</span>
+                          <span class="text-fg truncate font-semibold">
+                            {u.displayName}
+                          </span>
                           {#if u.role === "ADMIN"}
                             <span
                               class="border-accent/40 bg-accent/10 text-accent rounded-full border px-1.5 py-0.5 text-[0.6rem] font-bold uppercase">
@@ -632,8 +635,9 @@
                          without this line their data was unreachable there. -->
                         <p
                           class="text-dim mt-0.5 flex flex-wrap items-center gap-x-1.5 text-xs md:hidden">
-                          <span class={u.online ? "text-success" : ""}
-                            >{activityLabel(u)}</span>
+                          <span class={u.online ? "text-success" : ""}>
+                            {activityLabel(u)}
+                          </span>
                           <span aria-hidden="true">·</span>
                           {total === 1
                             ? m.common_item_count_one({ count: total })
@@ -657,14 +661,17 @@
                       <span
                         class="font-semibold {u.online
                           ? 'text-success'
-                          : 'text-fg'}">{activityLabel(u)}</span>
+                          : 'text-fg'}">
+                        {activityLabel(u)}
+                      </span>
                       {#if u.lastActiveAt && !u.online}
-                        <span class="text-dim timecode"
-                          >{formatDate(u.lastActiveAt, {
+                        <span class="text-dim timecode">
+                          {formatDate(u.lastActiveAt, {
                             day: "2-digit",
                             month: "2-digit",
                             year: "2-digit",
-                          })}</span>
+                          })}
+                        </span>
                       {/if}
                     </div>
                   </td>
@@ -677,8 +684,9 @@
                     })}
                   </td>
                   <td class="hidden px-4 py-3 md:table-cell">
-                    <span class="text-fg font-semibold tabular-nums"
-                      >{formatNumber(total)}</span>
+                    <span class="text-fg font-semibold tabular-nums">
+                      {formatNumber(total)}
+                    </span>
                     <span
                       class="bg-surface-2 mt-1 flex h-1.5 w-24 overflow-hidden rounded-full"
                       aria-hidden="true">
@@ -729,14 +737,16 @@
                           .join(", ")}
                       </span>
                     {:else}
-                      <span class="text-dim"
-                        >{m.admin_users_password_only()}</span>
+                      <span class="text-dim">
+                        {m.admin_users_password_only()}
+                      </span>
                     {/if}
                   </td>
                   {#if appConfig.gamificationEnabled}
                     <td
-                      class="text-fg hidden px-4 py-3 font-semibold tabular-nums md:table-cell"
-                      >{formatNumber(u.xp)}</td>
+                      class="text-fg hidden px-4 py-3 font-semibold tabular-nums md:table-cell">
+                      {formatNumber(u.xp)}
+                    </td>
                   {/if}
                 </tr>
               {/each}
@@ -755,10 +765,11 @@
                 filter !== "all" ||
                 activeAdvanced.length
                   ? clearFilters
-                  : () => openInvite()}
-                >{queryFilter || filter !== "all" || activeAdvanced.length
+                  : () => openInvite()}>
+                {queryFilter || filter !== "all" || activeAdvanced.length
                   ? m.admin_filters_reset()
-                  : m.admin_invitations_invite()}</button>
+                  : m.admin_invitations_invite()}
+              </button>
             </p>
           {/if}
         </div>

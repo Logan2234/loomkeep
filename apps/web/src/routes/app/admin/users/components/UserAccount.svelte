@@ -438,34 +438,40 @@
       <p class="text-dim text-sm break-words">
         @{user.username} · {user.email}
         ·
-        <a href="/app/u/{user.username}" class="link-accent"
-          >{m.admin_users_public_profile()}</a>
+        <a href="/app/u/{user.username}" class="link-accent">
+          {m.admin_users_public_profile()}
+        </a>
       </p>
       <div class="mt-2 flex flex-wrap gap-1.5">
         {#if user.role === "ADMIN"}
           <span
-            class="border-accent/40 bg-accent/10 text-accent rounded-full border px-1.5 py-0.5 text-[0.6rem] font-bold uppercase"
-            >{m.common_admin()}</span>
+            class="border-accent/40 bg-accent/10 text-accent rounded-full border px-1.5 py-0.5 text-[0.6rem] font-bold uppercase">
+            {m.common_admin()}
+          </span>
         {/if}
         {#if user.plan === "PREMIUM"}
           <span
-            class="border-warning/40 bg-warning/10 text-warning rounded-full border px-1.5 py-0.5 text-[0.6rem] font-bold uppercase"
-            >{m.common_premium()}</span>
+            class="border-warning/40 bg-warning/10 text-warning rounded-full border px-1.5 py-0.5 text-[0.6rem] font-bold uppercase">
+            {m.common_premium()}
+          </span>
         {/if}
         {#if !user.emailVerified}
           <span
-            class="border-border text-dim rounded-full border px-1.5 py-0.5 text-[0.6rem] font-bold uppercase"
-            >{m.admin_users_unverified()}</span>
+            class="border-border text-dim rounded-full border px-1.5 py-0.5 text-[0.6rem] font-bold uppercase">
+            {m.admin_users_unverified()}
+          </span>
         {/if}
         {#if user.secondFactors.length}
           <span
-            class="border-success/40 text-success rounded-full border px-1.5 py-0.5 text-[0.6rem] font-bold uppercase"
-            >{m.admin_users_second_factor()}</span>
+            class="border-success/40 text-success rounded-full border px-1.5 py-0.5 text-[0.6rem] font-bold uppercase">
+            {m.admin_users_second_factor()}
+          </span>
         {/if}
         {#if !user.onboarded}
           <span
-            class="border-warning/40 text-warning rounded-full border px-1.5 py-0.5 text-[0.6rem] font-bold uppercase"
-            >{m.admin_users_onboarding_badge()}</span>
+            class="border-warning/40 text-warning rounded-full border px-1.5 py-0.5 text-[0.6rem] font-bold uppercase">
+            {m.admin_users_onboarding_badge()}
+          </span>
         {/if}
       </div>
     </div>
@@ -532,8 +538,9 @@
       <dd class="font-display text-lg font-bold">
         {detail.imports.length}
         {#if failedImports}
-          <span class="text-danger text-xs font-semibold"
-            >{m.admin_user_imports_failed({ count: failedImports })}</span>
+          <span class="text-danger text-xs font-semibold">
+            {m.admin_user_imports_failed({ count: failedImports })}
+          </span>
         {/if}
       </dd>
     </div>
@@ -555,8 +562,9 @@
         <a
           href="#{s.id}"
           aria-current={activeSection === s.id ? "true" : undefined}
-          class="text-dim hover:bg-surface-2 hover:text-fg aria-[current=true]:bg-accent/10 aria-[current=true]:text-accent rounded-lg px-3 py-1.5 text-sm font-semibold whitespace-nowrap transition-colors"
-          >{s.label}</a>
+          class="text-dim hover:bg-surface-2 hover:text-fg aria-[current=true]:bg-accent/10 aria-[current=true]:text-accent rounded-lg px-3 py-1.5 text-sm font-semibold whitespace-nowrap transition-colors">
+          {s.label}
+        </a>
       {/each}
     </nav>
 
@@ -623,8 +631,9 @@
               <label
                 class="flex items-center justify-between gap-2 px-4 py-3 text-sm"
                 for="role-admin">
-                <span class="text-fg font-semibold"
-                  >{m.admin_users_administrator()}</span>
+                <span class="text-fg font-semibold">
+                  {m.admin_users_administrator()}
+                </span>
                 <input
                   id="role-admin"
                   type="checkbox"
@@ -649,8 +658,9 @@
               {/if}
               <div class="px-4 py-3 text-sm">
                 <div class="flex items-center justify-between gap-2">
-                  <span class="text-fg font-semibold"
-                    >{m.admin_users_plan()}</span>
+                  <span class="text-fg font-semibold">
+                    {m.admin_users_plan()}
+                  </span>
                   <Combobox
                     label={m.admin_users_plan()}
                     name="plan"
@@ -780,7 +790,9 @@
                 onclick={() =>
                   void queryClient.refetchQueries({
                     queryKey: keys.admin.userLibraryStats(user.id),
-                  })}>{m.common_retry()}</button>
+                  })}>
+                {m.common_retry()}
+              </button>
             </div>
           </Banner>
         {/if}
@@ -817,14 +829,16 @@
                       class="h-4 w-4 shrink-0" />
                     <span class="min-w-0 flex-1 truncate">
                       {#if work.href}
-                        <a href={work.href} class="hover:text-accent"
-                          >{work.title}</a>
+                        <a href={work.href} class="hover:text-accent">
+                          {work.title}
+                        </a>
                       {:else}
                         {work.title}
                       {/if}
                     </span>
-                    <span class="text-dim text-xs whitespace-nowrap"
-                      >{formatRelative(work.addedAt)}</span>
+                    <span class="text-dim text-xs whitespace-nowrap">
+                      {formatRelative(work.addedAt)}
+                    </span>
                   </li>
                 {/each}
               </ul>
@@ -842,13 +856,15 @@
                 {#each detail.imports as run (run.id)}
                   <li class="flex items-center gap-3 px-4 py-2.5 text-sm">
                     <span class="min-w-0 flex-1">
-                      <span class="text-fg block font-semibold"
-                        >{IMPORT_SOURCE_NAMES[run.sourceId as ImportSource] ??
-                          run.sourceId}</span>
-                      <span class="text-dim text-xs"
-                        >{m.admin_user_import_items({
+                      <span class="text-fg block font-semibold">
+                        {IMPORT_SOURCE_NAMES[run.sourceId as ImportSource] ??
+                          run.sourceId}
+                      </span>
+                      <span class="text-dim text-xs">
+                        {m.admin_user_import_items({
                           count: formatNumber(run.itemCount),
-                        })} · {formatDate(run.finishedAt)}</span>
+                        })} · {formatDate(run.finishedAt)}
+                      </span>
                     </span>
                     <span
                       class="rounded-full border px-1.5 py-0.5 text-[0.6rem] font-bold uppercase {run.status ===
@@ -864,8 +880,9 @@
               </ul>
               <a
                 href="/app/admin/imports?account={user.id}"
-                class="link-accent border-border block border-t px-4 py-2.5 text-xs"
-                >{m.admin_user_imports_all()}</a>
+                class="link-accent border-border block border-t px-4 py-2.5 text-xs">
+                {m.admin_user_imports_all()}
+              </a>
             {:else}
               <p class="text-dim px-4 py-3 text-sm">
                 {m.admin_user_imports_empty()}
@@ -929,7 +946,9 @@
                       onclick={() =>
                         void queryClient.refetchQueries({
                           queryKey: keys.admin.userSessions(user.id),
-                        })}>{m.common_retry()}</button>
+                        })}>
+                      {m.common_retry()}
+                    </button>
                   </div>
                 </Banner>
               {/if}
@@ -983,27 +1002,31 @@
               <ul class="divide-border divide-y">
                 {#each security.devices as device (device.id)}
                   <li class="flex items-center gap-3 px-4 py-2.5 text-sm">
-                    <span class="min-w-0 flex-1 truncate"
-                      >{device.userAgent ??
-                        m.settings_sessions_unknown_device()}</span>
-                    <span class="text-dim text-xs whitespace-nowrap"
-                      >{m.admin_user_device_seen({
+                    <span class="min-w-0 flex-1 truncate">
+                      {device.userAgent ?? m.settings_sessions_unknown_device()}
+                    </span>
+                    <span class="text-dim text-xs whitespace-nowrap">
+                      {m.admin_user_device_seen({
                         when: formatRelative(device.lastSeenAt),
-                      })}</span>
+                      })}
+                    </span>
                   </li>
                 {/each}
                 {#each security.pushSubscriptions as push (push.id)}
                   <li class="flex items-center gap-3 px-4 py-2.5 text-sm">
                     <span class="min-w-0 flex-1">
-                      <span class="text-fg block font-semibold"
-                        >{PUSH_PLATFORM_LABELS[push.platform]()}</span>
+                      <span class="text-fg block font-semibold">
+                        {PUSH_PLATFORM_LABELS[push.platform]()}
+                      </span>
                       {#if push.userAgent}
-                        <span class="text-dim block truncate text-xs"
-                          >{push.userAgent}</span>
+                        <span class="text-dim block truncate text-xs">
+                          {push.userAgent}
+                        </span>
                       {/if}
                     </span>
-                    <span class="text-dim text-xs whitespace-nowrap"
-                      >{formatDate(push.createdAt)}</span>
+                    <span class="text-dim text-xs whitespace-nowrap">
+                      {formatDate(push.createdAt)}
+                    </span>
                   </li>
                 {/each}
               </ul>
@@ -1021,17 +1044,20 @@
                 {#each security.apiKeys as key (key.id)}
                   <li class="flex items-center gap-3 px-4 py-2.5 text-sm">
                     <span class="min-w-0 flex-1">
-                      <span class="text-fg block truncate font-semibold"
-                        >{key.name}</span>
-                      <span class="text-dim timecode text-xs"
-                        >lk_…{key.suffix}</span>
+                      <span class="text-fg block truncate font-semibold">
+                        {key.name}
+                      </span>
+                      <span class="text-dim timecode text-xs">
+                        lk_…{key.suffix}
+                      </span>
                     </span>
-                    <span class="text-dim text-xs whitespace-nowrap"
-                      >{key.lastUsedAt
+                    <span class="text-dim text-xs whitespace-nowrap">
+                      {key.lastUsedAt
                         ? m.admin_user_api_key_used({
                             when: formatRelative(key.lastUsedAt),
                           })
-                        : m.admin_user_api_key_never()}</span>
+                        : m.admin_user_api_key_never()}
+                    </span>
                   </li>
                 {/each}
               </ul>
@@ -1050,13 +1076,12 @@
               {#each security.events as event (event.id)}
                 <li
                   class="flex items-center justify-between gap-3 px-4 py-2.5 text-sm">
-                  <span class="min-w-0"
-                    >{SECURITY_EVENT_LABELS[event.type]}</span>
-                  <span class="text-dim timecode text-xs whitespace-nowrap"
-                    >{formatDate(
-                      event.createdAt,
-                      DAY_MONTH_TIME_OPTIONS,
-                    )}</span>
+                  <span class="min-w-0">
+                    {SECURITY_EVENT_LABELS[event.type]}
+                  </span>
+                  <span class="text-dim timecode text-xs whitespace-nowrap">
+                    {formatDate(event.createdAt, DAY_MONTH_TIME_OPTIONS)}
+                  </span>
                 </li>
               {/each}
             </ul>
@@ -1172,14 +1197,15 @@
                     onclick={() => (activeModal = s.kind)}
                     class="hover:bg-surface-2 flex w-full items-center justify-between px-4 py-2.5 text-left text-sm transition-colors disabled:cursor-default disabled:opacity-50 disabled:hover:bg-transparent">
                     <span class="text-fg">{s.label}</span>
-                    <span class="text-dim text-xs font-semibold"
-                      >{activityHasData(s.kind)
+                    <span class="text-dim text-xs font-semibold">
+                      {activityHasData(s.kind)
                         ? activityCount(s.kind)
                         : activityError(s.kind)
                           ? m.common_unavailable()
                           : activityLoading(s.kind)
                             ? m.common_loading()
-                            : m.common_disabled()}</span>
+                            : m.common_disabled()}
+                    </span>
                   </button>
                 </li>
               {/each}
@@ -1218,15 +1244,18 @@
                 {#each moderation.decisions as decision (decision.id)}
                   <li class="flex items-center gap-3 px-4 py-2.5 text-sm">
                     <span class="min-w-0 flex-1">
-                      <span class="text-fg block font-semibold"
-                        >{MEASURE_LABELS[decision.measure]()}</span>
-                      <span class="text-dim block text-xs"
-                        >{decision.decidedByName
+                      <span class="text-fg block font-semibold">
+                        {MEASURE_LABELS[decision.measure]()}
+                      </span>
+                      <span class="text-dim block text-xs">
+                        {decision.decidedByName
                           ? `${m.admin_user_decided_by({ name: decision.decidedByName })} · `
-                          : ""}{decision.tosClause}</span>
+                          : ""}{decision.tosClause}
+                      </span>
                     </span>
-                    <span class="text-dim timecode text-xs whitespace-nowrap"
-                      >{formatDate(decision.decidedAt)}</span>
+                    <span class="text-dim timecode text-xs whitespace-nowrap">
+                      {formatDate(decision.decidedAt)}
+                    </span>
                   </li>
                 {/each}
               </ul>
@@ -1247,8 +1276,9 @@
                   {#if moderation.reportsFiled}
                     <a
                       href="/app/admin/reports?reporter={user.id}"
-                      class="link-accent"
-                      >{formatNumber(moderation.reportsFiled)}</a>
+                      class="link-accent">
+                      {formatNumber(moderation.reportsFiled)}
+                    </a>
                   {:else}
                     0
                   {/if}

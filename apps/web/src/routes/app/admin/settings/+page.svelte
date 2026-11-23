@@ -294,8 +294,9 @@
           <label class="flex items-start gap-4 p-4">
             <span class="min-w-0 flex-1">
               <span class="block font-semibold">{limit.label}</span>
-              <span class="text-dim block text-sm"
-                >{m.admin_settings_rate_hint()}</span>
+              <span class="text-dim block text-sm">
+                {m.admin_settings_rate_hint()}
+              </span>
               {@render locked(limit.key)}
             </span>
             <input

@@ -77,18 +77,21 @@
           viewBox="0 0 24 24"
           class="mt-0.5 h-4 w-4 shrink-0"
           fill={BRAND_ICONS[tile.key].color}
-          aria-hidden="true"><path d={BRAND_ICONS[tile.key].path} /></svg>
+          aria-hidden="true">
+          <path d={BRAND_ICONS[tile.key].path} />
+        </svg>
         <span class="flex w-full flex-wrap items-center justify-between gap-4">
-          <span class="flex flex-row items-center gap-1.5"
-            >{tile.name}
+          <span class="flex flex-row items-center gap-1.5">
+            {tile.name}
             {#if tile.recommended}
               <svg
                 viewBox="0 0 24 24"
                 class="text-accent h-3.5 w-3.5 shrink-0"
                 fill="currentColor"
                 role="img">
-                <title
-                  >{m.settings_support_recommended()} — {m.settings_support_recommended_reason()}</title>
+                <title>
+                  {m.settings_support_recommended()} — {m.settings_support_recommended_reason()}
+                </title>
                 <path
                   d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 17l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z" />
               </svg>

@@ -241,8 +241,9 @@
           {#if initial.restored}
             <span class="text-accent">{m.reviews_draft_restored()}</span> ·
           {/if}
-          <span class:text-accent={formText.length > NEAR_LIMIT}
-            >{formText.length} / {REVIEW_TEXT_MAX_LENGTH}</span>
+          <span class:text-accent={formText.length > NEAR_LIMIT}>
+            {formText.length} / {REVIEW_TEXT_MAX_LENGTH}
+          </span>
         </p>
       </div>
     </div>
@@ -268,8 +269,9 @@
         {#each revisions as rev, i (i)}
           <li class="text-dim text-xs">
             <div class="flex items-center gap-2">
-              <span class="timecode text-fg"
-                >V{revisions.length - i} · {rev.rating}/10</span>
+              <span class="timecode text-fg">
+                V{revisions.length - i} · {rev.rating}/10
+              </span>
               <span>{formatDate(rev.createdAt, DATE_MEDIUM_OPTIONS)}</span>
             </div>
             {#if rev.text}

@@ -12,8 +12,9 @@
       href="https://steamcommunity.com/my/edit/settings"
       target="_blank"
       rel="noopener noreferrer"
-      class="link-accent">{m.settings_import_steam_privacy_link()}</a
-    >). {m.settings_import_steam_hint()}
+      class="link-accent">
+      {m.settings_import_steam_privacy_link()}
+    </a>). {m.settings_import_steam_hint()}
     <Banner variant="warning" class="mt-4">
       <p class="font-display text-fg font-bold">
         {m.settings_import_steam_two_measures_title()}

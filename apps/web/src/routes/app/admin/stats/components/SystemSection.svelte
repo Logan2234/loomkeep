@@ -85,9 +85,9 @@
     {/if}
     <p class="text-dim mt-2.5 text-xs italic">
       {m.admin_system_quota_detail_hint()}
-      <a href="/app/admin/services" class="link-accent not-italic"
-        >{m.admin_services_title()}</a
-      >.
+      <a href="/app/admin/services" class="link-accent not-italic">
+        {m.admin_services_title()}
+      </a>.
     </p>
   </div>
 

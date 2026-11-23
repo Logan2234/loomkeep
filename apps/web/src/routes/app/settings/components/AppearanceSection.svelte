@@ -361,8 +361,9 @@
               <span class="min-w-0 flex-1 truncate font-semibold">
                 {item.label}
                 {#if locked}
-                  <span class="text-dim ml-1 text-xs font-normal"
-                    >· {m.settings_nav_always_centered()}</span>
+                  <span class="text-dim ml-1 text-xs font-normal">
+                    · {m.settings_nav_always_centered()}
+                  </span>
                 {/if}
               </span>
 

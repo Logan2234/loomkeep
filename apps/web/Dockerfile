@@ -3,7 +3,7 @@
 # code, and Paraglide's compiler fails under QEMU emulation.
 FROM --platform=$BUILDPLATFORM node:26-alpine@sha256:6bd9ab43c0ec0190ca7b2d193906cb8b7edf6e7f4afa43ddeccd6452710bffb5 AS build
 
-RUN npm install -g corepack@0.36.0 && corepack enable && corepack prepare pnpm@12.14.0 --activate
+RUN npm install -g corepack@0.36.0 && corepack enable && corepack prepare pnpm@12.23.0 --activate
 WORKDIR /app
 
 COPY pnpm-workspace.yaml package.json pnpm-lock.yaml tsconfig.base.json ./

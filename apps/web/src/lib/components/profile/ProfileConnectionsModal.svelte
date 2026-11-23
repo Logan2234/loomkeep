@@ -267,8 +267,9 @@
                       size={36} />
                     <span class="min-w-0">
                       <span class="flex items-center gap-1.5">
-                        <span class="truncate text-sm font-semibold"
-                          >{user.displayName}</span>
+                        <span class="truncate text-sm font-semibold">
+                          {user.displayName}
+                        </span>
                         {#if user.isFriend}
                           <span
                             class="border-accent/45 bg-accent/10 text-accent shrink-0 rounded-full border px-1.5 text-[0.6rem] font-bold tracking-wide uppercase">
@@ -276,8 +277,9 @@
                           </span>
                         {/if}
                       </span>
-                      <span class="timecode block truncate text-xs"
-                        >@{user.username}</span>
+                      <span class="timecode block truncate text-xs">
+                        @{user.username}
+                      </span>
                     </span>
                   </a>
                   <div class="flex shrink-0 items-center gap-1.5">

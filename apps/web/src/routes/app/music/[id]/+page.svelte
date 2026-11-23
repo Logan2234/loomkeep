@@ -173,8 +173,9 @@
 {#if error}
   <div class="mx-auto max-w-4xl px-5 py-6 md:px-8">
     <Banner variant="error">{error}</Banner>
-    <a href="/app/music" onclick={goBack} class="btn btn-ghost mt-4"
-      >← {m.common_Music()}</a>
+    <a href="/app/music" onclick={goBack} class="btn btn-ghost mt-4">
+      ← {m.common_Music()}
+    </a>
   </div>
 {/if}
 

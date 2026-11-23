@@ -233,8 +233,9 @@
       </p>
       {#if activeFilters.length}<button
           class="btn btn-ghost mt-5"
-          onclick={resetFilters}>{m.admin_filters_reset()}</button
-        >{:else}
+          onclick={resetFilters}>
+          {m.admin_filters_reset()}
+        </button>{:else}
         <button type="button" class="btn btn-primary mt-5" onclick={onInvite}>
           <Icon name="plus" class="h-4 w-4" />
           {m.admin_invitations_invite()}
@@ -329,8 +330,9 @@
                 !reduced
                   ? 'animate-spin'
                   : ''}" />
-              <span class="hidden sm:inline"
-                >{m.admin_invitations_renew()}</span>
+              <span class="hidden sm:inline">
+                {m.admin_invitations_renew()}
+              </span>
             </button>
             {#if invitation.status === "pending"}
               <button

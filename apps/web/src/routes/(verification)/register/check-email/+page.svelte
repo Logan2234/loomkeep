@@ -132,8 +132,9 @@
           {/if}
           <p class="text-dim text-center text-sm text-balance">
             {#if status === "sent"}
-              <span class="text-success font-semibold"
-                >{m.auth_register_check_email_sent()}</span>
+              <span class="text-success font-semibold">
+                {m.auth_register_check_email_sent()}
+              </span>
             {:else}
               {m.auth_register_check_email_hint()}
             {/if}

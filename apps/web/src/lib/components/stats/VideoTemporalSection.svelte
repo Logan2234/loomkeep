@@ -113,9 +113,10 @@
         {m.stats_video_monthly_hours()}
       </h3>
       {#if mostActiveYear !== null}
-        <span class="text-dim text-xs"
-          >{m.stats_video_most_active_year_label()}
-          <b class="text-fg">{mostActiveYear}</b></span>
+        <span class="text-dim text-xs">
+          {m.stats_video_most_active_year_label()}
+          <b class="text-fg">{mostActiveYear}</b>
+        </span>
       {/if}
     </div>
     <LineChart points={monthlyPoints} color="var(--stat-media)" />

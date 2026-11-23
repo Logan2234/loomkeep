@@ -56,8 +56,10 @@
     </p>
     <p class="text-dim mt-3 text-sm">
       {m.admin_users_confirm_type()}
-      <code class="bg-surface-2 text-fg rounded px-1.5 py-0.5 text-xs font-bold"
-        >{username}</code>
+      <code
+        class="bg-surface-2 text-fg rounded px-1.5 py-0.5 text-xs font-bold">
+        {username}
+      </code>
       {m.admin_confirmation_below()}
     </p>
     <input

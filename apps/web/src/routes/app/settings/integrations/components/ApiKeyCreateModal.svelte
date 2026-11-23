@@ -178,8 +178,9 @@
                   <tr>
                     <td class="px-3 py-2">
                       <span class="block font-medium">{labels.label()}</span>
-                      <span class="text-dim block text-xs"
-                        >{labels.description()}</span>
+                      <span class="text-dim block text-xs">
+                        {labels.description()}
+                      </span>
                     </td>
                     <td class="px-2 py-2 text-center">
                       <input
@@ -269,8 +270,9 @@
         </p>
         <div class="flex flex-col gap-2">
           <div class="flex flex-wrap items-center justify-between gap-2">
-            <span class="text-sm font-semibold"
-              >{m.settings_api_keys_example()}</span>
+            <span class="text-sm font-semibold">
+              {m.settings_api_keys_example()}
+            </span>
             <SegmentedControl
               label={m.settings_api_keys_example()}
               options={EXAMPLE_LANGUAGES.map((value) => ({
@@ -290,13 +292,17 @@
             href={`${DOCS_URL}/api/`}
             target="_blank"
             rel="noopener noreferrer"
-            class="link-accent">{m.settings_api_keys_getting_started()}</a>
+            class="link-accent">
+            {m.settings_api_keys_getting_started()}
+          </a>
           {#if initial}
             <a
               href={RECIPE_GUIDES[initial.id]}
               target="_blank"
               rel="noopener noreferrer"
-              class="link-accent">{m.settings_api_keys_recipe_guide()}</a>
+              class="link-accent">
+              {m.settings_api_keys_recipe_guide()}
+            </a>
           {/if}
         </p>
       </div>

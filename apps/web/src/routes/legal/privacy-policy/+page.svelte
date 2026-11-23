@@ -23,8 +23,9 @@
       l'adresse <a
         href="https://loomkeep.app"
         class="link-accent"
-        target="_blank">https://loomkeep.app</a
-      >.
+        target="_blank">
+        https://loomkeep.app
+      </a>.
     </p>
     <p>Elle concerne uniquement cette instance.</p>
     <p>
@@ -43,10 +44,11 @@
       à l'article 6-III de la LCEN (voir les
       <a href="/legal/legal-notice" class="link-accent">mentions légales</a>).
       E-mail :
-      <strong
-        ><a href="mailto:contact@loomkeep.app" class="link-accent"
-          >contact@loomkeep.app</a
-        ></strong>
+      <strong>
+        <a href="mailto:contact@loomkeep.app" class="link-accent">
+          contact@loomkeep.app
+        </a>
+      </strong>
     </p>
     <h2>2. Principes appliqués</h2>
     <p>Loomkeep s'efforce de respecter les principes du RGPD, notamment :</p>
@@ -193,66 +195,81 @@
       tabindex="0">
       <table>
         <thead>
-          <tr
-            ><th>Finalité</th><th>Données concernées</th><th
-              >Base légale principale</th
-            ></tr>
+          <tr>
+            <th>Finalité</th><th>Données concernées</th><th>
+              Base légale principale
+            </th>
+          </tr>
         </thead>
         <tbody>
-          <tr
-            ><td>Création et gestion du compte</td><td>données de compte</td><td
-              >Exécution du contrat</td
-            ></tr>
-          <tr
-            ><td>Authentification</td><td>identifiants et données de session</td
-            ><td>Exécution du contrat</td></tr>
-          <tr
-            ><td>Vérification de l'adresse e-mail</td><td
-              >e-mail, jetons techniques</td
-            ><td>Exécution du contrat</td></tr>
-          <tr
-            ><td>Réinitialisation du mot de passe</td><td
-              >e-mail, jetons techniques</td
-            ><td>Exécution du contrat</td></tr>
-          <tr
-            ><td>Fonctionnement du tracking</td><td
-              >bibliothèques, progression, historique</td
-            ><td>Exécution du contrat</td></tr>
-          <tr
-            ><td>Fonctionnalités sociales</td><td
-              >profil, avis, commentaires, messages privés, relations</td
-            ><td>Exécution du contrat</td></tr>
-          <tr
-            ><td>Sécurité du service</td><td
-              >événements techniques et de sécurité</td
-            ><td>Intérêt légitime</td></tr>
-          <tr
-            ><td>Prévention des abus et fraudes</td><td
-              >données techniques et interactions</td
-            ><td>Intérêt légitime</td></tr>
-          <tr
-            ><td>Modération</td><td
-              >contenus, signalements et informations associées</td
-            ><td
-              >Intérêt légitime et, lorsque nécessaire, respect d'obligations
-              légales</td
-            ></tr>
-          <tr
-            ><td>Notifications nécessaires au service</td><td
-              >coordonnées et préférences</td
-            ><td>Exécution du contrat</td></tr>
-          <tr
-            ><td>Notifications facultatives</td><td
-              >préférences et données techniques nécessaires</td
-            ><td>Consentement lorsque requis</td></tr>
-          <tr
-            ><td>Newsletter</td><td
-              >adresse e-mail et préférence correspondante</td
-            ><td>Consentement</td></tr>
-          <tr
-            ><td>Amélioration et maintenance du service</td><td
-              >données techniques et erreurs</td
-            ><td>Intérêt légitime</td></tr>
+          <tr>
+            <td>Création et gestion du compte</td><td>données de compte</td><td>
+              Exécution du contrat
+            </td>
+          </tr>
+          <tr>
+            <td>Authentification</td><td>
+              identifiants et données de session
+            </td><td>Exécution du contrat</td>
+          </tr>
+          <tr>
+            <td>Vérification de l'adresse e-mail</td><td>
+              e-mail, jetons techniques
+            </td><td>Exécution du contrat</td>
+          </tr>
+          <tr>
+            <td>Réinitialisation du mot de passe</td><td>
+              e-mail, jetons techniques
+            </td><td>Exécution du contrat</td>
+          </tr>
+          <tr>
+            <td>Fonctionnement du tracking</td><td>
+              bibliothèques, progression, historique
+            </td><td>Exécution du contrat</td>
+          </tr>
+          <tr>
+            <td>Fonctionnalités sociales</td><td>
+              profil, avis, commentaires, messages privés, relations
+            </td><td>Exécution du contrat</td>
+          </tr>
+          <tr>
+            <td>Sécurité du service</td><td>
+              événements techniques et de sécurité
+            </td><td>Intérêt légitime</td>
+          </tr>
+          <tr>
+            <td>Prévention des abus et fraudes</td><td>
+              données techniques et interactions
+            </td><td>Intérêt légitime</td>
+          </tr>
+          <tr>
+            <td>Modération</td><td>
+              contenus, signalements et informations associées
+            </td><td>
+              Intérêt légitime et, lorsque nécessaire, respect d'obligations
+              légales
+            </td>
+          </tr>
+          <tr>
+            <td>Notifications nécessaires au service</td><td>
+              coordonnées et préférences
+            </td><td>Exécution du contrat</td>
+          </tr>
+          <tr>
+            <td>Notifications facultatives</td><td>
+              préférences et données techniques nécessaires
+            </td><td>Consentement lorsque requis</td>
+          </tr>
+          <tr>
+            <td>Newsletter</td><td>
+              adresse e-mail et préférence correspondante
+            </td><td>Consentement</td>
+          </tr>
+          <tr>
+            <td>Amélioration et maintenance du service</td><td>
+              données techniques et erreurs
+            </td><td>Intérêt légitime</td>
+          </tr>
         </tbody>
       </table>
     </div>
@@ -561,74 +578,88 @@
           <tr><th>Catégorie</th><th>Conservation</th></tr>
         </thead>
         <tbody>
-          <tr
-            ><td>Données du compte</td><td
-              >Jusqu'à suppression du compte, sous réserve des exceptions
-              légales et de la politique de comptes inactifs ci-dessous</td
-            ></tr>
-          <tr
-            ><td>Sessions et jetons temporaires</td><td
-              >Pendant leur durée de validité ou jusqu'à leur révocation</td
-            ></tr>
-          <tr
-            ><td>Jetons de vérification/récupération</td><td
-              >Pendant leur durée de validité</td
-            ></tr>
-          <tr
-            ><td>Données de suivi</td><td
-              >Jusqu'à suppression du compte ou suppression des données
-              concernées</td
-            ></tr>
-          <tr
-            ><td>Notifications dans l'application</td><td
-              >Jusqu'à leur suppression par l'utilisateur, et au plus 90 jours
-              après leur lecture</td
-            ></tr>
-          <tr
-            ><td>Contenus sociaux</td><td
-              >Selon leur statut et les paramètres de visibilité, jusqu'à leur
-              suppression ou celle du compte</td
-            ></tr>
-          <tr
-            ><td>Signalements et décisions de modération</td><td
-              >Le temps de traiter le signalement, puis de répondre à une
+          <tr>
+            <td>Données du compte</td><td>
+              Jusqu'à suppression du compte, sous réserve des exceptions légales
+              et de la politique de comptes inactifs ci-dessous
+            </td>
+          </tr>
+          <tr>
+            <td>Sessions et jetons temporaires</td><td>
+              Pendant leur durée de validité ou jusqu'à leur révocation
+            </td>
+          </tr>
+          <tr>
+            <td>Jetons de vérification/récupération</td><td>
+              Pendant leur durée de validité
+            </td>
+          </tr>
+          <tr>
+            <td>Données de suivi</td><td>
+              Jusqu'à suppression du compte ou suppression des données
+              concernées
+            </td>
+          </tr>
+          <tr>
+            <td>Notifications dans l'application</td><td>
+              Jusqu'à leur suppression par l'utilisateur, et au plus 90 jours
+              après leur lecture
+            </td>
+          </tr>
+          <tr>
+            <td>Contenus sociaux</td><td>
+              Selon leur statut et les paramètres de visibilité, jusqu'à leur
+              suppression ou celle du compte
+            </td>
+          </tr>
+          <tr>
+            <td>Signalements et décisions de modération</td><td>
+              Le temps de traiter le signalement, puis de répondre à une
               éventuelle contestation et aux obligations légales. Une décision
               garde une copie du texte retiré ou modifié (commentaire, critique,
               bio, nom affiché, titre et description d'une liste), jamais
               l'image d'une photo de profil retirée. Elle subsiste après la
-              suppression du compte concerné</td
-            ></tr>
-          <tr
-            ><td>Journal de sécurité et d'imports</td><td
-              >Lié au compte tant qu'il existe ; le lien avec l'identité est
+              suppression du compte concerné
+            </td>
+          </tr>
+          <tr>
+            <td>Journal de sécurité et d'imports</td><td>
+              Lié au compte tant qu'il existe ; le lien avec l'identité est
               retiré dès la suppression du compte, plutôt que conservé. Les
               tentatives de connexion échouées restent journalisées
               indépendamment, à des fins de prévention des abus. Les événements
               de sécurité, avec l'adresse IP d'où ils proviennent, sont
-              supprimés au bout d'un an</td
-            ></tr>
-          <tr
-            ><td>Logs applicatifs</td><td
-              >Rotation de volume sur le serveur (~50 Mo/service) ; 30 jours
-              glissants si la supervision est activée</td
-            ></tr>
-          <tr
-            ><td>Données d'erreur</td><td
-              >90 jours (durée par défaut de l'outil de suivi des erreurs,
-              GlitchTip)</td
-            ></tr>
-          <tr
-            ><td>Sauvegardes applicatives (locales)</td><td
-              >7 jours glissants (7 sauvegardes)</td
-            ></tr>
-          <tr
-            ><td>Sauvegardes hors site (offsite, chiffrées, Cloudflare R2)</td
-            ><td>30 jours glissants</td></tr>
-          <tr
-            ><td>Snapshots infrastructure (hébergeur)</td><td
-              >Snapshot quotidien, un seul point de restauration conservé (~24
-              heures), en complément des sauvegardes ci-dessus</td
-            ></tr>
+              supprimés au bout d'un an
+            </td>
+          </tr>
+          <tr>
+            <td>Logs applicatifs</td><td>
+              Rotation de volume sur le serveur (~50 Mo/service) ; 30 jours
+              glissants si la supervision est activée
+            </td>
+          </tr>
+          <tr>
+            <td>Données d'erreur</td><td>
+              90 jours (durée par défaut de l'outil de suivi des erreurs,
+              GlitchTip)
+            </td>
+          </tr>
+          <tr>
+            <td>Sauvegardes applicatives (locales)</td><td>
+              7 jours glissants (7 sauvegardes)
+            </td>
+          </tr>
+          <tr>
+            <td>
+              Sauvegardes hors site (offsite, chiffrées, Cloudflare R2)
+            </td><td>30 jours glissants</td>
+          </tr>
+          <tr>
+            <td>Snapshots infrastructure (hébergeur)</td><td>
+              Snapshot quotidien, un seul point de restauration conservé (~24
+              heures), en complément des sauvegardes ci-dessus
+            </td>
+          </tr>
         </tbody>
       </table>
     </div>
@@ -847,10 +878,11 @@
       ses données, l'utilisateur peut contacter :
     </p>
     <p>
-      <strong
-        ><a href="mailto:contact@loomkeep.app" class="link-accent"
-          >contact@loomkeep.app</a
-        ></strong>
+      <strong>
+        <a href="mailto:contact@loomkeep.app" class="link-accent">
+          contact@loomkeep.app
+        </a>
+      </strong>
     </p>
     <p>
       La demande doit permettre de comprendre suffisamment son objet afin de
@@ -875,9 +907,9 @@
       Loomkeep afin de tenter de résoudre le problème.
     </p>
     <p>
-      Il dispose également du droit d'introduire une réclamation auprès de la <strong
-        >Commission nationale de l'informatique et des libertés (CNIL)</strong
-      >.
+      Il dispose également du droit d'introduire une réclamation auprès de la <strong>
+        Commission nationale de l'informatique et des libertés (CNIL)
+      </strong>.
     </p>
     <p>Site : https://www.cnil.fr/</p>
     <h2>19. Données concernant les mineurs</h2>
@@ -892,10 +924,11 @@
       cette règle, il peut contacter :
     </p>
     <p>
-      <strong
-        ><a href="mailto:contact@loomkeep.app" class="link-accent"
-          >contact@loomkeep.app</a
-        ></strong>
+      <strong>
+        <a href="mailto:contact@loomkeep.app" class="link-accent">
+          contact@loomkeep.app
+        </a>
+      </strong>
     </p>
     <h2>20. Instances auto-hébergées</h2>
     <p>
@@ -984,10 +1017,11 @@
       traitement des données personnelles :
     </p>
     <p>
-      <strong
-        ><a href="mailto:contact@loomkeep.app" class="link-accent"
-          >contact@loomkeep.app</a
-        ></strong>
+      <strong>
+        <a href="mailto:contact@loomkeep.app" class="link-accent">
+          contact@loomkeep.app
+        </a>
+      </strong>
     </p>
   </article>
 </main>

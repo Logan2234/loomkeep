@@ -151,13 +151,13 @@ With Authelia running, add `docker/docker-compose.homepage.yml` to
 its tiles read each tool's own API, through keys set in `.env`. A missing
 key only leaves its tile without figures.
 
-| Tile                   | Variables                                                                    |
-| ---------------------- | ---------------------------------------------------------------------------- |
-| Portainer              | `PORTAINER_API_KEY` (**My account › Access tokens**), `PORTAINER_ENV_ID`     |
+| Tile                   | Variables                                                                       |
+| ---------------------- | ------------------------------------------------------------------------------- |
+| Portainer              | `PORTAINER_API_KEY` (**My account › Access tokens**), `PORTAINER_ENV_ID`        |
 | GlitchTip              | `GLITCHTIP_API_TOKEN` (an auth token with `project:read`), `GLITCHTIP_ORG_SLUG` |
-| Healthchecks.io        | `HEALTHCHECKS_API_KEY` (read-only)                                           |
-| UptimeRobot            | `UPTIMEROBOT_API_KEY` (read-only)                                            |
-| Loomkeep's own figures | `HOMEPAGE_STATS_API_KEY`: any long random string, shared with the API        |
+| Healthchecks.io        | `HEALTHCHECKS_API_KEY` (read-only)                                              |
+| UptimeRobot            | `UPTIMEROBOT_API_KEY` (read-only)                                               |
+| Loomkeep's own figures | `HOMEPAGE_STATS_API_KEY`: any long random string, shared with the API           |
 
 Grafana's tile reuses `GRAFANA_ADMIN_USER` and `GRAFANA_ADMIN_PASSWORD`. The
 tiles themselves are in `docker/homepage/services.yaml`: edit them to your

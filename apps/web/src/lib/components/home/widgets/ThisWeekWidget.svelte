@@ -101,8 +101,9 @@
     </ul>
   {:else}
     <div class="flex h-full items-center">
-      <EmptyState compact art="calendar"
-        >{m.home_nothing_this_week()}</EmptyState>
+      <EmptyState compact art="calendar">
+        {m.home_nothing_this_week()}
+      </EmptyState>
     </div>
   {/if}
 </WidgetShell>

@@ -28,15 +28,17 @@
       accessible à l'adresse <a
         href="https://loomkeep.app"
         class="link-accent"
-        target="_blank">https://loomkeep.app</a
-      >.
+        target="_blank">
+        https://loomkeep.app
+      </a>.
     </p>
     <p>
       Loomkeep est édité par Logan WILLEM. Les informations relatives à
       l'éditeur sont disponibles dans les <a
         href="/legal/legal-notice"
-        class="link-accent">mentions légales</a
-      >.
+        class="link-accent">
+        mentions légales
+      </a>.
     </p>
     <p>
       Les présentes CGU concernent exclusivement l'instance officielle de
@@ -240,9 +242,9 @@
     <p>
       Toute personne, notamment un ayant droit ou un tiers concerné par un
       contenu qu'il estime illicite sur Loomkeep, peut le notifier à
-      <a href="mailto:contact@loomkeep.app" class="link-accent"
-        >contact@loomkeep.app</a
-      >.
+      <a href="mailto:contact@loomkeep.app" class="link-accent">
+        contact@loomkeep.app
+      </a>.
     </p>
     <p>
       Pour être valablement prise en compte, la notification doit préciser :
@@ -330,9 +332,9 @@
     <p>
       L'utilisateur peut contester une mesure de modération en répondant
       directement à l'email de notification ou en écrivant à
-      <a href="mailto:contact@loomkeep.app" class="link-accent"
-        >contact@loomkeep.app</a
-      >. Chaque contestation est examinée individuellement.
+      <a href="mailto:contact@loomkeep.app" class="link-accent">
+        contact@loomkeep.app
+      </a>. Chaque contestation est examinée individuellement.
     </p>
     <p>
       Loomkeep conserve les informations relatives aux signalements et aux
@@ -518,10 +520,11 @@
       Loomkeep :
     </p>
     <p>
-      <strong
-        ><a href="mailto:contact@loomkeep.app" class="link-accent"
-          >contact@loomkeep.app</a
-        ></strong>
+      <strong>
+        <a href="mailto:contact@loomkeep.app" class="link-accent">
+          contact@loomkeep.app
+        </a>
+      </strong>
     </p>
   </article>
 </main>

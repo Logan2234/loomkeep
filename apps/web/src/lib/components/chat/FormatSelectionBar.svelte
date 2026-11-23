@@ -83,7 +83,9 @@
             ? "line-through"
             : item.kind === "code"
               ? "font-mono text-xs"
-              : ""}>{item.glyph}</span>
+              : ""}>
+        {item.glyph}
+      </span>
     </button>
   {/each}
   <span class="bg-bg/25 mx-0.5 h-5 w-px"></span>

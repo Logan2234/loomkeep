@@ -50,6 +50,7 @@ Wait as long as `Retry-After` says, then try once more:
       throw new Error("api.rate_limited");
     }
     ```
+
   </TabItem>
   <TabItem label="Python">
     ```python
@@ -70,6 +71,7 @@ Wait as long as `Retry-After` says, then try once more:
             time.sleep(int(res.headers.get("Retry-After", 60)))
         raise RuntimeError("api.rate_limited")
     ```
+
   </TabItem>
 </Tabs>
 

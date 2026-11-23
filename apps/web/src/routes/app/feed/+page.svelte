@@ -91,8 +91,9 @@
     {:else if feed.data.length === 0}
       <EmptyState art="people" title={m.feed_empty_title()}>
         <p class="text-sm">{m.feed_empty_body()}</p>
-        <a href="/app/profile" class="btn btn-ghost mt-3"
-          >{m.feed_share_profile()}</a>
+        <a href="/app/profile" class="btn btn-ghost mt-3">
+          {m.feed_share_profile()}
+        </a>
       </EmptyState>
     {:else}
       <ul class="flex flex-col gap-2">

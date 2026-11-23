@@ -206,13 +206,14 @@
           {m.stats_social_monthly_activity()}
         </h3>
         {#if social.contributionStreakDays > 0}
-          <span class="text-dim text-xs"
-            >{m.gamification_current_streak_label()}
-            <b class="text-fg"
-              >{m.common_day_count_short({
+          <span class="text-dim text-xs">
+            {m.gamification_current_streak_label()}
+            <b class="text-fg">
+              {m.common_day_count_short({
                 days: social.contributionStreakDays,
-              })}</b
-            ></span>
+              })}
+            </b>
+          </span>
         {/if}
       </div>
       <LineChart

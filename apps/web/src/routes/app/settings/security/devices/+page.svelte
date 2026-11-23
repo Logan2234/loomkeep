@@ -76,9 +76,10 @@
           <Icon name="monitor" class="text-accent h-6 w-6 shrink-0" />
           <div class="min-w-0 flex-1">
             <p class="flex items-center gap-2 font-semibold">
-              <span class="truncate"
-                >{deviceLabel(currentSession.userAgent) ??
-                  m.settings_sessions_unknown_device()}</span>
+              <span class="truncate">
+                {deviceLabel(currentSession.userAgent) ??
+                  m.settings_sessions_unknown_device()}
+              </span>
               <span
                 class="bg-accent/15 text-accent rounded-full px-2.5 py-0.5 text-xs font-semibold">
                 {m.settings_sessions_current_device()}
