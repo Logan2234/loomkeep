@@ -19,6 +19,7 @@ import { AppException } from "./app.exception";
 import { sinceDaysAgo } from "./date.util";
 import { safeLang } from "./locale.util";
 import { DEFAULT_PAGE_SIZE, parsePageQuery } from "./pagination.util";
+import { isRecordNotFound } from "./prisma-error.util";
 import { toQueryArray } from "./query-array.util";
 
 /**
@@ -329,8 +330,24 @@ export async function deleteOwnedReplay(
     );
   }
 
-  await args.remove();
+  // Revoke first: it is idempotent, so a delete that fails after it is
+  // simply retried. The other order left the XP for good once the replay
+  // was gone, since the retry 404s before reaching the revocation.
   await xp.revokeBySource(args.userId, args.xpSource, [args.replayId]);
+
+  try {
+    await args.remove();
+  } catch (err) {
+    // A concurrent delete got there first.
+    if (isRecordNotFound(err)) {
+      throw new AppException(
+        HttpStatus.NOT_FOUND,
+        ErrorCode.LibraryReplayNotFound,
+      );
+    }
+
+    throw err;
+  }
 }
 
 /**
