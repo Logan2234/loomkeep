@@ -58,7 +58,14 @@ export class CalendarService {
           },
         },
       },
-      orderBy: { airDate: "asc" },
+      // Episodes sharing an air date (a binge drop) need a total order, or
+      // Postgres returns them in any order: group by show, then S/E ascending.
+      orderBy: [
+        { airDate: "asc" },
+        { season: { mediaItemId: "asc" } },
+        { season: { number: "asc" } },
+        { number: "asc" },
+      ],
       take: MAX_EPISODES,
       include: {
         season: {

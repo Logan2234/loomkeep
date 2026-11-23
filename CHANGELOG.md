@@ -25,6 +25,11 @@ history from before it was started.
   Music, Tidal, Qobuz, Bandcamp and Amazon. Pick yours in Settings ›
   Streaming to see them first.
 
+### Fixed
+
+- Calendar: episodes airing the same day now always appear in order (7, 8, 9…)
+  instead of sometimes being reversed.
+
 ## 1.15.0 — Admin overhaul, premieres calendar and instance hardening
 
 ### Breaking changes
