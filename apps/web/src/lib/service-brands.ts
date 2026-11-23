@@ -7,7 +7,7 @@ import type { GameStore, ListenService } from "@loomkeep/shared";
  * monogram for brands Simple Icons removed at the owner's request. The
  * name always sits next to the mark, so the mark is decorative.
  */
-export type ServiceMark =
+type ServiceMark =
   | { kind: "logo"; path: string; color: string | null }
   | { kind: "monogram"; text: string; color: string; foreground: string };
 
