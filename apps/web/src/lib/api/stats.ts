@@ -41,6 +41,10 @@ export const getVideoTemporal = (period: StatsWindow = "ALL") =>
 
 export const getSocialStats = () => typedRequest("/stats/social");
 
+/** The « Mon année » counters for the viewer's own calendar year. */
+export const getMyYear = (year: number) =>
+  typedRequest("/stats/my-year", { query: { year: String(year) } });
+
 /** What the viewer was on around `date` (local YYYY-MM-DD) a year ago. */
 export const getOnThisDay = (date: string) =>
   typedRequest("/stats/on-this-day", { query: { date } });

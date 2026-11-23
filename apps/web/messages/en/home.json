@@ -394,5 +394,19 @@
   "notif_empty_title": "Nothing new",
   "notif_empty_unread_title": "You're all caught up",
   "notif_empty_unread": "Nothing left unread. The history stays under “All”.",
-  "notif_follows_you_now": "{name} now follows you"
+  "notif_follows_you_now": "{name} now follows you",
+  "home_widget_my_year_title": "My year",
+  "home_widget_my_year_description": "What you watched, played, read and heard this year, for your domains.",
+  "home_my_year_movies_one": "film",
+  "home_my_year_movies_many": "films",
+  "home_my_year_video_detail": "{episodes} episodes · {time}",
+  "home_my_year_games_one": "game finished",
+  "home_my_year_games_many": "games finished",
+  "home_my_year_games_detail": "{time} of play",
+  "home_my_year_books_one": "book read",
+  "home_my_year_books_many": "books read",
+  "home_my_year_books_detail": "{pages} pages",
+  "home_my_year_music_one": "album listened to",
+  "home_my_year_music_many": "albums listened to",
+  "home_my_year_empty": "Turn a domain on to see your year."
 }

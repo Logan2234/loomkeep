@@ -14,6 +14,7 @@
   import MusicToListenWidget from "./widgets/MusicToListenWidget.svelte";
   import MyListsWidget from "./widgets/MyListsWidget.svelte";
   import NoteWidget from "./widgets/NoteWidget.svelte";
+  import MyYearWidget from "./widgets/MyYearWidget.svelte";
   import OnThisDayWidget from "./widgets/OnThisDayWidget.svelte";
   import TonightPickWidget from "./widgets/TonightPickWidget.svelte";
   import QuickLinksWidget from "./widgets/QuickLinksWidget.svelte";
@@ -67,6 +68,8 @@
   <TonightPickWidget {widget} {size} />
 {:else if widget.type === "onThisDay"}
   <OnThisDayWidget {size} />
+{:else if widget.type === "myYear"}
+  <MyYearWidget />
 {:else if widget.type === "quickSearch"}
   <QuickSearchWidget {size} />
 {/if}

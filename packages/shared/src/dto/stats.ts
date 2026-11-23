@@ -360,6 +360,22 @@ export interface OnThisDayEntryDto {
 }
 
 /**
+ * One calendar year at a glance (the « Mon année » widget): counters only,
+ * for the domains the user keeps on.
+ */
+export interface MyYearDto {
+  year: number;
+  /** Films watched (rewatches included), episodes watched, minutes in front of them. */
+  video?: { movies: number; episodes: number; minutes: number };
+  /** Playthroughs finished, minutes of logged sessions. */
+  games?: { finished: number; minutes: number };
+  /** Readings finished, pages of logged sessions. */
+  books?: { read: number; pages: number };
+  /** Albums marked listened. */
+  music?: { listened: number };
+}
+
+/**
  * What's left in one library's pile (UX-02): everything planned, plus the
  * rest of what's in progress. Minutes for video, games and music, pages for
  * books.

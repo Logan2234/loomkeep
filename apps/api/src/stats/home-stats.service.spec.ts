@@ -82,3 +82,45 @@ describe("HomeStatsService.onThisDay", () => {
     });
   });
 });
+
+describe("HomeStatsService.myYear", () => {
+  it("counts only the enabled domains, inside the calendar year", async () => {
+    const movieEntries = vi
+      .fn()
+      .mockResolvedValue([
+        { mediaItem: { runtimeMin: 120 } },
+        { mediaItem: { runtimeMin: null } },
+      ]);
+    const service = makeService(["MEDIA", "BOOKS"], {
+      libraryEntry: { findMany: movieEntries },
+      movieReplay: {
+        findMany: vi
+          .fn()
+          .mockResolvedValue([
+            { libraryEntry: { mediaItem: { runtimeMin: 100 } } },
+          ]),
+      },
+      $queryRaw: vi.fn().mockResolvedValue([{ count: 12n, minutes: 540n }]),
+      bookReading: { count: vi.fn().mockResolvedValue(3) },
+      bookSession: {
+        aggregate: vi.fn().mockResolvedValue({ _sum: { pagesRead: 812 } }),
+      },
+    });
+
+    await expect(service.myYear("user-1", 2026)).resolves.toEqual({
+      year: 2026,
+      video: { movies: 3, episodes: 12, minutes: 760 },
+      books: { read: 3, pages: 812 },
+    });
+    expect(movieEntries).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          finishedAt: {
+            gte: new Date("2026-01-01T00:00:00Z"),
+            lt: new Date("2027-01-01T00:00:00Z"),
+          },
+        }),
+      }),
+    );
+  });
+});
