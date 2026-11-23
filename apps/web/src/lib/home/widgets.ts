@@ -262,6 +262,16 @@ export const HOME_WIDGETS: Record<HomeWidgetType, HomeWidgetDef> = {
     initial: { w: 6, h: 5 },
     available: always,
   },
+  myYear: {
+    type: "myYear",
+    icon: "calendar",
+    title: () => m.home_widget_my_year_title(),
+    description: () => m.home_widget_my_year_description(),
+    min: { w: 3, h: 3 },
+    max: { w: 6, h: 6 },
+    initial: { w: 3, h: 4 },
+    available: always,
+  },
   quickSearch: {
     type: "quickSearch",
     icon: "search",
@@ -328,6 +338,7 @@ export const HOME_WIDGET_GROUPS: {
       "friendsPodium",
       "activity",
       "onThisDay",
+      "myYear",
     ],
   },
   {

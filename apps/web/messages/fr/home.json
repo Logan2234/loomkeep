@@ -394,5 +394,19 @@
   "notif_empty_title": "Rien de neuf",
   "notif_empty_unread_title": "Tu es à jour",
   "notif_empty_unread": "Plus rien de non lu. L'historique reste dans « Toutes ».",
-  "notif_follows_you_now": "{name} te suit maintenant"
+  "notif_follows_you_now": "{name} te suit maintenant",
+  "home_widget_my_year_title": "Mon année",
+  "home_widget_my_year_description": "Ce que tu as vu, joué, lu et écouté cette année, selon tes domaines.",
+  "home_my_year_movies_one": "film",
+  "home_my_year_movies_many": "films",
+  "home_my_year_video_detail": "{episodes} épisodes · {time}",
+  "home_my_year_games_one": "jeu terminé",
+  "home_my_year_games_many": "jeux terminés",
+  "home_my_year_games_detail": "{time} de jeu",
+  "home_my_year_books_one": "livre lu",
+  "home_my_year_books_many": "livres lus",
+  "home_my_year_books_detail": "{pages} pages",
+  "home_my_year_music_one": "album écouté",
+  "home_my_year_music_many": "albums écoutés",
+  "home_my_year_empty": "Active un domaine pour voir ton année."
 }

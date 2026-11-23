@@ -394,5 +394,19 @@
   "notif_empty_title": "Niente di nuovo",
   "notif_empty_unread_title": "Sei in pari",
   "notif_empty_unread": "Niente da leggere. La cronologia resta in “Tutte”.",
-  "notif_follows_you_now": "{name} ora ti segue"
+  "notif_follows_you_now": "{name} ora ti segue",
+  "home_widget_my_year_title": "Il mio anno",
+  "home_widget_my_year_description": "Quello che hai visto, giocato, letto e ascoltato quest'anno, secondo i tuoi domini.",
+  "home_my_year_movies_one": "film",
+  "home_my_year_movies_many": "film",
+  "home_my_year_video_detail": "{episodes} episodi · {time}",
+  "home_my_year_games_one": "gioco finito",
+  "home_my_year_games_many": "giochi finiti",
+  "home_my_year_games_detail": "{time} di gioco",
+  "home_my_year_books_one": "libro letto",
+  "home_my_year_books_many": "libri letti",
+  "home_my_year_books_detail": "{pages} pagine",
+  "home_my_year_music_one": "album ascoltato",
+  "home_my_year_music_many": "album ascoltati",
+  "home_my_year_empty": "Attiva un dominio per vedere il tuo anno."
 }

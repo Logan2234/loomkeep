@@ -1,4 +1,5 @@
 import {
+  type MyYearDto,
   type OnThisDayEntryDto,
   type StatsDomain,
   Domain,
@@ -23,6 +24,122 @@ export class HomeStatsService {
     private readonly prisma: PrismaService,
     private readonly domainGate: DomainGateService,
   ) {}
+
+  /**
+   * What the user saw, played, read and heard in `year` (UTC calendar year),
+   * one block per enabled domain. Game minutes and book pages come from
+   * logged sessions only: Steam's playtime has no date to place it in a year.
+   */
+  async myYear(userId: string, year: number): Promise<MyYearDto> {
+    const enabled = await this.domainGate.getEnabledDomains(userId);
+    const within = {
+      gte: new Date(Date.UTC(year, 0, 1)),
+      lt: new Date(Date.UTC(year + 1, 0, 1)),
+    };
+    const summary: MyYearDto = { year };
+    const tasks: Promise<void>[] = [];
+
+    if (enabled.includes(Domain.MEDIA)) {
+      tasks.push(
+        (async () => {
+          const [movies, replays, episodes] = await Promise.all([
+            this.prisma.libraryEntry.findMany({
+              where: {
+                userId,
+                finishedAt: within,
+                mediaItem: { type: "MOVIE" },
+              },
+              select: { mediaItem: { select: { runtimeMin: true } } },
+            }),
+            this.prisma.movieReplay.findMany({
+              where: { libraryEntry: { userId }, finishedAt: within },
+              select: {
+                libraryEntry: {
+                  select: { mediaItem: { select: { runtimeMin: true } } },
+                },
+              },
+            }),
+            this.prisma.$queryRaw<{ count: bigint; minutes: bigint | null }[]>`
+              SELECT COUNT(*) AS count, SUM(e."runtimeMin") AS minutes
+              FROM "EpisodeWatch" w JOIN "Episode" e ON e.id = w."episodeId"
+              WHERE w."userId" = ${userId}
+                AND w."watchedAt" >= ${within.gte} AND w."watchedAt" < ${within.lt}`,
+          ]);
+          const movieMinutes =
+            movies.reduce((sum, m) => sum + (m.mediaItem.runtimeMin ?? 0), 0) +
+            replays.reduce(
+              (sum, r) => sum + (r.libraryEntry.mediaItem.runtimeMin ?? 0),
+              0,
+            );
+          summary.video = {
+            movies: movies.length + replays.length,
+            episodes: Number(episodes[0]?.count ?? 0),
+            minutes: movieMinutes + Number(episodes[0]?.minutes ?? 0),
+          };
+        })(),
+      );
+    }
+
+    if (enabled.includes(Domain.GAMES)) {
+      tasks.push(
+        (async () => {
+          const [finished, sessions] = await Promise.all([
+            this.prisma.gamePlaythrough.count({
+              where: {
+                gameEntry: { userId },
+                status: TrackingCycleStatus.COMPLETED,
+                finishedAt: within,
+              },
+            }),
+            this.prisma.gameSession.aggregate({
+              where: { gameEntry: { userId }, occurredAt: within },
+              _sum: { durationMinutes: true },
+            }),
+          ]);
+          summary.games = {
+            finished,
+            minutes: sessions._sum.durationMinutes ?? 0,
+          };
+        })(),
+      );
+    }
+
+    if (enabled.includes(Domain.BOOKS)) {
+      tasks.push(
+        (async () => {
+          const [read, sessions] = await Promise.all([
+            this.prisma.bookReading.count({
+              where: {
+                bookEntry: { userId },
+                status: TrackingCycleStatus.COMPLETED,
+                finishedAt: within,
+              },
+            }),
+            this.prisma.bookSession.aggregate({
+              where: { bookEntry: { userId }, occurredAt: within },
+              _sum: { pagesRead: true },
+            }),
+          ]);
+          summary.books = { read, pages: sessions._sum.pagesRead ?? 0 };
+        })(),
+      );
+    }
+
+    if (enabled.includes(Domain.MUSIC)) {
+      tasks.push(
+        (async () => {
+          summary.music = {
+            listened: await this.prisma.musicEntry.count({
+              where: { userId, status: "LISTENED", finishedAt: within },
+            }),
+          };
+        })(),
+      );
+    }
+
+    await Promise.all(tasks);
+    return summary;
+  }
 
   async onThisDay(userId: string, date: string): Promise<OnThisDayEntryDto[]> {
     const enabled = await this.domainGate.getEnabledDomains(userId);

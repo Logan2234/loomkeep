@@ -41,6 +41,7 @@ export const HOME_WIDGET_TYPES = [
   "tonightPick",
   "onThisDay",
   "quickSearch",
+  "myYear",
 ] as const;
 export type HomeWidgetType = (typeof HOME_WIDGET_TYPES)[number];
 
