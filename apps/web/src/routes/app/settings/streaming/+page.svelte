@@ -17,6 +17,7 @@
   import { createWatchProviderToggle } from "#lib/watch-provider-toggle.svelte.js";
   import NewBadge from "#lib/components/NewBadge.svelte";
   import { isFeatureNew } from "#lib/feature-badges.js";
+  import ServiceMark from "#lib/components/ServiceMark.svelte";
   import { SERVICE_BRANDS } from "#lib/service-brands.js";
   import { LISTEN_SERVICES, type WatchProviderDto } from "@loomkeep/shared";
   import { flip } from "svelte/animate";
@@ -250,11 +251,8 @@
               : 'border-border text-dim hover:text-fg'}"
             onclick={() => listenPicker.toggle(service)}>
             <span
-              class="grid h-10 w-10 place-items-center rounded-lg text-sm font-black"
-              style:background-color={brand.color}
-              style:color={brand.foreground}
-              aria-hidden="true">
-              {brand.monogram}
+              class="bg-surface-2 text-fg grid h-10 w-10 place-items-center rounded-lg">
+              <ServiceMark {service} class="h-6 w-6 text-xs" />
             </span>
             <span class="w-full truncate">{brand.name}</span>
           </button>
