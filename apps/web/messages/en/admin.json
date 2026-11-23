@@ -778,7 +778,7 @@
   "admin_update_backup_done": "Backup done.",
   "admin_update_step_update": "Update",
   "admin_update_command_hint": "From the docker/ folder of your installation:",
-  "admin_update_privacy": "Once a day, asks loomkeep.app for the latest version, sending only a random id and the installed version (or reads GitHub, sending nothing, if \"Count this instance\" is off). Both can be turned off in Admin › Settings.",
+  "admin_update_privacy": "Once a day, asks loomkeep.app for the latest version, sending only a random id and the installed version (or reads GitHub, sending nothing, if \"Count this instance\" is off). Both can be turned off in Admin › Settings. When an update is available, it also reads the release notes on GitHub, sending nothing.",
   "admin_update_notes_title": "Before upgrading",
   "admin_update_notes_count": "{count} points to check, from the release notes (in English).",
   "admin_update_notes_none": "No release since yours asks for anything before upgrading.",

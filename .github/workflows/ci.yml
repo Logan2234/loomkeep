@@ -860,14 +860,26 @@ jobs:
           {
             if [ -n "$subtitle" ]; then printf '# %s\n' "$subtitle"; fi
             awk -v h="$heading" '$0 == h {f=1; next} f && /^## / {exit} f' CHANGELOG.md
-            printf '\n## Images\n\nThe exact images of this release, signed by this workflow:\n\n```\n'
-            for name in api web; do
-              image="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/loomkeep-$name"
-              digest=$(docker buildx imagetools inspect "$image:${tag#v}" --format '{{json .Manifest}}' | jq -r .digest)
-              printf '%s:%s@%s\n' "$image" "${tag#v}" "$digest"
-            done
-            printf '```\n\nCheck one with `gh attestation verify oci://<image> -R %s`.\n' "$GITHUB_REPOSITORY"
           } > notes.md
+          # Published releases are immutable: a digest that can't be read
+          # leaves the section out rather than print a broken reference.
+          pinned=""
+          for name in api web; do
+            image="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/loomkeep-$name"
+            digest=$(docker buildx imagetools inspect "$image:${tag#v}" --format '{{json .Manifest}}' | jq -r '.digest // empty' || true)
+            if [[ "$digest" != sha256:* ]]; then
+              echo "::warning::No digest for $image:${tag#v}; the notes go out without the Images section."
+              pinned=""
+              break
+            fi
+            pinned+="$image:${tag#v}@$digest"$'\n'
+          done
+          if [ -n "$pinned" ]; then
+            {
+              printf '\n## Images\n\nThe exact images of this release, signed by this workflow:\n\n```\n%s```\n\n' "$pinned"
+              printf 'Check one with `gh attestation verify oci://<image> -R %s`.\n' "$GITHUB_REPOSITORY"
+            } >> notes.md
+          fi
           # The tag only exists once publish-release-apk publishes it.
           gh release create "$tag" \
             --target "$GITHUB_SHA" \

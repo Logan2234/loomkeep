@@ -255,3 +255,40 @@ describe("UpdateCheckService.check with telemetry", () => {
     expect(prisma.updateCheck.upsert).not.toHaveBeenCalled();
   });
 });
+
+describe("UpdateCheckService.upgradeNotes", () => {
+  const CHANGELOG = `## ${NEWER} — Next\n\n### Breaking changes\n\n- Rename \`X\`.\n`;
+
+  function serveChangelog() {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      text: async () => CHANGELOG,
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    return fetchMock;
+  }
+
+  it("reads the CHANGELOG once for a newer version", async () => {
+    setStoredInstanceSettings(DEFAULT_INSTANCE_SETTINGS);
+    const fetchMock = serveChangelog();
+    const { service } = make({ id: 1, latestVersion: NEWER });
+
+    await expect(service.upgradeNotes()).resolves.toEqual({
+      versions: [{ version: NEWER, items: ["Rename `X`."] }],
+    });
+    await service.upgradeNotes();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("sends no request once the check is turned off", async () => {
+    setStoredInstanceSettings({
+      ...DEFAULT_INSTANCE_SETTINGS,
+      updateCheckEnabled: false,
+    });
+    const fetchMock = serveChangelog();
+    const { service } = make({ id: 1, latestVersion: NEWER });
+
+    await expect(service.upgradeNotes()).resolves.toEqual({ versions: [] });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+});

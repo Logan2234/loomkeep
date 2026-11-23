@@ -778,7 +778,7 @@
   "admin_update_backup_done": "Backup completato.",
   "admin_update_step_update": "Aggiorna",
   "admin_update_command_hint": "Dalla cartella docker/ della tua installazione:",
-  "admin_update_privacy": "Una volta al giorno, chiede l'ultima versione a loomkeep.app inviando solo un identificativo casuale e la versione installata (oppure legge GitHub senza inviare nulla se «Conta questa istanza» è disattivato). Entrambi si disattivano in Admin › Impostazioni.",
+  "admin_update_privacy": "Una volta al giorno, chiede l'ultima versione a loomkeep.app inviando solo un identificativo casuale e la versione installata (oppure legge GitHub senza inviare nulla se «Conta questa istanza» è disattivato). Entrambi si disattivano in Admin › Impostazioni. Quando c'è un aggiornamento, legge anche le note di rilascio su GitHub, senza inviare nulla.",
   "admin_update_notes_title": "Prima di aggiornare",
   "admin_update_notes_count": "{count} punti da verificare, dalle note di rilascio (in inglese).",
   "admin_update_notes_none": "Nessuna versione dalla tua richiede azioni prima dell'aggiornamento.",

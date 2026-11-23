@@ -39,7 +39,7 @@
       status?.latestVersion ?? "",
     ),
     fetch: getAdminUpgradeNotes,
-    enabled: !!status?.updateAvailable,
+    enabled: !!status?.enabled && !!status.updateAvailable,
   }));
   const notes = $derived(notesQuery.data?.versions ?? null);
   const noteCount = $derived(

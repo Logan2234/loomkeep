@@ -186,13 +186,14 @@ export class UpdateCheckService {
 
   /**
    * What to do before upgrading to the latest known version. Empty when up
-   * to date, or when the CHANGELOG can't be fetched (the card keeps its
-   * link to the full notes).
+   * to date, when checks are off (no outbound call then), or when the
+   * CHANGELOG can't be fetched (the card keeps its link to the full notes).
    */
   async upgradeNotes(): Promise<AdminUpgradeNotesDto> {
-    const { currentVersion, latestVersion, updateAvailable } =
+    const { enabled, currentVersion, latestVersion, updateAvailable } =
       await this.status();
-    if (!updateAvailable || latestVersion === null) return { versions: [] };
+    if (!enabled || !updateAvailable || latestVersion === null)
+      return { versions: [] };
 
     const key = `${currentVersion}→${latestVersion}`;
     if (this.notesCache?.key === key) return this.notesCache.notes;
