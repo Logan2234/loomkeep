@@ -253,7 +253,9 @@
               class="grid h-10 w-10 place-items-center rounded-lg text-sm font-black"
               style:background-color={brand.color}
               style:color={brand.foreground}
-              aria-hidden="true">{brand.monogram}</span>
+              aria-hidden="true">
+              {brand.monogram}
+            </span>
             <span class="w-full truncate">{brand.name}</span>
           </button>
         {/each}

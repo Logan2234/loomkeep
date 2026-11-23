@@ -385,9 +385,9 @@
                         </div>
                         <p class="timecode truncate text-xs">
                           {code(e)}{#if e.episodeTitle}
-                            <span class="text-dim font-sans"
-                              >&nbsp;· {e.episodeTitle}</span
-                            >{/if}
+                            <span class="text-dim font-sans">
+                              &nbsp;· {e.episodeTitle}
+                            </span>{/if}
                         </p>
                         {#if e.episodeAlertsMuted}
                           <p class="text-dim truncate text-xs">
@@ -404,8 +404,9 @@
                         {/if}
                       </div>
                       {#if time}
-                        <span class="timecode text-dim shrink-0 text-xs"
-                          >{time}</span>
+                        <span class="timecode text-dim shrink-0 text-xs">
+                          {time}
+                        </span>
                       {/if}
                     </a>
                     <AlertBellButton

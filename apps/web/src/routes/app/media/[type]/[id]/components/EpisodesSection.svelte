@@ -733,7 +733,9 @@
           onclick={() => (view = key)}
           class="px-3 py-1 transition-colors duration-150 {view === key
             ? 'bg-fg text-bg'
-            : 'hover:bg-surface-2'}">{label}</button>
+            : 'hover:bg-surface-2'}">
+          {label}
+        </button>
       {/each}
     </span>
     {#if isFeatureNew("episode-ratings")}<NewBadge />{/if}
@@ -894,10 +896,12 @@
                     type="button"
                     class="border-border bg-surface hover:bg-surface-2 min-w-0 flex-1 rounded-xl border px-3 py-2 text-left transition-colors duration-150"
                     onclick={() => showTab(before.key)}>
-                    <span class="text-dim block text-xs"
-                      >‹ {m.common_previous()}</span>
-                    <span class="block truncate text-sm font-semibold"
-                      >{tabPageLabel(before)}</span>
+                    <span class="text-dim block text-xs">
+                      ‹ {m.common_previous()}
+                    </span>
+                    <span class="block truncate text-sm font-semibold">
+                      {tabPageLabel(before)}
+                    </span>
                   </button>
                 {:else}
                   <span class="flex-1" aria-hidden="true"></span>
@@ -907,10 +911,12 @@
                     type="button"
                     class="border-border bg-surface hover:bg-surface-2 min-w-0 flex-1 rounded-xl border px-3 py-2 text-right transition-colors duration-150"
                     onclick={() => showTab(after.key)}>
-                    <span class="text-dim block text-xs"
-                      >{m.common_next()} ›</span>
-                    <span class="block truncate text-sm font-semibold"
-                      >{tabPageLabel(after)}</span>
+                    <span class="text-dim block text-xs">
+                      {m.common_next()} ›
+                    </span>
+                    <span class="block truncate text-sm font-semibold">
+                      {tabPageLabel(after)}
+                    </span>
                   </button>
                 {:else}
                   <span class="flex-1" aria-hidden="true"></span>

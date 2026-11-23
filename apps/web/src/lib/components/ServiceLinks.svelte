@@ -22,7 +22,9 @@
           class="inline-grid h-6 w-6 place-items-center rounded-md text-[0.65rem] font-black"
           style:background-color={brand.color}
           style:color={brand.foreground}
-          aria-hidden="true">{brand.monogram}</span>
+          aria-hidden="true">
+          {brand.monogram}
+        </span>
         {brand.name}
       </a>
     </li>

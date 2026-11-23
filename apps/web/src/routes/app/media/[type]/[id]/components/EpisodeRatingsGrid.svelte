@@ -36,16 +36,20 @@
       <tr>
         <th scope="col" class="w-8"></th>
         {#each { length: columns } as _, i (i)}
-          <th scope="col" class="text-dim w-9 font-mono font-normal"
-            >{i + 1}</th>
+          <th scope="col" class="text-dim w-9 font-mono font-normal">
+            {i + 1}
+          </th>
         {/each}
       </tr>
     </thead>
     <tbody>
       {#each rows as season (season.number)}
         <tr>
-          <th scope="row" class="text-dim pr-1 text-right font-mono font-normal"
-            >{m.media_season_short({ number: season.number })}</th>
+          <th
+            scope="row"
+            class="text-dim pr-1 text-right font-mono font-normal">
+            {m.media_season_short({ number: season.number })}
+          </th>
           {#each { length: columns } as _, i (i)}
             {@const episode = season.episodes.find((e) => e.number === i + 1)}
             <td class="p-0">
