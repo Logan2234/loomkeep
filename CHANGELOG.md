@@ -35,6 +35,9 @@ history from before it was started.
   rounded.
 - Home: a « My year » widget counts this year's films, episodes, games
   finished, books read and albums listened to, for the domains you keep on.
+- Game pages say whether a game exists in your language (text and voices,
+  text only, or not at all); a tap lists every language with its interface,
+  subtitles and voices.
 - Loans: note who you borrowed a work from, or who has your physical copy,
   and since when. Libraries gain « Lent out » and « To give back » filters.
   Private: nobody is told.

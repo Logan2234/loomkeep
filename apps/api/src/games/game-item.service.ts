@@ -182,6 +182,7 @@ export class GameItemService {
       ),
       website: details.website,
       stores: details.stores,
+      languages: details.languages,
       similarGames: details.similarGames,
       developers: details.developers,
       publishers: details.publishers,

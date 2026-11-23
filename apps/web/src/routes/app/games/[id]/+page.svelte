@@ -27,6 +27,7 @@
   import { appConfig } from "#lib/config.svelte.js";
   import ConfirmationModal from "#lib/components/ConfirmationModal.svelte";
   import DetailHeroSkeleton from "#lib/components/DetailHeroSkeleton.svelte";
+  import GameLanguagePill from "#lib/components/GameLanguagePill.svelte";
   import GameSessionDock from "#lib/components/GameSessionDock.svelte";
   import Icon from "#lib/components/Icon.svelte";
   import Lightbox from "#lib/components/Lightbox.svelte";
@@ -411,13 +412,14 @@
         </div>
       {/if}
 
-      {#if detail.platforms.length > 0}
-        <div class="mt-6 flex flex-wrap gap-1.5">
+      {#if detail.platforms.length > 0 || (detail.languages ?? []).length > 0}
+        <div class="mt-6 flex flex-wrap items-center gap-1.5">
           {#each detail.platforms as platform (platform)}
             <span class="bg-surface-2 text-dim rounded-md px-2 py-0.5 text-xs">
               {platform}
             </span>
           {/each}
+          <GameLanguagePill languages={detail.languages ?? []} />
         </div>
       {/if}
 

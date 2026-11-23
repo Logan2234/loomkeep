@@ -67,6 +67,15 @@ export interface GameStoreLinkDto {
   url: string;
 }
 
+/** One language IGDB lists for a game, and what it covers. */
+export interface GameLanguageDto {
+  /** BCP 47, as IGDB names it ("fr-FR", "pt-BR"). */
+  locale: string;
+  interface: boolean;
+  subtitles: boolean;
+  audio: boolean;
+}
+
 export interface GameDetailsDto extends GameSummaryDto {
   overview: string | null;
   /** Wide artwork/screenshot for the detail header, when available. */
@@ -88,6 +97,8 @@ export interface GameDetailsDto extends GameSummaryDto {
   website: string | null;
   /** Where to buy or play it, among the stores IGDB links to. */
   stores: GameStoreLinkDto[];
+  /** The languages it supports, from IGDB; empty when IGDB lists none. */
+  languages: GameLanguageDto[];
   /** IGDB's own "similar games" recommendations, capped to a handful. */
   similarGames: GameSummaryDto[];
   developers: string[];

@@ -470,5 +470,13 @@
   "ownership_borrowed_from": "Borrowed from",
   "ownership_loan_since": "Since",
   "ownership_loan_person_placeholder": "A friend, or any name",
-  "ownership_loan_private": "Private note: nobody is told."
+  "ownership_loan_private": "Private note: nobody is told.",
+  "game_language_full": "{language} · text and voices",
+  "game_language_text": "{language} · text",
+  "game_language_none": "Not in {language}",
+  "game_languages_title": "Languages",
+  "game_languages_interface": "Interface",
+  "game_languages_subtitles": "Subtitles",
+  "game_languages_audio": "Voices",
+  "game_languages_source": "From IGDB."
 }

@@ -1,5 +1,6 @@
 import type {
   GameDetailDto,
+  GameLanguageDto,
   GameStoreLinkDto,
   ReleaseDatePrecision,
   StoredGameDetailDto,
@@ -17,6 +18,13 @@ class GameStoreLinkResponseDto implements GameStoreLinkDto {
   store!: GameStoreLinkDto["store"];
 
   url!: string;
+}
+
+class GameLanguageResponseDto implements GameLanguageDto {
+  locale!: string;
+  interface!: boolean;
+  subtitles!: boolean;
+  audio!: boolean;
 }
 
 export class GameDetailResponseDto implements GameDetailDto {
@@ -39,6 +47,7 @@ export class GameDetailResponseDto implements GameDetailDto {
   upcoming!: boolean;
   website!: string | null;
   stores!: GameStoreLinkResponseDto[];
+  languages!: GameLanguageResponseDto[];
   similarGames!: GameSummaryResponseDto[];
   developers!: string[];
   publishers!: string[];
