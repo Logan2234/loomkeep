@@ -141,6 +141,7 @@ writeFileSync(
   OUTPUT,
   `${JSON.stringify({ width: WIDTH, height, countries }, null, 2)}\n`,
 );
-console.log(
-  `${Object.keys(countries).length} countries, ${WIDTH}×${height}, written to ${OUTPUT}`,
+process.stdout.write(
+  `${Object.keys(countries).length} countries, ${WIDTH}×${height}, written to ${OUTPUT}
+`,
 );
