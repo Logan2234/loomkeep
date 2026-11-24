@@ -80,7 +80,6 @@ export const IMPORTS_DEFINITION = {
         return m.library_title_many();
       },
     },
-    newBadgeKey: "letterboxd",
     guide: `${DOCS_URL}/guide/imports/letterboxd/`,
   },
   imdb: {
@@ -108,7 +107,6 @@ export const IMPORTS_DEFINITION = {
         return m.library_title_many();
       },
     },
-    newBadgeKey: "imdb",
     guide: `${DOCS_URL}/guide/imports/imdb/`,
   },
   myanimelist: {
@@ -152,7 +150,6 @@ export const IMPORTS_DEFINITION = {
         return m.library_title_many();
       },
     },
-    newBadgeKey: "anilist-import",
     guide: `${DOCS_URL}/guide/imports/anilist/`,
   },
   simkl: {
