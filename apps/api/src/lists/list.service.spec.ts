@@ -1275,3 +1275,41 @@ describe("ListService editable lists follow canEdit's Social gate", () => {
     });
   });
 });
+
+// An admin moderating a reported list may take items off it, nothing more:
+// update() only refused EDITOR, so they could rename it and make a private
+// list public (audit 2026-11-17, SEC-28).
+describe("ListService.update by a moderating admin", () => {
+  it("is refused, and the list stays as it was", async () => {
+    const update = vi.fn();
+    const prisma = {
+      list: {
+        findUnique: vi
+          .fn()
+          .mockResolvedValue(
+            listRow({ userId: "owner", visibility: "PRIVATE" }),
+          ),
+        update,
+      },
+      listMember: { findUnique: vi.fn().mockResolvedValue(null) },
+      user: { findUnique: vi.fn().mockResolvedValue({ role: "ADMIN" }) },
+      report: { findFirst: vi.fn().mockResolvedValue({ id: "report-1" }) },
+    } as unknown as PrismaService;
+    const svc = new ListService(
+      prisma,
+      {} as VisibilityService,
+      { emit: vi.fn() } as unknown as ActivityService,
+      fakeConfig(),
+      fakeNotifications(),
+      stubXp(),
+      stubAchievements(),
+      stubEvents(),
+      stubFollow(),
+    );
+
+    await expect(
+      svc.update("admin", "l1", { visibility: "PUBLIC", title: "Mine now" }),
+    ).rejects.toMatchObject({ code: "lists.forbidden" });
+    expect(update).not.toHaveBeenCalled();
+  });
+});

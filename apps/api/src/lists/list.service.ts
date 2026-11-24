@@ -154,7 +154,7 @@ export class ListService {
 
   /**
    * Updates a list's title/description/kind/items — owner or editor
-   * (ListMember). Visibility changes are owner-only: an editor could
+   * (ListMember), never a moderating admin. Visibility changes are owner-only: an editor could
    * otherwise expose a private list. Emits LIST_SHARED on a PRIVATE→shared
    * transition.
    */
@@ -164,6 +164,10 @@ export class ListService {
     dto: UpdateListBody,
   ): Promise<ListDto> {
     const { row: existing, role } = await this.canEdit(userId, id);
+    // Moderation takes items off a reported list (and adminRemove deletes
+    // it); it never renames it or changes who can see it.
+    if (role === "MODERATOR")
+      throw new AppException(HttpStatus.FORBIDDEN, ErrorCode.ListForbidden);
 
     if (dto.visibility && role === "EDITOR") {
       throw new AppException(
