@@ -38,7 +38,12 @@ import {
   assertBulkTarget,
   assertBulkUpdate,
 } from "../common/bulk-entries.util";
-import { sinceDaysAgo, toDateOrNull, utcYearRange } from "../common/date.util";
+import {
+  sinceDaysAgo,
+  toDateOrNull,
+  utcDateKey,
+  utcYearRange,
+} from "../common/date.util";
 import type {
   EntryStatusChange,
   ListEntriesFilters,
@@ -859,7 +864,7 @@ export class BookLibraryService {
       genres: item.genres,
       pageCount: item.pageCount,
       editionKey: null,
-      releaseDate: item.releaseDate?.toISOString() ?? null,
+      releaseDate: item.releaseDate ? utcDateKey(item.releaseDate) : null,
       website: null,
       sameAuthorBooks: [],
       ratings: [],
