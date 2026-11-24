@@ -55,7 +55,7 @@ export class FollowService {
    */
   private async resolveTarget(viewerId: string, username: string) {
     const target = await this.prisma.user.findUnique({
-      where: { username },
+      where: { username: username.toLowerCase() },
       select: { id: true, profileAccess: true, suspendedUntil: true },
     });
     if (!target || isSuspended(target))
@@ -323,7 +323,7 @@ export class FollowService {
    */
   async block(viewerId: string, username: string): Promise<RelationshipDto> {
     const target = await this.prisma.user.findUnique({
-      where: { username },
+      where: { username: username.toLowerCase() },
       select: { id: true },
     });
     if (!target)
@@ -387,7 +387,7 @@ export class FollowService {
 
   async unblock(viewerId: string, username: string): Promise<RelationshipDto> {
     const target = await this.prisma.user.findUnique({
-      where: { username },
+      where: { username: username.toLowerCase() },
       select: { id: true },
     });
     if (!target)
@@ -403,7 +403,7 @@ export class FollowService {
     username: string,
   ): Promise<RelationshipDto> {
     const target = await this.prisma.user.findUnique({
-      where: { username },
+      where: { username: username.toLowerCase() },
       select: { id: true, profileAccess: true },
     });
     if (!target)
@@ -459,7 +459,7 @@ export class FollowService {
     username: string,
   ): Promise<RelationshipDto> {
     const follower = await this.prisma.user.findUnique({
-      where: { username },
+      where: { username: username.toLowerCase() },
       select: { id: true },
     });
     if (!follower)

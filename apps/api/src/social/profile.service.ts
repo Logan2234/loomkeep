@@ -55,7 +55,7 @@ export class ProfileService {
     username: string,
   ): Promise<SocialProfileDto> {
     const target = await this.prisma.user.findUnique({
-      where: { username },
+      where: { username: username.toLowerCase() },
       select: {
         id: true,
         username: true,
@@ -262,7 +262,7 @@ export class ProfileService {
     username: string,
   ): Promise<{ id: string; profileAccess: string } | null> {
     const target = await this.prisma.user.findUnique({
-      where: { username },
+      where: { username: username.toLowerCase() },
       select: { id: true, profileAccess: true, suspendedUntil: true },
     });
     if (!target || isSuspended(target))
@@ -283,7 +283,7 @@ export class ProfileService {
    */
   async reportTargetId(viewerId: string, username: string): Promise<string> {
     const target = await this.prisma.user.findUnique({
-      where: { username },
+      where: { username: username.toLowerCase() },
       select: { id: true, profileAccess: true, suspendedUntil: true },
     });
     if (!target || isSuspended(target))
@@ -329,7 +329,7 @@ export class ProfileService {
     username: string,
   ): Promise<string | null> {
     const target = await this.prisma.user.findUnique({
-      where: { username },
+      where: { username: username.toLowerCase() },
       select: { id: true, profileAccess: true, suspendedUntil: true },
     });
     if (!target || isSuspended(target))
