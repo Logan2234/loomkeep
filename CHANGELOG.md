@@ -13,6 +13,13 @@ history from before it was started.
 
 ## [Unreleased]
 
+### Breaking changes
+
+- **Self-hosting: JWT secrets need 32 characters and two different values.**
+  An instance in production (or served over https) refuses to start
+  otherwise. Generate each with `openssl rand -hex 32`; changing them signs
+  everyone out once.
+
 ### Added
 
 - Admin: a premium grant can end at a date you set, after which the account
@@ -84,10 +91,6 @@ history from before it was started.
 
 ### Breaking changes
 
-- **Self-hosting: JWT secrets need 32 characters and two different values.**
-  An instance in production (or served over https) refuses to start
-  otherwise. Generate each with `openssl rand -hex 32`; changing them signs
-  everyone out once.
 - **Self-hosting: your instance now tells loomkeep.app it exists.** The
   daily update check asks loomkeep.app for the latest version and sends a
   random instance id and the version, nothing else, so self-hosted instances
