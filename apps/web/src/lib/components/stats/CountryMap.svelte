@@ -79,6 +79,7 @@
         {#each Object.entries(map.countries) as [code, d] (code)}
           {@const country = byCode.get(code)}
           <path
+            role="presentation"
             {d}
             fill={country
               ? countryShade(country[metric], max)
