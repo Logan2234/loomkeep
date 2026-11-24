@@ -15,6 +15,7 @@
     type MediaType,
   } from "@loomkeep/shared";
   import PremiumTeaser from "../PremiumTeaser.svelte";
+  import CountryMap from "./CountryMap.svelte";
   import RankBars from "./RankBars.svelte";
   import StackedBar from "./StackedBar.svelte";
   import StatsWorksModal from "./StatsWorksModal.svelte";
@@ -164,6 +165,31 @@
       </section>
     </PremiumTeaser>
   </div>
+
+  {#if video.countries.length > 0}
+    <PremiumTeaser {locked}>
+      <section class="panel mt-5 md:p-5">
+        <div
+          class="panel-head flex items-baseline justify-between gap-2 md:mb-2">
+          <h3 class="font-display text-lg font-bold">
+            {m.stats_video_countries()}
+          </h3>
+          <span class="timecode">
+            {video.countries.length === 1
+              ? m.stats_video_countries_count_one({
+                  count: video.countries.length,
+                })
+              : m.stats_video_countries_count_many({
+                  count: video.countries.length,
+                })}
+          </span>
+        </div>
+        <div class="panel-body">
+          <CountryMap countries={video.countries} />
+        </div>
+      </section>
+    </PremiumTeaser>
+  {/if}
 
   <section class="inset-card mt-5 p-5">
     <h3 class="font-display mb-1 text-lg font-bold">
