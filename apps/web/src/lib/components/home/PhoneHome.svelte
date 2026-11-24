@@ -1,4 +1,5 @@
 <script lang="ts">
+  import type { HomeWidgetType } from "@loomkeep/shared";
   import { auth } from "#lib/auth.svelte.js";
   import Icon from "#lib/components/Icon.svelte";
   import NewBadge from "#lib/components/NewBadge.svelte";
@@ -34,6 +35,14 @@
   // already lays the shelves out at about their size.
   let measured = $state(0);
   const width = $derived(measured || window.innerWidth);
+
+  // Short, text-only widgets take their content's height on a phone rather
+  // than a grid box's, which would clip or pad them.
+  const CONTENT_HEIGHT = new Set<HomeWidgetType>([
+    "quickLinks",
+    "note",
+    "myYear",
+  ]);
 </script>
 
 <div bind:clientWidth={measured}>
@@ -45,7 +54,7 @@
         {@const size = phoneWidgetSize(widget, width)}
         <div
           data-welcome-land
-          style:height={widget.type === "quickLinks" || widget.type === "note"
+          style:height={CONTENT_HEIGHT.has(widget.type)
             ? undefined
             : `${phoneBoxHeight(widget, width)}px`}>
           <HomeWidget widget={{ ...widget, x: 0, y: 0, w: 12, h: 1 }} {size} />

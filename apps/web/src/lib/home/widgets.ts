@@ -269,7 +269,7 @@ export const HOME_WIDGETS: Record<HomeWidgetType, HomeWidgetDef> = {
     description: () => m.home_widget_my_year_description(),
     min: { w: 3, h: 3 },
     max: { w: 6, h: 6 },
-    initial: { w: 3, h: 4 },
+    initial: { w: 3, h: 5 },
     available: always,
   },
   quickSearch: {

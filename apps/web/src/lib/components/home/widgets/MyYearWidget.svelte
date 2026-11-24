@@ -99,7 +99,7 @@
   {:else if lines.length === 0}
     <p class="text-dim text-sm">{m.home_my_year_empty()}</p>
   {:else}
-    <ul class="flex flex-col">
+    <ul class="no-scrollbar flex h-full flex-col overflow-y-auto">
       {#each lines as line (line.domain)}
         <li
           class="border-surface-2 grid grid-cols-[auto_minmax(0,1fr)] items-baseline gap-x-2.5 border-t py-2 first:border-t-0 first:pt-0">
