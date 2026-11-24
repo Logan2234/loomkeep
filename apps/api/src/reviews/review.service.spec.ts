@@ -198,7 +198,10 @@ describe("ReviewService.listForTarget", () => {
 
 function makeForWrite(
   existing: { rating: number; text: string | null } | null,
+  targetExists = true,
 ) {
+  // Every reviewable model answers whether the target exists.
+  const count = vi.fn().mockResolvedValue(targetExists ? 1 : 0);
   const row = {
     id: "r1",
     rating: 8,
@@ -211,7 +214,10 @@ function makeForWrite(
   const upsert = vi.fn().mockResolvedValue(row);
   const revisionCreate = vi.fn().mockResolvedValue({});
   const prisma = {
-    mediaItem: { findUnique: vi.fn().mockResolvedValue(null) },
+    mediaItem: { findUnique: vi.fn().mockResolvedValue(null), count },
+    gameItem: { findUnique: vi.fn().mockResolvedValue(null), count },
+    bookItem: { count },
+    musicItem: { count },
     review: {
       findUnique: vi
         .fn()
@@ -234,9 +240,11 @@ function makeForWrite(
     episodeWatch: { findMany: vi.fn().mockResolvedValue([]) },
     userScore: { findMany: vi.fn().mockResolvedValue([]) },
     season: {
+      count,
       findUnique: vi.fn().mockResolvedValue({ number: 3, mediaItemId: "m1" }),
     },
     episode: {
+      count,
       findUnique: vi.fn().mockResolvedValue({
         number: 5,
         season: { number: 3, mediaItemId: "m1" },
@@ -258,6 +266,25 @@ function makeForWrite(
   );
   return { svc, prisma, revisionCreate, upsert, xp, achievements, activity };
 }
+
+// Nothing checked the target: any targetId made a review that polluted the
+// author's list, the export and moderation (audit 2026-11-17, BUG-67).
+describe("ReviewService.upsert — target", () => {
+  it.each(["MEDIA", "SEASON", "EPISODE", "GAME", "BOOK", "MUSIC"])(
+    "answers 404 for a %s that doesn't exist, writing nothing",
+    async (targetType) => {
+      const { svc, upsert } = makeForWrite(null, false);
+
+      await expect(
+        svc.upsert("u1", targetType as never, "nope", {
+          rating: 8,
+          text: null,
+        }),
+      ).rejects.toMatchObject({ code: "reviews.target_not_found" });
+      expect(upsert).not.toHaveBeenCalled();
+    },
+  );
+});
 
 describe("ReviewService.upsert — spoiler tag", () => {
   it("stores the spoiler tag on create and update", async () => {

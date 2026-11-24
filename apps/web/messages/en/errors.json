@@ -150,6 +150,7 @@
   "apierr_reports_cannot_report_own_content": "You cannot report your own content.",
   "apierr_reviews_unknown_target_type": "Unknown review target type.",
   "apierr_reviews_not_found": "This review could not be found.",
+  "apierr_reviews_target_not_found": "This work could not be found.",
   "apierr_reviews_cannot_vote_self": "You can't vote on your own review.",
   "apierr_social_cannot_follow_self": "You can't follow yourself.",
   "apierr_social_ghost_public_only": "In Figurant mode, you can only follow public profiles.",

@@ -334,6 +334,33 @@ export class ReviewService {
   }
 
   /**
+   * A review needs a work, season or episode that exists: nothing checked it,
+   * so any id made a review that showed in the author's list, the export and
+   * moderation, and a feed event pointing nowhere.
+   */
+  private async assertTargetExists(
+    targetType: ReviewTargetType,
+    targetId: string,
+  ): Promise<void> {
+    const where = { where: { id: targetId } };
+    const count = await {
+      MEDIA: () => this.prisma.mediaItem.count(where),
+      SEASON: () => this.prisma.season.count(where),
+      EPISODE: () => this.prisma.episode.count(where),
+      GAME: () => this.prisma.gameItem.count(where),
+      BOOK: () => this.prisma.bookItem.count(where),
+      MUSIC: () => this.prisma.musicItem.count(where),
+    }[targetType]();
+
+    if (count === 0) {
+      throw new AppException(
+        HttpStatus.NOT_FOUND,
+        ErrorCode.ReviewTargetNotFound,
+      );
+    }
+  }
+
+  /**
    * Creates or updates the user's review for a target, snapshotting the new
    * state as a revision. Not social-gated — rating your own items always works.
    */
@@ -343,6 +370,7 @@ export class ReviewService {
     targetId: string,
     dto: UpsertReviewDto,
   ): Promise<ReviewDto> {
+    await this.assertTargetExists(targetType, targetId);
     if (targetType === ReviewTargetType.MEDIA)
       await assertMediaReleased(this.prisma, targetId);
     if (targetType === ReviewTargetType.GAME)
