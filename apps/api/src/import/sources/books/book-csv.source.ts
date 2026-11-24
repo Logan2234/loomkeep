@@ -337,11 +337,11 @@ export abstract class BookCsvSource<
           baselinePage: index === 0 ? currentPage : 0,
           currentPage: status === "READ" ? currentPage : 0,
           startedAt: row.startedAt ? new Date(row.startedAt) : null,
+          // No date from the source stays no date: "today" put a whole
+          // imported library in this year's stats and reading goal.
           finishedAt:
-            status === "READ"
-              ? row.finishedAt
-                ? new Date(row.finishedAt)
-                : new Date()
+            status === "READ" && row.finishedAt
+              ? new Date(row.finishedAt)
               : null,
           legacyIncomplete: count > 1,
         })),
