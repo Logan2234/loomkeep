@@ -101,13 +101,16 @@ export class JwtAuthGuard implements CanActivate {
       );
     }
 
-    // A token signed before `sid` existed (or any payload that somehow lacks
-    // it) can't be checked against a live session — treat it as valid rather
-    // than mass-rejecting every access token in flight at deploy time. It
-    // ages out naturally within 15 minutes like any other access token.
-    if (payload.sid) {
-      await this.assertSessionLive(payload.sid);
+    // Every access token names its session: one that doesn't can't be
+    // checked against a revocation, so it is refused.
+    if (!payload.sid) {
+      throw new AppException(
+        HttpStatus.UNAUTHORIZED,
+        ErrorCode.AuthInvalidAccessToken,
+      );
     }
+
+    await this.assertSessionLive(payload.sid);
 
     request.user = payload;
     return true;

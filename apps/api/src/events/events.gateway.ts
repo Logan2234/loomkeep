@@ -167,11 +167,10 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
         audience: JWT_ACCESS_AUDIENCE,
       });
 
-      // A token signed before `sid` existed can't be checked against a live
-      // session — treated as valid, same call this guard's REST counterpart
-      // makes (JwtAuthGuard.canActivate).
+      // Same rule as JwtAuthGuard: a token naming no session can't be checked
+      // against a revocation.
       if (
-        payload.sid &&
+        !payload.sid ||
         !(await isSessionLive(this.prisma, this.sessionCache, payload.sid))
       ) {
         throw new Error("Session revoked");
@@ -179,7 +178,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
       client.data.userId = payload.sub;
       await client.join(userRoom(payload.sub));
-      if (payload.sid) await client.join(sessionRoom(payload.sid));
+      await client.join(sessionRoom(payload.sid));
 
       const user = await this.prisma.user.findUnique({
         where: { id: payload.sub },
