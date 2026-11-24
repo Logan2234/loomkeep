@@ -26,6 +26,7 @@ enum MediaType {
 // library, stats). `User.enabledDomains` drives the nav (see web isDomainEnabled).
 // PODCASTS/BOARDGAMES are planned P3 placeholders — no backing tables yet,
 // surfaced as "coming soon" and kept out of the enabledDomains default (opt-in).
+// A new value also goes into ActivityEvent_domain_check (SQL, in a migration).
 enum Domain {
   MEDIA
   BOOKS
@@ -1409,7 +1410,9 @@ model Notification {
 
   @@unique([userId, dedupeKey])
   @@index([userId, createdAt])
-  @@index([readAt])
+  // The daily purge of read rows uses a partial index on readAt WHERE
+  // "readAt" IS NOT NULL (unread rows never purged, so never indexed),
+  // written in SQL in the migration 20261124170000_indexes_and_closed_values.
   // The hourly scan's de-duplication looks keys up across every account.
   @@index([dedupeKey])
 }
@@ -1428,14 +1431,17 @@ model ActivityEvent {
   // ActivityType: ADDED, STARTED, FINISHED, DROPPED, REWATCHED, PROGRESS,
   // FAVORITED, REVIEWED. A string so new kinds need no migration.
   type       String
-  // Domain enum value (MEDIA/GAMES/BOOKS/MUSIC) — used to gate the profile
-  // timeline against the actor's Activité audience for that domain.
+  // A Domain value, or LISTS for list events (ActivityDomain in shared) —
+  // used to gate the profile timeline against the actor's Activité audience
+  // for that domain. Enforced by ActivityEvent_domain_check: a new Domain
+  // goes there too.
   domain     String
   // Polymorphic work: ReviewTargetType-style ("MEDIA"/"GAME"/"BOOK"/"MUSIC")
   // + the internal item id.
   targetType String
   targetId   String
-  // WORK / SEASON / EPISODE — the granularity, per the feed matrix.
+  // WORK / SEASON / EPISODE — the granularity, per the feed matrix
+  // (ActivityEvent_level_check).
   level      String   @default("WORK")
   // Whether this event surfaces on followers' home feed (matrix milestone).
   homeFeed   Boolean  @default(false)
@@ -1454,9 +1460,11 @@ model ActivityEvent {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  // Home feed: recent events of followed users, filtered on homeFeed.
+  // Profile timeline: one user's events, newest first. The home feed (followed
+  // users' homeFeed events, newest first) has its own partial index on
+  // (userId, createdAt) WHERE "homeFeed", written in SQL in the migration
+  // (20261124170000_indexes_and_closed_values) — Prisma can't declare it.
   @@index([userId, createdAt])
-  @@index([homeFeed, createdAt])
   @@index([sourceType, sourceId])
 }
 
@@ -1470,6 +1478,7 @@ model JobRun {
   jobKey     String
   startedAt  DateTime
   finishedAt DateTime
+  // "SUCCESS" or "FAILURE" (JobRun_status_check).
   status     String
   // Short human summary of the outcome, e.g. "12 notification(s) créée(s)".
   summary    String?
@@ -1762,6 +1771,7 @@ model ImportRun {
   // are deliberately left out of the free-import-per-domain check rather
   // than backfilled — see ImportJobService#getQuota.
   domain     Domain?
+  // "SUCCESS" or "FAILURE" (ImportRun_status_check).
   status     String
   // Items actually written (the user's kept selection), regardless of outcome.
   itemCount  Int
@@ -1823,7 +1833,8 @@ model NewsletterSend {
 model ApiCallCounter {
   id       String   @id @default(cuid())
   provider String
-  day      DateTime
+  // The UTC day (startOfUtcDay), a calendar day rather than an instant.
+  day      DateTime @db.Date
   count    Int      @default(0)
 
   @@unique([provider, day])
@@ -1911,6 +1922,7 @@ model WebauthnCredential {
   // "singleDevice" (roaming key, e.g. YubiKey) vs "multiDevice" (synced
   // passkey, e.g. iCloud Keychain/Google Password Manager) — informational,
   // shown in the settings list.
+  // SimpleWebAuthn's CredentialDeviceType (WebauthnCredential_deviceType_check).
   deviceType   String
   backedUp     Boolean   @default(false)
   transports   String[]
@@ -2330,6 +2342,8 @@ model EpisodeWatch {
   episode Episode @relation(fields: [episodeId], references: [id], onDelete: Cascade)
 
   @@index([userId, episodeId])
+  // A user's viewings over a period: home stats, streaks, yearly recap.
+  @@index([userId, watchedAt])
 }
 
 // On-demand cache for games, mirroring MediaItem: a game exists here only once
