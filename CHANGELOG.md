@@ -38,8 +38,9 @@ history from before it was started.
 - Game pages say whether a game exists in your language (text and voices,
   text only, or not at all); a tap lists every language with its interface,
   subtitles and voices.
-- Loans: note who you borrowed a work from, or who has your physical copy,
-  and since when. Libraries gain « Lent out » and « To give back » filters.
+- Loans: lend a physical copy, or add who you borrowed a work from and since
+  when, then mark it given back in one tap (with an undo). Libraries gain
+  « Lent out » and « To give back » filters.
   Private: nobody is told.
 - Admin › Services lists, before an upgrade, what each release since yours
   asks self-hosters to do (renamed variables, long migrations…), as a

@@ -71,6 +71,11 @@ export class UpdateGameEntryDto implements UpdateGameEntryContract {
   @IsBoolean()
   lentOut?: boolean;
 
+  /** true: the running loan comes back; false: undoes that (the undo toast). */
+  @IsOptional()
+  @IsBoolean()
+  loanReturned?: boolean;
+
   @IsOptional()
   @IsString()
   @MaxLength(LOAN_PERSON_MAX_LENGTH)

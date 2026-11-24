@@ -25,7 +25,7 @@ import { assertMediaReleased } from "../../../catalog/movie-release.util";
 import { AppException } from "../../../common/app.exception";
 import { mapWithConcurrency } from "../../../common/concurrency.util";
 import {
-  ACTIVE_LOAN_INCLUDE,
+  LOAN_INCLUDE,
   loanUpdate,
   ownershipSourceUpdate,
 } from "../../../common/entry-loan.util";
@@ -931,7 +931,7 @@ export abstract class MediaImportSource<
         status: true,
         notes: true,
         ownershipStatus: true,
-        ...ACTIVE_LOAN_INCLUDE,
+        ...LOAN_INCLUDE,
       },
     });
     const status = furthestStatus(existing?.status ?? null, incoming);

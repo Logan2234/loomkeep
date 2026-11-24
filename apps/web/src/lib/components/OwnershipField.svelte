@@ -6,7 +6,10 @@
   import { m } from "#lib/paraglide/messages.js";
   import Dropdown from "./Dropdown.svelte";
   import Icon from "./Icon.svelte";
-  import LoanFields, { type EntryLoan } from "./LoanFields.svelte";
+  import LoanFields, {
+    type EntryLoan,
+    type EntryLoanPatch,
+  } from "./LoanFields.svelte";
   import OwnershipMenuItems from "./OwnershipMenuItems.svelte";
 
   // Possession status (physique/numérique/abonnement…/emprunté) plus an
@@ -29,7 +32,7 @@
     onChange: (status: string, source: string | null) => void;
     /** Who has it or lent it, shown under the menu when given. */
     loan?: EntryLoan;
-    onLoanChange?: (patch: Partial<EntryLoan>) => void;
+    onLoanChange?: (patch: EntryLoanPatch) => void;
   } = $props();
 
   const current = $derived(

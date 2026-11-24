@@ -10,7 +10,7 @@ import { ErrorCode, ReviewTargetType } from "@loomkeep/shared";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { toUserDto } from "../auth/auth.service";
 import { AppException } from "../common/app.exception";
-import { ACTIVE_LOAN_INCLUDE, loanFields } from "../common/entry-loan.util";
+import { LOAN_INCLUDE, loanFields } from "../common/entry-loan.util";
 import {
   canonicalExternalId,
   toExternalIdDtos,
@@ -100,7 +100,7 @@ export class DataExportService {
         where: { userId },
         include: {
           gameItem: { include: { externalIds: true } },
-          ...ACTIVE_LOAN_INCLUDE,
+          ...LOAN_INCLUDE,
           playthroughs: { orderBy: { number: "asc" } },
           sessions: {
             orderBy: { occurredAt: "asc" },
@@ -113,7 +113,7 @@ export class DataExportService {
         where: { userId },
         include: {
           bookItem: { include: { externalIds: true } },
-          ...ACTIVE_LOAN_INCLUDE,
+          ...LOAN_INCLUDE,
           readings: { orderBy: { number: "asc" } },
           sessions: {
             orderBy: { occurredAt: "asc" },
@@ -126,7 +126,7 @@ export class DataExportService {
         where: { userId },
         include: {
           musicItem: { include: { externalIds: true } },
-          ...ACTIVE_LOAN_INCLUDE,
+          ...LOAN_INCLUDE,
         },
         orderBy: { createdAt: "asc" },
       }),

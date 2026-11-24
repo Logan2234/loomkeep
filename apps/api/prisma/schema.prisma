@@ -445,7 +445,7 @@ enum BookStatus {
 // *_ownershipStatus_check. DIGITAL/STREAMING/SUBSCRIPTION/AUDIO carry a
 // free-form `ownershipSource` ("Netflix", "Steam", "Kindle"…); PHYSICAL may
 // carry its format as a code ("BLU_RAY", "PAPERBACK"…, translated by the
-// web); a BORROWED entry's open Loan says who from.
+// web); a BORROWED entry's open Loan, if any, says who from.
 enum OwnershipStatus {
   NONE
   PHYSICAL
@@ -2292,8 +2292,10 @@ model MovieReplay {
 // is null — at most one per entry and direction (partial unique indexes, in
 // SQL) — then kept as history once returned. Who and since when are private
 // notes: nobody is told. Written only through entry-loan.util.ts, which keeps
-// it in step with the entry's ownershipStatus (a LENT loan on a PHYSICAL
-// entry, a BORROWED one on a BORROWED entry).
+// it in step with the entry's ownershipStatus: a LENT loan on a PHYSICAL copy
+// lent out; a BORROWED one on a BORROWED entry given a person or a date — a
+// BORROWED entry alone only says the work was borrowed, and has none. Giving
+// it back returns the loan and leaves the status as it is.
 model Loan {
   id             String        @id @default(cuid())
   libraryEntryId String?

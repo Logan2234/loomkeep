@@ -69,6 +69,8 @@ export interface LibraryEntryDto {
   ownershipSource: string | null;
   /** A PHYSICAL copy currently lent to someone. */
   lentOut: boolean;
+  /** A loan runs: a PHYSICAL copy lent out, or a BORROWED one given a person or a date. */
+  loanActive: boolean;
   /** Who it was borrowed from (BORROWED) or lent to (lentOut); a private note. */
   loanPerson: string | null;
   /** Since when the loan runs (YYYY-MM-DD). */

@@ -36,6 +36,7 @@ export class GameEntryResponseDto implements GameEntryDto {
   ownershipStatus!: GameOwnershipStatus;
   ownershipSource!: string | null;
   lentOut!: boolean;
+  loanActive!: boolean;
   loanPerson!: string | null;
   loanSince!: string | null;
   platform!: string | null;

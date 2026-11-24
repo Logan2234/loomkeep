@@ -55,7 +55,8 @@ import { EventsGateway } from "../events/events.gateway";
 import { AchievementService } from "../gamification/achievements/achievement.service";
 
 import {
-  ACTIVE_LOAN_INCLUDE,
+  isLoanActive,
+  LOAN_INCLUDE,
   loanFields,
   loanUpdate,
   loanWhere,
@@ -89,7 +90,7 @@ import { toPlaythroughDto } from "./game.mappers";
 // its playthrough history, most recent first.
 const ENTRY_INCLUDE = {
   gameItem: { include: { externalIds: true } },
-  ...ACTIVE_LOAN_INCLUDE,
+  ...LOAN_INCLUDE,
   playthroughs: {
     orderBy: { number: "desc" },
     include: { _count: { select: { sessions: true } } },
@@ -898,7 +899,7 @@ export class GameLibraryService {
     return assertEntryOwnership(userId, () =>
       this.prisma.gameEntry.findUnique({
         where: { id: entryId },
-        include: ACTIVE_LOAN_INCLUDE,
+        include: LOAN_INCLUDE,
       }),
     );
   }
@@ -988,6 +989,7 @@ function toEntryDto(entry: EntryWithGame, rating: number | null): GameEntryDto {
     ownershipStatus: entry.ownershipStatus as GameOwnershipStatus,
     ownershipSource: entry.ownershipSource,
     ...loanFields(entry),
+    loanActive: isLoanActive(entry),
     platform: entry.platform,
     releaseAlertsEnabled: entry.releaseReminderAt !== null,
   };

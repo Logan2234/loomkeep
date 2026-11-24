@@ -40,31 +40,36 @@ ALTER TABLE "Loan" ADD CONSTRAINT "Loan_gameEntryId_fkey" FOREIGN KEY ("gameEntr
 ALTER TABLE "Loan" ADD CONSTRAINT "Loan_bookEntryId_fkey" FOREIGN KEY ("bookEntryId") REFERENCES "BookEntry"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 ALTER TABLE "Loan" ADD CONSTRAINT "Loan_musicEntryId_fkey" FOREIGN KEY ("musicEntryId") REFERENCES "MusicEntry"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
--- The loans the columns held: a lent PHYSICAL copy, a BORROWED entry.
+-- The loans the columns held: a lent PHYSICAL copy, a BORROWED entry with
+-- details (a BORROWED entry alone only says the work was borrowed).
 INSERT INTO "Loan" ("id", "libraryEntryId", "direction", "person", "since")
 SELECT gen_random_uuid()::text, "id",
        CASE WHEN "ownershipStatus" = 'BORROWED' THEN 'BORROWED' ELSE 'LENT' END::"LoanDirection",
        "loanPerson", "loanSince"
 FROM "LibraryEntry"
-WHERE "ownershipStatus" = 'BORROWED' OR ("ownershipStatus" = 'PHYSICAL' AND "lentOut");
+WHERE ("ownershipStatus" = 'BORROWED' AND ("loanPerson" IS NOT NULL OR "loanSince" IS NOT NULL))
+   OR ("ownershipStatus" = 'PHYSICAL' AND "lentOut");
 INSERT INTO "Loan" ("id", "gameEntryId", "direction", "person", "since")
 SELECT gen_random_uuid()::text, "id",
        CASE WHEN "ownershipStatus" = 'BORROWED' THEN 'BORROWED' ELSE 'LENT' END::"LoanDirection",
        "loanPerson", "loanSince"
 FROM "GameEntry"
-WHERE "ownershipStatus" = 'BORROWED' OR ("ownershipStatus" = 'PHYSICAL' AND "lentOut");
+WHERE ("ownershipStatus" = 'BORROWED' AND ("loanPerson" IS NOT NULL OR "loanSince" IS NOT NULL))
+   OR ("ownershipStatus" = 'PHYSICAL' AND "lentOut");
 INSERT INTO "Loan" ("id", "bookEntryId", "direction", "person", "since")
 SELECT gen_random_uuid()::text, "id",
        CASE WHEN "ownershipStatus" = 'BORROWED' THEN 'BORROWED' ELSE 'LENT' END::"LoanDirection",
        "loanPerson", "loanSince"
 FROM "BookEntry"
-WHERE "ownershipStatus" = 'BORROWED' OR ("ownershipStatus" = 'PHYSICAL' AND "lentOut");
+WHERE ("ownershipStatus" = 'BORROWED' AND ("loanPerson" IS NOT NULL OR "loanSince" IS NOT NULL))
+   OR ("ownershipStatus" = 'PHYSICAL' AND "lentOut");
 INSERT INTO "Loan" ("id", "musicEntryId", "direction", "person", "since")
 SELECT gen_random_uuid()::text, "id",
        CASE WHEN "ownershipStatus" = 'BORROWED' THEN 'BORROWED' ELSE 'LENT' END::"LoanDirection",
        "loanPerson", "loanSince"
 FROM "MusicEntry"
-WHERE "ownershipStatus" = 'BORROWED' OR ("ownershipStatus" = 'PHYSICAL' AND "lentOut");
+WHERE ("ownershipStatus" = 'BORROWED' AND ("loanPerson" IS NOT NULL OR "loanSince" IS NOT NULL))
+   OR ("ownershipStatus" = 'PHYSICAL' AND "lentOut");
 
 -- The constraints on the old columns go before them; the source one comes
 -- back below, on the new type.

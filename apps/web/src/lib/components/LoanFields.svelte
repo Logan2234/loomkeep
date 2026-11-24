@@ -3,20 +3,33 @@
     lentOut: boolean;
     loanPerson: string | null;
     loanSince: string | null;
+    /** A loan runs: a PHYSICAL copy lent out, a BORROWED one with details. */
+    loanActive: boolean;
   }
+
+  export type EntryLoanPatch = Partial<
+    Pick<EntryLoan, "lentOut" | "loanPerson" | "loanSince">
+  > & { loanReturned?: boolean };
 </script>
 
 <script lang="ts">
+  import { slide } from "svelte/transition";
+
   import { getChatFriends } from "#lib/api/chat.js";
   import { keys } from "#lib/api/keys.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
   import { appConfig } from "#lib/config.svelte.js";
+  import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
+  import { toast } from "#lib/toast.svelte.js";
   import { LOAN_PERSON_MAX_LENGTH } from "@loomkeep/shared";
+  import Icon from "./Icon.svelte";
 
-  // Under the ownership menu: who a BORROWED work came from, or who has a
-  // PHYSICAL copy lent out, and since when. Private notes — friends are only
-  // suggested by name, never told.
+  // Under the ownership menu. A PHYSICAL copy is lent with a button, and
+  // comes back with another. A BORROWED entry alone only says the work was
+  // borrowed: "Add details" asks who from and since when, and once either is
+  // given the borrowing runs until "I gave it back". Private notes — friends
+  // are only suggested by name, never told.
   let {
     status,
     loan,
@@ -24,18 +37,25 @@
   }: {
     status: string;
     loan: EntryLoan;
-    onChange: (patch: Partial<EntryLoan>) => void;
+    onChange: (patch: EntryLoanPatch) => void;
   } = $props();
 
+  const reduced = prefersReducedMotion();
   const borrowed = $derived(status === "BORROWED");
-  const open = $derived(borrowed || (status === "PHYSICAL" && loan.lentOut));
+  const physical = $derived(status === "PHYSICAL");
+  // Details asked for on a borrowed entry with no borrowing yet: nothing is
+  // saved until a field is filled.
+  let addingDetails = $state(false);
+  const showFields = $derived(
+    (loan.loanActive && (physical || borrowed)) || (borrowed && addingDetails),
+  );
   const today = new Date().toISOString().slice(0, 10);
   const uid = $props.id();
 
   const friendsQuery = createApiQuery(() => ({
     key: keys.chat.friends(""),
     fetch: () => getChatFriends(""),
-    enabled: open && appConfig.socialEnabled,
+    enabled: showFields && appConfig.socialEnabled,
   }));
   const friendNames = $derived(
     [...new Set((friendsQuery.data ?? []).map((f) => f.displayName))].sort(),
@@ -52,24 +72,44 @@
     if (value !== (loan.loanSince ?? ""))
       onChange({ loanSince: value || null });
   }
+
+  function giveBack() {
+    addingDetails = false;
+    onChange({ loanReturned: true });
+    toast.action(m.ownership_loan_returned_toast(), {
+      label: m.common_undo(),
+      onSelect: () => onChange({ loanReturned: false }),
+    });
+  }
 </script>
 
-{#if status === "PHYSICAL" || borrowed}
+{#if physical || borrowed}
   <div class="flex flex-col gap-2.5">
-    {#if !borrowed}
-      <label class="inline-flex items-center gap-2 text-sm">
-        <input
-          type="checkbox"
-          checked={loan.lentOut}
-          onchange={(e) => onChange({ lentOut: e.currentTarget.checked })} />
-        {m.ownership_lent_out()}
-      </label>
+    {#if physical && !loan.lentOut}
+      <button
+        type="button"
+        class="btn btn-ghost btn-sm self-start"
+        onclick={() => onChange({ lentOut: true })}>
+        <Icon name="share" class="h-4 w-4" />
+        {m.ownership_lend()}
+      </button>
+    {:else if borrowed && !showFields}
+      <button
+        type="button"
+        class="btn btn-ghost btn-sm self-start"
+        onclick={() => (addingDetails = true)}>
+        <Icon name="plus" class="h-4 w-4" />
+        {m.ownership_loan_add_details()}
+      </button>
     {/if}
 
-    {#if open}
+    {#if showFields}
       <div
+        transition:slide={{ duration: reduced ? 0 : 200 }}
         class="grid gap-2.5 border-l-2 pl-3 sm:grid-cols-2 {borrowed
-          ? 'border-warning'
+          ? loan.loanActive
+            ? 'border-warning'
+            : 'border-border'
           : 'border-accent'}">
         <label class="flex min-w-0 flex-col gap-1">
           <span class="timecode text-micro tracking-[0.18em] uppercase">
@@ -105,6 +145,19 @@
         <p class="text-dim text-xs sm:col-span-2">
           {m.ownership_loan_private()}
         </p>
+        {#if loan.loanActive}
+          <button
+            type="button"
+            class="btn btn-ghost btn-sm self-start sm:col-span-2 {borrowed
+              ? 'text-warning'
+              : 'text-accent'}"
+            onclick={giveBack}>
+            <Icon name={borrowed ? "reply" : "check"} class="h-4 w-4" />
+            {borrowed
+              ? m.ownership_borrowed_given_back()
+              : m.ownership_lent_returned()}
+          </button>
+        {/if}
       </div>
     {/if}
   </div>

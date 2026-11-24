@@ -26,6 +26,7 @@ const common = {
   ownershipStatus: "NONE" as const,
   ownershipSource: null,
   lentOut: false,
+  loanActive: false,
   loanPerson: null,
   loanSince: null,
 };
