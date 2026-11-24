@@ -553,11 +553,6 @@
 
     {#if layout.compact && canEditList && dragItems.length > 0 && !longPressKnown}
       <p class="text-dim mt-6 text-xs">{m.list_item_longpress_hint()}</p>
-    {:else if !layout.compact && canAdd && dragItems.length > 0 && isFeatureNew("list-item-notes")}
-      <p class="text-dim mt-6 flex items-center gap-2 text-xs">
-        <NewBadge />
-        {m.list_item_note_hint()}
-      </p>
     {/if}
 
     {#if dragItems.length === 0}

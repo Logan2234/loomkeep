@@ -133,9 +133,8 @@
     </div>
 
     <div class="border-border mt-6 border-t pt-5">
-      <p class="flex items-center gap-2 font-semibold">
+      <p class="font-semibold">
         {m.calendar_feed_title()}
-        {#if isFeatureNew("release-feed")}<NewBadge />{/if}
       </p>
       <p class="text-dim mt-1 text-sm">{m.calendar_feed_description()}</p>
       <div class="mt-3 flex flex-wrap justify-end gap-2">

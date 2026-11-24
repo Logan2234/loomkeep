@@ -255,7 +255,6 @@
           key: "PAUSED_REMINDER",
           label: m.settings_alert_paused_reminder(),
           hint: m.settings_alert_paused_reminder_hint(),
-          newBadgeKey: "paused-reminder",
         },
       ],
     },
@@ -279,7 +278,6 @@
         {
           key: "ADMIN_UPDATE_AVAILABLE",
           label: m.settings_alert_admin_update_available(),
-          newBadgeKey: "update-check",
         },
       ],
     },

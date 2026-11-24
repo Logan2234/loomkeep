@@ -10,7 +10,6 @@
   import Icon from "#lib/components/Icon.svelte";
   import { DOMAINS } from "#lib/constants/domains.js";
   import { isDomainEnabled } from "#lib/domain-availability.js";
-  import { isFeatureNew } from "#lib/feature-badges.js";
   import {
     fanBurst,
     fanHit,
@@ -170,13 +169,6 @@
     {onpointermove}
     {onpointerup}
     {onpointercancel}>
-    {#snippet badge()}
-      {#if isFeatureNew("phone-navigation") && !open}
-        <span
-          class="bg-accent ring-surface absolute top-0 right-0 h-2 w-2 rounded-full ring-2"
-          aria-hidden="true"></span>
-      {/if}
-    {/snippet}
   </NavTab>
 {/if}
 
@@ -186,7 +178,7 @@
       type="button"
       tabindex="-1"
       aria-label={m.common_close()}
-      class="fixed inset-0 z-[29] bg-black/45"
+      class="fixed inset-0 z-29 bg-black/45"
       transition:fade|global={{ duration: reduced ? 0 : 180 }}
       onclick={hide}></button>
     <ul id="library-fan" aria-label={m.common_libraries()} class="contents">
@@ -198,7 +190,7 @@
             href={domain.href}
             aria-current={here ? "page" : undefined}
             onclick={(event) => pick(event, domain)}
-            class="group fixed z-[31] flex w-24 -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-1.5 outline-none"
+            class="group fixed z-31 flex w-24 -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-1.5 outline-none"
             style="left: {origin.x + point.dx}px; top: {origin.y +
               point.dy}px; --domain: {tint(domain)}"
             in:fanBurst|global={{
@@ -211,10 +203,10 @@
             <span
               class="group-focus-visible:outline-accent grid size-14 place-items-center rounded-full border-2 border-(--domain) shadow-lg outline-offset-2 transition-[background-color,color,scale] duration-150 group-focus-visible:outline-2 {hot ===
               i
-                ? 'scale-110 bg-(--domain) text-(--surface)'
+                ? 'text-surface scale-110 bg-(--domain)'
                 : here
                   ? 'bg-surface-2 text-(--domain)'
-                  : 'bg-surface text-(--domain) group-active:bg-(--domain) group-active:text-(--surface)'}">
+                  : 'bg-surface group-active:text-surface text-(--domain) group-active:bg-(--domain)'}">
               <Icon name={domain.icon} class="h-6 w-6" />
             </span>
             <span

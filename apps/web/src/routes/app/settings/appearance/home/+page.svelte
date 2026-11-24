@@ -3,7 +3,6 @@
   import PhoneHomeEditor from "#lib/components/home/PhoneHomeEditor.svelte";
   import { layout } from "#lib/layout.svelte.js";
   import PageHeader from "#lib/components/PageHeader.svelte";
-  import { isFeatureNew } from "#lib/feature-badges.js";
   import { m } from "#lib/paraglide/messages.js";
 </script>
 
@@ -15,7 +14,6 @@
     title={m.home_editor_title()}
     back="/app/settings/appearance#home-layout"
     backInHistory
-    isNew={isFeatureNew("home-layout")}
     class="mb-4" />
   {#if layout.compact}<PhoneHomeEditor />{:else}<HomeLayoutEditor />{/if}
 </div>

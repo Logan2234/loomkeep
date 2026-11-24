@@ -46,7 +46,6 @@
     type LibraryItemView,
     COMMON_LIBRARY_SORTS,
   } from "#lib/library-view.js";
-  import { isFeatureNew } from "#lib/feature-badges.js";
   import { m } from "#lib/paraglide/messages.js";
   import {
     Domain,
@@ -202,7 +201,7 @@
 </script>
 
 {#snippet modeSwitch()}
-  <SagasModeSwitch isNew={isFeatureNew("book-sagas")} />
+  <SagasModeSwitch />
 {/snippet}
 
 {#if mode === "sagas"}

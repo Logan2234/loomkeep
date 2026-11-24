@@ -1,7 +1,5 @@
 <script lang="ts">
-  import NewBadge from "#lib/components/NewBadge.svelte";
   import Switch from "#lib/components/Switch.svelte";
-  import { isFeatureNew } from "#lib/feature-badges.js";
   import {
     appLockStatus,
     isAppLockSupported,
@@ -31,11 +29,8 @@
 {#if supported && status}
   <section class="inset-card mt-3 flex items-center gap-4 p-5 md:p-6">
     <div class="min-w-0 flex-1">
-      <p class="flex items-center gap-2 text-sm font-semibold">
+      <p class="text-sm font-semibold">
         {m.settings_app_lock_label()}
-        {#if isFeatureNew("app-lock")}
-          <NewBadge />
-        {/if}
       </p>
       <p class="text-muted mt-0.5 text-sm">
         {status.available

@@ -3,7 +3,6 @@
   import { page } from "$app/state";
   import Dropdown from "#lib/components/Dropdown.svelte";
   import Icon from "#lib/components/Icon.svelte";
-  import NewBadge from "#lib/components/NewBadge.svelte";
   import PageHeader from "#lib/components/PageHeader.svelte";
   import PremiumLockBadge from "#lib/components/PremiumLockBadge.svelte";
   import TabPanels from "#lib/components/TabPanels.svelte";
@@ -49,8 +48,7 @@
       backInHistory
       backOnPhoneOnly
       icon="calendar"
-      title={m.common_calendar()}
-      isNew={isFeatureNew("calendar-redesign")}>
+      title={m.common_calendar()}>
       {#snippet actions()}
         {#if !layout.compact}
           {#snippet calendarButton()}
@@ -60,9 +58,6 @@
               onclick={() => (showSubscribeModal = true)}>
               <Icon name="calendar" class="mr-1.5 inline h-4 w-4" />
               {m.calendar_subscribe_button()}
-              {#if isFeatureNew("release-feed")}
-                <span class="ml-1.5"><NewBadge /></span>
-              {/if}
             </button>
           {/snippet}
           {#if calendarLocked}
@@ -108,8 +103,6 @@
               {m.calendar_subscribe_button()}
               {#if calendarLocked}
                 <PremiumLockBadge />
-              {:else if isFeatureNew("release-feed")}
-                <span class="ml-auto"><NewBadge /></span>
               {/if}
             </button>
           {/snippet}

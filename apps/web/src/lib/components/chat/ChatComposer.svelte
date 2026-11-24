@@ -53,7 +53,6 @@
   import { DOMAINS } from "#lib/constants/domains.js";
   import { auth } from "#lib/auth.svelte.js";
   import { isDomainEnabled, orderedDomains } from "#lib/domain-availability.js";
-  import { isFeatureNew } from "#lib/feature-badges.js";
   import { layout } from "#lib/layout.svelte.js";
   import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
@@ -196,7 +195,6 @@
       label: "/review",
       hint: m.chat_command_review(),
       available: true,
-      isNew: isFeatureNew("chat-review-list"),
     },
     {
       id: "list",
@@ -204,7 +202,6 @@
       label: "/list",
       hint: m.chat_command_list(),
       available: true,
-      isNew: isFeatureNew("chat-review-list"),
     },
     {
       id: "poll",
@@ -212,7 +209,6 @@
       label: "/poll",
       hint: m.chat_command_poll(),
       available: true,
-      isNew: isFeatureNew("chat-commands"),
     },
     {
       id: "saga",
@@ -220,7 +216,6 @@
       label: "/saga",
       hint: m.chat_command_saga(),
       available: true,
-      isNew: isFeatureNew("chat-commands"),
     },
     {
       id: "pick",
@@ -228,7 +223,6 @@
       label: "/pick",
       hint: m.chat_command_pick(),
       available: true,
-      isNew: isFeatureNew("chat-commands"),
     },
     {
       id: "where",
@@ -236,7 +230,6 @@
       label: "/where",
       hint: m.chat_command_where(),
       available: true,
-      isNew: isFeatureNew("chat-commands"),
     },
   ];
 

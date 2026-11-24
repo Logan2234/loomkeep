@@ -16,8 +16,6 @@
   import Dropdown from "#lib/components/Dropdown.svelte";
   import Icon from "#lib/components/Icon.svelte";
   import Modal from "#lib/components/Modal.svelte";
-  import NewBadge from "#lib/components/NewBadge.svelte";
-  import { isFeatureNew } from "#lib/feature-badges.js";
   import { m } from "#lib/paraglide/messages.js";
   import { sameFilters } from "#lib/saved-views.js";
   import {
@@ -228,9 +226,6 @@
         onclick={() => openNaming(null)}>
         <Icon name="plus" class="h-4 w-4" />
         {m.saved_view_save()}
-        {#if isFeatureNew("saved-views")}
-          <NewBadge />
-        {/if}
       </button>
     {/if}
   </div>

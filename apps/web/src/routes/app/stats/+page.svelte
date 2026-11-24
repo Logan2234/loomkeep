@@ -41,7 +41,6 @@
   } from "#lib/components/stats/stats-domain.js";
   import { appConfig } from "#lib/config.svelte.js";
   import { useEeLock } from "#lib/ee/license.svelte.js";
-  import { isFeatureNew } from "#lib/feature-badges.js";
   import { formatNumber, PERCENT_OPTIONS } from "#lib/format.js";
   import { isPileEmpty, pileTile } from "#lib/pile.js";
   import { m } from "#lib/paraglide/messages.js";
@@ -243,10 +242,7 @@
     </div>
 
     {#if pileTiles.length > 0}
-      <SectionLabel
-        label={m.pile_title()}
-        isNew={isFeatureNew("pile")}
-        class="mt-8" />
+      <SectionLabel label={m.pile_title()} class="mt-8" />
       <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {#each pileTiles as tile (tile.domain)}
           <StatTile
