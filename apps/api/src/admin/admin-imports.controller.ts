@@ -9,7 +9,7 @@ import type {
 import { ErrorCode } from "@loomkeep/shared";
 import { Controller, Get, HttpStatus, Param, Query } from "@nestjs/common";
 import { ApiOkResponse } from "@nestjs/swagger";
-import type { Prisma } from "@prisma/client";
+import type { Prisma, RunStatus } from "@prisma/client";
 import { AppException } from "../common/app.exception";
 import { PagedResponseDto } from "../common/dto/paged-response.dto";
 import {
@@ -175,6 +175,8 @@ export class AdminImportsController {
             // record (see INTERRUPTED_IMPORT_ERROR): listed once, as running.
             where: {
               ...where,
+              // RUNNING never gets here: it only lists live jobs.
+              status: where.status as RunStatus | undefined,
               id: { notIn: this.imports.listRunningImports().map((r) => r.id) },
             },
             select: IMPORT_SELECT,

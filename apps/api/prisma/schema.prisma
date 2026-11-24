@@ -26,7 +26,7 @@ enum MediaType {
 // library, stats). `User.enabledDomains` drives the nav (see web isDomainEnabled).
 // PODCASTS/BOARDGAMES are planned P3 placeholders — no backing tables yet,
 // surfaced as "coming soon" and kept out of the enabledDomains default (opt-in).
-// A new value also goes into ActivityEvent_domain_check (SQL, in a migration).
+// A new value also goes into ActivityDomain below.
 enum Domain {
   MEDIA
   BOOKS
@@ -34,6 +34,32 @@ enum Domain {
   MUSIC
   PODCASTS
   BOARDGAMES
+}
+
+// Where an ActivityEvent belongs: every Domain, plus LISTS for list events
+// (ActivityDomain in packages/shared). Gates the profile timeline against the
+// actor's Activité audience for that domain.
+enum ActivityDomain {
+  MEDIA
+  BOOKS
+  GAMES
+  MUSIC
+  PODCASTS
+  BOARDGAMES
+  LISTS
+}
+
+// The granularity of an ActivityEvent, per the feed matrix.
+enum ActivityLevel {
+  WORK
+  SEASON
+  EPISODE
+}
+
+// How a JobRun or an ImportRun ended.
+enum RunStatus {
+  SUCCESS
+  FAILURE
 }
 
 // How often a channel (email/push) delivers the "new episode" digest. See
@@ -777,14 +803,13 @@ model UserAvatar {
 // scope and comments are public by nature. Effective visibility is still capped
 // by User.profileAccess at read time.
 model VisibilitySetting {
-  id       String             @id @default(cuid())
   userId   String
   domain   Domain
   facet    VisibilityFacet
   audience VisibilityAudience
   user     User               @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, domain, facet])
+  @@id([userId, domain, facet])
 }
 
 // Social (P4): directed follow edge. `followerId` follows `followeeId`.
@@ -811,14 +836,13 @@ model Follow {
 // re-following and content access, and neutralizes comments/mentions from the
 // blocked user. Directed: `blockerId` blocked `blockedId`.
 model Block {
-  id        String   @id @default(cuid())
   blockerId String
   blockedId String
   createdAt DateTime @default(now())
   blocker   User     @relation("UserBlocking", fields: [blockerId], references: [id], onDelete: Cascade)
   blocked   User     @relation("UserBlockedBy", fields: [blockedId], references: [id], onDelete: Cascade)
 
-  @@unique([blockerId, blockedId])
+  @@id([blockerId, blockedId])
   @@index([blockedId])
 }
 
@@ -1073,7 +1097,6 @@ model Message {
 }
 
 model MessageReaction {
-  id        String   @id @default(cuid())
   messageId String
   userId    String
   emote     Emote
@@ -1082,7 +1105,7 @@ model MessageReaction {
   message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([messageId, userId])
+  @@id([messageId, userId])
   // The unique leads with the other key: without this, deleting an account
   // scans the whole table for its cascade.
   @@index([userId])
@@ -1427,38 +1450,32 @@ model Notification {
 // four domain tables on every read. `data` carries kind-specific extras
 // (rating, episode code, aggregation count).
 model ActivityEvent {
-  id         String   @id @default(cuid())
+  id         String         @id @default(cuid())
   // The actor.
   userId     String
   // ActivityType: ADDED, STARTED, FINISHED, DROPPED, REWATCHED, PROGRESS,
   // FAVORITED, REVIEWED. A string so new kinds need no migration.
   type       String
-  // A Domain value, or LISTS for list events (ActivityDomain in shared) —
-  // used to gate the profile timeline against the actor's Activité audience
-  // for that domain. Enforced by ActivityEvent_domain_check: a new Domain
-  // goes there too.
-  domain     String
+  domain     ActivityDomain
   // Polymorphic work: ReviewTargetType-style ("MEDIA"/"GAME"/"BOOK"/"MUSIC")
   // + the internal item id.
   targetType String
   targetId   String
-  // WORK / SEASON / EPISODE — the granularity, per the feed matrix
-  // (ActivityEvent_level_check).
-  level      String   @default("WORK")
+  level      ActivityLevel  @default(WORK)
   // Whether this event surfaces on followers' home feed (matrix milestone).
-  homeFeed   Boolean  @default(false)
+  homeFeed   Boolean        @default(false)
   // Denormalised display snapshot of the target at emit time.
   title      String
   imageUrl   String?
   href       String?
   // Kind-specific extras: { rating } for REVIEWED, { seasonNumber, episodeNumber }
   // for PROGRESS, etc.
-  data       Json     @default("{}")
+  data       Json           @default("{}")
   // Optional link to the domain record projected into the feed. Session
   // edits/deletions use it to update or remove their projection explicitly.
   sourceType String?
   sourceId   String?
-  createdAt  DateTime @default(now())
+  createdAt  DateTime       @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -1475,13 +1492,12 @@ model ActivityEvent {
 // rows per jobKey at write time (see JobRunService) so the table stays bounded
 // on a self-host instance running for years.
 model JobRun {
-  id         String   @id @default(cuid())
+  id         String    @id @default(cuid())
   // Stable identifier, e.g. "notifications.scan", "media.refreshStale".
   jobKey     String
   startedAt  DateTime
   finishedAt DateTime
-  // "SUCCESS" or "FAILURE" (JobRun_status_check).
-  status     String
+  status     RunStatus
   // Short human summary of the outcome, e.g. "12 notification(s) créée(s)".
   summary    String?
   // Present only when status is "FAILURE".
@@ -1766,18 +1782,17 @@ model SecurityEvent {
 // identifier — unlike SecurityEvent, ImportRun has no account-less write
 // path to justify one), so it reads as null once the account is deleted.
 model ImportRun {
-  id         String   @id @default(cuid())
+  id         String    @id @default(cuid())
   userId     String?
   sourceId   String
   // Nullable: rows written before this column existed have no domain, and
   // are deliberately left out of the free-import-per-domain check rather
   // than backfilled — see ImportJobService#getQuota.
   domain     Domain?
-  // "SUCCESS" or "FAILURE" (ImportRun_status_check).
-  status     String
+  status     RunStatus
   // Items actually written (the user's kept selection), regardless of outcome.
   itemCount  Int
-  overwrite  Boolean  @default(false)
+  overwrite  Boolean   @default(false)
   // Selection and structured outcome for imports recorded after this column was added.
   details    Json?
   // Human summary joined from the report's tiles; null on failure.
@@ -1833,13 +1848,12 @@ model NewsletterSend {
 // documented quota window. Never purged: a few rows per provider per day is
 // negligible volume.
 model ApiCallCounter {
-  id       String   @id @default(cuid())
   provider String
   // The UTC day (startOfUtcDay), a calendar day rather than an instant.
   day      DateTime @db.Date
   count    Int      @default(0)
 
-  @@unique([provider, day])
+  @@id([provider, day])
 }
 
 // One pending email change per row; a fresh request invalidates the previous
@@ -2141,7 +2155,6 @@ model MediaItemTranslation {
 }
 
 model MediaExternalId {
-  id          String         @id @default(cuid())
   mediaItemId String
   source      ExternalSource
   externalId  String
@@ -2155,7 +2168,7 @@ model MediaExternalId {
 
   mediaItem MediaItem @relation(fields: [mediaItemId], references: [id], onDelete: Cascade)
 
-  @@unique([source, externalId, type])
+  @@id([source, externalId, type])
   @@index([mediaItemId])
 }
 
@@ -2183,7 +2196,6 @@ model Season {
 // MediaItemTranslation and refreshed on the same cycle (see
 // MediaItemService.translationFor).
 model SeasonTranslation {
-  id       String  @id @default(cuid())
   seasonId String
   locale   String
   title    String?
@@ -2191,7 +2203,7 @@ model SeasonTranslation {
 
   season Season @relation(fields: [seasonId], references: [id], onDelete: Cascade)
 
-  @@unique([seasonId, locale])
+  @@id([seasonId, locale])
 }
 
 model Episode {
@@ -2232,7 +2244,6 @@ model Episode {
 // An episode's title/overview in a non-default locale. A null field means
 // the source has no translation for it, and the base row's English stands.
 model EpisodeTranslation {
-  id        String  @id @default(cuid())
   episodeId String
   locale    String
   title     String?
@@ -2240,7 +2251,7 @@ model EpisodeTranslation {
 
   episode Episode @relation(fields: [episodeId], references: [id], onDelete: Cascade)
 
-  @@unique([episodeId, locale])
+  @@id([episodeId, locale])
 }
 
 model MediaEntry {
@@ -2395,14 +2406,13 @@ model GameItem {
 }
 
 model GameExternalId {
-  id         String     @id @default(cuid())
   gameItemId String
   source     GameSource
   externalId String
 
   gameItem GameItem @relation(fields: [gameItemId], references: [id], onDelete: Cascade)
 
-  @@unique([source, externalId])
+  @@id([source, externalId])
   @@index([gameItemId])
 }
 
@@ -2528,14 +2538,13 @@ model BookItem {
 }
 
 model BookExternalId {
-  id         String     @id @default(cuid())
   bookItemId String
   source     BookSource
   externalId String
 
   bookItem BookItem @relation(fields: [bookItemId], references: [id], onDelete: Cascade)
 
-  @@unique([source, externalId])
+  @@id([source, externalId])
   @@index([bookItemId])
 }
 
@@ -2686,14 +2695,13 @@ model MusicItem {
 }
 
 model MusicExternalId {
-  id          String      @id @default(cuid())
   musicItemId String
   source      MusicSource
   externalId  String
 
   musicItem MusicItem @relation(fields: [musicItemId], references: [id], onDelete: Cascade)
 
-  @@unique([source, externalId])
+  @@id([source, externalId])
   @@index([musicItemId])
 }
 
