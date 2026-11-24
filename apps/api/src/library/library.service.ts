@@ -309,6 +309,15 @@ export class LibraryService {
     userId: string,
     dto: UpsertEntryDto,
   ): Promise<LibraryEntryDto> {
+    // AniList holds the anime, TMDB everything else: any other pair would
+    // store an item under a type its source never gave it.
+    if ((dto.source === "ANILIST") !== (dto.type === "ANIME")) {
+      throw new AppException(
+        HttpStatus.BAD_REQUEST,
+        ErrorCode.ValidationFailed,
+      );
+    }
+
     const mediaItem = await this.mediaItemService.upsertFromSource(
       dto.source,
       dto.sourceId,
