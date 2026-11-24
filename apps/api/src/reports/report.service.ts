@@ -73,7 +73,7 @@ const REPORTER_SELECT = {
   displayName: true,
   profileAccess: true,
   avatarUpdatedAt: true,
-} as const;
+} satisfies Prisma.UserSelect;
 
 @Injectable()
 export class ReportService {
@@ -514,7 +514,7 @@ export class ReportService {
       text: true,
       createdAt: true,
       author: { select: { username: true } },
-    } as const;
+    } satisfies Prisma.MessageSelect;
     const [before, after] = await Promise.all([
       this.prisma.message.findMany({
         where: {

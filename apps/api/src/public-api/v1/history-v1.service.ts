@@ -61,7 +61,7 @@ const MEDIA_ITEM = {
     runtimeMin: true,
     externalIds: EXTERNAL_IDS,
   },
-} as const;
+} satisfies Prisma.MediaItemDefaultArgs;
 const GAME_ITEM = {
   select: {
     id: true,
@@ -70,7 +70,7 @@ const GAME_ITEM = {
     canonicalSource: true,
     externalIds: EXTERNAL_IDS,
   },
-} as const;
+} satisfies Prisma.GameItemDefaultArgs;
 const BOOK_ITEM = {
   select: {
     id: true,
@@ -80,7 +80,7 @@ const BOOK_ITEM = {
     canonicalSource: true,
     externalIds: EXTERNAL_IDS,
   },
-} as const;
+} satisfies Prisma.BookItemDefaultArgs;
 const MUSIC_ITEM = {
   select: {
     id: true,
@@ -91,7 +91,7 @@ const MUSIC_ITEM = {
     durationMin: true,
     externalIds: EXTERNAL_IDS,
   },
-} as const;
+} satisfies Prisma.MusicItemDefaultArgs;
 
 /**
  * The account's consumption history: episodes and films seen, game and
