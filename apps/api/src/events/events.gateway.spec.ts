@@ -543,8 +543,14 @@ describe("EventsGateway.handleChatTyping", () => {
     const prisma = {
       conversationMember: {
         findMany: vi.fn().mockResolvedValue([
-          { userId: "me", user: { chatShowPresence: presence.me } },
-          { userId: "lea", user: { chatShowPresence: presence.lea } },
+          {
+            userId: "me",
+            user: { preferences: { chatShowPresence: presence.me } },
+          },
+          {
+            userId: "lea",
+            user: { preferences: { chatShowPresence: presence.lea } },
+          },
         ]),
       },
       block: { count: vi.fn().mockResolvedValue(blocked ? 1 : 0) },

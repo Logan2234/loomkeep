@@ -125,7 +125,7 @@ describe("PausedReminderService.run", () => {
         email: "alice@example.com",
         locale: "fr",
         timezone: "Europe/Paris",
-        alertPrefs: { PAUSED_REMINDER: { push: true } },
+        preferences: { alertPrefs: { PAUSED_REMINDER: { push: true } } },
       },
     ]);
 
@@ -145,7 +145,9 @@ describe("PausedReminderService.run", () => {
       email: `${id}@example.com`,
       locale: "fr",
       timezone: "Europe/Paris",
-      alertPrefs: { PAUSED_REMINDER: { email: true, push: true } },
+      preferences: {
+        alertPrefs: { PAUSED_REMINDER: { email: true, push: true } },
+      },
     });
     (prisma.user.findMany as Mock).mockResolvedValue([
       account("user-1"),
@@ -170,7 +172,9 @@ describe("PausedReminderService.run", () => {
         email: "alice@example.com",
         locale: "fr",
         timezone: "Europe/Paris",
-        alertPrefs: { PAUSED_REMINDER: { email: true, push: true } },
+        preferences: {
+          alertPrefs: { PAUSED_REMINDER: { email: true, push: true } },
+        },
       },
     ]);
 

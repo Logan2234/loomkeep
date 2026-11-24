@@ -104,6 +104,7 @@ import { ReviewService } from "../reviews/review.service";
 import { ActivityService } from "../social/activity.service";
 import { summarizePile } from "../stats/pile.util";
 import { AgeGateService } from "../users/age-gate.service";
+import { preferencesOf } from "../users/preferences.util";
 import { AddMovieReplayDto } from "./dto/add-movie-replay.dto";
 import type { BulkUpdateEntriesBody } from "./dto/bulk-update-entries.dto";
 import { UpdateEntryDto } from "./dto/update-entry.dto";
@@ -2730,10 +2731,12 @@ export class LibraryService {
     userId: string,
     acceptLanguage?: string,
   ): Promise<string> {
-    const user = await this.prisma.user.findUniqueOrThrow({
-      where: { id: userId },
-      select: { watchRegion: true },
-    });
+    const user = preferencesOf(
+      await this.prisma.userPreferences.findUnique({
+        where: { userId: userId },
+        select: { watchRegion: true },
+      }),
+    );
     return resolveWatchRegion(user.watchRegion ?? undefined, acceptLanguage);
   }
 }

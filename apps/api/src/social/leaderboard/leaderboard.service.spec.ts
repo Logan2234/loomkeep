@@ -173,7 +173,7 @@ describe("LeaderboardService.getLeaderboard", () => {
         where: expect.objectContaining({
           user: {
             profileAccess: { not: ProfileAccess.GHOST },
-            hideProgression: false,
+            preferences: { hideProgression: false },
           },
         }),
       }),
@@ -223,7 +223,7 @@ describe("LeaderboardService.getLeaderboard — all time", () => {
         xp: { gt: 0 },
         user: {
           profileAccess: { not: ProfileAccess.GHOST },
-          hideProgression: false,
+          preferences: { hideProgression: false },
         },
       },
       select: { userId: true, xp: true },

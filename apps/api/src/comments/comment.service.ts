@@ -72,7 +72,7 @@ const AUTHOR_SELECT = {
   // Only ever used locally to build the withXp gating map below — never
   // forwarded to toUserSummaryDto/the client (that would leak the setting
   // itself, not just its effect).
-  hideProgression: true,
+  preferences: { select: { hideProgression: true } },
 } as const;
 
 type CommentAuthor = {
@@ -81,7 +81,7 @@ type CommentAuthor = {
   displayName: string;
   profileAccess: ProfileAccess;
   avatarUpdatedAt: Date | null;
-  hideProgression: boolean;
+  preferences: { hideProgression: boolean } | null;
 };
 
 type CommentRow = {
@@ -295,7 +295,10 @@ export class CommentService {
           (c): c is typeof c & { author: NonNullable<typeof c.author> } =>
             !!c.author,
         )
-        .map((c) => [c.author.id, c.author.hideProgression]),
+        .map((c) => [
+          c.author.id,
+          c.author.preferences?.hideProgression ?? false,
+        ]),
     );
 
     return (row) =>
@@ -518,7 +521,9 @@ export class CommentService {
       fetchXpByUser(this.prisma, [authorId]),
     ]);
     const hideProgressionByUser = new Map(
-      row.author ? [[row.author.id, row.author.hideProgression]] : [],
+      row.author
+        ? [[row.author.id, row.author.preferences?.hideProgression ?? false]]
+        : [],
     );
     const dto = await this.toDto(
       row,
@@ -583,7 +588,9 @@ export class CommentService {
       fetchXpByUser(this.prisma, [authorId]),
     ]);
     const hideProgressionByUser = new Map(
-      row.author ? [[row.author.id, row.author.hideProgression]] : [],
+      row.author
+        ? [[row.author.id, row.author.preferences?.hideProgression ?? false]]
+        : [],
     );
     const dto = await this.toDto(
       row,

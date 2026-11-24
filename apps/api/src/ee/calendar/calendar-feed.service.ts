@@ -256,10 +256,20 @@ export class CalendarFeedService {
     const row = await this.prisma.userUrlToken.findUnique({
       where: { calendarToken: token },
       select: {
-        user: { select: { id: true, locale: true, watchRegion: true } },
+        user: {
+          select: {
+            id: true,
+            locale: true,
+            preferences: { select: { watchRegion: true } },
+          },
+        },
       },
     });
-    const user = row?.user;
+    const user = row?.user && {
+      id: row.user.id,
+      locale: row.user.locale,
+      watchRegion: row.user.preferences?.watchRegion ?? null,
+    };
 
     if (!user || !(await this.entitlements.isEffectivelyPremium(user.id))) {
       return null;

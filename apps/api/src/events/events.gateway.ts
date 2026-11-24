@@ -36,6 +36,7 @@ import {
 } from "../metrics/metrics.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { isSocialEnabled } from "../social/social.config";
+import { preferencesOf } from "../users/preferences.util";
 
 const ADMIN_REPORTS_ROOM = "admin:reports";
 // Comment threads one socket can follow at once: a page shows one, a few
@@ -304,11 +305,18 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     const members = await this.prisma.conversationMember.findMany({
       where: { conversationId },
-      select: { userId: true, user: { select: { chatShowPresence: true } } },
+      select: {
+        userId: true,
+        user: {
+          select: { preferences: { select: { chatShowPresence: true } } },
+        },
+      },
     });
+    const shows = (m?: (typeof members)[number]) =>
+      m !== undefined && preferencesOf(m.user.preferences).chatShowPresence;
     const self = members.find((m) => m.userId === userId);
     const peer = members.find((m) => m.userId !== userId);
-    if (!self?.user.chatShowPresence || !peer?.user.chatShowPresence) return;
+    if (!peer || !shows(self) || !shows(peer)) return;
     if (await this.blockedEitherWay(userId, peer.userId)) return;
 
     const event: ChatTypingEvent = { conversationId, userId };
@@ -337,16 +345,18 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   ): Promise<void> {
     if (!isChatEnabled(this.config)) return;
 
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-      select: { chatShowPresence: true },
-    });
+    const user = preferencesOf(
+      await this.prisma.userPreferences.findUnique({
+        where: { userId: userId },
+        select: { chatShowPresence: true },
+      }),
+    );
     if (!user?.chatShowPresence) return;
 
     const peers = await this.prisma.conversationMember.findMany({
       where: {
         userId: { not: userId },
-        user: { chatShowPresence: true },
+        user: { preferences: { chatShowPresence: true } },
         conversation: { members: { some: { userId } } },
       },
       select: { userId: true },

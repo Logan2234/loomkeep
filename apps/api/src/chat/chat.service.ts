@@ -40,6 +40,7 @@ import { PrismaService } from "../prisma/prisma.service";
 import { ReviewService } from "../reviews/review.service";
 import { BlockService } from "../social/block.service";
 import { toUserSummaryDto } from "../users/avatar.util";
+import { preferencesOf } from "../users/preferences.util";
 import { isSuspended } from "../users/suspension.util";
 import type { WorkCard } from "./chat-work.service";
 
@@ -52,8 +53,9 @@ const PEER_SELECT = {
   displayName: true,
   profileAccess: true,
   avatarUpdatedAt: true,
-  chatShowPresence: true,
-  chatShowReadReceipts: true,
+  preferences: {
+    select: { chatShowPresence: true, chatShowReadReceipts: true },
+  },
 } as const;
 
 type Peer = Prisma.UserGetPayload<{ select: typeof PEER_SELECT }>;
@@ -835,7 +837,14 @@ export class ChatService {
       (m) => m.userId === userId,
     );
 
-    if (peer && reader && showsReadReceipts(reader.user, peer.user)) {
+    if (
+      peer &&
+      reader &&
+      showsReadReceipts(
+        preferencesOf(reader.user.preferences),
+        preferencesOf(peer.user.preferences),
+      )
+    ) {
       this.events.emitToUser(peer.userId, RealtimeEvent.CHAT_READ, event);
     }
   }
@@ -1096,10 +1105,16 @@ export class ChatService {
   }
 
   private async viewer(userId: string): Promise<Viewer> {
-    return this.prisma.user.findUniqueOrThrow({
+    const user = await this.prisma.user.findUniqueOrThrow({
       where: { id: userId },
-      select: { id: true, chatShowPresence: true, chatShowReadReceipts: true },
+      select: { id: true, preferences: PEER_SELECT.preferences },
     });
+    const prefs = preferencesOf(user.preferences);
+    return {
+      id: user.id,
+      chatShowPresence: prefs.chatShowPresence,
+      chatShowReadReceipts: prefs.chatShowReadReceipts,
+    };
   }
 
   /** The viewer's membership, 404 when they aren't in it or were blocked by the other member. */
@@ -1265,7 +1280,9 @@ export class ChatService {
         const peer = peerOf(m, viewer.id);
         const last = lastByConversation.get(m.conversationId);
         const presenceShared =
-          !!peer && viewer.chatShowPresence && peer.user.chatShowPresence;
+          !!peer &&
+          viewer.chatShowPresence &&
+          preferencesOf(peer.user.preferences).chatShowPresence;
         return {
           id: m.conversationId,
           peer: peer ? toUserSummaryDto(peer.user) : null,
@@ -1274,7 +1291,8 @@ export class ChatService {
             ? await this.events.isOnline(peer.userId)
             : null,
           peerLastReadAt:
-            peer && showsReadReceipts(viewer, peer.user)
+            peer &&
+            showsReadReceipts(viewer, preferencesOf(peer.user.preferences))
               ? peer.lastReadAt.toISOString()
               : null,
           lastMessage: last ? toMessageDto(last, viewer.id, cards) : null,
@@ -1380,7 +1398,11 @@ export class ChatService {
     const [recipient, author, member] = await Promise.all([
       this.prisma.user.findUnique({
         where: { id: recipientId },
-        select: { locale: true, alertPrefs: true, suspendedUntil: true },
+        select: {
+          locale: true,
+          suspendedUntil: true,
+          preferences: { select: { alertPrefs: true } },
+        },
       }),
       this.prisma.user.findUnique({
         where: { id: authorId },
@@ -1400,7 +1422,7 @@ export class ChatService {
       member?.mutedAt ||
       isSuspended(recipient) ||
       !isAlertEnabled(
-        readAlertPrefs(recipient.alertPrefs),
+        readAlertPrefs(recipient.preferences?.alertPrefs ?? {}),
         "CHAT_MESSAGE",
         "push",
       )

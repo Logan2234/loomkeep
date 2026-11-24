@@ -15,7 +15,7 @@ import { NewsletterService } from "./newsletter.service";
 describe("newsletter one-click HTTP endpoint", () => {
   let app: NestFastifyApplication;
   const prisma = {
-    user: { update: vi.fn() },
+    userPreferences: { upsert: vi.fn() },
     userUrlToken: { findUnique: vi.fn() },
   };
   const path = "/api/newsletter/unsubscribe/one-click?token=stable-token";
@@ -54,7 +54,7 @@ describe("newsletter one-click HTTP endpoint", () => {
     prisma.userUrlToken.findUnique.mockResolvedValue({
       userId: "newsletter-user",
     });
-    prisma.user.update.mockResolvedValue({});
+    prisma.userPreferences.upsert.mockResolvedValue({});
   });
   afterAll(async () => {
     await app?.close();
@@ -78,10 +78,11 @@ describe("newsletter one-click HTTP endpoint", () => {
       where: { newsletterUnsubscribeToken: "stable-token" },
       select: { userId: true },
     });
-    expect(prisma.user.update).toHaveBeenCalledTimes(2);
-    expect(prisma.user.update).toHaveBeenCalledWith({
-      where: { id: "newsletter-user" },
-      data: { notifyNewsletter: false },
+    expect(prisma.userPreferences.upsert).toHaveBeenCalledTimes(2);
+    expect(prisma.userPreferences.upsert).toHaveBeenCalledWith({
+      where: { userId: "newsletter-user" },
+      create: { userId: "newsletter-user", notifyNewsletter: false },
+      update: { notifyNewsletter: false },
     });
   });
 
@@ -96,7 +97,7 @@ describe("newsletter one-click HTTP endpoint", () => {
         '--newsletter-test\r\nContent-Disposition: form-data; name="List-Unsubscribe"\r\n\r\nOne-Click\r\n--newsletter-test--\r\n',
     });
     expect(response.statusCode).toBe(204);
-    expect(prisma.user.update).toHaveBeenCalledOnce();
+    expect(prisma.userPreferences.upsert).toHaveBeenCalledOnce();
   });
 
   it.each([
@@ -116,7 +117,7 @@ describe("newsletter one-click HTTP endpoint", () => {
         payload,
       });
       expect(response.statusCode).toBe(400);
-      expect(prisma.user.update).not.toHaveBeenCalled();
+      expect(prisma.userPreferences.upsert).not.toHaveBeenCalled();
     },
   );
 
@@ -132,7 +133,7 @@ describe("newsletter one-click HTTP endpoint", () => {
       payload: "List-Unsubscribe=One-Click",
     });
     expect(response.statusCode).toBe(401);
-    expect(prisma.user.update).not.toHaveBeenCalled();
+    expect(prisma.userPreferences.upsert).not.toHaveBeenCalled();
   });
 
   it("keeps the original JSON footer endpoint and rejects multipart posts on it", async () => {
@@ -145,7 +146,7 @@ describe("newsletter one-click HTTP endpoint", () => {
         })
       ).statusCode,
     ).toBe(201);
-    prisma.user.update.mockClear();
+    prisma.userPreferences.upsert.mockClear();
     expect(
       (
         await app.inject({
@@ -156,7 +157,7 @@ describe("newsletter one-click HTTP endpoint", () => {
         })
       ).statusCode,
     ).toBe(415);
-    expect(prisma.user.update).not.toHaveBeenCalled();
+    expect(prisma.userPreferences.upsert).not.toHaveBeenCalled();
   });
 
   it("bounds form body size", async () => {
@@ -170,6 +171,6 @@ describe("newsletter one-click HTTP endpoint", () => {
         })
       ).statusCode,
     ).toBe(413);
-    expect(prisma.user.update).not.toHaveBeenCalled();
+    expect(prisma.userPreferences.upsert).not.toHaveBeenCalled();
   });
 });

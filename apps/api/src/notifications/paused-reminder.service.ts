@@ -73,10 +73,16 @@ export class PausedReminderService {
   async run(now: Date): Promise<number> {
     const optedIn = await this.prisma.user.findMany({
       where: {
-        OR: [
-          { alertPrefs: { path: ["PAUSED_REMINDER", "email"], equals: true } },
-          { alertPrefs: { path: ["PAUSED_REMINDER", "push"], equals: true } },
-        ],
+        preferences: {
+          OR: [
+            {
+              alertPrefs: { path: ["PAUSED_REMINDER", "email"], equals: true },
+            },
+            {
+              alertPrefs: { path: ["PAUSED_REMINDER", "push"], equals: true },
+            },
+          ],
+        },
         ...notSuspended(now),
       },
       select: {
@@ -84,7 +90,7 @@ export class PausedReminderService {
         email: true,
         locale: true,
         timezone: true,
-        alertPrefs: true,
+        preferences: { select: { alertPrefs: true } },
       },
     });
 
@@ -99,7 +105,7 @@ export class PausedReminderService {
         const works = await this.pausedWorks(user.id, now);
         if (works.length === 0) continue;
 
-        const prefs = readAlertPrefs(user.alertPrefs);
+        const prefs = readAlertPrefs(user.preferences?.alertPrefs ?? {});
         const items = works.slice(0, MAX_ITEMS);
 
         if (isAlertEnabled(prefs, "PAUSED_REMINDER", "email")) {

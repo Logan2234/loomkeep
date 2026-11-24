@@ -277,7 +277,7 @@ describe("AdminUsersController.listUsers", () => {
               ],
             },
           ],
-          notifyNewsletter: true,
+          preferences: { notifyNewsletter: true },
           pushSubscriptions: { some: {} },
           refreshTokens: {
             some: {
@@ -315,7 +315,7 @@ describe("AdminUsersController.listUsers", () => {
           mfaTotpEnabled: false,
           mfaEmailEnabled: false,
           webauthnCredentials: { none: {} },
-          notifyNewsletter: false,
+          preferences: { notifyNewsletter: false },
           pushSubscriptions: { none: {} },
           refreshTokens: {
             none: {

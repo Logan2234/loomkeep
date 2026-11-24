@@ -48,6 +48,7 @@ import { isSocialEnabled } from "../social/social.config";
 import { VisibilityService } from "../social/visibility.service";
 import { resolveReviewVisibility } from "../social/visibility.util";
 import { toUserSummaryDto } from "../users/avatar.util";
+import { preferencesOf } from "../users/preferences.util";
 
 // How far past the threshold a burst of concurrent upvotes may land.
 const VOTE_NOTIFY_WINDOW = 5;
@@ -75,7 +76,7 @@ const AUTHOR_SELECT = {
   // Only ever used locally to build the withXp gating map below — never
   // forwarded to toUserSummaryDto/the client (that would leak the setting
   // itself, not just its effect).
-  hideProgression: true,
+  preferences: { select: { hideProgression: true } },
 } as const;
 
 @Injectable()
@@ -393,10 +394,12 @@ export class ReviewService {
       await assertMediaReleased(this.prisma, targetId);
     if (targetType === ReviewTargetType.GAME)
       await assertGameReleased(this.prisma, targetId);
-    const user = await this.prisma.user.findUniqueOrThrow({
-      where: { id: userId },
-      select: { defaultReviewVisibility: true },
-    });
+    const user = preferencesOf(
+      await this.prisma.userPreferences.findUnique({
+        where: { userId: userId },
+        select: { defaultReviewVisibility: true },
+      }),
+    );
     const visibility = dto.visibility ?? user.defaultReviewVisibility;
     const text = dto.text ?? null;
 
@@ -844,7 +847,7 @@ export class ReviewService {
         .filter(
           (r): r is typeof r & { user: NonNullable<typeof r.user> } => !!r.user,
         )
-        .map((r) => [r.user.id, r.user.hideProgression]),
+        .map((r) => [r.user.id, r.user.preferences?.hideProgression ?? false]),
     );
     const votesFor = (id: string) =>
       voteMap.get(id) ?? { score: 0, myVote: null };
@@ -1052,10 +1055,12 @@ export class ReviewService {
       reviewId = row.id;
       text = existing.text;
     } else {
-      const user = await this.prisma.user.findUniqueOrThrow({
-        where: { id: userId },
-        select: { defaultReviewVisibility: true },
-      });
+      const user = preferencesOf(
+        await this.prisma.userPreferences.findUnique({
+          where: { userId: userId },
+          select: { defaultReviewVisibility: true },
+        }),
+      );
       let row;
 
       try {
@@ -1193,7 +1198,7 @@ export class ReviewService {
       userId,
       xpMap,
       isGamificationEnabled(this.config),
-      new Map([[userId, user.hideProgression]]),
+      new Map([[userId, user.preferences?.hideProgression ?? false]]),
     );
   }
 }

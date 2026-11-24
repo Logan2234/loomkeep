@@ -93,7 +93,10 @@ export class NewsletterService {
       contentHtml,
     );
     const recipients = await this.prisma.user.findMany({
-      where: { notifyNewsletter: true, ...notSuspended() },
+      where: {
+        preferences: { notifyNewsletter: true },
+        ...notSuspended(),
+      },
       select: {
         id: true,
         email: true,
@@ -242,9 +245,10 @@ export class NewsletterService {
       );
     }
 
-    await this.prisma.user.update({
-      where: { id: user.userId },
-      data: { notifyNewsletter: false },
+    await this.prisma.userPreferences.upsert({
+      where: { userId: user.userId },
+      create: { userId: user.userId, notifyNewsletter: false },
+      update: { notifyNewsletter: false },
     });
   }
 }

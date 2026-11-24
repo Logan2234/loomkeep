@@ -443,7 +443,7 @@ export class AchievementService {
       onboarding: { onboardedAt: { not: null } },
       lastActiveAt: { gte: activeSince },
       profileAccess: { not: "GHOST" },
-      hideProgression: false,
+      preferences: { hideProgression: false },
     };
     const [eligibleUsers, counts] = await Promise.all([
       this.prisma.user.count({ where: eligible }),

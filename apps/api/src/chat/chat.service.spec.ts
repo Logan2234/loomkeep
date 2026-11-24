@@ -24,9 +24,11 @@ function peer(id: string, over: Record<string, unknown> = {}) {
     displayName: id === LEA ? "Léa" : "Moi",
     profileAccess: "PUBLIC",
     avatarUpdatedAt: null,
-    chatShowPresence: true,
-    chatShowReadReceipts: true,
-    ...over,
+    preferences: {
+      chatShowPresence: true,
+      chatShowReadReceipts: true,
+      ...over,
+    },
   };
 }
 
@@ -118,14 +120,13 @@ function setup(
           return {
             displayName: "Moi",
             locale: "fr",
-            alertPrefs: {},
+            preferences: { alertPrefs: {} },
             suspendedUntil: null,
           };
         }),
       findUniqueOrThrow: vi.fn().mockResolvedValue({
         id: ME,
-        chatShowPresence: true,
-        chatShowReadReceipts: true,
+        preferences: { chatShowPresence: true, chatShowReadReceipts: true },
         profileAccess: "PUBLIC",
       }),
       findMany: vi.fn().mockResolvedValue([]),
@@ -925,8 +926,7 @@ describe("ChatService", () => {
       const { service, prisma } = setup({ online: true });
       (prisma.user.findUniqueOrThrow as Mock).mockResolvedValue({
         id: ME,
-        chatShowPresence: false,
-        chatShowReadReceipts: false,
+        preferences: { chatShowPresence: false, chatShowReadReceipts: false },
       });
 
       const conversation = await service.get(ME, "cv1");

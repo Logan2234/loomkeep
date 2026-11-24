@@ -48,6 +48,7 @@ import { SecurityEventService } from "../security/security-event.service";
 import { isSocialEnabled } from "../social/social.config";
 import { avatarUrl } from "../users/avatar.util";
 import { readHomeLayout, readHomePhoneLayout } from "../users/home-layout.util";
+import { preferencesOf } from "../users/preferences.util";
 import { assertNotSuspended, isSuspended } from "../users/suspension.util";
 import { randomUsernameSuffix, slugifyUsername } from "../users/username.util";
 import type { JwtPayload } from "./decorators/current-user.decorator";
@@ -188,6 +189,8 @@ export class AuthService {
           certifiedAgeAt: new Date(),
         },
       },
+      // Every account has its preferences row, at the schema defaults.
+      preferences: { create: {} },
       lastActiveAt: new Date(),
       emailVerified,
       invitationId: invitation?.id,
@@ -1059,7 +1062,7 @@ export class AuthService {
   private async withDtoParts(user: User): Promise<UserForDto> {
     const parts = await this.prisma.user.findUniqueOrThrow({
       where: { id: user.id },
-      select: { consent: true, onboarding: true },
+      select: { consent: true, onboarding: true, preferences: true },
     });
     return { ...user, ...parts };
   }
@@ -1263,6 +1266,7 @@ function detectLocale(acceptLanguage?: string): string {
 export const USER_DTO_INCLUDE = {
   consent: true,
   onboarding: true,
+  preferences: true,
 } satisfies Prisma.UserInclude;
 
 export type UserForDto = Prisma.UserGetPayload<{
@@ -1270,26 +1274,27 @@ export type UserForDto = Prisma.UserGetPayload<{
 }>;
 
 export function toUserDto(user: UserForDto): UserDto {
+  const prefs = preferencesOf(user.preferences);
   return {
     id: user.id,
     email: user.email,
     username: user.username,
     displayName: user.displayName,
     birthDate: user.birthDate ? utcDateKey(user.birthDate) : null,
-    allowAdultContent: user.allowAdultContent,
-    notifyEmail: user.notifyEmail as UserDto["notifyEmail"],
-    notifyPush: user.notifyPush as UserDto["notifyPush"],
-    notifyNewsletter: user.notifyNewsletter,
-    alertPrefs: readAlertPrefs(user.alertPrefs),
+    allowAdultContent: prefs.allowAdultContent,
+    notifyEmail: prefs.notifyEmail as UserDto["notifyEmail"],
+    notifyPush: prefs.notifyPush as UserDto["notifyPush"],
+    notifyNewsletter: prefs.notifyNewsletter,
+    alertPrefs: readAlertPrefs(prefs.alertPrefs),
     timezone: user.timezone,
     emailVerified: user.emailVerified,
     role: user.role,
     enabledDomains: user.enabledDomains,
     bio: user.bio,
     defaultReviewVisibility:
-      user.defaultReviewVisibility as UserDto["defaultReviewVisibility"],
+      prefs.defaultReviewVisibility as UserDto["defaultReviewVisibility"],
     defaultListVisibility:
-      user.defaultListVisibility as UserDto["defaultListVisibility"],
+      prefs.defaultListVisibility as UserDto["defaultListVisibility"],
     profileAccess: user.profileAccess as UserDto["profileAccess"],
     locale: user.locale as Locale,
     createdAt: user.createdAt.toISOString(),
@@ -1300,19 +1305,19 @@ export function toUserDto(user: UserForDto): UserDto {
     acceptedTermsVersion: user.consent?.acceptedTermsVersion ?? null,
     mfaTotpEnabled: user.mfaTotpEnabled,
     mfaEmailEnabled: user.mfaEmailEnabled,
-    hideProgression: user.hideProgression,
-    chatShowPresence: user.chatShowPresence,
-    chatShowReadReceipts: user.chatShowReadReceipts,
-    chatShareWatchProviders: user.chatShareWatchProviders,
-    feedbackWidget: user.feedbackWidget,
+    hideProgression: prefs.hideProgression,
+    chatShowPresence: prefs.chatShowPresence,
+    chatShowReadReceipts: prefs.chatShowReadReceipts,
+    chatShareWatchProviders: prefs.chatShareWatchProviders,
+    feedbackWidget: prefs.feedbackWidget,
     spoilerSensitivity:
-      user.spoilerSensitivity as UserDto["spoilerSensitivity"],
-    domainOrder: user.domainOrder as UserDto["domainOrder"],
-    watchRegion: user.watchRegion,
-    watchProviderIds: user.watchProviderIds,
-    listenServices: user.listenServices as ListenService[],
-    homeLayout: readHomeLayout(user.homeLayout),
-    homePhoneLayout: readHomePhoneLayout(user.homePhoneLayout),
+      prefs.spoilerSensitivity as UserDto["spoilerSensitivity"],
+    domainOrder: prefs.domainOrder as UserDto["domainOrder"],
+    watchRegion: prefs.watchRegion,
+    watchProviderIds: prefs.watchProviderIds,
+    listenServices: prefs.listenServices as ListenService[],
+    homeLayout: readHomeLayout(prefs.homeLayout),
+    homePhoneLayout: readHomePhoneLayout(prefs.homePhoneLayout),
     deletionScheduledFor: user.deletionScheduledFor?.toISOString() ?? null,
   };
 }

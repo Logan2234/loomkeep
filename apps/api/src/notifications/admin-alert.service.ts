@@ -39,12 +39,17 @@ export class AdminAlertService {
   ): Promise<number> {
     const admins = await this.prisma.user.findMany({
       where: { role: "ADMIN" },
-      select: { id: true, email: true, locale: true, alertPrefs: true },
+      select: {
+        id: true,
+        email: true,
+        locale: true,
+        preferences: { select: { alertPrefs: true } },
+      },
     });
 
     await Promise.all(
       admins.map(async (admin) => {
-        const prefs = readAlertPrefs(admin.alertPrefs);
+        const prefs = readAlertPrefs(admin.preferences?.alertPrefs ?? {});
 
         // Each admin and each channel fails on its own: a failed email used
         // to skip that admin's push and reject the whole alert.
