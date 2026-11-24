@@ -81,8 +81,9 @@ wording change or a rename.
 ### Feature flags, settings & premium
 
 - Unleash flags (`FeatureFlagsService`, web `liveFlags.isEnabled()`) are for
-  rollouts and kill switches, with a fallback so an unconfigured flag never
-  locks a feature out. Permanent instance configuration lives in the
+  rollouts and kill switches. The API's take a fallback so an unconfigured
+  flag never locks a feature out; the web's are `false` until Unleash says
+  otherwise, so a flag on by default goes through `GET /api/config`. Permanent instance configuration lives in the
   `InstanceSettings` table (Admin › Settings, `instanceSetting()`); an env
   var of the same name wins and locks it.
 - Premium is a seam, not sold yet: call
