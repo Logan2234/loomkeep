@@ -1151,9 +1151,9 @@ export class MailService {
     inviterName: string | null,
     url: string,
     expiresAt: Date,
-  ): Promise<void> {
+  ): Promise<boolean> {
     const locale = resolveCopyLocale(recipient.locale);
-    await this.send({
+    return this.send({
       to: recipient.email,
       ...this.buildInvitation(locale, inviterName, url, expiresAt),
     });
