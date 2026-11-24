@@ -36,7 +36,7 @@ function userRow(overrides: Record<string, unknown>) {
     lastActiveAt: null,
     inactivityWarningSentAt: null,
     enabledDomains: ["MEDIA"],
-    onboardedAt: new Date("2026-01-01T00:00:00.000Z"),
+    onboarding: { onboardedAt: new Date("2026-01-01T00:00:00.000Z") },
     mfaTotpEnabled: false,
     mfaEmailEnabled: false,
     _count: { webauthnCredentials: 0 },
@@ -360,7 +360,7 @@ describe("AdminUsersController.listUsers columns, filters and sorting", () => {
         enabledDomains: ["MEDIA", "BOOKS"],
         mfaTotpEnabled: true,
         _count: { webauthnCredentials: 2 },
-        onboardedAt: null,
+        onboarding: null,
       }),
     ]);
     (prisma.mediaEntry.groupBy as Mock).mockResolvedValue([
@@ -397,7 +397,9 @@ describe("AdminUsersController.listUsers columns, filters and sorting", () => {
 
     await listWith(controller, { filter: "onboarding" });
     expect(prisma.user.findMany).toHaveBeenLastCalledWith(
-      expect.objectContaining({ where: { onboardedAt: null } }),
+      expect.objectContaining({
+        where: { NOT: { onboarding: { onboardedAt: { not: null } } } },
+      }),
     );
 
     await listWith(controller, { filter: "inactive", domain: "nope" });

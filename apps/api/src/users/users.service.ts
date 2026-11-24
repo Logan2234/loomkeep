@@ -21,7 +21,11 @@ import { ConfigService } from "@nestjs/config";
 import { Prisma, type User } from "@prisma/client";
 import * as bcrypt from "bcryptjs";
 import { ApiKeysService } from "../api-keys/api-keys.service";
-import { BCRYPT_ROUNDS, toUserDto } from "../auth/auth.service";
+import {
+  BCRYPT_ROUNDS,
+  toUserDto,
+  USER_DTO_INCLUDE,
+} from "../auth/auth.service";
 import { SessionCacheService } from "../auth/session-cache.service";
 import { revokeSessionsWith } from "../auth/session-revocation.util";
 import { AppException } from "../common/app.exception";
@@ -104,7 +108,10 @@ export class UsersService {
   }
 
   async getMe(userId: string): Promise<UserDto> {
-    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: USER_DTO_INCLUDE,
+    });
 
     if (!user) {
       throw new AppException(
@@ -225,6 +232,7 @@ export class UsersService {
 
     const user = await this.prisma.user.update({
       where: { id: userId },
+      include: USER_DTO_INCLUDE,
       data: {
         avatarUpdatedAt: new Date(),
         avatarImage: {
@@ -244,6 +252,7 @@ export class UsersService {
       this.prisma.userAvatar.deleteMany({ where: { userId } }),
       this.prisma.user.update({
         where: { id: userId },
+        include: USER_DTO_INCLUDE,
         data: { avatarUpdatedAt: null },
       }),
     ]);
@@ -322,13 +331,23 @@ export class UsersService {
       );
     }
 
-    const { count } = await this.prisma.user.updateMany({
-      where: { id: userId, acquisitionSource: null },
-      data: {
-        acquisitionSource: source,
-        acquisitionSourceOther: other?.trim() || null,
-      },
+    // Written once. The row may not exist yet: creating it takes the answer;
+    // an existing one only takes it while it has none.
+    const answer = {
+      acquisitionSource: source,
+      acquisitionSourceOther: other?.trim() || null,
+    };
+    const created = await this.prisma.userOnboarding.createMany({
+      data: [{ userId, ...answer }],
+      skipDuplicates: true,
     });
+    const { count } =
+      created.count > 0
+        ? created
+        : await this.prisma.userOnboarding.updateMany({
+            where: { userId, acquisitionSource: null },
+            data: answer,
+          });
 
     if (count === 0) {
       throw new AppException(
@@ -343,7 +362,15 @@ export class UsersService {
   async completeOnboarding(userId: string): Promise<UserDto> {
     const user = await this.prisma.user.update({
       where: { id: userId },
-      data: { onboardedAt: new Date() },
+      include: USER_DTO_INCLUDE,
+      data: {
+        onboarding: {
+          upsert: {
+            create: { onboardedAt: new Date() },
+            update: { onboardedAt: new Date() },
+          },
+        },
+      },
     });
     return toUserDto(user);
   }
@@ -356,9 +383,20 @@ export class UsersService {
   async acceptTerms(userId: string): Promise<UserDto> {
     const user = await this.prisma.user.update({
       where: { id: userId },
+      include: USER_DTO_INCLUDE,
       data: {
-        acceptedTermsAt: new Date(),
-        acceptedTermsVersion: LEGAL_VERSION,
+        consent: {
+          upsert: {
+            create: {
+              acceptedTermsAt: new Date(),
+              acceptedTermsVersion: LEGAL_VERSION,
+            },
+            update: {
+              acceptedTermsAt: new Date(),
+              acceptedTermsVersion: LEGAL_VERSION,
+            },
+          },
+        },
       },
     });
     return toUserDto(user);
@@ -383,6 +421,7 @@ export class UsersService {
       }));
     const user = await this.prisma.user.update({
       where: { id: userId },
+      include: USER_DTO_INCLUDE,
       data: { homeLayout: toHomeLayoutJson({ widgets }) },
     });
     return toUserDto(user);
@@ -401,6 +440,7 @@ export class UsersService {
     });
     const user = await this.prisma.user.update({
       where: { id: userId },
+      include: USER_DTO_INCLUDE,
       data: { homePhoneLayout: toHomeLayoutJson({ widgets }) },
     });
     return toUserDto(user);
@@ -410,6 +450,7 @@ export class UsersService {
   async resetHomePhoneLayout(userId: string): Promise<UserDto> {
     const user = await this.prisma.user.update({
       where: { id: userId },
+      include: USER_DTO_INCLUDE,
       data: { homePhoneLayout: Prisma.DbNull },
     });
     return toUserDto(user);
@@ -419,6 +460,7 @@ export class UsersService {
   async resetHomeLayout(userId: string): Promise<UserDto> {
     const user = await this.prisma.user.update({
       where: { id: userId },
+      include: USER_DTO_INCLUDE,
       data: { homeLayout: Prisma.DbNull },
     });
     return toUserDto(user);
@@ -500,6 +542,7 @@ export class UsersService {
 
     const user = await this.prisma.user.update({
       where: { id: userId },
+      include: USER_DTO_INCLUDE,
       data: {
         displayName: dto.displayName,
         birthDate: nextBirthDate,
@@ -508,7 +551,14 @@ export class UsersService {
         notifyPush: dto.notifyPush,
         notifyNewsletter: dto.notifyNewsletter,
         alertPrefs,
-        newsletterOptInAt,
+        consent: newsletterOptInAt
+          ? {
+              upsert: {
+                create: { newsletterOptInAt },
+                update: { newsletterOptInAt },
+              },
+            }
+          : undefined,
         timezone: dto.timezone,
         enabledDomains: dto.enabledDomains,
         // Empty string clears the bio back to null.
@@ -657,6 +707,7 @@ export class UsersService {
       .$transaction([
         this.prisma.user.update({
           where: { id: userId },
+          include: USER_DTO_INCLUDE,
           data: { email: stored.newEmail },
         }),
         this.prisma.emailChangeRequest.deleteMany({ where: { userId } }),
@@ -711,6 +762,7 @@ export class UsersService {
     await revokeSessionsWith(this.sessionDeps, { userId }, [
       this.prisma.user.update({
         where: { id: userId },
+        include: USER_DTO_INCLUDE,
         data: {
           passwordHash: await bcrypt.hash(dto.newPassword, BCRYPT_ROUNDS),
         },
@@ -968,6 +1020,7 @@ export class UsersService {
 
     const user = await this.prisma.user.update({
       where: { id: userId },
+      include: USER_DTO_INCLUDE,
       data: { username: dto.username },
     });
     return toUserDto(user);
@@ -981,7 +1034,10 @@ export class UsersService {
     userId: string,
     currentPassword: string,
   ): Promise<User> {
-    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: USER_DTO_INCLUDE,
+    });
 
     if (!user) {
       throw new AppException(

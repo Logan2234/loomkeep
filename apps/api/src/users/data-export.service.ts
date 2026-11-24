@@ -8,7 +8,7 @@ import type {
 } from "@loomkeep/shared";
 import { ErrorCode, ReviewTargetType } from "@loomkeep/shared";
 import { HttpStatus, Injectable } from "@nestjs/common";
-import { toUserDto } from "../auth/auth.service";
+import { toUserDto, USER_DTO_INCLUDE } from "../auth/auth.service";
 import { AppException } from "../common/app.exception";
 import { LOAN_INCLUDE, loanFields } from "../common/entry-loan.util";
 import {
@@ -35,7 +35,7 @@ export class DataExportService {
   async buildExport(userId: string): Promise<UserDataExportDto> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      include: { avatarImage: true },
+      include: { avatarImage: true, ...USER_DTO_INCLUDE },
     });
 
     if (!user) {
@@ -407,13 +407,14 @@ export class DataExportService {
       exportedAt: new Date().toISOString(),
       account: toUserDto(user),
       accountRecord: {
-        termsAcceptedAt: user.acceptedTermsAt?.toISOString() ?? null,
-        ageCertifiedAt: user.certifiedAgeAt?.toISOString() ?? null,
-        newsletterOptInAt: user.newsletterOptInAt?.toISOString() ?? null,
+        termsAcceptedAt: user.consent?.acceptedTermsAt?.toISOString() ?? null,
+        ageCertifiedAt: user.consent?.certifiedAgeAt?.toISOString() ?? null,
+        newsletterOptInAt:
+          user.consent?.newsletterOptInAt?.toISOString() ?? null,
         lastActiveAt: user.lastActiveAt?.toISOString() ?? null,
         suspendedUntil: user.suspendedUntil?.toISOString() ?? null,
         equippedBadgeKeys: user.equippedBadgeKeys ?? [],
-        acquisitionSourceOther: user.acquisitionSourceOther,
+        acquisitionSourceOther: user.onboarding?.acquisitionSourceOther ?? null,
         avatar: user.avatarImage
           ? {
               mimeType: user.avatarImage.mimeType,

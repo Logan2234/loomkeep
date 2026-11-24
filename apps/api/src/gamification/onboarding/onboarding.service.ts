@@ -36,18 +36,20 @@ export class OnboardingService {
       return { steps: [], allDone: true };
     }
 
-    const user = await this.prisma.user.findUniqueOrThrow({
-      where: { id: userId },
-      select: {
-        onboardingSkippedSteps: true,
-        onboardingGamifiedCompletedAt: true,
-      },
+    // No row yet: nothing skipped, nothing completed.
+    const row = await this.prisma.userOnboarding.findUnique({
+      where: { userId },
+      select: { skippedSteps: true, gamifiedCompletedAt: true },
     });
+    const user = {
+      skippedSteps: row?.skippedSteps ?? [],
+      gamifiedCompletedAt: row?.gamifiedCompletedAt ?? null,
+    };
 
     // Already finished — served as a stable fact independent of the
     // achievement catalogue (see the schema's note on this field), so a
     // future rework of the checklist's steps never re-proposes it.
-    if (user.onboardingGamifiedCompletedAt) {
+    if (user.gamifiedCompletedAt) {
       return { steps: [], allDone: true };
     }
 
@@ -63,15 +65,11 @@ export class OnboardingService {
       (key) =>
         ONBOARDING_SOCIAL_STEPS.includes(key) &&
         !socialEnabled &&
-        !user.onboardingSkippedSteps.includes(key),
+        !user.skippedSteps.includes(key),
     );
     const skipped = inapplicable.length
-      ? await this.appendSkipped(
-          userId,
-          user.onboardingSkippedSteps,
-          inapplicable,
-        )
-      : user.onboardingSkippedSteps;
+      ? await this.appendSkipped(userId, user.skippedSteps, inapplicable)
+      : user.skippedSteps;
 
     const doneMap = await computeOnboardingDoneMap(this.prisma, userId);
     const steps = applicableKeys.map((key) => ({
@@ -82,9 +80,10 @@ export class OnboardingService {
     const allDone = steps.every((s) => s.done || s.skipped);
 
     if (allDone) {
-      await this.prisma.user.update({
-        where: { id: userId },
-        data: { onboardingGamifiedCompletedAt: new Date() },
+      await this.prisma.userOnboarding.upsert({
+        where: { userId },
+        create: { userId, gamifiedCompletedAt: new Date() },
+        update: { gamifiedCompletedAt: new Date() },
       });
       await this.achievements.evaluate(userId, [COMPLETION_ACHIEVEMENT_KEY]);
     }
@@ -98,13 +97,14 @@ export class OnboardingService {
       throw new AppException(HttpStatus.BAD_REQUEST, ErrorCode.InvalidParam);
     }
 
-    const user = await this.prisma.user.findUniqueOrThrow({
-      where: { id: userId },
-      select: { onboardingSkippedSteps: true },
+    const row = await this.prisma.userOnboarding.findUnique({
+      where: { userId },
+      select: { skippedSteps: true },
     });
+    const user = { skippedSteps: row?.skippedSteps ?? [] };
 
-    if (!user.onboardingSkippedSteps.includes(key)) {
-      await this.appendSkipped(userId, user.onboardingSkippedSteps, [
+    if (!user.skippedSteps.includes(key)) {
+      await this.appendSkipped(userId, user.skippedSteps, [
         key as OnboardingStepKey,
       ]);
     }
@@ -118,9 +118,10 @@ export class OnboardingService {
     additions: OnboardingStepKey[],
   ): Promise<string[]> {
     const next = [...current, ...additions];
-    await this.prisma.user.update({
-      where: { id: userId },
-      data: { onboardingSkippedSteps: next },
+    await this.prisma.userOnboarding.upsert({
+      where: { userId },
+      create: { userId, skippedSteps: next },
+      update: { skippedSteps: next },
     });
     return next;
   }

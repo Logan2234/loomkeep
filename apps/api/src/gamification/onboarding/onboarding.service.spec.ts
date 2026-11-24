@@ -25,8 +25,8 @@ function makeService(
   opts: {
     configValues?: Record<string, string>;
     user?: {
-      onboardingSkippedSteps: string[];
-      onboardingGamifiedCompletedAt: Date | null;
+      skippedSteps: string[];
+      gamifiedCompletedAt: Date | null;
     };
   } = {},
 ) {
@@ -34,16 +34,14 @@ function makeService(
   // is reflected by the `getChecklist()` it chains into right after — same
   // as the real database would, unlike a static mockResolvedValue.
   const user = opts.user ?? {
-    onboardingSkippedSteps: [] as string[],
-    onboardingGamifiedCompletedAt: null as Date | null,
+    skippedSteps: [] as string[],
+    gamifiedCompletedAt: null as Date | null,
   };
   const prisma = {
-    user: {
-      findUniqueOrThrow: vi
-        .fn()
-        .mockImplementation(() => Promise.resolve(user)),
-      update: vi.fn().mockImplementation(({ data }) => {
-        Object.assign(user, data);
+    userOnboarding: {
+      findUnique: vi.fn().mockImplementation(() => Promise.resolve(user)),
+      upsert: vi.fn().mockImplementation(({ update }) => {
+        Object.assign(user, update);
         return Promise.resolve(user);
       }),
     },
@@ -78,14 +76,14 @@ describe("OnboardingService.getChecklist", () => {
     const result = await service.getChecklist("user-1");
 
     expect(result).toEqual({ steps: [], allDone: true });
-    expect(prisma.user.findUniqueOrThrow).not.toHaveBeenCalled();
+    expect(prisma.userOnboarding.findUnique).not.toHaveBeenCalled();
   });
 
   it("returns an empty, already-done checklist once completed, without recomputing", async () => {
     const { service, prisma } = makeService({
       user: {
-        onboardingSkippedSteps: [],
-        onboardingGamifiedCompletedAt: new Date("2026-01-01"),
+        skippedSteps: [],
+        gamifiedCompletedAt: new Date("2026-01-01"),
       },
     });
 
@@ -93,7 +91,7 @@ describe("OnboardingService.getChecklist", () => {
 
     expect(result).toEqual({ steps: [], allDone: true });
     expect(computeOnboardingDoneMap).not.toHaveBeenCalled();
-    expect(prisma.user.update).not.toHaveBeenCalled();
+    expect(prisma.userOnboarding.upsert).not.toHaveBeenCalled();
   });
 
   it("auto-skips social-only steps when SOCIAL_ENABLED is off, persisting them once", async () => {
@@ -110,32 +108,31 @@ describe("OnboardingService.getChecklist", () => {
     const keys = result.steps.map((s) => s.key);
     expect(keys).not.toContain("create_list");
     expect(keys).not.toContain("comment");
-    expect(prisma.user.update).toHaveBeenCalledWith({
-      where: { id: "user-1" },
-      data: {
-        onboardingSkippedSteps: expect.arrayContaining([
-          "create_list",
-          "comment",
-        ]),
-      },
-    });
+    expect(prisma.userOnboarding.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { userId: "user-1" },
+        update: {
+          skippedSteps: expect.arrayContaining(["create_list", "comment"]),
+        },
+      }),
+    );
   });
 
   it("does not re-append social steps already recorded as skipped", async () => {
     const { service, prisma } = makeService({
       configValues: { SOCIAL_ENABLED: "false" },
       user: {
-        onboardingSkippedSteps: ["create_list", "comment"],
-        onboardingGamifiedCompletedAt: null,
+        skippedSteps: ["create_list", "comment"],
+        gamifiedCompletedAt: null,
       },
     });
 
     await service.getChecklist("user-1");
 
-    expect(prisma.user.update).not.toHaveBeenCalledWith(
+    expect(prisma.userOnboarding.upsert).not.toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({
-          onboardingSkippedSteps: expect.anything(),
+        update: expect.objectContaining({
+          skippedSteps: expect.anything(),
         }),
       }),
     );
@@ -158,10 +155,12 @@ describe("OnboardingService.getChecklist", () => {
     const result = await service.getChecklist("user-1");
 
     expect(result.allDone).toBe(true);
-    expect(prisma.user.update).toHaveBeenCalledWith({
-      where: { id: "user-1" },
-      data: { onboardingGamifiedCompletedAt: expect.any(Date) },
-    });
+    expect(prisma.userOnboarding.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { userId: "user-1" },
+        update: { gamifiedCompletedAt: expect.any(Date) },
+      }),
+    );
     expect(achievements.evaluate).toHaveBeenCalledWith("user-1", [
       "premiere_seance",
     ]);
@@ -171,8 +170,8 @@ describe("OnboardingService.getChecklist", () => {
     computeOnboardingDoneMap.mockResolvedValue({ ...ALL_DONE, comment: false });
     const { service } = makeService({
       user: {
-        onboardingSkippedSteps: ["comment"],
-        onboardingGamifiedCompletedAt: null,
+        skippedSteps: ["comment"],
+        gamifiedCompletedAt: null,
       },
     });
 
@@ -201,15 +200,17 @@ describe("OnboardingService.skip", () => {
     });
   });
 
-  it("appends the key to onboardingSkippedSteps and returns the recomputed checklist", async () => {
+  it("appends the key to skippedSteps and returns the recomputed checklist", async () => {
     const { service, prisma } = makeService();
 
     const result = await service.skip("user-1", "add_title");
 
-    expect(prisma.user.update).toHaveBeenCalledWith({
-      where: { id: "user-1" },
-      data: { onboardingSkippedSteps: ["add_title"] },
-    });
+    expect(prisma.userOnboarding.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { userId: "user-1" },
+        update: { skippedSteps: ["add_title"] },
+      }),
+    );
     const addTitle = result.steps.find((s) => s.key === "add_title");
     expect(addTitle?.skipped).toBe(true);
   });
@@ -217,16 +218,16 @@ describe("OnboardingService.skip", () => {
   it("is idempotent — skipping an already-skipped step doesn't append it twice", async () => {
     const { service, prisma } = makeService({
       user: {
-        onboardingSkippedSteps: ["add_title"],
-        onboardingGamifiedCompletedAt: null,
+        skippedSteps: ["add_title"],
+        gamifiedCompletedAt: null,
       },
     });
 
     await service.skip("user-1", "add_title");
 
-    expect(prisma.user.update).not.toHaveBeenCalledWith(
+    expect(prisma.userOnboarding.upsert).not.toHaveBeenCalledWith(
       expect.objectContaining({
-        data: { onboardingSkippedSteps: expect.anything() },
+        update: { skippedSteps: expect.anything() },
       }),
     );
   });

@@ -191,13 +191,13 @@ export async function checkPremiereSeance(
   prisma: PrismaService,
   userId: string,
 ): Promise<AchievementCheckResult> {
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { onboardingSkippedSteps: true },
+  const onboarding = await prisma.userOnboarding.findUnique({
+    where: { userId },
+    select: { skippedSteps: true },
   });
   const doneMap = await computeOnboardingDoneMap(prisma, userId);
   const unlocked = Object.entries(doneMap).every(
-    ([key, done]) => done || (user?.onboardingSkippedSteps ?? []).includes(key),
+    ([key, done]) => done || (onboarding?.skippedSteps ?? []).includes(key),
   );
   return { unlocked };
 }

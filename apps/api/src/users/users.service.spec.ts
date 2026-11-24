@@ -5,6 +5,7 @@ import { Prisma } from "@prisma/client";
 import * as bcrypt from "bcryptjs";
 import { vi, type Mock } from "vitest";
 import type { ApiKeysService } from "../api-keys/api-keys.service";
+import { USER_DTO_INCLUDE } from "../auth/auth.service";
 import { SessionCacheService } from "../auth/session-cache.service";
 import { AppException } from "../common/app.exception";
 import { sha256Hex } from "../common/crypto.util";
@@ -188,6 +189,7 @@ describe("UsersService — email change", () => {
 
       expect(prisma.user.update).toHaveBeenCalledWith({
         where: { id: userId },
+        include: USER_DTO_INCLUDE,
         data: { email: "new@example.com" },
       });
       expect(prisma.emailChangeRequest.deleteMany).toHaveBeenCalledWith({
@@ -314,6 +316,7 @@ describe("UsersService — home layout", () => {
 
     expect(prisma.user.update).toHaveBeenCalledWith({
       where: { id: userId },
+      include: USER_DTO_INCLUDE,
       data: { homeLayout: Prisma.DbNull },
     });
   });
@@ -329,6 +332,7 @@ describe("UsersService — home layout", () => {
 
     expect(prisma.user.update).toHaveBeenCalledWith({
       where: { id: userId },
+      include: USER_DTO_INCLUDE,
       data: {
         homePhoneLayout: {
           widgets: [
@@ -345,6 +349,7 @@ describe("UsersService — home layout", () => {
 
     expect(prisma.user.update).toHaveBeenCalledWith({
       where: { id: userId },
+      include: USER_DTO_INCLUDE,
       data: { homePhoneLayout: Prisma.DbNull },
     });
   });
@@ -404,38 +409,45 @@ describe("UsersService — updateMe newsletter opt-in timestamp", () => {
     );
   }
 
-  it("stamps newsletterOptInAt on the false → true transition", async () => {
+  it("stamps the newsletter opt-in on the false → true transition", async () => {
     makeService(false);
 
     await service.updateMe(userId, { notifyNewsletter: true });
 
     expect(prisma.user.update).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({ newsletterOptInAt: expect.any(Date) }),
+        data: expect.objectContaining({
+          consent: {
+            upsert: {
+              create: { newsletterOptInAt: expect.any(Date) },
+              update: { newsletterOptInAt: expect.any(Date) },
+            },
+          },
+        }),
       }),
     );
   });
 
-  it("leaves newsletterOptInAt untouched when already opted in", async () => {
+  it("leaves the newsletter opt-in untouched when already opted in", async () => {
     makeService(true);
 
     await service.updateMe(userId, { notifyNewsletter: true });
 
     expect(prisma.user.update).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({ newsletterOptInAt: undefined }),
+        data: expect.objectContaining({ consent: undefined }),
       }),
     );
   });
 
-  it("leaves newsletterOptInAt untouched on opt-out", async () => {
+  it("leaves the newsletter opt-in untouched on opt-out", async () => {
     makeService(true);
 
     await service.updateMe(userId, { notifyNewsletter: false });
 
     expect(prisma.user.update).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({ newsletterOptInAt: undefined }),
+        data: expect.objectContaining({ consent: undefined }),
       }),
     );
   });
@@ -937,12 +949,17 @@ describe("UsersService.getMyEntitlement", () => {
 
 describe("UsersService — setAcquisitionSource", () => {
   const userId = "user-1";
+  let createMany: Mock;
   let updateMany: Mock;
 
+  // By default the onboarding row already exists, so createMany skips it.
   function makeService(env: Record<string, string>) {
+    createMany = vi.fn().mockResolvedValue({ count: 0 });
     updateMany = vi.fn().mockResolvedValue({ count: 1 });
     const service = new UsersService(
-      { user: { updateMany } } as unknown as PrismaService,
+      {
+        userOnboarding: { createMany, updateMany },
+      } as unknown as PrismaService,
       {} as unknown as MailService,
       {} as unknown as SecurityEventService,
       {} as unknown as DataExportService,
@@ -966,9 +983,24 @@ describe("UsersService — setAcquisitionSource", () => {
     await service.setAcquisitionSource(userId, { source: "REDDIT" });
 
     expect(updateMany).toHaveBeenCalledWith({
-      where: { id: userId, acquisitionSource: null },
+      where: { userId, acquisitionSource: null },
       data: { acquisitionSource: "REDDIT", acquisitionSourceOther: null },
     });
+  });
+
+  it("creates the onboarding row with the answer when there is none", async () => {
+    const service = makeService({ ASK_ACQUISITION_SOURCE: "true" });
+    createMany.mockResolvedValueOnce({ count: 1 });
+
+    await service.setAcquisitionSource(userId, { source: "REDDIT" });
+
+    expect(createMany).toHaveBeenCalledWith({
+      data: [
+        { userId, acquisitionSource: "REDDIT", acquisitionSourceOther: null },
+      ],
+      skipDuplicates: true,
+    });
+    expect(updateMany).not.toHaveBeenCalled();
   });
 
   it("never replaces an existing answer", async () => {
@@ -1003,7 +1035,7 @@ describe("UsersService — setAcquisitionSource", () => {
     await expect(
       service.setAcquisitionSource(userId, { source: "REDDIT", other: "hi" }),
     ).rejects.toMatchObject({ code: ErrorCode.ValidationFailed });
-    expect(updateMany).not.toHaveBeenCalled();
+    expect(createMany).not.toHaveBeenCalled();
   });
 
   it("refuses when the instance doesn't ask", async () => {
@@ -1012,7 +1044,7 @@ describe("UsersService — setAcquisitionSource", () => {
     await expect(
       service.setAcquisitionSource(userId, { source: "REDDIT" }),
     ).rejects.toMatchObject({ code: ErrorCode.UserAcquisitionSourceDisabled });
-    expect(updateMany).not.toHaveBeenCalled();
+    expect(createMany).not.toHaveBeenCalled();
   });
 });
 

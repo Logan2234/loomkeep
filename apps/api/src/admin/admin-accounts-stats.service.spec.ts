@@ -15,6 +15,10 @@ function make(users: unknown[] = [], departures: unknown[] = []) {
       findMany: vi.fn().mockResolvedValue(users),
       groupBy: vi.fn().mockResolvedValue([]),
     },
+    userOnboarding: {
+      groupBy: vi.fn().mockResolvedValue([]),
+      findMany: vi.fn().mockResolvedValue([]),
+    },
     refreshToken: { count: vi.fn().mockResolvedValue(0) },
     accountDeletionFeedback: {
       groupBy: vi.fn().mockResolvedValue(departures),
@@ -116,23 +120,13 @@ describe("AdminAccountsStatsService departures", () => {
 describe("AdminAccountsStatsService acquisition", () => {
   it("ranks the answers and lists the latest free texts", async () => {
     const { service, prisma } = make();
-    (prisma.user.groupBy as Mock).mockImplementation(({ by }) =>
-      Promise.resolve(
-        by[0] === "acquisitionSource"
-          ? [
-              { acquisitionSource: "REDDIT", _count: { _all: 2 } },
-              { acquisitionSource: "FRIEND", _count: { _all: 5 } },
-            ]
-          : [],
-      ),
-    );
-    (prisma.user.findMany as Mock).mockImplementation(({ where }) =>
-      Promise.resolve(
-        where?.acquisitionSourceOther
-          ? [{ acquisitionSourceOther: "A podcast" }]
-          : [],
-      ),
-    );
+    (prisma.userOnboarding.groupBy as Mock).mockResolvedValue([
+      { acquisitionSource: "REDDIT", _count: { _all: 2 } },
+      { acquisitionSource: "FRIEND", _count: { _all: 5 } },
+    ]);
+    (prisma.userOnboarding.findMany as Mock).mockResolvedValue([
+      { acquisitionSourceOther: "A podcast" },
+    ]);
 
     const stats = await service.getStats();
 

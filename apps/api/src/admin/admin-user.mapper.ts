@@ -16,6 +16,8 @@ export const ADMIN_USER_INCLUDE = {
     select: { label: true, createdBy: { select: { displayName: true } } },
   },
   _count: { select: { webauthnCredentials: true } },
+  consent: true,
+  onboarding: true,
 } satisfies Prisma.UserInclude;
 
 export type AdminUserRow = Prisma.UserGetPayload<{
@@ -70,7 +72,7 @@ export function toAdminUserDto(
     libraryCounts: extras.libraryCounts,
     enabledDomains: u.enabledDomains as Domain[],
     secondFactors,
-    onboarded: u.onboardedAt !== null,
+    onboarded: (u.onboarding?.onboardedAt ?? null) !== null,
     online: extras.online,
   };
 }

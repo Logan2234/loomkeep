@@ -209,11 +209,11 @@ export class AdminUsersService {
     return {
       user: row,
       journey: {
-        onboardedAt: user.onboardedAt?.toISOString() ?? null,
-        acquisitionSource: user.acquisitionSource,
-        acquisitionSourceOther: user.acquisitionSourceOther,
-        acceptedTermsVersion: user.acceptedTermsVersion,
-        acceptedTermsAt: user.acceptedTermsAt?.toISOString() ?? null,
+        onboardedAt: user.onboarding?.onboardedAt?.toISOString() ?? null,
+        acquisitionSource: user.onboarding?.acquisitionSource ?? null,
+        acquisitionSourceOther: user.onboarding?.acquisitionSourceOther ?? null,
+        acceptedTermsVersion: user.consent?.acceptedTermsVersion ?? null,
+        acceptedTermsAt: user.consent?.acceptedTermsAt?.toISOString() ?? null,
         ageBracket: user.birthDate ? ageBracket(user.birthDate, now) : null,
       },
       security: {
@@ -246,7 +246,8 @@ export class AdminUsersService {
         notifyEmail: user.notifyEmail,
         notifyPush: user.notifyPush,
         newsletter: user.notifyNewsletter,
-        newsletterOptInAt: user.newsletterOptInAt?.toISOString() ?? null,
+        newsletterOptInAt:
+          user.consent?.newsletterOptInAt?.toISOString() ?? null,
         profileAccess: user.profileAccess,
         defaultReviewVisibility: user.defaultReviewVisibility,
         allowAdultContent: user.allowAdultContent,

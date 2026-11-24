@@ -1,11 +1,22 @@
-import type { User, UserAvatar } from "@prisma/client";
+import type {
+  User,
+  UserAvatar,
+  UserConsent,
+  UserOnboarding,
+} from "@prisma/client";
 import { vi, type Mock } from "vitest";
 import { AppException } from "../common/app.exception";
 import type { PrismaService } from "../prisma/prisma.service";
 import { DataExportService } from "./data-export.service";
 
 function makeUser(
-  overrides: Partial<User & { avatarImage: UserAvatar | null }> = {},
+  overrides: Partial<
+    User & {
+      avatarImage: UserAvatar | null;
+      consent: UserConsent | null;
+      onboarding: UserOnboarding | null;
+    }
+  > = {},
 ): User {
   return {
     id: "user-1",
@@ -393,16 +404,27 @@ describe("DataExportService.buildExport", () => {
     const { service, prisma } = makeService();
     (prisma.user.findUnique as Mock).mockResolvedValue(
       makeUser({
-        acceptedTermsAt: new Date("2026-01-01T00:00:00.000Z"),
-        certifiedAgeAt: new Date("2026-01-01T00:00:00.000Z"),
+        consent: {
+          userId: "user-1",
+          acceptedTermsAt: new Date("2026-01-01T00:00:00.000Z"),
+          acceptedTermsVersion: null,
+          certifiedAgeAt: new Date("2026-01-01T00:00:00.000Z"),
+          newsletterOptInAt: null,
+        },
         avatarImage: {
           userId: "user-1",
           data: Buffer.from("png-bytes"),
           mimeType: "image/png",
         },
         equippedBadgeKeys: ["first_review"],
-        acquisitionSource: "OTHER",
-        acquisitionSourceOther: "A podcast",
+        onboarding: {
+          userId: "user-1",
+          onboardedAt: null,
+          acquisitionSource: "OTHER",
+          acquisitionSourceOther: "A podcast",
+          skippedSteps: [],
+          gamifiedCompletedAt: null,
+        },
       }),
     );
     (prisma.mediaEntry.findMany as Mock).mockResolvedValue([

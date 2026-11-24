@@ -71,6 +71,10 @@ function makeService(adminEmail?: string, registrationEnabled?: string) {
     user: {
       findUnique: vi.fn(),
       findFirst: vi.fn(),
+      // The consent and onboarding rows toUserDto reads.
+      findUniqueOrThrow: vi
+        .fn()
+        .mockResolvedValue({ consent: null, onboarding: null }),
       create: vi.fn(),
       update: vi.fn(),
     },
@@ -485,9 +489,10 @@ describe("AuthService.register", () => {
       await bcrypt.compare("secret1234", createArgs.data.passwordHash),
     ).toBe(true);
     expect(createArgs.data.username).toBe("alice");
-    expect(createArgs.data.acceptedTermsAt).toBeInstanceOf(Date);
-    expect(createArgs.data.acceptedTermsVersion).toBeTruthy();
-    expect(createArgs.data.certifiedAgeAt).toBeInstanceOf(Date);
+    const consent = createArgs.data.consent.create;
+    expect(consent.acceptedTermsAt).toBeInstanceOf(Date);
+    expect(consent.acceptedTermsVersion).toBeTruthy();
+    expect(consent.certifiedAgeAt).toBeInstanceOf(Date);
 
     expect(result.user.email).toBe("alice@example.com");
     expect(result.tokens.accessToken).toBeTruthy();

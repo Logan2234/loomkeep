@@ -440,7 +440,7 @@ export class AchievementService {
   private async recomputeRarity(): Promise<number> {
     const activeSince = sinceDaysAgo(new Date(), RARITY_ACTIVE_WINDOW_DAYS);
     const eligible: Prisma.UserWhereInput = {
-      onboardedAt: { not: null },
+      onboarding: { onboardedAt: { not: null } },
       lastActiveAt: { gte: activeSince },
       profileAccess: { not: "GHOST" },
       hideProgression: false,

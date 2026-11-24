@@ -522,192 +522,142 @@ enum MusicStatus {
 }
 
 model User {
-  id                            String                 @id @default(cuid())
-  email                         String                 @unique
-  passwordHash                  String
+  id                      String                 @id @default(cuid())
+  email                   String                 @unique
+  passwordHash            String
   // Free-form label shown around the app; not unique. See `username` for the
   // unique, login-capable handle.
-  displayName                   String
+  displayName             String
   // Unique login handle (alongside email). Assigned at registration, editable
   // in Sécurité.
-  username                      String                 @unique
-  birthDate                     DateTime?
+  username                String                 @unique
+  birthDate               DateTime?
   // Opt-in to 18+ titles; only effective when birthDate proves the account is 18+.
-  allowAdultContent             Boolean                @default(false)
+  allowAdultContent       Boolean                @default(false)
   // Opt-out from showing gamification progression (level/XP) to OTHER
   // viewers — the owner always sees their own real progress regardless.
   // Same gating role as GHOST/anonymized for the streak badge, but a
   // standing user preference rather than a mode switch.
-  hideProgression               Boolean                @default(false)
+  hideProgression         Boolean                @default(false)
   // Messages: whether friends see this account online (and typing), and when
   // it read their messages. Reciprocal by design: switched off, the account
   // no longer sees either from anyone else.
-  chatShowPresence              Boolean                @default(true)
-  chatShowReadReceipts          Boolean                @default(true)
+  chatShowPresence        Boolean                @default(true)
+  chatShowReadReceipts    Boolean                @default(true)
   // Messages' /where: friends see which of `watchProviderIds` this account
   // has. Off by default — a subscription list is the account's own business.
-  chatShareWatchProviders       Boolean                @default(false)
+  chatShareWatchProviders Boolean                @default(false)
   // Shows the feedback (Quackback) launcher. An instance without
   // PUBLIC_QUACKBACK_URL has no launcher at all, whatever this says.
-  feedbackWidget                Boolean                @default(true)
+  feedbackWidget          Boolean                @default(true)
   // Up to 3 unlocked, non-secret achievement keys shown on the profile.
   // Equipping a key freezes that tier rather than following the highest tier;
   // an achievement's tiers are separate keys (cinephile_bronze vs
   // cinephile_gold), so equipping one just picks a key like any other.
-  equippedBadgeKeys             String[]               @default([])
-  // "Première séance" checklist. Steps explicitly skipped by
-  // the user (one-way — there is no "unskip"); a step's *done* state is
-  // never stored here, always re-derived live from the real data (see
-  // OnboardingService) so completing step 3 out of order still marks it
-  // done once the user reaches it. `onboardingGamifiedCompletedAt` is set
-  // once and never cleared, independent of the achievement catalogue, so a
-  // future rework of the checklist's steps never re-proposes it to someone
-  // who already finished the old one.
-  onboardingSkippedSteps        String[]               @default([])
-  onboardingGamifiedCompletedAt DateTime?
+  equippedBadgeKeys       String[]               @default([])
   // Communication preferences: cadence at which each channel delivers the
   // "new episode" digest. See DigestCadence.
-  notifyEmail                   DigestCadence          @default(WEEKLY)
-  notifyPush                    DigestCadence          @default(WEEKLY)
+  notifyEmail             DigestCadence          @default(WEEKLY)
+  notifyPush              DigestCadence          @default(WEEKLY)
   // IANA timezone (e.g. "Europe/Paris"), used to time the digest at a local
   // hour. Auto-detected client-side at onboarding, editable afterwards.
-  timezone                      String                 @default("Europe/Paris")
+  timezone                String                 @default("Europe/Paris")
   // Per-alert channel choices that differ from the default, keyed like
   // ALERTS in packages/shared/src/alerts.ts: { COMMENT_REPLY: { push: true } }.
-  alertPrefs                    Json                   @default("{}")
+  alertPrefs              Json                   @default("{}")
   // Last time the bell or the notifications page was opened: what arrived
   // after it counts toward the badge, the rest is seen but maybe unread.
-  notificationsSeenAt           DateTime?
+  notificationsSeenAt     DateTime?
   // Opt-in to the release newsletter (sent automatically when a changelog
   // entry is published on Quackback — see NewsletterService) — separate
   // from notifyEmail, which is scoped to "new episode" alerts, not marketing.
-  notifyNewsletter              Boolean                @default(false)
-  // Proof-of-consent timestamp (GDPR art. 7(1)): set the moment
-  // notifyNewsletter flips false → true, left untouched afterwards — including
-  // across a later opt-out — so it always records when consent was last given.
-  newsletterOptInAt             DateTime?
-  // Stable per-user unsubscribe link target, lazily generated on first
-  // newsletter send and reused in every subsequent one — not a
-  // single-use/expiring UserToken, since minting one per recipient per send
-  // would grow the token table without bound as the newsletter goes out
-  // repeatedly. Low-stakes if it ever leaked (only lets someone toggle this
-  // one preference off), so it's a plain unguessable string, not hashed.
-  newsletterUnsubscribeToken    String?                @unique
+  notifyNewsletter        Boolean                @default(false)
   // Set once the verification email's link has been opened. Informational only
   // in self-host (no feature is gated on it) — see UserToken.
-  emailVerified                 Boolean                @default(false)
+  emailVerified           Boolean                @default(false)
   // Free-form public bio shown on the social profile (P4). Null until set.
-  bio                           String?
+  bio                     String?
   // When the profile picture (UserAvatar) was last set: null exactly when
   // there is none. Kept here, not on UserAvatar, because every user summary
   // reads it to build (and cache-bust) the GET /users/:id/avatar URL.
-  avatarUpdatedAt               DateTime?
+  avatarUpdatedAt         DateTime?
   // Social (P4): how reachable this profile is. Default PRIVATE — the safe
   // default (nothing exposed to the public without an accepted follow). The
   // per-domain/facet audiences live in VisibilitySetting.
-  profileAccess                 ProfileAccess          @default(PRIVATE)
+  profileAccess           ProfileAccess          @default(PRIVATE)
   // Default audience applied to a new review unless overridden at publication.
-  defaultReviewVisibility       ReviewVisibility       @default(FRIENDS)
+  defaultReviewVisibility ReviewVisibility       @default(FRIENDS)
   // Default audience applied to a new list unless overridden at creation.
-  defaultListVisibility         ListVisibility         @default(PRIVATE)
+  defaultListVisibility   ListVisibility         @default(PRIVATE)
   // Overrides the per-context "already finished this, so reveal" default
   // that reviews and comments otherwise apply on their own.
-  spoilerSensitivity            SpoilerSensitivity     @default(AUTO)
+  spoilerSensitivity      SpoilerSensitivity     @default(AUTO)
   // Operational permission level (gates /admin). Separate axis from the paid
   // tier (see UserEntitlement below): an admin isn't "the highest tier".
-  role                          Role                   @default(USER)
+  role                    Role                   @default(USER)
   // Composition seam: content domains the user enabled. Drives the nav today;
   // search/notif filtering follow at P3. Empty by default — the onboarding
   // wizard's domain step is what actually turns these on for a new account.
-  enabledDomains                Domain[]               @default([])
+  enabledDomains          Domain[]               @default([])
   // Display order for the domain browser (settings tiles, desktop rail's
   // Library section). Partial and total-safe: a domain missing from it (a
   // brand-new one, or before this preference ever existed) just keeps its
   // canonical position at the end — see web domains.ts's orderedDomains().
-  domainOrder                   Domain[]               @default([])
+  domainOrder             Domain[]               @default([])
   // Country whose streaming offers the detail pages show (ISO 3166-1, "FR").
   // Null means automatic: taken from the browser's Accept-Language on each
   // request — see resolveWatchRegion().
-  watchRegion                   String?
+  watchRegion             String?
   // TMDB watch provider ids of the services the user has, put first (and in
   // colour) wherever a title's offers are listed. Not tied to a region: the
   // ids are global, a region only decides which of them offer a title.
-  watchProviderIds              Int[]                  @default([])
+  watchProviderIds        Int[]                  @default([])
   // ListenService values, put first on an album's page.
-  listenServices                String[]               @default([])
+  listenServices          String[]               @default([])
   // The home page's widget grid (shared HomeLayoutDto). Null means the
   // default grid, which the web builds from the enabled domains — stored
   // only once the user edits the page, so the default keeps evolving.
-  homeLayout                    Json?
+  homeLayout              Json?
   // The phone home's widgets in order (shared HomePhoneLayoutDto), apart
   // from the desktop grid. Null means the phone default, built on the web.
-  homePhoneLayout               Json?
+  homePhoneLayout         Json?
   // UI language (Paraglide locale code, "fr" or "en"). Set from the
   // Accept-Language header at registration (see AuthService.register), and
   // editable from Réglages > Apparence — this is also the sync-across-devices
   // seam.
-  locale                        String                 @default("fr")
-  // Opaque secret for the public .ics calendar subscription URL (not hashed:
-  // looked up directly by calendar apps, which can't send an Authorization
-  // header). Null until first requested from Réglages > Export.
-  calendarToken                 String?                @unique
-  // Same pattern as calendarToken, for the public Atom activity feed
-  // (ee/social/activity-feed): a feed reader can't send an Authorization
-  // header either. Null until first requested from Réglages > Vie privée.
-  activityFeedToken             String?                @unique
-  createdAt                     DateTime               @default(now())
-  updatedAt                     DateTime               @updatedAt
-  // Set once the mandatory first-run onboarding wizard is completed (see
-  // POST /users/me/complete-onboarding). Null gates app/+layout.svelte into
-  // showing the wizard instead of the app chrome — including for accounts
-  // that existed before this field shipped.
-  onboardedAt                   DateTime?
-  // "How did you hear of Loomkeep?", asked at the end of onboarding: written
-  // once, never replaced (POST /users/me/acquisition-source). The free text
-  // only goes with OTHER.
-  acquisitionSource             AcquisitionSource?
-  acquisitionSourceOther        String?
-  // Proof-of-consent for the CGU: the LEGAL_VERSION in effect when
-  // the user last accepted, and when. Null for accounts predating this field
-  // (backfilled by migration to the version in effect at that time — see
-  // 20260820000000_add_accepted_terms). app/+layout.svelte blocks with a
-  // re-acceptance prompt when acceptedTermsVersion no longer matches the
-  // current LEGAL_VERSION.
-  acceptedTermsAt               DateTime?
-  acceptedTermsVersion          String?
-  // when the user self-certified being at least 15 (register.dto.ts
-  // requires it). Null for accounts predating this field.
-  certifiedAgeAt                DateTime?
+  locale                  String                 @default("fr")
+  createdAt               DateTime               @default(now())
+  updatedAt               DateTime               @updatedAt
   // last time this account did anything that proves a human is still
   // behind it — bumped on register, login and refresh-token rotation (not
   // just login, since a long-lived session never re-enters credentials).
   // Drives both the admin "last active" column and the inactive-account job
   // below. Null only for accounts predating this field (backfilled by
   // migration from the best signal then available).
-  lastActiveAt                  DateTime?
+  lastActiveAt            DateTime?
   // Set when the inactivity reminder email is sent (see
   // InactiveAccountService); cleared back to null the moment lastActiveAt is
   // next bumped, so a returning user gets the full inactivity window again
   // instead of being deleted on the strength of a stale warning.
-  inactivityWarningSentAt       DateTime?
+  inactivityWarningSentAt DateTime?
   // Moderation suspension: the account is suspended while this is in the
   // future (login refused, profile unreachable, no email or push), and
   // active again on its own once it passes. Null means never suspended or
   // lifted early by an admin.
-  suspendedUntil                DateTime?
+  suspendedUntil          DateTime?
   // Self-requested deletion, carried out by ScheduledDeletionService once
   // this passes. Nothing else changes in the meantime: the account keeps
   // working, and signing in is enough to cancel. Null when none is scheduled.
-  deletionScheduledFor          DateTime?
+  deletionScheduledFor    DateTime?
   // The reason picked when asking, moved to AccountDeletionFeedback (with
   // no link to the account) at the actual deletion.
-  deletionReason                AccountDeletionReason?
+  deletionReason          AccountDeletionReason?
   // SHA-256 of the token in the "deletion scheduled" email's cancel link.
-  deletionCancelTokenHash       String?                @unique
+  deletionCancelTokenHash String?                @unique
   // Invitation this account signed up through — null for an open
   // registration. "Invité par" is read through invitation.createdBy rather
   // than a second FK. SetNull: purging an invitation never touches accounts.
-  invitationId                  String?
+  invitationId            String?
 
   // MFA
   // Two independently-toggleable methods; admin accounts with neither active
@@ -777,12 +727,90 @@ model User {
   score                      UserScore?
   achievements               UserAchievement[]
   sessionTimer               SessionTimer?
+  // Read once in an account's life, kept off the User row: see each model.
+  consent                    UserConsent?
+  onboarding                 UserOnboarding?
+  urlTokens                  UserUrlToken?
   avatarImage                UserAvatar?
   invitation                 Invitation?            @relation("InvitedVia", fields: [invitationId], references: [id], onDelete: SetNull)
   invitationsCreated         Invitation[]           @relation("InvitationsCreated")
 
   @@index([lastActiveAt])
   @@index([invitationId])
+}
+
+// Proof of consent (GDPR art. 7(1)). Created at sign-up; an older account
+// has one whenever any field was set. Written by upsert: no row reads as
+// "nothing given".
+model UserConsent {
+  userId               String    @id
+  // The LEGAL_VERSION in effect when the user last accepted the CGU, and
+  // when. Null for accounts predating these fields (backfilled by migration
+  // to the version in effect at that time — see
+  // 20260820000000_add_accepted_terms). app/+layout.svelte blocks with a
+  // re-acceptance prompt when acceptedTermsVersion no longer matches the
+  // current LEGAL_VERSION.
+  acceptedTermsAt      DateTime?
+  acceptedTermsVersion String?
+  // When the user self-certified being at least 15 (register.dto.ts
+  // requires it). Null for accounts predating this field.
+  certifiedAgeAt       DateTime?
+  // Set the moment notifyNewsletter flips false → true, left untouched
+  // afterwards — including across a later opt-out — so it always records
+  // when consent was last given.
+  newsletterOptInAt    DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// First-run onboarding. Written lazily (upsert): no row reads as "nothing
+// done yet".
+model UserOnboarding {
+  userId                 String             @id
+  // Set once the mandatory first-run wizard is completed (see
+  // POST /users/me/complete-onboarding). Null gates app/+layout.svelte into
+  // showing the wizard instead of the app chrome.
+  onboardedAt            DateTime?
+  // "How did you hear of Loomkeep?", asked at the end of onboarding: written
+  // once, never replaced (POST /users/me/acquisition-source). The free text
+  // only goes with OTHER.
+  acquisitionSource      AcquisitionSource?
+  acquisitionSourceOther String?
+  // "Première séance" checklist. Steps explicitly skipped by the user
+  // (one-way — there is no "unskip"); a step's *done* state is never stored
+  // here, always re-derived live from the real data (see OnboardingService)
+  // so completing step 3 out of order still marks it done once the user
+  // reaches it. `gamifiedCompletedAt` is set once and never cleared,
+  // independent of the achievement catalogue, so a future rework of the
+  // checklist's steps never re-proposes it to someone who already finished
+  // the old one.
+  skippedSteps           String[]           @default([])
+  gamifiedCompletedAt    DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Admin stats group accounts by how they heard of Loomkeep.
+  @@index([acquisitionSource])
+}
+
+// Opaque secrets for public URLs that can't send an Authorization header.
+// Not hashed: they are looked up directly. Written lazily (upsert) the first
+// time each is needed.
+model UserUrlToken {
+  userId                     String  @id
+  // The .ics calendar subscription. Null until first requested from
+  // Réglages > Export.
+  calendarToken              String? @unique
+  // The public Atom activity feed (ee/social/activity-feed). Null until
+  // first requested from Réglages > Vie privée.
+  activityFeedToken          String? @unique
+  // The newsletter's unsubscribe link, generated on first send and reused
+  // in every later one — not a single-use UserToken, which would grow
+  // without bound with each send. Low-stakes if it leaked (it only turns
+  // this one preference off).
+  newsletterUnsubscribeToken String? @unique
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 // The profile picture's bytes, in the database (not on disk) so they ride
