@@ -10,6 +10,7 @@ import { type PushAction, signAction } from "./notification-action";
 import { isAllowedPushEndpoint } from "./push-endpoint.validator";
 
 const WEB_PUSH_TIMEOUT_MS = 10_000;
+const MAX_PUSH_DEVICES_PER_USER = 20;
 
 export interface PushPayload {
   title: string;
@@ -112,6 +113,7 @@ export class PushService {
       update: { userId, p256dh, auth, userAgent },
       create: { userId, endpoint, p256dh, auth, userAgent },
     });
+    await this.dropDevicesBeyondCap(userId);
   }
 
   /**
@@ -137,6 +139,25 @@ export class PushService {
         actions,
       },
     });
+    await this.dropDevicesBeyondCap(userId);
+  }
+
+  // Every notification goes out to all of an account's devices at once:
+  // without a cap, one account could make each of its events cost thousands
+  // of sends.
+  private async dropDevicesBeyondCap(userId: string): Promise<void> {
+    const excess = await this.prisma.pushSubscription.findMany({
+      where: { userId },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      skip: MAX_PUSH_DEVICES_PER_USER,
+      select: { id: true },
+    });
+
+    if (excess.length > 0) {
+      await this.prisma.pushSubscription.deleteMany({
+        where: { id: { in: excess.map((sub) => sub.id) } },
+      });
+    }
   }
 
   // An endpoint belongs to the browser or app install that issued it — never
