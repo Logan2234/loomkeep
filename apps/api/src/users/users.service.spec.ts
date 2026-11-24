@@ -738,7 +738,7 @@ describe("UsersService — deletionSummary", () => {
   beforeEach(() => {
     prisma = {
       refreshToken: { count: vi.fn().mockResolvedValue(0) },
-      libraryEntry: { count: vi.fn().mockResolvedValue(0) },
+      mediaEntry: { count: vi.fn().mockResolvedValue(0) },
       episodeWatch: { count: vi.fn().mockResolvedValue(0) },
       movieReplay: { count: vi.fn().mockResolvedValue(0) },
       gameEntry: { count: vi.fn().mockResolvedValue(0) },

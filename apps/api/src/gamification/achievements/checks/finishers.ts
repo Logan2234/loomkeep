@@ -9,9 +9,9 @@ export async function checkCultFilm(
   userId: string,
 ): Promise<AchievementCheckResult> {
   const replays = await prisma.movieReplay.groupBy({
-    by: ["libraryEntryId"],
+    by: ["mediaEntryId"],
     where: {
-      libraryEntry: {
+      mediaEntry: {
         userId,
         status: "COMPLETED",
         mediaItem: { type: "MOVIE" },
@@ -63,7 +63,7 @@ export async function checkWorthTheWait(
   const where = { userId, finishedAt: { gte: user.createdAt } };
   const select = { createdAt: true, finishedAt: true };
   const [media, games, books] = await Promise.all([
-    prisma.libraryEntry.findMany({ where, select }),
+    prisma.mediaEntry.findMany({ where, select }),
     prisma.gameEntry.findMany({ where, select }),
     prisma.bookEntry.findMany({ where, select }),
   ]);
@@ -87,7 +87,7 @@ export async function checkFullCircle(
   userId: string,
 ): Promise<AchievementCheckResult> {
   const [firstMedia, firstGame, firstBook] = await Promise.all([
-    prisma.libraryEntry.findFirst({
+    prisma.mediaEntry.findFirst({
       where: { userId },
       orderBy: { createdAt: "asc" },
       select: { id: true, createdAt: true },
@@ -119,7 +119,7 @@ export async function checkFullCircle(
 
   if (first.kind === "media") {
     const replay = await prisma.movieReplay.findFirst({
-      where: { libraryEntryId: first.id },
+      where: { mediaEntryId: first.id },
       select: { id: true },
     });
     return { unlocked: replay !== null };
@@ -187,7 +187,7 @@ export async function checkPhoenix(
       },
       select: { finishedAt: true, sessions: loggedSessions },
     }),
-    prisma.libraryEntry.findMany({
+    prisma.mediaEntry.findMany({
       where: {
         userId,
         status: "COMPLETED",

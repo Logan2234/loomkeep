@@ -106,7 +106,7 @@ export class CalendarService {
       // airDate is guaranteed non-null by the `gte` filter above.
       airDate: episode.airDate!.toISOString(),
     }));
-    const movies = await this.prisma.libraryEntry.findMany({
+    const movies = await this.prisma.mediaEntry.findMany({
       where: {
         userId,
         status: { not: "DROPPED" },

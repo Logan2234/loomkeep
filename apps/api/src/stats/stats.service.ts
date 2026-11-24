@@ -248,7 +248,7 @@ export class StatsService {
   }
 
   private async fetchMediaRows(userId: string): Promise<DomainRow[]> {
-    const entries = await this.prisma.libraryEntry.findMany({
+    const entries = await this.prisma.mediaEntry.findMany({
       where: { userId },
       select: {
         status: true,
@@ -397,7 +397,7 @@ export class StatsService {
     premium: boolean,
   ): Promise<VideoStatsDto> {
     const [entries, watches] = await Promise.all([
-      this.prisma.libraryEntry.findMany({
+      this.prisma.mediaEntry.findMany({
         where: { userId },
         select: {
           status: true,
@@ -576,7 +576,7 @@ export class StatsService {
     // In progress the way the library derives it: a series' stored status
     // stays PLANNED however many episodes were ticked.
     const started = (
-      await this.prisma.libraryEntry.findMany({
+      await this.prisma.mediaEntry.findMany({
         where: {
           userId,
           status: { not: "DROPPED" },

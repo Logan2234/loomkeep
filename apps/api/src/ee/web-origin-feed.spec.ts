@@ -38,7 +38,7 @@ describe("feed links with a trailing slash in WEB_ORIGIN", () => {
           },
         ]),
       },
-      libraryEntry: { findMany: vi.fn().mockResolvedValue([]) },
+      mediaEntry: { findMany: vi.fn().mockResolvedValue([]) },
       gameEntry: { findMany: vi.fn().mockResolvedValue([]) },
     };
     const feed = await new CalendarFeedService(

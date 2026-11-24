@@ -179,7 +179,7 @@ export class LibraryV1Service {
   async entryDomain(userId: string, id: string): Promise<StatsDomain> {
     const where = { id, userId };
     const [media, game, book, album] = await Promise.all([
-      this.prisma.libraryEntry.findFirst({ where, select: { id: true } }),
+      this.prisma.mediaEntry.findFirst({ where, select: { id: true } }),
       this.prisma.gameEntry.findFirst({ where, select: { id: true } }),
       this.prisma.bookEntry.findFirst({ where, select: { id: true } }),
       this.prisma.musicEntry.findFirst({ where, select: { id: true } }),

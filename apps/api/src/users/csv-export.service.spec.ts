@@ -5,7 +5,7 @@ import type { ReviewService } from "../reviews/review.service";
 import { CsvExportService } from "./csv-export.service";
 
 const ITEM_ID_FIELD: Record<string, string> = {
-  libraryEntry: "mediaItemId",
+  mediaEntry: "mediaItemId",
   gameEntry: "gameItemId",
   bookEntry: "bookItemId",
   musicEntry: "musicItemId",
@@ -32,7 +32,7 @@ function makeService(model: string, rows: Record<string, unknown>[]) {
 
 describe("CsvExportService.buildCsv", () => {
   it("builds a MEDIA CSV with the expected header and one row per entry", async () => {
-    const service = makeService("libraryEntry", [
+    const service = makeService("mediaEntry", [
       {
         status: "WATCHING",
         rating: 8,
@@ -152,7 +152,7 @@ describe("CsvExportService.buildCsv", () => {
   });
 
   it("returns just the header row when the user has no entries", async () => {
-    const service = makeService("libraryEntry", []);
+    const service = makeService("mediaEntry", []);
 
     const csv = await service.buildCsv("user-1", Domain.MEDIA);
 

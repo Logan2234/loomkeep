@@ -51,7 +51,7 @@ export async function checkNewYearFinish(
 
   const where = { userId, finishedAt: { gte: user.createdAt } };
   const [media, games, books] = await Promise.all([
-    prisma.libraryEntry.findMany({ where, select: { finishedAt: true } }),
+    prisma.mediaEntry.findMany({ where, select: { finishedAt: true } }),
     prisma.gameEntry.findMany({ where, select: { finishedAt: true } }),
     prisma.bookEntry.findMany({ where, select: { finishedAt: true } }),
   ]);

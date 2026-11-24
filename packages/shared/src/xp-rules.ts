@@ -40,7 +40,7 @@ export const XP_RULES: Record<XpReason, XpRule> = {
   MOVIE_WATCHED: {
     reason: XpReason.MOVIE_WATCHED,
     amount: 50,
-    sourceType: "LibraryEntry",
+    sourceType: "MediaEntry",
     dailyCap: 10,
     socialGated: false,
   },
@@ -61,7 +61,7 @@ export const XP_RULES: Record<XpReason, XpRule> = {
   SERIES_COMPLETED: {
     reason: XpReason.SERIES_COMPLETED,
     amount: 100,
-    sourceType: "LibraryEntry",
+    sourceType: "MediaEntry",
     dailyCap: 3,
     socialGated: false,
   },
@@ -118,7 +118,7 @@ export const XP_RULES: Record<XpReason, XpRule> = {
     reason: XpReason.WORK_ADDED,
     amount: 2,
     // Domain-agnostic on purpose: whichever entry table the caller adds to
-    // (LibraryEntry/GameEntry/BookEntry/MusicEntry) uses this same reason.
+    // (MediaEntry/GameEntry/BookEntry/MusicEntry) uses this same reason.
     sourceType: "Entry",
     dailyCap: 25,
     socialGated: false,

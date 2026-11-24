@@ -700,7 +700,7 @@ model User {
   // is removed).
   passwordlessEnabled Boolean @default(false)
 
-  entries                    LibraryEntry[]
+  entries                    MediaEntry[]
   episodeWatches             EpisodeWatch[]
   refreshTokens              RefreshToken[]
   apiKeys                    ApiKey[]
@@ -905,7 +905,8 @@ model Comment {
   // Author-set manual spoiler tag. The read model maps it directly to the
   // viewer-facing masking hint; there is no automatic progression-based gate.
   spoilerTag     Boolean           @default(false)
-  edited         Boolean           @default(false)
+  // Last time the text or spoiler flag changed; null if never edited.
+  editedAt       DateTime?
   deletedAt      DateTime?
   // Set only by admin takedown (adminRemove) — distinguishes the tombstone
   // shown to readers ("supprimé par un administrateur" vs the author's own
@@ -1031,7 +1032,8 @@ model Message {
   text           String?
   // Sent with /spoiler: the whole message stays masked until revealed.
   spoiler        Boolean   @default(false)
-  edited         Boolean   @default(false)
+  // Last time the text or spoiler flag changed; null if never edited.
+  editedAt       DateTime?
   deletedAt      DateTime?
   // Set only by a moderation takedown, which the tombstone then says.
   deletedByAdmin Boolean   @default(false)
@@ -1983,7 +1985,7 @@ model MediaItem {
   // captured from the source. Used by the stats aggregation for watch time.
   runtimeMin        Int?
   // Regular episodes (season > 0) cached so far — maintained by a trigger on
-  // Episode, never written by the app (see LibraryEntry.watchedEpisodes).
+  // Episode, never written by the app (see MediaEntry.watchedEpisodes).
   episodeCount      Int           @default(0)
   // 18+ title (TMDB `adult` movies, AniList hentai). Restricted per-account.
   isAdult           Boolean       @default(false)
@@ -2000,7 +2002,7 @@ model MediaItem {
 
   externalIds  MediaExternalId[]
   seasons      Season[]
-  entries      LibraryEntry[]
+  entries      MediaEntry[]
   translations MediaItemTranslation[]
 
   @@index([lastSyncedAt])
@@ -2241,7 +2243,7 @@ model EpisodeTranslation {
   @@unique([episodeId, locale])
 }
 
-model LibraryEntry {
+model MediaEntry {
   id                     String          @id @default(cuid())
   userId                 String
   mediaItemId            String
@@ -2290,13 +2292,13 @@ model LibraryEntry {
 // Movies only: series/anime rewatches
 // are tracked per-episode via EpisodeWatch instead.
 model MovieReplay {
-  id             String   @id @default(cuid())
-  libraryEntryId String
-  finishedAt     DateTime @default(now())
+  id           String   @id @default(cuid())
+  mediaEntryId String
+  finishedAt   DateTime @default(now())
 
-  libraryEntry LibraryEntry @relation(fields: [libraryEntryId], references: [id], onDelete: Cascade)
+  mediaEntry MediaEntry @relation(fields: [mediaEntryId], references: [id], onDelete: Cascade)
 
-  @@index([libraryEntryId])
+  @@index([mediaEntryId])
 }
 
 // A copy lent out or borrowed, on an entry of any domain: exactly one of the
@@ -2309,23 +2311,23 @@ model MovieReplay {
 // BORROWED entry alone only says the work was borrowed, and has none. Giving
 // it back returns the loan and leaves the status as it is.
 model Loan {
-  id             String        @id @default(cuid())
-  libraryEntryId String?
-  gameEntryId    String?
-  bookEntryId    String?
-  musicEntryId   String?
-  direction      LoanDirection
-  person         String?
-  since          DateTime?     @db.Date
-  returnedAt     DateTime?
-  createdAt      DateTime      @default(now())
+  id           String        @id @default(cuid())
+  mediaEntryId String?
+  gameEntryId  String?
+  bookEntryId  String?
+  musicEntryId String?
+  direction    LoanDirection
+  person       String?
+  since        DateTime?     @db.Date
+  returnedAt   DateTime?
+  createdAt    DateTime      @default(now())
 
-  libraryEntry LibraryEntry? @relation(fields: [libraryEntryId], references: [id], onDelete: Cascade)
-  gameEntry    GameEntry?    @relation(fields: [gameEntryId], references: [id], onDelete: Cascade)
-  bookEntry    BookEntry?    @relation(fields: [bookEntryId], references: [id], onDelete: Cascade)
-  musicEntry   MusicEntry?   @relation(fields: [musicEntryId], references: [id], onDelete: Cascade)
+  mediaEntry MediaEntry? @relation(fields: [mediaEntryId], references: [id], onDelete: Cascade)
+  gameEntry  GameEntry?  @relation(fields: [gameEntryId], references: [id], onDelete: Cascade)
+  bookEntry  BookEntry?  @relation(fields: [bookEntryId], references: [id], onDelete: Cascade)
+  musicEntry MusicEntry? @relation(fields: [musicEntryId], references: [id], onDelete: Cascade)
 
-  @@index([libraryEntryId])
+  @@index([mediaEntryId])
   @@index([gameEntryId])
   @@index([bookEntryId])
   @@index([musicEntryId])
@@ -2440,7 +2442,7 @@ model GameEntry {
   loans         Loan[]
 
   @@unique([userId, gameItemId])
-  // "Who tracks this work" (see LibraryEntry).
+  // "Who tracks this work" (see MediaEntry).
   @@index([gameItemId])
 }
 
@@ -2568,7 +2570,7 @@ model BookEntry {
   loans         Loan[]
 
   @@unique([userId, bookItemId])
-  // "Who tracks this work" (see LibraryEntry).
+  // "Who tracks this work" (see MediaEntry).
   @@index([bookItemId])
 }
 
@@ -2715,7 +2717,7 @@ model MusicEntry {
   loans     Loan[]
 
   @@unique([userId, musicItemId])
-  // "Who tracks this work" (see LibraryEntry).
+  // "Who tracks this work" (see MediaEntry).
   @@index([musicItemId])
 }
 
@@ -2741,7 +2743,7 @@ model XpEntry {
   // enum, so a new reason needs no migration (same rationale as
   // ActivityEvent.type).
   reason     String
-  // Table the gain is anchored to ("EpisodeWatch", "LibraryEntry", "DOMAIN"…
+  // Table the gain is anchored to ("EpisodeWatch", "MediaEntry", "DOMAIN"…
   // — see XpRule.sourceType in xp-rules.ts) and that row's id. Together with
   // reason they make crediting idempotent (the partial unique index above) and
   // let the nightly reconciliation job re-verify each entry still has a live

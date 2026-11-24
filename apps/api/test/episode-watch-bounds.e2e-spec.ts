@@ -62,7 +62,7 @@ describe("Episode watch bounds (e2e)", () => {
         },
       })
     ).id;
-    await prisma.libraryEntry.create({
+    await prisma.mediaEntry.create({
       data: { userId, mediaItemId: item.id, status: "PLANNED" },
     });
   });

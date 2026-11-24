@@ -86,7 +86,7 @@ export class AdvancedStatsService implements AdvancedStatsSource {
     const [staleness, moviesRewatchedCount] = await Promise.all([
       this.stats.fetchInProgressStaleness(userId),
       this.prisma.movieReplay.count({
-        where: { libraryEntry: { userId } },
+        where: { mediaEntry: { userId } },
       }),
     ]);
 

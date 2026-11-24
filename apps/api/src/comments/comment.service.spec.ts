@@ -57,7 +57,7 @@ function commentRow(over: Partial<Record<string, unknown>> = {}) {
     authorId: AUTHOR.id,
     text: "hello",
     spoilerTag: false,
-    edited: false,
+    editedAt: null,
     deletedAt: null,
     deletedByAdmin: false,
     createdAt: new Date(),
@@ -77,7 +77,7 @@ function make(
     reaction: Partial<Record<string, Mock>>;
     episodeWatch: Partial<Record<string, Mock>>;
     season: Partial<Record<string, Mock>>;
-    libraryEntry: Partial<Record<string, Mock>>;
+    mediaEntry: Partial<Record<string, Mock>>;
     gameEntry: Partial<Record<string, Mock>>;
     bookEntry: Partial<Record<string, Mock>>;
     block: Partial<Record<string, Mock>>;
@@ -113,9 +113,9 @@ function make(
     episode: {
       findUnique: vi.fn().mockResolvedValue(null),
     },
-    libraryEntry: {
+    mediaEntry: {
       findUnique: vi.fn().mockResolvedValue({ id: "entry-1" }),
-      ...overrides.libraryEntry,
+      ...overrides.mediaEntry,
     },
     gameEntry: {
       findUnique: vi.fn().mockResolvedValue(null),
@@ -848,14 +848,14 @@ describe("CommentService.update", () => {
         update: vi.fn().mockResolvedValue(existing),
       },
     });
-    const editedFlag = () =>
-      (prisma.comment.update as Mock).mock.calls.at(-1)?.[0].data.edited;
+    const editedAt = () =>
+      (prisma.comment.update as Mock).mock.calls.at(-1)?.[0].data.editedAt;
 
     await svc.update("viewer", "c1", { text: "Pareil" });
-    expect(editedFlag()).toBe(false);
+    expect(editedAt()).toBeUndefined();
 
     await svc.update("viewer", "c1", { text: "Pas pareil" });
-    expect(editedFlag()).toBe(true);
+    expect(editedAt()).toBeInstanceOf(Date);
   });
 });
 
@@ -981,7 +981,7 @@ describe("CommentService.react", () => {
           targetId: "m1",
         }),
       },
-      libraryEntry: { findUnique: vi.fn().mockResolvedValue(null) },
+      mediaEntry: { findUnique: vi.fn().mockResolvedValue(null) },
     });
 
     await expect(svc.react("viewer", "c1", "LIKE" as never)).rejects.toThrow();

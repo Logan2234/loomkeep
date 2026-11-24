@@ -450,7 +450,7 @@ describe("ImportJobService.commit — IMPORT_COMPLETED", () => {
   // 2026-11-14, SEC-06).
   it("keeps the raw failure text out of the job it returns", async () => {
     const { service, importRunCreate } = makeCommitService(async () => {
-      throw new Error('relation "LibraryEntry" does not exist');
+      throw new Error('relation "MediaEntry" does not exist');
     });
     seedAnalyzedJob(service, "analyzed-1");
 
@@ -462,11 +462,11 @@ describe("ImportJobService.commit — IMPORT_COMPLETED", () => {
     const returned = service.getJob("u1", job.id);
     expect(returned.status).toBe("failed");
     expect(returned.errorCode).toBe(ErrorCode.InternalError);
-    expect(JSON.stringify(returned)).not.toContain("LibraryEntry");
+    expect(JSON.stringify(returned)).not.toContain("MediaEntry");
     expect(importRunCreate).toHaveBeenCalledWith(
       expect.objectContaining({
         create: expect.objectContaining({
-          error: 'relation "LibraryEntry" does not exist',
+          error: 'relation "MediaEntry" does not exist',
         }),
       }),
     );

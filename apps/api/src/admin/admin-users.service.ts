@@ -277,7 +277,7 @@ export class AdminUsersService {
   ): Promise<Map<string, AdminUserLibraryCountsDto>> {
     const where = { userId: { in: userIds } };
     const [media, games, books, music] = await Promise.all([
-      this.prisma.libraryEntry.groupBy({ by: ["userId"], where, _count: true }),
+      this.prisma.mediaEntry.groupBy({ by: ["userId"], where, _count: true }),
       this.prisma.gameEntry.groupBy({ by: ["userId"], where, _count: true }),
       this.prisma.bookEntry.groupBy({ by: ["userId"], where, _count: true }),
       this.prisma.musicEntry.groupBy({ by: ["userId"], where, _count: true }),
@@ -324,7 +324,7 @@ export class AdminUsersService {
       select: { title: true, ...CANONICAL_EXTERNAL_ID_SELECT },
     } as const;
     const [media, games, books, music] = await Promise.all([
-      this.prisma.libraryEntry.findMany({
+      this.prisma.mediaEntry.findMany({
         ...recent,
         include: { mediaItem: { select: { ...item.select, type: true } } },
       }),

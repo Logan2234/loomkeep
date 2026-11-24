@@ -361,7 +361,7 @@ export class ProfileService {
 
     switch (domain) {
       case Domain.MEDIA:
-        return this.prisma.libraryEntry.count({ where });
+        return this.prisma.mediaEntry.count({ where });
       case Domain.GAMES:
         return this.prisma.gameEntry.count({ where });
       case Domain.BOOKS:

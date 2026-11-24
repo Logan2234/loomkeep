@@ -502,7 +502,7 @@ async function main() {
   });
 
   // Library entries
-  await prisma.libraryEntry.create({
+  await prisma.mediaEntry.create({
     data: {
       userId: logan.id,
       mediaItemId: inception.id,
@@ -514,14 +514,14 @@ async function main() {
       ownershipSource: "Netflix",
     },
   });
-  await prisma.libraryEntry.create({
+  await prisma.mediaEntry.create({
     data: {
       userId: logan.id,
       mediaItemId: interstellar.id,
       status: EntryStatus.PLANNED,
     },
   });
-  await prisma.libraryEntry.create({
+  await prisma.mediaEntry.create({
     data: {
       userId: logan.id,
       mediaItemId: breakingBad.id,
@@ -531,7 +531,7 @@ async function main() {
       startedAt: new Date("2026-02-01T19:00:00Z"),
     },
   });
-  await prisma.libraryEntry.create({
+  await prisma.mediaEntry.create({
     data: {
       userId: alice.id,
       mediaItemId: attackOnTitan.id,
@@ -541,7 +541,7 @@ async function main() {
       finishedAt: new Date("2025-12-20T21:00:00Z"),
     },
   });
-  await prisma.libraryEntry.create({
+  await prisma.mediaEntry.create({
     data: {
       userId: alice.id,
       mediaItemId: inception.id,
@@ -549,7 +549,7 @@ async function main() {
       finishedAt: new Date("2024-06-01T22:00:00Z"),
     },
   });
-  await prisma.libraryEntry.create({
+  await prisma.mediaEntry.create({
     data: {
       userId: bob.id,
       mediaItemId: breakingBad.id,
@@ -557,7 +557,7 @@ async function main() {
       notes: "Trop lent au début, jamais repris.",
     },
   });
-  await prisma.libraryEntry.create({
+  await prisma.mediaEntry.create({
     data: {
       userId: chloe.id,
       mediaItemId: interstellar.id,
