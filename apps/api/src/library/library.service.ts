@@ -315,6 +315,11 @@ export class LibraryService {
       dto.type,
     );
 
+    if (mediaItem.isAdult) {
+      const allowAdult = await this.ageGate.allowsAdultContent(userId);
+      this.ageGate.assertAdultAllowed(true, allowAdult);
+    }
+
     if (
       dto.status === "COMPLETED" ||
       (dto.rating !== null && dto.rating !== undefined)
