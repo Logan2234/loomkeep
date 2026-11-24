@@ -612,7 +612,6 @@ export class AnilistProvider implements CatalogProvider {
     query: string,
     variables: Record<string, unknown>,
   ): Promise<T> {
-    await this.throttle.wait();
     const body = await fetchJson<{
       data?: T;
       errors?: { message: string }[];
@@ -630,6 +629,7 @@ export class AnilistProvider implements CatalogProvider {
         sourceLabel: "AniList",
         notFoundMessage: "Media not found on AniList",
         maxRetryDelayMs: MAX_RETRY_DELAY_MS,
+        beforeAttempt: () => this.throttle.wait(),
         onAttempt: () => this.quota.record("anilist"),
       },
     );
