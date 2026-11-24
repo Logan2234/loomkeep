@@ -2602,7 +2602,7 @@ export class LibraryService {
       title: translation?.title ?? media.title,
       // Original title is not persisted separately; only used for matching.
       originalTitle: null,
-      year: media.releaseDate ? media.releaseDate.getFullYear() : null,
+      year: media.releaseDate ? media.releaseDate.getUTCFullYear() : null,
       posterUrl: media.posterUrl,
       backdropUrl: media.backdropUrl,
       overview: translation?.overview ?? media.overview,
