@@ -338,19 +338,36 @@ export class ReviewService {
    * so any id made a review that showed in the author's list, the export and
    * moderation, and a feed event pointing nowhere.
    */
+  // A switch rather than a lookup keyed by the type: targetType comes from
+  // the request, and an unexpected one must answer 0, not call something.
+  private countTarget(
+    targetType: ReviewTargetType,
+    where: { where: { id: string } },
+  ): Promise<number> {
+    switch (targetType) {
+      case ReviewTargetType.MEDIA:
+        return this.prisma.mediaItem.count(where);
+      case ReviewTargetType.SEASON:
+        return this.prisma.season.count(where);
+      case ReviewTargetType.EPISODE:
+        return this.prisma.episode.count(where);
+      case ReviewTargetType.GAME:
+        return this.prisma.gameItem.count(where);
+      case ReviewTargetType.BOOK:
+        return this.prisma.bookItem.count(where);
+      case ReviewTargetType.MUSIC:
+        return this.prisma.musicItem.count(where);
+      default:
+        return Promise.resolve(0);
+    }
+  }
+
   private async assertTargetExists(
     targetType: ReviewTargetType,
     targetId: string,
   ): Promise<void> {
     const where = { where: { id: targetId } };
-    const count = await {
-      MEDIA: () => this.prisma.mediaItem.count(where),
-      SEASON: () => this.prisma.season.count(where),
-      EPISODE: () => this.prisma.episode.count(where),
-      GAME: () => this.prisma.gameItem.count(where),
-      BOOK: () => this.prisma.bookItem.count(where),
-      MUSIC: () => this.prisma.musicItem.count(where),
-    }[targetType]();
+    const count = await this.countTarget(targetType, where);
 
     if (count === 0) {
       throw new AppException(
