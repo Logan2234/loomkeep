@@ -1,17 +1,42 @@
 import {
   loanFields,
   loanUpdate,
+  loanWhere,
   ownershipSourceUpdate,
 } from "./entry-loan.util";
 
-const PHYSICAL = { ownershipStatus: "PHYSICAL", lentOut: false };
+const NOW = new Date("2026-11-24T12:00:00Z");
+const PHYSICAL = { ownershipStatus: "PHYSICAL", loans: [] };
+const LENT = {
+  ownershipStatus: "PHYSICAL",
+  loans: [
+    {
+      direction: "LENT" as const,
+      person: "Julie",
+      since: new Date("2026-03-08"),
+    },
+  ],
+};
+const BORROWED = {
+  ownershipStatus: "BORROWED",
+  loans: [{ direction: "BORROWED" as const, person: "Max", since: null }],
+};
+const returnOpen = (direction: string) => ({
+  updateMany: {
+    where: { returnedAt: null, direction },
+    data: { returnedAt: NOW },
+  },
+});
 
 describe("loanUpdate", () => {
+  beforeEach(() => vi.useFakeTimers({ now: NOW }));
+  afterEach(() => vi.useRealTimers());
+
   it("writes nothing when the update touches neither ownership nor loan", () => {
-    expect(loanUpdate(PHYSICAL, {})).toEqual({});
+    expect(loanUpdate(LENT, {})).toEqual({});
   });
 
-  it("lends a physical copy to someone since a date", () => {
+  it("opens a loan when a physical copy is lent to someone since a date", () => {
     expect(
       loanUpdate(PHYSICAL, {
         lentOut: true,
@@ -19,71 +44,105 @@ describe("loanUpdate", () => {
         loanSince: "2026-03-08",
       }),
     ).toEqual({
-      lentOut: true,
-      loanPerson: "Julie",
-      loanSince: new Date("2026-03-08"),
+      loans: {
+        create: {
+          direction: "LENT",
+          person: "Julie",
+          since: new Date("2026-03-08"),
+        },
+      },
     });
   });
 
-  it("refuses a lent flag on a copy that isn't physical", () => {
+  it("opens no loan on a copy that isn't physical", () => {
     expect(
       loanUpdate(
-        { ownershipStatus: "DIGITAL", lentOut: false },
-        {
-          lentOut: true,
-          loanPerson: "Julie",
-        },
+        { ownershipStatus: "DIGITAL", loans: [] },
+        { lentOut: true, loanPerson: "Julie" },
       ),
-    ).toEqual({ lentOut: false, loanPerson: null, loanSince: null });
+    ).toEqual({});
   });
 
-  it("clears the loan when a lent copy stops being physical", () => {
-    expect(
-      loanUpdate(
-        { ownershipStatus: "PHYSICAL", lentOut: true },
-        {
-          ownershipStatus: "DIGITAL",
-        },
-      ),
-    ).toEqual({ lentOut: false, loanPerson: null, loanSince: null });
-  });
-
-  it("starts the person over when a lent copy becomes a borrowed one", () => {
-    expect(
-      loanUpdate(
-        { ownershipStatus: "PHYSICAL", lentOut: true },
-        {
-          ownershipStatus: "BORROWED",
-        },
-      ),
-    ).toEqual({ lentOut: false, loanPerson: null, loanSince: null });
-  });
-
-  it("keeps the borrowed person while only the date changes", () => {
-    expect(
-      loanUpdate(
-        { ownershipStatus: "BORROWED", lentOut: false },
-        {
-          loanSince: "2026-09-14",
-        },
-      ),
-    ).toEqual({
-      lentOut: false,
-      loanPerson: undefined,
-      loanSince: new Date("2026-09-14"),
+  it("returns the loan, kept as history, when the copy comes back", () => {
+    expect(loanUpdate(LENT, { lentOut: false })).toEqual({
+      loans: returnOpen("LENT"),
     });
+  });
+
+  it("returns the loan when a lent copy stops being physical", () => {
+    expect(loanUpdate(LENT, { ownershipStatus: "DIGITAL" })).toEqual({
+      loans: returnOpen("LENT"),
+    });
+  });
+
+  it("returns the lent loan and opens a borrowed one, person starting over", () => {
+    expect(loanUpdate(LENT, { ownershipStatus: "BORROWED" })).toEqual({
+      loans: {
+        ...returnOpen("LENT"),
+        create: { direction: "BORROWED", person: null, since: null },
+      },
+    });
+  });
+
+  it("opens a borrowed loan, without a person yet, on a newly borrowed entry", () => {
+    expect(loanUpdate(PHYSICAL, { ownershipStatus: "BORROWED" })).toEqual({
+      loans: {
+        create: { direction: "BORROWED", person: null, since: null },
+      },
+    });
+  });
+
+  it("edits the open loan while only the date changes", () => {
+    expect(loanUpdate(BORROWED, { loanSince: "2026-09-14" })).toEqual({
+      loans: {
+        updateMany: {
+          where: { returnedAt: null, direction: "BORROWED" },
+          data: { person: undefined, since: new Date("2026-09-14") },
+        },
+      },
+    });
+  });
+
+  it("writes nothing when the status is restated without loan changes", () => {
+    expect(loanUpdate(BORROWED, { ownershipStatus: "BORROWED" })).toEqual({});
   });
 });
 
 describe("loanFields", () => {
-  it("serializes the date as a calendar day", () => {
-    expect(
-      loanFields({
-        lentOut: true,
-        loanPerson: "Julie",
-        loanSince: new Date("2026-03-08"),
-      }),
-    ).toEqual({ lentOut: true, loanPerson: "Julie", loanSince: "2026-03-08" });
+  it("reads the open loan, the date as a calendar day", () => {
+    expect(loanFields(LENT)).toEqual({
+      lentOut: true,
+      loanPerson: "Julie",
+      loanSince: "2026-03-08",
+    });
+  });
+
+  it("reads a borrowed entry's lender without a lent flag", () => {
+    expect(loanFields(BORROWED)).toEqual({
+      lentOut: false,
+      loanPerson: "Max",
+      loanSince: null,
+    });
+  });
+
+  it("reads no loan as none", () => {
+    expect(loanFields(PHYSICAL)).toEqual({
+      lentOut: false,
+      loanPerson: null,
+      loanSince: null,
+    });
+  });
+});
+
+describe("loanWhere", () => {
+  it("filters lent copies on their open LENT loan", () => {
+    expect(loanWhere("LENT")).toEqual({
+      loans: { some: { returnedAt: null, direction: "LENT" } },
+    });
+  });
+
+  it("filters borrowed ones on their status", () => {
+    expect(loanWhere("BORROWED")).toEqual({ ownershipStatus: "BORROWED" });
   });
 });
 

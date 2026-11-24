@@ -7,30 +7,51 @@ export interface LoanInput {
   loanSince?: string | null;
 }
 
-interface LoanState {
-  ownershipStatus: string;
-  lentOut: boolean;
-  loanPerson: string | null;
-  loanSince: Date | null;
+type LoanDirection = "BORROWED" | "LENT";
+
+/** An entry's open loan, as ACTIVE_LOAN_INCLUDE reads it. */
+interface ActiveLoan {
+  direction: LoanDirection;
+  person: string | null;
+  since: Date | null;
 }
 
-type LoanDirection = "BORROWED" | "LENT" | null;
+/** An entry with its open loan (at most one, see ACTIVE_LOAN_INCLUDE). */
+interface LoanState {
+  ownershipStatus: string;
+  loans: ActiveLoan[];
+}
 
-function direction(status: string, lentOut: boolean): LoanDirection {
+/**
+ * Spread into an entry's include/select: its open loan, if any. A returned
+ * loan keeps its row (`returnedAt` set) as history; only the open one counts.
+ */
+export const ACTIVE_LOAN_INCLUDE = {
+  loans: {
+    where: { returnedAt: null },
+    select: { direction: true, person: true, since: true },
+    orderBy: { createdAt: "desc" },
+    take: 1,
+  },
+} as const;
+
+function direction(status: string, lentOut: boolean): LoanDirection | null {
   if (status === "BORROWED") return "BORROWED";
   return status === "PHYSICAL" && lentOut ? "LENT" : null;
 }
 
 /**
- * The loan columns an entry update writes. A loan only lives on a BORROWED
- * entry (borrowed from someone) or a PHYSICAL one marked lent out; leaving
- * either clears the person and the date, and switching direction starts
- * them over unless the update sets them.
+ * The nested write on an entry's `loans` that an entry update makes. A loan
+ * only lives on a BORROWED entry (borrowed from someone) or a PHYSICAL one
+ * marked lent out. Leaving either returns the open loan; switching direction
+ * returns it and opens a new one, person and date starting over unless the
+ * update sets them; staying edits the open one.
+ *
+ * Returning only ever targets the current direction and a new loan is always
+ * the other one, so the result doesn't depend on the order Prisma runs the
+ * nested writes in — nor trips the one-open-loan-per-direction index.
  */
-export function loanUpdate(
-  current: Pick<LoanState, "ownershipStatus" | "lentOut">,
-  dto: LoanInput,
-): Partial<Omit<LoanState, "ownershipStatus">> {
+export function loanUpdate(current: LoanState, dto: LoanInput) {
   if (
     dto.ownershipStatus === undefined &&
     dto.lentOut === undefined &&
@@ -40,29 +61,45 @@ export function loanUpdate(
     return {};
   }
 
+  const open = current.loans[0] ?? null;
   const status = dto.ownershipStatus ?? current.ownershipStatus;
-  const lentOut = status === "PHYSICAL" && (dto.lentOut ?? current.lentOut);
+  const lentOut =
+    status === "PHYSICAL" && (dto.lentOut ?? open?.direction === "LENT");
   const next = direction(status, lentOut);
-  if (next === null)
-    return { lentOut: false, loanPerson: null, loanSince: null };
+  const person =
+    dto.loanPerson === undefined ? undefined : dto.loanPerson?.trim() || null;
+  const since =
+    dto.loanSince === undefined
+      ? undefined
+      : dto.loanSince
+        ? new Date(dto.loanSince)
+        : null;
+  const returnOpen = open && {
+    updateMany: {
+      where: { returnedAt: null, direction: open.direction },
+      data: { returnedAt: new Date() },
+    },
+  };
 
-  const restart = next !== direction(current.ownershipStatus, current.lentOut);
+  if (next === null) return returnOpen ? { loans: returnOpen } : {};
+
+  if (open?.direction === next) {
+    if (person === undefined && since === undefined) return {};
+    return {
+      loans: {
+        updateMany: {
+          where: { returnedAt: null, direction: next },
+          data: { person, since },
+        },
+      },
+    };
+  }
+
   return {
-    lentOut,
-    loanPerson:
-      dto.loanPerson !== undefined
-        ? dto.loanPerson?.trim() || null
-        : restart
-          ? null
-          : undefined,
-    loanSince:
-      dto.loanSince !== undefined
-        ? dto.loanSince
-          ? new Date(dto.loanSince)
-          : null
-        : restart
-          ? null
-          : undefined,
+    loans: {
+      ...returnOpen,
+      create: { direction: next, person: person ?? null, since: since ?? null },
+    },
   };
 }
 
@@ -86,18 +123,22 @@ export function ownershipSourceUpdate(
   return SOURCELESS_OWNERSHIP.has(status) ? null : dto.ownershipSource;
 }
 
-/** The loan as an entry DTO carries it. */
-export function loanFields(entry: Omit<LoanState, "ownershipStatus">) {
+/** The loan as an entry DTO carries it, from the entry's open loan. */
+export function loanFields(entry: Pick<LoanState, "loans">) {
+  const open = entry.loans[0] ?? null;
   return {
-    lentOut: entry.lentOut,
-    loanPerson: entry.loanPerson,
-    loanSince: entry.loanSince?.toISOString().slice(0, 10) ?? null,
+    lentOut: open?.direction === "LENT",
+    loanPerson: open?.person ?? null,
+    loanSince: open?.since?.toISOString().slice(0, 10) ?? null,
   };
 }
 
 /** The library list's « Lent » / « To give back » filters. */
 export function loanWhere(loan: LoanFilter | undefined) {
-  if (loan === "LENT") return { lentOut: true };
+  if (loan === "LENT")
+    return {
+      loans: { some: { returnedAt: null, direction: "LENT" as const } },
+    };
   if (loan === "BORROWED") return { ownershipStatus: "BORROWED" as const };
   return {};
 }

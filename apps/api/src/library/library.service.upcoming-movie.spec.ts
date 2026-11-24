@@ -26,6 +26,7 @@ function makeService(overrides: Record<string, unknown> = {}) {
     createdAt: new Date(),
     updatedAt: new Date(),
     ownershipStatus: "NONE",
+    loans: [],
     ownershipSource: null,
     replays: [],
   };

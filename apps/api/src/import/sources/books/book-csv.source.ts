@@ -17,6 +17,7 @@ import { BookItemService } from "../../../books/book-item.service";
 import { AppException } from "../../../common/app.exception";
 import { mapWithConcurrency, refKey } from "../../../common/concurrency.util";
 import {
+  ACTIVE_LOAN_INCLUDE,
   loanUpdate,
   ownershipSourceUpdate,
 } from "../../../common/entry-loan.util";
@@ -306,7 +307,7 @@ export abstract class BookCsvSource<
     // Only a first-time import backfills reading cycles from "Read Count".
     const existing = await this.prisma.bookEntry.findUnique({
       where: { userId_bookItemId: { userId, bookItemId: bookItem.id } },
-      select: { id: true, ownershipStatus: true, lentOut: true },
+      select: { id: true, ownershipStatus: true, ...ACTIVE_LOAN_INCLUDE },
     });
     const ownership = { ownershipStatus: row.ownershipStatus };
     const entry = await this.prisma.bookEntry.upsert({

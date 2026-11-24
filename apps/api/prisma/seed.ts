@@ -20,7 +20,6 @@ import {
 } from "@loomkeep/shared";
 import { PrismaPg } from "@prisma/adapter-pg";
 import {
-  BookOwnershipStatus,
   BookSource,
   BookStatus,
   CatalogSource,
@@ -30,18 +29,16 @@ import {
   EntryStatus,
   ExternalSource,
   FollowStatus,
-  GameOwnershipStatus,
   GameSource,
   GameStatus,
   ListKind,
   ListVisibility,
-  MediaOwnershipStatus,
   MediaType,
   ModerationLegalBasis,
   ModerationMeasure,
-  MusicOwnershipStatus,
   MusicSource,
   MusicStatus,
+  OwnershipStatus,
   PrismaClient,
   ProfileAccess,
   ReportCategory,
@@ -513,7 +510,7 @@ async function main() {
       favorite: true,
       startedAt: new Date("2026-01-10T20:00:00Z"),
       finishedAt: new Date("2026-01-10T22:30:00Z"),
-      ownershipStatus: MediaOwnershipStatus.STREAMING,
+      ownershipStatus: OwnershipStatus.STREAMING,
       ownershipSource: "Netflix",
     },
   });
@@ -529,7 +526,7 @@ async function main() {
       userId: logan.id,
       mediaItemId: breakingBad.id,
       status: EntryStatus.WATCHING,
-      ownershipStatus: MediaOwnershipStatus.STREAMING,
+      ownershipStatus: OwnershipStatus.STREAMING,
       ownershipSource: "Netflix",
       startedAt: new Date("2026-02-01T19:00:00Z"),
     },
@@ -630,7 +627,7 @@ async function main() {
       playtimeMinutes: 6200,
       startedAt: new Date("2022-03-01"),
       finishedAt: new Date("2022-06-15"),
-      ownershipStatus: GameOwnershipStatus.DIGITAL,
+      ownershipStatus: OwnershipStatus.DIGITAL,
       ownershipSource: "Steam",
     },
   });
@@ -660,7 +657,7 @@ async function main() {
       status: GameStatus.PLAYING,
       playtimeMinutes: 1450,
       startedAt: new Date("2026-04-01"),
-      ownershipStatus: GameOwnershipStatus.DIGITAL,
+      ownershipStatus: OwnershipStatus.DIGITAL,
       ownershipSource: "Steam",
     },
   });
@@ -678,7 +675,7 @@ async function main() {
       userId: bob.id,
       gameItemId: eldenRing.id,
       status: GameStatus.BACKLOG,
-      ownershipStatus: GameOwnershipStatus.PHYSICAL,
+      ownershipStatus: OwnershipStatus.PHYSICAL,
     },
   });
 
@@ -692,7 +689,7 @@ async function main() {
       currentPage: 688,
       startedAt: new Date("2025-08-01"),
       finishedAt: new Date("2025-08-20"),
-      ownershipStatus: BookOwnershipStatus.PHYSICAL,
+      ownershipStatus: OwnershipStatus.PHYSICAL,
     },
   });
   await prisma.bookReading.createMany({
@@ -722,7 +719,7 @@ async function main() {
       status: BookStatus.READING,
       currentPage: 210,
       startedAt: new Date("2026-06-01"),
-      ownershipStatus: BookOwnershipStatus.DIGITAL,
+      ownershipStatus: OwnershipStatus.DIGITAL,
       ownershipSource: "Kindle",
     },
   });
@@ -752,7 +749,7 @@ async function main() {
       status: MusicStatus.LISTENED,
       favorite: true,
       finishedAt: new Date("2026-01-15"),
-      ownershipStatus: MusicOwnershipStatus.STREAMING,
+      ownershipStatus: OwnershipStatus.STREAMING,
       ownershipSource: "Spotify",
     },
   });
