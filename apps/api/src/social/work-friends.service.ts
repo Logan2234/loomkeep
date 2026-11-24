@@ -232,7 +232,7 @@ export class WorkFriendsService {
         where: { id: itemId },
         select: { type: true, status: true },
       }),
-      this.prisma.libraryEntry.findMany({
+      this.prisma.mediaEntry.findMany({
         where: { mediaItemId: itemId, userId: { in: userIds } },
         select: { userId: true, status: true, updatedAt: true },
       }),

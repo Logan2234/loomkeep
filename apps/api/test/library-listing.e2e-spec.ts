@@ -127,7 +127,7 @@ describe("Library listing (e2e)", () => {
         }
       }
 
-      await prisma.libraryEntry.create({
+      await prisma.mediaEntry.create({
         data: {
           userId,
           mediaItemId: item.id,

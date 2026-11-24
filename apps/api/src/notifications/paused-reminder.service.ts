@@ -153,7 +153,7 @@ export class PausedReminderService {
     };
 
     const [started, books, games] = await Promise.all([
-      this.prisma.libraryEntry.findMany({
+      this.prisma.mediaEntry.findMany({
         where: {
           userId,
           status: { not: "DROPPED" },

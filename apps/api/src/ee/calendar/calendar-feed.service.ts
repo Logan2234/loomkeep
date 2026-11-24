@@ -166,7 +166,7 @@ export class CalendarFeedService {
     now: Date,
     webOrigin: string,
   ): Promise<ReleaseFeedEntry[]> {
-    const entries = await this.prisma.libraryEntry.findMany({
+    const entries = await this.prisma.mediaEntry.findMany({
       where: {
         userId: user.id,
         status: { not: "DROPPED" },

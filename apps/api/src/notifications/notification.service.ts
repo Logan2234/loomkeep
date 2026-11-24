@@ -198,7 +198,7 @@ export class NotificationService {
 
     // Who tracks those media — the digest and domain gates are the same ones
     // `scan` applies per user, pushed into the query.
-    const entries = await this.prisma.libraryEntry.findMany({
+    const entries = await this.prisma.mediaEntry.findMany({
       where: {
         mediaItemId: {
           in: [...new Set(episodes.map((e) => e.season.mediaItemId))],
@@ -316,7 +316,7 @@ export class NotificationService {
       // An 18+ work would need each recipient's age gate: left unannounced.
       const recipients = work.isAdult
         ? []
-        : await this.prisma.libraryEntry.findMany({
+        : await this.prisma.mediaEntry.findMany({
             where: {
               finishedAt: { not: null },
               status: { not: "DROPPED" },
@@ -502,7 +502,7 @@ export class NotificationService {
     const now = new Date();
     const since = utcDateKey(sinceDaysAgo(now, WINDOW_DAYS));
     const today = utcDateKey(now);
-    const entries = await this.prisma.libraryEntry.findMany({
+    const entries = await this.prisma.mediaEntry.findMany({
       where: {
         userId,
         movieReleaseReminderAt: { not: null },

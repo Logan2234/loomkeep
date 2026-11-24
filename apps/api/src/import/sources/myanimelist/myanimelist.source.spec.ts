@@ -72,7 +72,7 @@ function makeSource() {
     },
     // Nothing tracked yet, and every title already out.
     mediaItem: { findUnique: vi.fn().mockResolvedValue(null) },
-    libraryEntry: {
+    mediaEntry: {
       findUnique: vi.fn().mockResolvedValue(null),
       upsert: vi.fn(),
     },
@@ -194,7 +194,7 @@ describe("MyAnimeList import", () => {
       [{ userId: "u1", episodeId: "episode-2", watchedAt: null }],
       [{ userId: "u1", episodeId: "episode-3", watchedAt: null }],
     ]);
-    expect(prisma.libraryEntry.upsert).toHaveBeenCalledWith(
+    expect(prisma.mediaEntry.upsert).toHaveBeenCalledWith(
       expect.objectContaining({
         update: expect.objectContaining({
           status: "DROPPED",

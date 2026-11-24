@@ -205,7 +205,7 @@ export class NotificationDigestService {
     const activeMovies =
       movieIds.length === 0
         ? []
-        : await this.prisma.libraryEntry.findMany({
+        : await this.prisma.mediaEntry.findMany({
             where: {
               userId: user.id,
               mediaItemId: { in: movieIds },

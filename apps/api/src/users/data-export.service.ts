@@ -75,7 +75,7 @@ export class DataExportService {
       importRunRows,
       savedViewRows,
     ] = await Promise.all([
-      this.prisma.libraryEntry.findMany({
+      this.prisma.mediaEntry.findMany({
         where: { userId },
         include: {
           mediaItem: { include: { externalIds: true } },
@@ -620,7 +620,7 @@ export class DataExportService {
         parentId: c.parentId,
         text: c.text,
         spoilerTag: c.spoilerTag,
-        edited: c.edited,
+        edited: c.editedAt !== null,
         deletedAt: c.deletedAt?.toISOString() ?? null,
         createdAt: c.createdAt.toISOString(),
         updatedAt: c.updatedAt.toISOString(),
@@ -639,7 +639,7 @@ export class DataExportService {
           mine: m.authorId === userId,
           text: m.text,
           spoiler: m.spoiler,
-          edited: m.edited,
+          edited: m.editedAt !== null,
           deletedAt: m.deletedAt?.toISOString() ?? null,
           createdAt: m.createdAt.toISOString(),
           forwarded: m.forwarded,

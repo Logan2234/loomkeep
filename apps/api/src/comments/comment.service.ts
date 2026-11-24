@@ -92,7 +92,7 @@ type CommentRow = {
   authorId: string | null;
   text: string | null;
   spoilerTag: boolean;
-  edited: boolean;
+  editedAt: Date | null;
   deletedAt: Date | null;
   deletedByAdmin: boolean;
   createdAt: Date;
@@ -559,10 +559,9 @@ export class CommentService {
         text: body.text,
         spoilerTag,
         // Saved unchanged, it isn't "modifié".
-        edited:
-          existing.edited ||
-          existing.text !== body.text ||
-          existing.spoilerTag !== spoilerTag,
+        ...(existing.text !== body.text || existing.spoilerTag !== spoilerTag
+          ? { editedAt: new Date() }
+          : {}),
         mentions: {
           deleteMany: {},
           create: mentions,
@@ -778,7 +777,7 @@ export class CommentService {
 
     switch (targetType) {
       case "MEDIA":
-        entry = await this.prisma.libraryEntry.findUnique({
+        entry = await this.prisma.mediaEntry.findUnique({
           where: { userId_mediaItemId: { userId, mediaItemId: targetId } },
           select: { id: true },
         });
@@ -809,7 +808,7 @@ export class CommentService {
         });
 
         if (season) {
-          entry = await this.prisma.libraryEntry.findUnique({
+          entry = await this.prisma.mediaEntry.findUnique({
             where: {
               userId_mediaItemId: { userId, mediaItemId: season.mediaItemId },
             },
@@ -827,7 +826,7 @@ export class CommentService {
         });
 
         if (episode) {
-          entry = await this.prisma.libraryEntry.findUnique({
+          entry = await this.prisma.mediaEntry.findUnique({
             where: {
               userId_mediaItemId: {
                 userId,
@@ -929,7 +928,7 @@ export class CommentService {
       text: row.deletedAt ? null : row.text,
       deleted: !!row.deletedAt,
       deletedByAdmin: row.deletedByAdmin,
-      edited: row.edited,
+      edited: row.editedAt !== null,
       spoilerTag: row.spoilerTag,
       masked,
       createdAt: row.createdAt.toISOString(),

@@ -43,7 +43,7 @@ function makeService() {
     mediaExternalId: { findUnique: vi.fn() },
     // Nothing tracked yet, and every title already out.
     mediaItem: { findUnique: vi.fn().mockResolvedValue(null) },
-    libraryEntry: {
+    mediaEntry: {
       findUnique: vi.fn().mockResolvedValue(null),
       upsert: vi.fn(),
       deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
@@ -321,7 +321,7 @@ describe("TraktImportSource (via ImportJobService)", () => {
     const job = await runToEnd(service, "u1", committed.id);
 
     expect(job.status).toBe("completed");
-    expect(prisma.libraryEntry.upsert).toHaveBeenCalledWith(
+    expect(prisma.mediaEntry.upsert).toHaveBeenCalledWith(
       expect.objectContaining({
         create: expect.objectContaining({ status: "PLANNED" }),
       }),

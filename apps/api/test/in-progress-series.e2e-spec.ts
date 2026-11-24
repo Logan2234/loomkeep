@@ -47,7 +47,7 @@ describe("In-progress series (e2e)", () => {
     const season = await prisma.season.create({
       data: { mediaItemId: item.id, number: 1 },
     });
-    await prisma.libraryEntry.create({
+    await prisma.mediaEntry.create({
       data: {
         userId,
         mediaItemId: item.id,

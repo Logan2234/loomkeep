@@ -119,7 +119,7 @@ describe("LetterboxdImportSource — list writing", () => {
 
   it("caches each film without adding it to the library", async () => {
     // Being on a list is not tracking: the media row is needed as the list
-    // item's target, a LibraryEntry is not.
+    // item's target, a MediaEntry is not.
     const { mediaItemService, writeLists } = makeSource();
 
     await writeLists([LIST], BOTH);

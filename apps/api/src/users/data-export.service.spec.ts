@@ -29,7 +29,7 @@ function makeUser(
 function makeService() {
   const prisma = {
     user: { findUnique: vi.fn() },
-    libraryEntry: { findMany: vi.fn().mockResolvedValue([]) },
+    mediaEntry: { findMany: vi.fn().mockResolvedValue([]) },
     episodeWatch: { findMany: vi.fn().mockResolvedValue([]) },
     gameEntry: { findMany: vi.fn().mockResolvedValue([]) },
     bookEntry: { findMany: vi.fn().mockResolvedValue([]) },
@@ -319,7 +319,7 @@ describe("DataExportService.buildExport", () => {
         parentId: null,
         text: "Nice one",
         spoilerTag: false,
-        edited: false,
+        editedAt: null,
         deletedAt: null,
         createdAt: new Date("2026-01-01T00:00:00.000Z"),
         updatedAt: new Date("2026-01-01T00:00:00.000Z"),
@@ -405,7 +405,7 @@ describe("DataExportService.buildExport", () => {
         acquisitionSourceOther: "A podcast",
       }),
     );
-    (prisma.libraryEntry.findMany as Mock).mockResolvedValue([
+    (prisma.mediaEntry.findMany as Mock).mockResolvedValue([
       {
         mediaItem: {
           type: "MOVIE",

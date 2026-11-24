@@ -431,13 +431,13 @@ export class AdminUsersController {
     @Param("userId") userId: string,
   ): Promise<AdminUserLibraryStatsDto> {
     const [movies, series, anime, games, books, music] = await Promise.all([
-      this.prisma.libraryEntry.count({
+      this.prisma.mediaEntry.count({
         where: { userId, mediaItem: { type: "MOVIE" } },
       }),
-      this.prisma.libraryEntry.count({
+      this.prisma.mediaEntry.count({
         where: { userId, mediaItem: { type: "SERIES" } },
       }),
-      this.prisma.libraryEntry.count({
+      this.prisma.mediaEntry.count({
         where: { userId, mediaItem: { type: "ANIME" } },
       }),
       this.prisma.gameEntry.count({ where: { userId } }),
@@ -545,7 +545,7 @@ export class AdminUsersController {
         anime: { type: "ANIME", route: "anime" },
       } as const;
       const { type, route } = media[kind];
-      const rows = await this.prisma.libraryEntry.findMany({
+      const rows = await this.prisma.mediaEntry.findMany({
         where: { userId, mediaItem: { type } },
         ...paging,
         include: { mediaItem: { select: { ...item, posterUrl: true } } },

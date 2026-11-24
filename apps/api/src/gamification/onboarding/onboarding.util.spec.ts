@@ -5,7 +5,7 @@ import { computeOnboardingDoneMap } from "./onboarding.util";
 function makePrisma(overrides: Record<string, unknown> = {}): PrismaService {
   const notFound = { findFirst: vi.fn().mockResolvedValue(null) };
   return {
-    libraryEntry: { ...notFound },
+    mediaEntry: { ...notFound },
     gameEntry: { ...notFound },
     bookEntry: { ...notFound },
     musicEntry: { ...notFound },

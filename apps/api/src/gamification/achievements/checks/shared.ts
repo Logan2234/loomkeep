@@ -33,7 +33,7 @@ export function checkCountTier(
 export const checkSeriesFinisherTier = (target: number) =>
   checkCountTier(
     (prisma, userId) =>
-      prisma.libraryEntry.count({
+      prisma.mediaEntry.count({
         where: {
           userId,
           status: "COMPLETED",
@@ -125,7 +125,7 @@ export async function movieWatchTimestamps(
   since?: Date,
 ): Promise<Date[]> {
   const [movieFirstWatches, movieReplays] = await Promise.all([
-    prisma.libraryEntry.findMany({
+    prisma.mediaEntry.findMany({
       where: {
         userId,
         finishedAt: since ? { gte: since } : { not: null },
@@ -136,7 +136,7 @@ export async function movieWatchTimestamps(
     prisma.movieReplay.findMany({
       where: {
         ...(since ? { finishedAt: { gte: since } } : {}),
-        libraryEntry: { userId, mediaItem: { type: "MOVIE", ...movieWhere } },
+        mediaEntry: { userId, mediaItem: { type: "MOVIE", ...movieWhere } },
       },
       select: { finishedAt: true },
     }),
@@ -194,7 +194,7 @@ export async function distinctDecades(
   userId: string,
 ): Promise<number> {
   const [media, games, books] = await Promise.all([
-    prisma.libraryEntry.findMany({
+    prisma.mediaEntry.findMany({
       where: { userId },
       select: { mediaItem: { select: { releaseDate: true } } },
     }),
@@ -232,7 +232,7 @@ export async function distinctGenres(
   userId: string,
 ): Promise<number> {
   const [media, games, books] = await Promise.all([
-    prisma.libraryEntry.findMany({
+    prisma.mediaEntry.findMany({
       where: { userId },
       select: { mediaItem: { select: { genres: true } } },
     }),

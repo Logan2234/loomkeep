@@ -46,7 +46,7 @@ function setup({ leaVisible = true } = {}) {
     [LEA]: ["dune", "perfect-days", "severance"],
   };
   const prisma = {
-    libraryEntry: {
+    mediaEntry: {
       findMany: vi.fn(({ where }: { where: { userId: string } }) =>
         (piles[where.userId] ?? []).map((mediaItemId) => ({ mediaItemId })),
       ),

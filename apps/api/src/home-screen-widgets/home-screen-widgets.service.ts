@@ -359,7 +359,7 @@ export class HomeScreenWidgetsService {
     };
     const [media, games, books, albums] = await Promise.all([
       enabled.has(Domain.MEDIA)
-        ? this.prisma.libraryEntry.findMany({
+        ? this.prisma.mediaEntry.findMany({
             where: { userId },
             ...latest,
             include: { mediaItem: ENTRY_ITEM },

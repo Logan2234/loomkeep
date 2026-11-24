@@ -55,7 +55,7 @@ describe("NotificationService.scanAll", () => {
       sagaMember: { findMany: vi.fn().mockResolvedValue([]) },
       gameEntry: { findMany: vi.fn().mockResolvedValue([]) },
       gameSagaMember: { findMany: vi.fn().mockResolvedValue([]) },
-      libraryEntry: {
+      mediaEntry: {
         findMany: vi
           .fn()
           .mockImplementation(
@@ -107,7 +107,7 @@ describe("NotificationService.scanAll", () => {
     const created = await service.scanAll();
 
     expect(created).toBe(0);
-    expect(prisma.libraryEntry.findMany).toHaveBeenCalledOnce();
+    expect(prisma.mediaEntry.findMany).toHaveBeenCalledOnce();
     expect(prisma.notification.createMany).not.toHaveBeenCalled();
   });
 
@@ -116,7 +116,7 @@ describe("NotificationService.scanAll", () => {
 
     await service.scanAll();
 
-    const where = (prisma.libraryEntry.findMany as Mock).mock.calls[1][0].where;
+    const where = (prisma.mediaEntry.findMany as Mock).mock.calls[1][0].where;
     expect(where.status).toEqual({ not: "DROPPED" });
     expect(where.user.enabledDomains).toEqual({ has: "MEDIA" });
     expect(where.user.OR).toEqual([
@@ -226,7 +226,7 @@ describe("NotificationService.scan", () => {
     notifyEmail: DigestCadence = DigestCadence.DISABLED,
   ) {
     const prisma = {
-      libraryEntry: { findMany: vi.fn().mockResolvedValue([]) },
+      mediaEntry: { findMany: vi.fn().mockResolvedValue([]) },
       gameEntry: { findMany: vi.fn().mockResolvedValue([]) },
       gameSagaMember: { findMany: vi.fn().mockResolvedValue([]) },
       user: {

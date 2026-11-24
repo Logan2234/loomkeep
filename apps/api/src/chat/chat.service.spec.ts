@@ -64,7 +64,7 @@ function messageRow(over: Record<string, unknown> = {}) {
     authorId: ME,
     text: "Je suis **K.O.**",
     spoiler: false,
-    edited: false,
+    editedAt: null,
     deletedAt: null,
     deletedByAdmin: false,
     createdAt: new Date("2026-10-06T21:34:00Z"),
@@ -182,7 +182,7 @@ function setup(
       createMany: vi.fn(),
     },
     block: { findMany: vi.fn().mockResolvedValue([]) },
-    libraryEntry: { findMany: vi.fn().mockResolvedValue([]) },
+    mediaEntry: { findMany: vi.fn().mockResolvedValue([]) },
     gameEntry: { findMany: vi.fn().mockResolvedValue([]) },
     bookEntry: { findMany: vi.fn().mockResolvedValue([]) },
     musicEntry: { findMany: vi.fn().mockResolvedValue([]) },
@@ -713,7 +713,7 @@ describe("ChatService", () => {
       (prisma.message.findMany as Mock).mockResolvedValue([
         messageRow({ embeds: [SEVERANCE] }),
       ]);
-      (prisma.libraryEntry.findMany as Mock).mockResolvedValue([
+      (prisma.mediaEntry.findMany as Mock).mockResolvedValue([
         { mediaItemId: "media-1" },
       ]);
 
@@ -892,16 +892,15 @@ describe("ChatService", () => {
       createdAt: new Date("2026-10-06T21:34:00Z"),
       text: "Salut",
       spoiler: false,
-      edited: false,
     });
-    const editedFlag = () =>
-      (prisma.message.update as Mock).mock.calls.at(-1)?.[0].data.edited;
+    const editedAt = () =>
+      (prisma.message.update as Mock).mock.calls.at(-1)?.[0].data.editedAt;
 
     await service.edit(ME, "m1", "Salut");
-    expect(editedFlag()).toBe(false);
+    expect(editedAt()).toBeUndefined();
 
     await service.edit(ME, "m1", "Salut !");
-    expect(editedFlag()).toBe(true);
+    expect(editedAt()).toBeInstanceOf(Date);
   });
 
   describe("read receipts and presence are reciprocal", () => {

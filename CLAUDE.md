@@ -56,7 +56,7 @@ wording change or a rename.
 - TMDB movie/TV ids are separate namespaces: every call carries a
   `MediaType`. TVDB ids are captured from TMDB because the TV Time import
   reconciles through them.
-- `LibraryEntry.watchedEpisodes`/`lastWatchedAt` and `MediaItem.episodeCount`
+- `MediaEntry.watchedEpisodes`/`lastWatchedAt` and `MediaItem.episodeCount`
   are maintained by Postgres triggers — never write them from the app.
 - Import sources share a base class per domain (`MediaImportSource`,
   `BookCsvSource`): a new source only supplies its parsing.

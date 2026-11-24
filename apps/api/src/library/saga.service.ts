@@ -95,7 +95,7 @@ export class SagaService {
     userId: string,
     filters: LibrarySagaFilters = {},
   ): Promise<LibrarySagasDto> {
-    const entries = await this.prisma.libraryEntry.findMany({
+    const entries = await this.prisma.mediaEntry.findMany({
       where: {
         userId,
         mediaItem: {

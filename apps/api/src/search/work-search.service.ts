@@ -95,7 +95,7 @@ const TABLES: Record<
   [Domain.MEDIA]: {
     item: Prisma.raw(`"MediaItem"`),
     externals: Prisma.raw(`"MediaExternalId"`),
-    entries: Prisma.raw(`"LibraryEntry"`),
+    entries: Prisma.raw(`"MediaEntry"`),
     itemKey: Prisma.raw(`"mediaItemId"`),
     image: Prisma.raw(`i."posterUrl"`),
     kind: Prisma.raw(`i.type::text`),

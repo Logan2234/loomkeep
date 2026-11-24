@@ -19,7 +19,7 @@ function make(mediaCount = 100) {
     gameItem: itemDelegate(),
     bookItem: itemDelegate(),
     musicItem: itemDelegate(),
-    libraryEntry: { groupBy: vi.fn().mockResolvedValue([]) },
+    mediaEntry: { groupBy: vi.fn().mockResolvedValue([]) },
     gameEntry: { groupBy: vi.fn().mockResolvedValue([]) },
     bookEntry: { groupBy: vi.fn().mockResolvedValue([]) },
     musicEntry: { groupBy: vi.fn().mockResolvedValue([]) },

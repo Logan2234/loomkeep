@@ -73,7 +73,7 @@ describe("Public API v1 (e2e)", () => {
       data: { mediaItemId: movie.id, locale: "fr", title: "Premier Contact" },
     });
     // Seen once on an unknown date (an import), then rewatched.
-    const movieEntry = await prisma.libraryEntry.create({
+    const movieEntry = await prisma.mediaEntry.create({
       data: {
         userId,
         mediaItemId: movie.id,
@@ -84,7 +84,7 @@ describe("Public API v1 (e2e)", () => {
     });
     await prisma.movieReplay.create({
       data: {
-        libraryEntryId: movieEntry.id,
+        mediaEntryId: movieEntry.id,
         finishedAt: new Date("2026-09-10T20:00:00Z"),
       },
     });

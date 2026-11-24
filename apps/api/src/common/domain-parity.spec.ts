@@ -306,7 +306,7 @@ describe.each(Object.keys(STALE_TRACK) as CacheDomain[])(
  */
 const ENTRY_XP_SOURCES: Record<CacheDomain, string[]> = {
   MEDIA: [
-    "LibraryEntry",
+    "MediaEntry",
     "Entry",
     "EpisodeWatch",
     "MovieReplay",
@@ -704,7 +704,7 @@ const UPSERT_ENTRY: Record<
   }
 > = {
   MEDIA: {
-    entryModel: "libraryEntry",
+    entryModel: "mediaEntry",
     add: (prisma) =>
       new LibraryService(
         prisma,
