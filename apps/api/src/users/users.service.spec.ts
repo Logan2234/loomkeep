@@ -271,7 +271,9 @@ describe("UsersService — home layout", () => {
         update: vi.fn().mockImplementation(({ data }) => ({
           id: userId,
           createdAt: new Date(),
-          homeLayout: data.homeLayout,
+          preferences: {
+            homeLayout: data.preferences.upsert.update.homeLayout,
+          },
         })),
       },
     } as unknown as PrismaService;
@@ -317,11 +319,24 @@ describe("UsersService — home layout", () => {
     expect(prisma.user.update).toHaveBeenCalledWith({
       where: { id: userId },
       include: USER_DTO_INCLUDE,
-      data: { homeLayout: Prisma.DbNull },
+      data: {
+        preferences: {
+          upsert: {
+            create: { homeLayout: Prisma.DbNull },
+            update: { homeLayout: Prisma.DbNull },
+          },
+        },
+      },
     });
   });
 
   it("keeps the phone home in order and drops a repeated id", async () => {
+    const homePhoneLayout = {
+      widgets: [
+        { id: "a", type: "gamesPlaying", config: { display: "rows" } },
+        { id: "b", type: "toWatch" },
+      ],
+    };
     await service.setHomePhoneLayout(userId, {
       widgets: [
         { id: "a", type: "gamesPlaying", config: { display: "rows" } },
@@ -334,11 +349,11 @@ describe("UsersService — home layout", () => {
       where: { id: userId },
       include: USER_DTO_INCLUDE,
       data: {
-        homePhoneLayout: {
-          widgets: [
-            { id: "a", type: "gamesPlaying", config: { display: "rows" } },
-            { id: "b", type: "toWatch" },
-          ],
+        preferences: {
+          upsert: {
+            create: { homePhoneLayout },
+            update: { homePhoneLayout },
+          },
         },
       },
     });
@@ -350,7 +365,14 @@ describe("UsersService — home layout", () => {
     expect(prisma.user.update).toHaveBeenCalledWith({
       where: { id: userId },
       include: USER_DTO_INCLUDE,
-      data: { homePhoneLayout: Prisma.DbNull },
+      data: {
+        preferences: {
+          upsert: {
+            create: { homePhoneLayout: Prisma.DbNull },
+            update: { homePhoneLayout: Prisma.DbNull },
+          },
+        },
+      },
     });
   });
 });
@@ -365,8 +387,10 @@ describe("UsersService — updateMe newsletter opt-in timestamp", () => {
       user: {
         findUnique: vi.fn().mockResolvedValue({
           birthDate: null,
-          allowAdultContent: false,
-          notifyNewsletter: currentNotifyNewsletter,
+          preferences: {
+            allowAdultContent: false,
+            notifyNewsletter: currentNotifyNewsletter,
+          },
         }),
         update: vi.fn().mockResolvedValue({
           id: userId,

@@ -26,6 +26,7 @@ import { PrismaService } from "../prisma/prisma.service";
 import { FollowService } from "../social/follow.service";
 import { WorkFriendsService } from "../social/work-friends.service";
 import { toUserSummaryDto } from "../users/avatar.util";
+import { preferencesOf } from "../users/preferences.util";
 import { ChatWorkService, type WorkCard } from "./chat-work.service";
 import { ChatService, type CommandMessage } from "./chat.service";
 
@@ -224,10 +225,12 @@ export class ChatCommandsService {
     const [, kind, sourceId] = path;
     const type = kind.toUpperCase() as MediaType;
     const [viewer, sharing] = await Promise.all([
-      this.prisma.user.findUniqueOrThrow({
-        where: { id: viewerId },
-        select: { watchRegion: true },
-      }),
+      this.prisma.userPreferences
+        .findUnique({
+          where: { userId: viewerId },
+          select: { watchRegion: true },
+        })
+        .then(preferencesOf),
       this.sharingPlatforms(viewerId, message),
     ]);
     const region = resolveWatchRegion(
@@ -462,8 +465,14 @@ export class ChatCommandsService {
     message: CommandMessage,
   ): Promise<{ user: UserSummaryDto; providerIds: number[] }[]> {
     const users = await this.prisma.user.findMany({
-      where: { id: { in: message.memberIds }, chatShareWatchProviders: true },
-      select: { ...USER_SELECT, watchProviderIds: true },
+      where: {
+        id: { in: message.memberIds },
+        preferences: { chatShareWatchProviders: true },
+      },
+      select: {
+        ...USER_SELECT,
+        preferences: { select: { watchProviderIds: true } },
+      },
     });
     const friendIds = new Set(await this.follow.listFriendIds(viewerId));
     return users
@@ -471,7 +480,7 @@ export class ChatCommandsService {
       .sort((a, b) => Number(b.id === viewerId) - Number(a.id === viewerId))
       .map((u) => ({
         user: toUserSummaryDto(u),
-        providerIds: u.watchProviderIds,
+        providerIds: u.preferences?.watchProviderIds ?? [],
       }));
   }
 }

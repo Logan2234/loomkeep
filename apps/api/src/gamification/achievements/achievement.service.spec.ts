@@ -429,7 +429,7 @@ describe("AchievementService rarity snapshot", () => {
     expect(where).toMatchObject({
       onboarding: { onboardedAt: { not: null } },
       profileAccess: { not: "GHOST" },
-      hideProgression: false,
+      preferences: { hideProgression: false },
     });
     // The window itself is RARITY_ACTIVE_WINDOW_DAYS; a minute of slack
     // covers the time between the query and this line.

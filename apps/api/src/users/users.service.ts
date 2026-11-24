@@ -65,6 +65,7 @@ import type { UpdateUserDto } from "./dto/update-user.dto";
 import type { UpdateUsernameDto } from "./dto/update-username.dto";
 import type { UploadAvatarDto } from "./dto/upload-avatar.dto";
 import { toHomeLayoutJson } from "./home-layout.util";
+import { preferencesOf, upsertPreferences } from "./preferences.util";
 import { signWidgetToken } from "./widget-token.util";
 
 const FULL_EXPORT_INTERVAL_MS = 60 * 60 * 1000;
@@ -422,7 +423,11 @@ export class UsersService {
     const user = await this.prisma.user.update({
       where: { id: userId },
       include: USER_DTO_INCLUDE,
-      data: { homeLayout: toHomeLayoutJson({ widgets }) },
+      data: {
+        preferences: upsertPreferences({
+          homeLayout: toHomeLayoutJson({ widgets }),
+        }),
+      },
     });
     return toUserDto(user);
   }
@@ -441,7 +446,11 @@ export class UsersService {
     const user = await this.prisma.user.update({
       where: { id: userId },
       include: USER_DTO_INCLUDE,
-      data: { homePhoneLayout: toHomeLayoutJson({ widgets }) },
+      data: {
+        preferences: upsertPreferences({
+          homePhoneLayout: toHomeLayoutJson({ widgets }),
+        }),
+      },
     });
     return toUserDto(user);
   }
@@ -451,7 +460,9 @@ export class UsersService {
     const user = await this.prisma.user.update({
       where: { id: userId },
       include: USER_DTO_INCLUDE,
-      data: { homePhoneLayout: Prisma.DbNull },
+      data: {
+        preferences: upsertPreferences({ homePhoneLayout: Prisma.DbNull }),
+      },
     });
     return toUserDto(user);
   }
@@ -461,7 +472,7 @@ export class UsersService {
     const user = await this.prisma.user.update({
       where: { id: userId },
       include: USER_DTO_INCLUDE,
-      data: { homeLayout: Prisma.DbNull },
+      data: { preferences: upsertPreferences({ homeLayout: Prisma.DbNull }) },
     });
     return toUserDto(user);
   }
@@ -480,9 +491,13 @@ export class UsersService {
       where: { id: userId },
       select: {
         birthDate: true,
-        allowAdultContent: true,
-        notifyNewsletter: true,
-        alertPrefs: true,
+        preferences: {
+          select: {
+            allowAdultContent: true,
+            notifyNewsletter: true,
+            alertPrefs: true,
+          },
+        },
       },
     });
 
@@ -495,11 +510,13 @@ export class UsersService {
       );
     }
 
+    const currentPrefs = preferencesOf(current.preferences);
+
     // Proof-of-consent timestamp (GDPR art. 7(1)): only stamped on the
     // false → true transition, never overwritten afterwards (a later opt-out
     // leaves it as the historical record of when consent was last given).
     const newsletterOptInAt =
-      dto.notifyNewsletter === true && !current.notifyNewsletter
+      dto.notifyNewsletter === true && !currentPrefs.notifyNewsletter
         ? new Date()
         : undefined;
 
@@ -511,7 +528,7 @@ export class UsersService {
           : new Date(dto.birthDate);
 
     let nextAllowAdultContent =
-      dto.allowAdultContent ?? current.allowAdultContent;
+      dto.allowAdultContent ?? currentPrefs.allowAdultContent;
 
     if (nextAllowAdultContent && !isAdult(nextBirthDate)) {
       if (dto.allowAdultContent === true) {
@@ -528,7 +545,7 @@ export class UsersService {
     }
 
     const alertPrefs = dto.alertPrefs
-      ? mergeAlertPrefs(readAlertPrefs(current.alertPrefs), dto.alertPrefs)
+      ? mergeAlertPrefs(readAlertPrefs(currentPrefs.alertPrefs), dto.alertPrefs)
       : undefined;
 
     if (alertPrefs === null) {
@@ -546,11 +563,25 @@ export class UsersService {
       data: {
         displayName: dto.displayName,
         birthDate: nextBirthDate,
-        allowAdultContent: nextAllowAdultContent,
-        notifyEmail: dto.notifyEmail,
-        notifyPush: dto.notifyPush,
-        notifyNewsletter: dto.notifyNewsletter,
-        alertPrefs,
+        preferences: upsertPreferences({
+          allowAdultContent: nextAllowAdultContent,
+          notifyEmail: dto.notifyEmail,
+          notifyPush: dto.notifyPush,
+          notifyNewsletter: dto.notifyNewsletter,
+          alertPrefs,
+          defaultReviewVisibility: dto.defaultReviewVisibility,
+          defaultListVisibility: dto.defaultListVisibility,
+          hideProgression: dto.hideProgression,
+          chatShowPresence: dto.chatShowPresence,
+          chatShowReadReceipts: dto.chatShowReadReceipts,
+          chatShareWatchProviders: dto.chatShareWatchProviders,
+          feedbackWidget: dto.feedbackWidget,
+          spoilerSensitivity: dto.spoilerSensitivity,
+          domainOrder: dto.domainOrder,
+          watchRegion: dto.watchRegion,
+          watchProviderIds: dto.watchProviderIds,
+          listenServices: dto.listenServices,
+        }),
         consent: newsletterOptInAt
           ? {
               upsert: {
@@ -563,19 +594,7 @@ export class UsersService {
         enabledDomains: dto.enabledDomains,
         // Empty string clears the bio back to null.
         bio: dto.bio === undefined ? undefined : dto.bio || null,
-        defaultReviewVisibility: dto.defaultReviewVisibility,
-        defaultListVisibility: dto.defaultListVisibility,
         locale: dto.locale as string,
-        hideProgression: dto.hideProgression,
-        chatShowPresence: dto.chatShowPresence,
-        chatShowReadReceipts: dto.chatShowReadReceipts,
-        chatShareWatchProviders: dto.chatShareWatchProviders,
-        feedbackWidget: dto.feedbackWidget,
-        spoilerSensitivity: dto.spoilerSensitivity,
-        domainOrder: dto.domainOrder,
-        watchRegion: dto.watchRegion,
-        watchProviderIds: dto.watchProviderIds,
-        listenServices: dto.listenServices,
       },
     });
     await this.maybeAwardProfileCompleted(userId, user);

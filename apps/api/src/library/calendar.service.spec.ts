@@ -29,7 +29,9 @@ describe("local movie release calendar", () => {
       mediaEntry: { findMany: vi.fn().mockResolvedValue([row]) },
       gameEntry: { findMany: vi.fn().mockResolvedValue([]) },
       user: {
-        findUniqueOrThrow: vi.fn().mockResolvedValue({ watchRegion: "FR" }),
+        findUniqueOrThrow: vi
+          .fn()
+          .mockResolvedValue({ preferences: { watchRegion: "FR" } }),
       },
     };
     const service = new CalendarService(prisma as never);
@@ -74,7 +76,7 @@ describe("local movie release calendar", () => {
       user: {
         findUniqueOrThrow: vi
           .fn()
-          .mockResolvedValue({ watchRegion: null, timezone: "UTC" }),
+          .mockResolvedValue({ timezone: "UTC", preferences: null }),
       },
     };
     const service = new CalendarService(prisma as never);
@@ -118,7 +120,7 @@ describe("local movie release calendar", () => {
       user: {
         findUniqueOrThrow: vi
           .fn()
-          .mockResolvedValue({ watchRegion: null, timezone: "Europe/Paris" }),
+          .mockResolvedValue({ timezone: "Europe/Paris", preferences: null }),
       },
     };
 
@@ -162,7 +164,7 @@ describe("local movie release calendar", () => {
       user: {
         findUniqueOrThrow: vi
           .fn()
-          .mockResolvedValue({ watchRegion: null, timezone: "UTC" }),
+          .mockResolvedValue({ timezone: "UTC", preferences: null }),
       },
     };
 

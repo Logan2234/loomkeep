@@ -23,6 +23,7 @@ import {
   isStreakSecuredToday,
 } from "../stats/video-temporal.util";
 import { avatarUrl } from "../users/avatar.util";
+import { preferencesOf } from "../users/preferences.util";
 import { isSuspended } from "../users/suspension.util";
 import { FollowService } from "./follow.service";
 import { SOCIAL_DOMAINS } from "./social.constants";
@@ -64,7 +65,7 @@ export class ProfileService {
         profileAccess: true,
         createdAt: true,
         avatarUpdatedAt: true,
-        hideProgression: true,
+        preferences: { select: { hideProgression: true } },
         equippedBadgeKeys: true,
         suspendedUntil: true,
       },
@@ -139,7 +140,8 @@ export class ProfileService {
     // comments. `UserScore` is only read when gamification is actually on, so
     // a self-hoster running with it off never pays that query.
     const gamificationEnabled = isGamificationEnabled(this.config);
-    const xpVisible = relation.isSelf || !target.hideProgression;
+    const xpVisible =
+      relation.isSelf || !preferencesOf(target.preferences).hideProgression;
 
     const [
       activityStats,

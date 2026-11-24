@@ -203,7 +203,11 @@ describe("CalendarFeedService.getReleasesFeed", () => {
 
   it("adds the movies and games that came out, newest first", async () => {
     const { service, prisma } = makeService(
-      { id: "user-1", locale: "fr", watchRegion: "FR" } as never,
+      {
+        id: "user-1",
+        locale: "fr",
+        preferences: { watchRegion: "FR" },
+      } as never,
       true,
     );
     (prisma.episode.findMany as ReturnType<typeof vi.fn>).mockResolvedValue([

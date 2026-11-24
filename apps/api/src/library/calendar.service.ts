@@ -40,8 +40,12 @@ export class CalendarService {
   ): Promise<CalendarEntryDto[]> {
     const user = await this.prisma.user.findUniqueOrThrow({
       where: { id: userId },
-      select: { watchRegion: true, timezone: true },
+      select: {
+        timezone: true,
+        preferences: { select: { watchRegion: true } },
+      },
     });
+    const watchRegion = user.preferences?.watchRegion ?? null;
     const now = new Date();
     const today = localDayOrUtc(user.timezone, now);
     const startOfToday = startOfLocalDay(user.timezone, now);
@@ -117,7 +121,7 @@ export class CalendarService {
     const gameEntries = await this.calendarGames(userId, today);
     const movieEntries: CalendarEntryDto[] = movies.flatMap((entry) => {
       const region = resolveWatchRegion(
-        user.watchRegion ?? entry.movieReleaseRegion ?? undefined,
+        watchRegion ?? entry.movieReleaseRegion ?? undefined,
         acceptLanguage,
       );
       const release = movieReleaseInfo(

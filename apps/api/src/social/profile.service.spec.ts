@@ -95,7 +95,7 @@ describe("ProfileService.getProfile xp", () => {
           profileAccess: "PUBLIC",
           createdAt: new Date("2024-01-01"),
           avatarUpdatedAt: null,
-          hideProgression: opts.hideProgression ?? false,
+          preferences: { hideProgression: opts.hideProgression ?? false },
           equippedBadgeKeys: [],
         }),
       },

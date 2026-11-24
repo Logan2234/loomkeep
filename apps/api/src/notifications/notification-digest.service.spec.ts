@@ -56,7 +56,9 @@ function makeService(opts: {
     user: {
       findMany: vi
         .fn()
-        .mockResolvedValue([{ ...user, notifyEmail, notifyPush }]),
+        .mockResolvedValue([
+          { ...user, preferences: { notifyEmail, notifyPush } },
+        ]),
     },
     notification: {
       findMany: vi.fn().mockResolvedValue(pending),

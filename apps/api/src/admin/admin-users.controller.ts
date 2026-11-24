@@ -226,7 +226,7 @@ export class AdminUsersController {
     }
 
     if (newsletter === "yes" || newsletter === "no") {
-      where.notifyNewsletter = newsletter === "yes";
+      where.preferences = { notifyNewsletter: newsletter === "yes" };
     }
 
     if (push === "yes") where.pushSubscriptions = { some: {} };

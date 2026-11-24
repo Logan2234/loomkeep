@@ -37,7 +37,7 @@ function review(
       username: author.id,
       displayName: author.id,
       profileAccess: author.profileAccess,
-      hideProgression: false,
+      preferences: { hideProgression: false },
     },
   };
 }
@@ -233,7 +233,10 @@ function makeForWrite(
       findMany: vi.fn().mockResolvedValue([]),
     },
     user: {
-      findUniqueOrThrow: vi
+      findUniqueOrThrow: vi.fn().mockResolvedValue({ id: "u1" }),
+    },
+    userPreferences: {
+      findUnique: vi
         .fn()
         .mockResolvedValue({ defaultReviewVisibility: "FRIENDS" }),
     },
@@ -871,7 +874,7 @@ describe("ReviewService.listMine — target links", () => {
           username: VIEWER,
           displayName: VIEWER,
           avatarUrl: null,
-          hideProgression: false,
+          preferences: { hideProgression: false },
         }),
       },
       userScore: { findMany: vi.fn().mockResolvedValue([]) },
@@ -947,7 +950,7 @@ describe("ReviewService.listMine — target links", () => {
           username: VIEWER,
           displayName: VIEWER,
           avatarUrl: null,
-          hideProgression: false,
+          preferences: { hideProgression: false },
         }),
       },
       userScore: { findMany: vi.fn().mockResolvedValue([]) },

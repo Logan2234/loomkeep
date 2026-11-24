@@ -197,7 +197,7 @@ describe("NewsletterService.handleChangelogPublished", () => {
 describe("NewsletterService.unsubscribe", () => {
   function makeService() {
     const prisma = {
-      user: { update: vi.fn() },
+      userPreferences: { upsert: vi.fn() },
       userUrlToken: { findUnique: vi.fn() },
     } as unknown as PrismaService;
     const mail = {} as unknown as MailService;
@@ -217,9 +217,10 @@ describe("NewsletterService.unsubscribe", () => {
       where: { newsletterUnsubscribeToken: "stable-token" },
       select: { userId: true },
     });
-    expect(prisma.user.update).toHaveBeenCalledWith({
-      where: { id: "user_1" },
-      data: { notifyNewsletter: false },
+    expect(prisma.userPreferences.upsert).toHaveBeenCalledWith({
+      where: { userId: "user_1" },
+      create: { userId: "user_1", notifyNewsletter: false },
+      update: { notifyNewsletter: false },
     });
   });
 
@@ -230,7 +231,7 @@ describe("NewsletterService.unsubscribe", () => {
     await expect(service.unsubscribe("bogus")).rejects.toThrow(
       "Invalid unsubscribe link",
     );
-    expect(prisma.user.update).not.toHaveBeenCalled();
+    expect(prisma.userPreferences.upsert).not.toHaveBeenCalled();
   });
 });
 

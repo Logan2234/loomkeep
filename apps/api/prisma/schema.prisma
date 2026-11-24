@@ -534,46 +534,17 @@ model User {
   // in Sécurité. Stored lowercase like email (User_username_lowercase_check).
   username                String                 @unique
   birthDate               DateTime?              @db.Date
-  // Opt-in to 18+ titles; only effective when birthDate proves the account is 18+.
-  allowAdultContent       Boolean                @default(false)
-  // Opt-out from showing gamification progression (level/XP) to OTHER
-  // viewers — the owner always sees their own real progress regardless.
-  // Same gating role as GHOST/anonymized for the streak badge, but a
-  // standing user preference rather than a mode switch.
-  hideProgression         Boolean                @default(false)
-  // Messages: whether friends see this account online (and typing), and when
-  // it read their messages. Reciprocal by design: switched off, the account
-  // no longer sees either from anyone else.
-  chatShowPresence        Boolean                @default(true)
-  chatShowReadReceipts    Boolean                @default(true)
-  // Messages' /where: friends see which of `watchProviderIds` this account
-  // has. Off by default — a subscription list is the account's own business.
-  chatShareWatchProviders Boolean                @default(false)
-  // Shows the feedback (Quackback) launcher. An instance without
-  // PUBLIC_QUACKBACK_URL has no launcher at all, whatever this says.
-  feedbackWidget          Boolean                @default(true)
   // Up to 3 unlocked, non-secret achievement keys shown on the profile.
   // Equipping a key freezes that tier rather than following the highest tier;
   // an achievement's tiers are separate keys (cinephile_bronze vs
   // cinephile_gold), so equipping one just picks a key like any other.
   equippedBadgeKeys       String[]               @default([])
-  // Communication preferences: cadence at which each channel delivers the
-  // "new episode" digest. See DigestCadence.
-  notifyEmail             DigestCadence          @default(WEEKLY)
-  notifyPush              DigestCadence          @default(WEEKLY)
   // IANA timezone (e.g. "Europe/Paris"), used to time the digest at a local
   // hour. Auto-detected client-side at onboarding, editable afterwards.
   timezone                String                 @default("Europe/Paris")
-  // Per-alert channel choices that differ from the default, keyed like
-  // ALERTS in packages/shared/src/alerts.ts: { COMMENT_REPLY: { push: true } }.
-  alertPrefs              Json                   @default("{}")
   // Last time the bell or the notifications page was opened: what arrived
   // after it counts toward the badge, the rest is seen but maybe unread.
   notificationsSeenAt     DateTime?
-  // Opt-in to the release newsletter (sent automatically when a changelog
-  // entry is published on Quackback — see NewsletterService) — separate
-  // from notifyEmail, which is scoped to "new episode" alerts, not marketing.
-  notifyNewsletter        Boolean                @default(false)
   // Set once the verification email's link has been opened. Informational only
   // in self-host (no feature is gated on it) — see UserToken.
   emailVerified           Boolean                @default(false)
@@ -587,13 +558,6 @@ model User {
   // default (nothing exposed to the public without an accepted follow). The
   // per-domain/facet audiences live in VisibilitySetting.
   profileAccess           ProfileAccess          @default(PRIVATE)
-  // Default audience applied to a new review unless overridden at publication.
-  defaultReviewVisibility ReviewVisibility       @default(FRIENDS)
-  // Default audience applied to a new list unless overridden at creation.
-  defaultListVisibility   ListVisibility         @default(PRIVATE)
-  // Overrides the per-context "already finished this, so reveal" default
-  // that reviews and comments otherwise apply on their own.
-  spoilerSensitivity      SpoilerSensitivity     @default(AUTO)
   // Operational permission level (gates /admin). Separate axis from the paid
   // tier (see UserEntitlement below): an admin isn't "the highest tier".
   role                    Role                   @default(USER)
@@ -601,28 +565,6 @@ model User {
   // search/notif filtering follow at P3. Empty by default — the onboarding
   // wizard's domain step is what actually turns these on for a new account.
   enabledDomains          Domain[]               @default([])
-  // Display order for the domain browser (settings tiles, desktop rail's
-  // Library section). Partial and total-safe: a domain missing from it (a
-  // brand-new one, or before this preference ever existed) just keeps its
-  // canonical position at the end — see web domains.ts's orderedDomains().
-  domainOrder             Domain[]               @default([])
-  // Country whose streaming offers the detail pages show (ISO 3166-1, "FR").
-  // Null means automatic: taken from the browser's Accept-Language on each
-  // request — see resolveWatchRegion().
-  watchRegion             String?
-  // TMDB watch provider ids of the services the user has, put first (and in
-  // colour) wherever a title's offers are listed. Not tied to a region: the
-  // ids are global, a region only decides which of them offer a title.
-  watchProviderIds        Int[]                  @default([])
-  // ListenService values, put first on an album's page.
-  listenServices          String[]               @default([])
-  // The home page's widget grid (shared HomeLayoutDto). Null means the
-  // default grid, which the web builds from the enabled domains — stored
-  // only once the user edits the page, so the default keeps evolving.
-  homeLayout              Json?
-  // The phone home's widgets in order (shared HomePhoneLayoutDto), apart
-  // from the desktop grid. Null means the phone default, built on the web.
-  homePhoneLayout         Json?
   // UI language (Paraglide locale code, "fr" or "en"). Set from the
   // Accept-Language header at registration (see AuthService.register), and
   // editable from Réglages > Apparence — this is also the sync-across-devices
@@ -730,6 +672,7 @@ model User {
   achievements               UserAchievement[]
   sessionTimer               SessionTimer?
   // Read once in an account's life, kept off the User row: see each model.
+  preferences                UserPreferences?
   consent                    UserConsent?
   onboarding                 UserOnboarding?
   urlTokens                  UserUrlToken?
@@ -739,6 +682,73 @@ model User {
 
   @@index([lastActiveAt])
   @@index([invitationId])
+}
+
+// What an account chose in Réglages. Created with the account (and by the
+// migration for older ones); read through preferencesOf(), which falls back
+// to these defaults should a row ever be missing.
+model UserPreferences {
+  userId                  String             @id
+  // Opt-in to 18+ titles; only effective when birthDate proves the account is 18+.
+  allowAdultContent       Boolean            @default(false)
+  // Opt-out from showing gamification progression (level/XP) to OTHER
+  // viewers — the owner always sees their own real progress regardless.
+  // Same gating role as GHOST/anonymized for the streak badge, but a
+  // standing user preference rather than a mode switch.
+  hideProgression         Boolean            @default(false)
+  // Messages: whether friends see this account online (and typing), and when
+  // it read their messages. Reciprocal by design: switched off, the account
+  // no longer sees either from anyone else.
+  chatShowPresence        Boolean            @default(true)
+  chatShowReadReceipts    Boolean            @default(true)
+  // Messages' /where: friends see which of `watchProviderIds` this account
+  // has. Off by default — a subscription list is the account's own business.
+  chatShareWatchProviders Boolean            @default(false)
+  // Shows the feedback (Quackback) launcher. An instance without
+  // PUBLIC_QUACKBACK_URL has no launcher at all, whatever this says.
+  feedbackWidget          Boolean            @default(true)
+  // Communication preferences: cadence at which each channel delivers the
+  // "new episode" digest. See DigestCadence.
+  notifyEmail             DigestCadence      @default(WEEKLY)
+  notifyPush              DigestCadence      @default(WEEKLY)
+  // Per-alert channel choices that differ from the default, keyed like
+  // ALERTS in packages/shared/src/alerts.ts: { COMMENT_REPLY: { push: true } }.
+  alertPrefs              Json               @default("{}")
+  // Opt-in to the release newsletter (sent automatically when a changelog
+  // entry is published on Quackback — see NewsletterService) — separate
+  // from notifyEmail, which is scoped to "new episode" alerts, not marketing.
+  notifyNewsletter        Boolean            @default(false)
+  // Default audience applied to a new review unless overridden at publication.
+  defaultReviewVisibility ReviewVisibility   @default(FRIENDS)
+  // Default audience applied to a new list unless overridden at creation.
+  defaultListVisibility   ListVisibility     @default(PRIVATE)
+  // Overrides the per-context "already finished this, so reveal" default
+  // that reviews and comments otherwise apply on their own.
+  spoilerSensitivity      SpoilerSensitivity @default(AUTO)
+  // Display order for the domain browser (settings tiles, desktop rail's
+  // Library section). Partial and total-safe: a domain missing from it (a
+  // brand-new one, or before this preference ever existed) just keeps its
+  // canonical position at the end — see web domains.ts's orderedDomains().
+  domainOrder             Domain[]           @default([])
+  // Country whose streaming offers the detail pages show (ISO 3166-1, "FR").
+  // Null means automatic: taken from the browser's Accept-Language on each
+  // request — see resolveWatchRegion().
+  watchRegion             String?
+  // TMDB watch provider ids of the services the user has, put first (and in
+  // colour) wherever a title's offers are listed. Not tied to a region: the
+  // ids are global, a region only decides which of them offer a title.
+  watchProviderIds        Int[]              @default([])
+  // ListenService values, put first on an album's page.
+  listenServices          String[]           @default([])
+  // The home page's widget grid (shared HomeLayoutDto). Null means the
+  // default grid, which the web builds from the enabled domains — stored
+  // only once the user edits the page, so the default keeps evolving.
+  homeLayout              Json?
+  // The phone home's widgets in order (shared HomePhoneLayoutDto), apart
+  // from the desktop grid. Null means the phone default, built on the web.
+  homePhoneLayout         Json?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 // Proof of consent (GDPR art. 7(1)). Created at sign-up; an older account

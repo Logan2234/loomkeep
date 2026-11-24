@@ -18,6 +18,7 @@ export const ADMIN_USER_INCLUDE = {
   _count: { select: { webauthnCredentials: true } },
   consent: true,
   onboarding: true,
+  preferences: true,
 } satisfies Prisma.UserInclude;
 
 export type AdminUserRow = Prisma.UserGetPayload<{

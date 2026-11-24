@@ -12,9 +12,12 @@ export class AgeGateService {
   async allowsAdultContent(userId: string): Promise<boolean> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: { birthDate: true, allowAdultContent: true },
+      select: {
+        birthDate: true,
+        preferences: { select: { allowAdultContent: true } },
+      },
     });
-    return !!user?.allowAdultContent && isAdult(user.birthDate);
+    return !!user?.preferences?.allowAdultContent && isAdult(user.birthDate);
   }
 
   /**

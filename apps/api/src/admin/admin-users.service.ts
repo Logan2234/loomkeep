@@ -17,6 +17,7 @@ import {
 import { effectivePlan } from "../entitlements/entitlement.service";
 import { EventsGateway } from "../events/events.gateway";
 import { PrismaService } from "../prisma/prisma.service";
+import { preferencesOf } from "../users/preferences.util";
 import { ageBracket } from "./admin-accounts-stats.util";
 import {
   ADMIN_USER_INCLUDE,
@@ -206,6 +207,7 @@ export class AdminUsersService {
       this.prisma.block.count({ where: { blockedId: userId } }),
     ]);
 
+    const prefs = preferencesOf(user.preferences);
     return {
       user: row,
       journey: {
@@ -241,16 +243,16 @@ export class AdminUsersService {
       preferences: {
         locale: user.locale,
         timezone: user.timezone,
-        watchRegion: user.watchRegion,
-        watchProviderCount: user.watchProviderIds.length,
-        notifyEmail: user.notifyEmail,
-        notifyPush: user.notifyPush,
-        newsletter: user.notifyNewsletter,
+        watchRegion: prefs.watchRegion,
+        watchProviderCount: prefs.watchProviderIds.length,
+        notifyEmail: prefs.notifyEmail,
+        notifyPush: prefs.notifyPush,
+        newsletter: prefs.notifyNewsletter,
         newsletterOptInAt:
           user.consent?.newsletterOptInAt?.toISOString() ?? null,
         profileAccess: user.profileAccess,
-        defaultReviewVisibility: user.defaultReviewVisibility,
-        allowAdultContent: user.allowAdultContent,
+        defaultReviewVisibility: prefs.defaultReviewVisibility,
+        allowAdultContent: prefs.allowAdultContent,
       },
       imports: imports.map((i) => ({
         ...i,

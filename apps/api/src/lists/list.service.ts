@@ -41,6 +41,7 @@ import { isSocialEnabled } from "../social/social.config";
 import { VisibilityService } from "../social/visibility.service";
 import { resolveOwnVisibility } from "../social/visibility.util";
 import { toUserSummaryDto } from "../users/avatar.util";
+import { preferencesOf } from "../users/preferences.util";
 import type { AddListItemBody } from "./dto/add-list-item.dto";
 import type { CreateListBody } from "./dto/create-list.dto";
 import type { UpdateListBody } from "./dto/update-list.dto";
@@ -115,9 +116,13 @@ export class ListService {
   async create(userId: string, dto: CreateListBody): Promise<ListDto> {
     const user = await this.prisma.user.findUniqueOrThrow({
       where: { id: userId },
-      select: { defaultListVisibility: true, profileAccess: true },
+      select: {
+        profileAccess: true,
+        preferences: { select: { defaultListVisibility: true } },
+      },
     });
-    const requested = dto.visibility ?? user.defaultListVisibility;
+    const requested =
+      dto.visibility ?? preferencesOf(user.preferences).defaultListVisibility;
     // A Figurant can create lists but never share them — clamp regardless of
     // what was requested or their configured default.
     const visibility = user.profileAccess === "GHOST" ? "PRIVATE" : requested;

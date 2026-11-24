@@ -14,7 +14,14 @@ function make(
   user: { birthDate: Date | null; allowAdultContent: boolean } | null,
 ) {
   const prisma = {
-    user: { findUnique: vi.fn().mockResolvedValue(user) },
+    user: {
+      findUnique: vi.fn().mockResolvedValue(
+        user && {
+          birthDate: user.birthDate,
+          preferences: { allowAdultContent: user.allowAdultContent },
+        },
+      ),
+    },
   } as unknown as PrismaService;
 
   return new AgeGateService(prisma);

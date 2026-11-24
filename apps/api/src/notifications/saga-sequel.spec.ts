@@ -55,7 +55,7 @@ function makeService({
     user: {
       findUnique: vi.fn().mockResolvedValue({
         locale: "fr",
-        alertPrefs: {},
+        preferences: { alertPrefs: {} },
         suspendedUntil: null,
       }),
     },
@@ -78,7 +78,7 @@ const fan = (id: string, alertPrefs: object = {}) => ({
     id,
     email: `${id}@example.com`,
     locale: "fr",
-    alertPrefs,
+    preferences: { alertPrefs },
     suspendedUntil: null,
   },
 });
