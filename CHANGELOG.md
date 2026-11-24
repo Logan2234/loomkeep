@@ -42,6 +42,13 @@ history from before it was started.
 - Release notes end with the API and web images pinned by digest, for
   self-hosters who want the exact signed image rather than a tag.
 
+### Changed
+
+- Landing page: the title, description and opening line now say what Loomkeep
+  is (a free, open-source, self-hostable media tracker), in English, French
+  and Italian, and the sitemap dates each page.
+- Docs: a `robots.txt` points search engines to the sitemap.
+
 ### Fixed
 
 - Changing your password or two-step verification now signs your other

@@ -555,6 +555,9 @@
           onpointerenter={() => (verbPaused = true)}
           onpointerleave={() => (verbPaused = false)}
           class="font-display mt-6 text-[min(clamp(3rem,9vw,6rem),14svh)] leading-[0.95] font-extrabold tracking-[-0.035em]">
+          <!-- The heading search engines read: what the product is, ahead of
+               the animated sentence. -->
+          <span class="sr-only">{m.landing_hero_title_prefix()}</span>
           {m.landing_hero_title_lead()}<br />
           {m.landing_hero_title_sub()}
           <!-- Screen readers get every verb at once rather than a heading
