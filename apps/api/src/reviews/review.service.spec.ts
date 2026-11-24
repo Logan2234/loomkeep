@@ -496,10 +496,26 @@ describe("ReviewService.vote", () => {
 
     const { svc: quiet, notifications: none } = makeForVoting({
       reviewOwnerId: "author",
-      upvotes: 11,
+      upvotes: 30,
     });
     await quiet.vote("voter", "r1", "UP" as never);
     expect(none.create).not.toHaveBeenCalled();
+  });
+
+  // Two upvotes landing together (9 → 11) each counted 11, neither saw
+  // exactly 10, and the author was never told (audit 2026-11-17, BUG-66).
+  it("still tells the author when concurrent upvotes skip past the threshold", async () => {
+    const { svc, notifications } = makeForVoting({
+      reviewOwnerId: "author",
+      upvotes: 11,
+    });
+    await svc.vote("voter", "r1", "UP" as never);
+    expect(notifications.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        body: "10 upvotes",
+        dedupeKey: "review-votes:r1:10",
+      }),
+    );
   });
 
   it("upserts the vote and returns the resulting score", async () => {

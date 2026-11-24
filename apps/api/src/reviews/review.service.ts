@@ -48,6 +48,9 @@ import { VisibilityService } from "../social/visibility.service";
 import { resolveReviewVisibility } from "../social/visibility.util";
 import { toUserSummaryDto } from "../users/avatar.util";
 
+// How far past the threshold a burst of concurrent upvotes may land.
+const VOTE_NOTIFY_WINDOW = 5;
+
 /** Feed domain for a review target ("GAME" work lives in the GAMES domain…). */
 
 type ReviewRow = {
@@ -257,7 +260,18 @@ export class ReviewService {
     const count = await this.prisma.reviewVote.count({
       where: { reviewId, value: ReviewVoteValue.UP },
     });
-    if (count !== REVIEW_VOTE_NOTIFY_THRESHOLD) return;
+
+    // At or just past the threshold, not exactly on it: two upvotes landing
+    // together (9 → 11) each count 11, and neither saw 10. The dedupe key,
+    // the threshold's and not the count's, keeps it to one notification;
+    // the window keeps a long-popular review from notifying again once
+    // that notification is gone.
+    if (
+      count < REVIEW_VOTE_NOTIFY_THRESHOLD ||
+      count >= REVIEW_VOTE_NOTIFY_THRESHOLD + VOTE_NOTIFY_WINDOW
+    ) {
+      return;
+    }
 
     const copy = (await this.notifications.copyFor(authorId)).reviewVotes;
     const work = await resolveWorkLink(
@@ -269,10 +283,13 @@ export class ReviewService {
       userId: authorId,
       type: NotificationType.REVIEW_VOTES,
       title: copy.title,
-      body: copy.body(count),
+      body: copy.body(REVIEW_VOTE_NOTIFY_THRESHOLD),
       url: work?.href ?? null,
-      dedupeKey: `review-votes:${reviewId}:${count}`,
-      data: { count, workTitle: work?.title ?? null },
+      dedupeKey: `review-votes:${reviewId}:${REVIEW_VOTE_NOTIFY_THRESHOLD}`,
+      data: {
+        count: REVIEW_VOTE_NOTIFY_THRESHOLD,
+        workTitle: work?.title ?? null,
+      },
     });
   }
 
