@@ -589,6 +589,26 @@ describe("Loomkeep API (e2e)", () => {
   });
 
   it("exports all account data (profile, library, watches)", async () => {
+    // A stale confirmation asks for a fresh one first, and that refused call
+    // doesn't use up the hour: the confirmed retry goes through (audit
+    // 2026-11-17, SEC-20).
+    await prisma.refreshToken.updateMany({
+      where: { user: { email: user.email } },
+      data: { reauthenticatedAt: new Date(Date.now() - 30 * 60_000) },
+    });
+    await request(http)
+      .get("/api/users/me/export")
+      .set("Cookie", sessionCookies)
+      .expect(403)
+      .expect(({ body }) =>
+        expect(body.code).toBe(ErrorCode.AuthReauthRequired),
+      );
+    await request(http)
+      .post("/api/auth/reauth")
+      .set("Cookie", sessionCookies)
+      .send({ method: "password", password: user.password })
+      .expect(200);
+
     const res = await request(http)
       .get("/api/users/me/export")
       .set("Cookie", sessionCookies)

@@ -151,6 +151,7 @@
   "apierr_reviews_unknown_target_type": "Tipo di destinazione della recensione sconosciuto.",
   "apierr_reviews_not_found": "Impossibile trovare questa recensione.",
   "apierr_reviews_target_not_found": "Impossibile trovare quest’opera.",
+  "apierr_users_export_too_soon": "Puoi scaricare tutti i tuoi dati una volta all’ora: riprova tra poco.",
   "apierr_reviews_cannot_vote_self": "Non puoi votare la tua recensione.",
   "apierr_social_cannot_follow_self": "Non puoi seguire te stesso.",
   "apierr_social_ghost_public_only": "In modalità Comparsa puoi seguire solo profili pubblici.",

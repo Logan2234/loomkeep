@@ -155,9 +155,12 @@ export class UsersController {
    * serialises the whole account into a single response, so the default 60/min
    * budget is enough to take the instance down from one signed-in session.
    * One per hour: the dump is a full snapshot, there is no reason to want a
-   * second one within the hour.
+   * second one within the hour. That limit lives in UsersService#exportData,
+   * after the re-auth check: the global throttle runs before route guards.
+   * Re-auth because a stolen session would otherwise walk away with the
+   * whole account in one call.
    */
-  @Throttle({ default: { limit: 1, ttl: 3_600_000 } })
+  @RequireRecentAuth()
   @Get("me/export")
   @ApiOkResponse({ type: UserDataExportResponseDto })
   exportData(@CurrentUser() payload: JwtPayload): Promise<UserDataExportDto> {

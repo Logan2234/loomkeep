@@ -76,6 +76,7 @@ describe("RecentAuthGuard", () => {
       SessionsController.prototype.revokeSession,
       UsersController.prototype.changeEmail,
       UsersController.prototype.scheduleDeletion,
+      UsersController.prototype.exportData,
       MfaController.prototype.setupTotp,
       MfaController.prototype.disableTotp,
       MfaController.prototype.setEmailMfa,
