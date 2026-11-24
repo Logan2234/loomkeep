@@ -1,4 +1,4 @@
-import type { LoanFilter } from "@loomkeep/shared";
+import { type LoanFilter, OwnershipStatus } from "@loomkeep/shared";
 
 export interface LoanInput {
   ownershipStatus?: string;
@@ -36,8 +36,8 @@ export const ACTIVE_LOAN_INCLUDE = {
 } as const;
 
 function direction(status: string, lentOut: boolean): LoanDirection | null {
-  if (status === "BORROWED") return "BORROWED";
-  return status === "PHYSICAL" && lentOut ? "LENT" : null;
+  if (status === OwnershipStatus.BORROWED) return "BORROWED";
+  return status === OwnershipStatus.PHYSICAL && lentOut ? "LENT" : null;
 }
 
 /**
@@ -64,7 +64,8 @@ export function loanUpdate(current: LoanState, dto: LoanInput) {
   const open = current.loans[0] ?? null;
   const status = dto.ownershipStatus ?? current.ownershipStatus;
   const lentOut =
-    status === "PHYSICAL" && (dto.lentOut ?? open?.direction === "LENT");
+    status === OwnershipStatus.PHYSICAL &&
+    (dto.lentOut ?? open?.direction === "LENT");
   const next = direction(status, lentOut);
   const person =
     dto.loanPerson === undefined ? undefined : dto.loanPerson?.trim() || null;
@@ -108,7 +109,10 @@ export function loanUpdate(current: LoanState, dto: LoanInput) {
  * person says where it came from). The database refuses a source on them
  * (the entry tables' ownershipSource CHECK).
  */
-const SOURCELESS_OWNERSHIP = new Set(["NONE", "BORROWED"]);
+const SOURCELESS_OWNERSHIP = new Set<string>([
+  OwnershipStatus.NONE,
+  OwnershipStatus.BORROWED,
+]);
 
 /**
  * The ownershipSource an entry update writes: the requested one, cleared when
@@ -139,6 +143,6 @@ export function loanWhere(loan: LoanFilter | undefined) {
     return {
       loans: { some: { returnedAt: null, direction: "LENT" as const } },
     };
-  if (loan === "BORROWED") return { ownershipStatus: "BORROWED" as const };
+  if (loan === "BORROWED") return { ownershipStatus: OwnershipStatus.BORROWED };
   return {};
 }
