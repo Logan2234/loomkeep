@@ -1741,6 +1741,12 @@ model Invitation {
   revokedAt     DateTime?
   // Last time the link was mailed to `email` (null: shared by hand only).
   emailedAt     DateTime?
+  // A member's own reusable link (SOC-02), at most one per member (partial
+  // unique index in the migration). Kept out of the admin list, refused while
+  // registration is closed, and its token kept in clear so the member can
+  // copy it again: it only ever opens an instance that is already open.
+  personal      Boolean   @default(false)
+  token         String?   @unique
   createdAt     DateTime  @default(now())
 
   createdBy  User?  @relation("InvitationsCreated", fields: [createdById], references: [id], onDelete: SetNull)

@@ -11,6 +11,7 @@
   import { keys } from "#lib/api/keys.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
   import { chat } from "#lib/chat/chat.svelte.js";
+  import { appConfig } from "#lib/config.svelte.js";
   import { isFeatureNew } from "#lib/feature-badges.js";
   import Icon from "#lib/components/Icon.svelte";
   import NewBadge from "#lib/components/NewBadge.svelte";
@@ -22,6 +23,7 @@
   import ChatThread from "./ChatThread.svelte";
   import ChatWorkList from "./ChatWorkList.svelte";
   import ChatWorkThread from "./ChatWorkThread.svelte";
+  import InviteFriendModal from "./InviteFriendModal.svelte";
   import {
     conversationStep,
     escapeReaches,
@@ -33,6 +35,9 @@
   let { conversationId }: { conversationId: string | null } = $props();
 
   let composing = $state(false);
+  let inviting = $state(false);
+  // A personal link only works while anyone may sign up.
+  const canInvite = $derived(appConfig.registrationEnabled);
   let root = $state<HTMLElement | null>(null);
   let search = $state("");
 
@@ -131,6 +136,17 @@
         <h1 class="font-display min-w-0 flex-1 text-2xl font-extrabold">
           {m.chat_title()}
         </h1>
+        {#if chat.tab === "friends" && canInvite}
+          <button
+            type="button"
+            class="btn-icon"
+            aria-label={m.chat_invite()}
+            title={m.chat_invite()}
+            onclick={() => (inviting = true)}>
+            <Icon name="user-plus" class="h-5 w-5" />
+          </button>
+          {#if isFeatureNew("invite-link")}<NewBadge />{/if}
+        {/if}
         {#if chat.tab === "friends"}
           <button
             type="button"
@@ -186,7 +202,26 @@
               active={conversation.id === conversationId && !composing}
               onselect={open} />
           {:else}
-            {#if !conversationsQuery.loading}
+            {#if conversationsQuery.loading}
+              <!-- Nothing until the list is known. -->
+            {:else if !search && canInvite}
+              <div
+                class="flex flex-col items-center gap-2 px-4 py-8 text-center">
+                <Icon name="user-plus" class="text-accent h-8 w-8" />
+                <p class="font-display text-lg font-bold">
+                  {m.chat_invite_empty_title()}
+                </p>
+                <p class="text-dim max-w-[32ch] text-sm">
+                  {m.chat_invite_empty_body()}
+                </p>
+                <button
+                  type="button"
+                  class="btn btn-primary mt-2"
+                  onclick={() => (inviting = true)}>
+                  {m.chat_invite_title()}
+                </button>
+              </div>
+            {:else}
               <p class="text-dim px-3 py-6 text-center text-sm">
                 {search ? m.common_no_results() : m.chat_no_conversation()}
               </p>
@@ -246,3 +281,7 @@
     </main>
   {/if}
 </div>
+
+{#if inviting}
+  <InviteFriendModal onclose={() => (inviting = false)} />
+{/if}

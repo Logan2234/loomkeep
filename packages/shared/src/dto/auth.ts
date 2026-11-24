@@ -32,6 +32,13 @@ export interface InvitationPreviewRequestDto {
 }
 
 /** What the sign-up page shows about a still-redeemable invitation. */
+/** A member's own sign-up link (SOC-02), reusable until renewed. */
+export interface PersonalInvitationDto {
+  url: string;
+  /** Accounts created through it, across renewals. */
+  joinedCount: number;
+}
+
 export interface InvitationPreviewDto {
   /** Display name of whoever sent it — null once that account is deleted. */
   inviterName: string | null;
