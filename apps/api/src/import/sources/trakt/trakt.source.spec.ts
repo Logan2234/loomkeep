@@ -48,6 +48,7 @@ function makeService() {
       upsert: vi.fn(),
       deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
     },
+    review: { findUnique: vi.fn().mockResolvedValue(null) },
     user: {
       findUnique: vi.fn().mockResolvedValue({ email: "test@example.com" }),
     },
@@ -338,5 +339,56 @@ describe("TraktImportSource (via ImportJobService)", () => {
       ([args]) => args.data.map((w: { episodeId: string }) => w.episodeId),
     );
     expect(watched).toEqual(["ep-1"]);
+  });
+
+  it("a re-import fills only what the entry lacks: the user's dates and rating stay", async () => {
+    const { service, prisma, tmdb, reviews } = makeService();
+    tmdb.getMovieSummaryByTmdbId.mockResolvedValue({
+      source: "TMDB",
+      sourceId: "1083381",
+      type: "MOVIE",
+      title: "Backrooms",
+      year: 2026,
+      posterUrl: null,
+    });
+    const corrected = new Date("2026-06-20T21:00:00.000Z");
+    prisma.libraryEntry.findUnique.mockResolvedValue({
+      status: "COMPLETED",
+      notes: null,
+      startedAt: corrected,
+      finishedAt: corrected,
+    });
+    prisma.review.findUnique.mockResolvedValue({ rating: 9, text: null });
+
+    const input = zipBase64([
+      {
+        name: "watched-history.json",
+        content: JSON.stringify([JSON.parse(HISTORY)[1]]),
+      },
+      {
+        name: "ratings-movies.json",
+        content: JSON.stringify([
+          {
+            rated_at: "2026-08-17T17:13:58.000Z",
+            rating: 6,
+            type: "movie",
+            movie: JSON.parse(HISTORY)[1].movie,
+          },
+        ]),
+      },
+    ]);
+
+    const analyzed = await service.startAnalyze("u1", "trakt", { input });
+    await runToEnd(service, "u1", analyzed.id);
+    const committed = service.commit("u1", "trakt", analyzed.id, {
+      include: ["tmdb:1083381"],
+    });
+    const job = await runToEnd(service, "u1", committed.id);
+
+    expect(job.status).toBe("completed");
+    const [[{ update }]] = prisma.libraryEntry.upsert.mock.calls;
+    expect(update.startedAt).toBeUndefined();
+    expect(update.finishedAt).toBeUndefined();
+    expect(reviews.setRating).not.toHaveBeenCalled();
   });
 });

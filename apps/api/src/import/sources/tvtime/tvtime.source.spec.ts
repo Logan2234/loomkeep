@@ -64,6 +64,7 @@ function makeService() {
     vi.fn<(args: { data: { episodeId: string }[] }) => void>();
   const prisma = {
     season: { findMany: vi.fn() },
+    review: { findUnique: vi.fn().mockResolvedValue(null) },
     episode: { count: vi.fn() },
     episodeWatch: {
       count: vi.fn().mockResolvedValue(0),

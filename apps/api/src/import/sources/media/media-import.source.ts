@@ -655,7 +655,7 @@ export abstract class MediaImportSource<
     const watchedAt = watched ? movie.watchedAt : null;
     const existing = await this.prisma.libraryEntry.findUnique({
       where: { userId_mediaItemId: { userId, mediaItemId: media.id } },
-      select: { status: true, notes: true },
+      select: { status: true, notes: true, startedAt: true, finishedAt: true },
     });
     const status = furthestStatus(
       existing?.status ?? null,
@@ -667,12 +667,12 @@ export abstract class MediaImportSource<
     const entry = await this.prisma.libraryEntry.upsert({
       where: { userId_mediaItemId: { userId, mediaItemId: media.id } },
       // Re-importing over an entry adds what the source knows and never
-      // takes anything away: no date erased, no status moved back, no note
-      // of the user's replaced.
+      // takes anything away: no status moved back, and no date or note the
+      // entry already has replaced (the user may have corrected it here).
       update: {
         status,
-        startedAt: watchedAt ?? undefined,
-        finishedAt: watchedAt ?? undefined,
+        startedAt: existing?.startedAt ? undefined : (watchedAt ?? undefined),
+        finishedAt: existing?.finishedAt ? undefined : (watchedAt ?? undefined),
         favorite: favorite ? true : undefined,
         notes: existing?.notes ? undefined : (movie.notes ?? undefined),
       },
@@ -715,8 +715,8 @@ export abstract class MediaImportSource<
    * A review needs a rating to exist at all (`Review.rating` is mandatory), so
    * text without stars — possible on Letterboxd — is dropped rather than
    * invented as a 0. Visibility is left to `upsert`, which applies the user's
-   * own default: an import must not decide who sees their writing. A review
-   * the user already wrote here is theirs: only its rating is updated.
+   * own default: an import must not decide who sees their writing. A rating
+   * or review the user already has here is theirs: the import leaves it.
    *
    * A title that is not out yet refuses a rating; the import skips it rather
    * than failing on one row.
@@ -731,7 +731,9 @@ export abstract class MediaImportSource<
     if (rating === null || rating === undefined) return;
 
     try {
-      if (review && !(await this.hasReviewText(userId, targetType, targetId))) {
+      if (await this.hasRating(userId, targetType, targetId)) return;
+
+      if (review) {
         await this.reviews.upsert(userId, targetType, targetId, {
           rating,
           text: review.slice(0, REVIEW_TEXT_MAX_LENGTH),
@@ -745,16 +747,17 @@ export abstract class MediaImportSource<
     }
   }
 
-  private async hasReviewText(
+  /** A review row always carries a rating (`Review.rating` is mandatory). */
+  private async hasRating(
     userId: string,
     targetType: ReviewTargetType,
     targetId: string,
   ): Promise<boolean> {
     const existing = await this.prisma.review.findUnique({
       where: { userId_targetType_targetId: { userId, targetType, targetId } },
-      select: { text: true },
+      select: { id: true },
     });
-    return Boolean(existing?.text);
+    return existing !== null;
   }
 
   /** Whether the title is out, by the same rule the library enforces. */
@@ -930,6 +933,8 @@ export abstract class MediaImportSource<
       select: {
         status: true,
         notes: true,
+        startedAt: true,
+        finishedAt: true,
         ownershipStatus: true,
         ...LOAN_INCLUDE,
       },
@@ -943,11 +948,14 @@ export abstract class MediaImportSource<
     const favorite = show.favorite === true;
     await this.prisma.libraryEntry.upsert({
       where: { userId_mediaItemId: { userId, mediaItemId: ref.mediaItemId } },
-      // Same rule as films: dates and status only ever move forward.
+      // Same rule as films: the status only moves forward, and a date is
+      // written only where the entry has none.
       update: {
         status,
-        startedAt: startedAt ?? undefined,
-        finishedAt: finishedAt ?? undefined,
+        startedAt: existing?.startedAt ? undefined : (startedAt ?? undefined),
+        finishedAt: existing?.finishedAt
+          ? undefined
+          : (finishedAt ?? undefined),
         favorite: favorite ? true : undefined,
         notes: existing?.notes ? undefined : (show.notes ?? undefined),
         ownershipStatus: show.ownershipStatus,
