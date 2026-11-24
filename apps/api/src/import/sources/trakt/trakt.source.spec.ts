@@ -352,7 +352,7 @@ describe("TraktImportSource (via ImportJobService)", () => {
       posterUrl: null,
     });
     const corrected = new Date("2026-06-20T21:00:00.000Z");
-    prisma.libraryEntry.findUnique.mockResolvedValue({
+    prisma.mediaEntry.findUnique.mockResolvedValue({
       status: "COMPLETED",
       notes: null,
       startedAt: corrected,
@@ -386,7 +386,7 @@ describe("TraktImportSource (via ImportJobService)", () => {
     const job = await runToEnd(service, "u1", committed.id);
 
     expect(job.status).toBe("completed");
-    const [[{ update }]] = prisma.libraryEntry.upsert.mock.calls;
+    const [[{ update }]] = prisma.mediaEntry.upsert.mock.calls;
     expect(update.startedAt).toBeUndefined();
     expect(update.finishedAt).toBeUndefined();
     expect(reviews.setRating).not.toHaveBeenCalled();

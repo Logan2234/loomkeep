@@ -533,7 +533,7 @@ describe("LibraryService — XP wiring", () => {
   it("refuses to track an 18+ title for an account without adult content", async () => {
     const upsert = vi.fn();
     const prisma = {
-      libraryEntry: { findUnique: vi.fn(), upsert },
+      mediaEntry: { findUnique: vi.fn(), upsert },
     } as unknown as PrismaService;
     const service = new LibraryService(
       prisma,
