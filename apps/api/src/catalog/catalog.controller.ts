@@ -126,15 +126,17 @@ export class CatalogController {
     // Each source returns its own popularity order, but concatenating movies +
     // series + anime buries the searched title. Re-rank by title relevance so
     // the actual match floats to the top (ties keep the source order).
+    const results = [...anilistResults, ...tmdbResults];
     const items = filterAdultContent(
-      rankBySearchRelevance([...anilistResults, ...tmdbResults], query.q),
+      rankBySearchRelevance(results, query.q),
       allowAdult,
     );
 
     // Neither provider reports a total, so "more" just means this page
     // wasn't empty — matches how a provider's own pagination ends (an empty
-    // page), same heuristic the client used before this moved server-side.
-    return { items, hasMore: items.length > 0 };
+    // page). Read before the 18+ filter: a page it empties entirely is not
+    // the end of the results.
+    return { items, hasMore: results.length > 0 };
   }
 
   /** One source down still leaves the other's results; the log tells it from "no match". */

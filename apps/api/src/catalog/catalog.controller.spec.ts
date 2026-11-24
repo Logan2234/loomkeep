@@ -8,7 +8,11 @@ import type { MediaItemService } from "./media-item.service";
 const user = { sub: "user-1" } as never;
 
 describe("CatalogController.search", () => {
-  function makeController(opts: { tmdbSearch: Mock; anilistSearch: Mock }) {
+  function makeController(opts: {
+    tmdbSearch: Mock;
+    anilistSearch: Mock;
+    allowAdult?: boolean;
+  }) {
     const mediaItemService = {
       providerFor: vi.fn((source: string) =>
         source === "TMDB"
@@ -17,7 +21,7 @@ describe("CatalogController.search", () => {
       ),
     } as unknown as MediaItemService;
     const ageGate = {
-      allowsAdultContent: vi.fn().mockResolvedValue(true),
+      allowsAdultContent: vi.fn().mockResolvedValue(opts.allowAdult ?? true),
     } as unknown as AgeGateService;
     const domainGate = {
       assertEnabled: vi.fn().mockResolvedValue(undefined),
@@ -61,6 +65,20 @@ describe("CatalogController.search", () => {
       expect.any(Error),
     );
     warn.mockRestore();
+  });
+
+  it("keeps paging when the 18+ filter empties a page the providers filled", async () => {
+    const controller = makeController({
+      tmdbSearch: vi
+        .fn()
+        .mockResolvedValue([{ id: "t1", title: "Show", isAdult: true }]),
+      anilistSearch: vi.fn().mockResolvedValue([]),
+      allowAdult: false,
+    });
+
+    const result = await controller.search(user, { q: "show" } as never);
+
+    expect(result).toEqual({ items: [], hasMore: true });
   });
 
   it("merges both sources' results when both succeed", async () => {
