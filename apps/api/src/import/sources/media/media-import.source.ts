@@ -24,6 +24,10 @@ import { MediaItemService } from "../../../catalog/media-item.service";
 import { assertMediaReleased } from "../../../catalog/movie-release.util";
 import { AppException } from "../../../common/app.exception";
 import { mapWithConcurrency } from "../../../common/concurrency.util";
+import {
+  loanUpdate,
+  ownershipSourceUpdate,
+} from "../../../common/entry-loan.util";
 import type { ListService } from "../../../lists/list.service";
 import { PrismaService } from "../../../prisma/prisma.service";
 import { ReviewService } from "../../../reviews/review.service";
@@ -922,7 +926,12 @@ export abstract class MediaImportSource<
 
     const existing = await this.prisma.libraryEntry.findUnique({
       where: { userId_mediaItemId: { userId, mediaItemId: ref.mediaItemId } },
-      select: { status: true, notes: true },
+      select: {
+        status: true,
+        notes: true,
+        ownershipStatus: true,
+        lentOut: true,
+      },
     });
     const status = furthestStatus(existing?.status ?? null, incoming);
     const inferredWindow = watchWindow(show, status === "COMPLETED");
@@ -941,7 +950,18 @@ export abstract class MediaImportSource<
         favorite: favorite ? true : undefined,
         notes: existing?.notes ? undefined : (show.notes ?? undefined),
         ownershipStatus: show.ownershipStatus,
-        ownershipSource: show.ownershipSource,
+        // A new ownership status drops the source and loan it no longer fits.
+        ...(existing
+          ? {
+              ownershipSource: ownershipSourceUpdate(
+                existing.ownershipStatus,
+                show,
+              ),
+              ...loanUpdate(existing, {
+                ownershipStatus: show.ownershipStatus,
+              }),
+            }
+          : { ownershipSource: show.ownershipSource }),
       },
       create: {
         userId,

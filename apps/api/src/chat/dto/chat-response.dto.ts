@@ -1,10 +1,10 @@
 import type {
   ChatUnreadDto,
-  CommentEmote,
   CommentTargetType,
   ConversationDto,
   ConversationReadOnlyReason,
   ConversationWorkDto,
+  Emote,
   ListKind,
   ListVisibility,
   MessageDto,
@@ -161,7 +161,7 @@ export class MessageResponseDto implements MessageDto {
   deleted!: boolean;
   deletedByAdmin!: boolean;
   reactions!: CommentReactionSummaryResponseDto[];
-  myReaction!: CommentEmote | null;
+  myReaction!: Emote | null;
   works!: MessageWorkResponseDto[];
   review!: MessageReviewResponseDto | null;
   list!: MessageListResponseDto | null;

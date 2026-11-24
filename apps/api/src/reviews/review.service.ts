@@ -27,6 +27,7 @@ import {
   canonicalExternalId,
 } from "../common/external-id.util";
 import { isUniqueViolation } from "../common/prisma-error.util";
+import { toRatingStep } from "../common/rating-step.validator";
 import { resolveWorkLink } from "../common/work-href.util";
 import { assertGameReleased } from "../games/game-release.util";
 import { AchievementService } from "../gamification/achievements/achievement.service";
@@ -945,8 +946,9 @@ export class ReviewService {
     userId: string,
     targetType: ReviewTargetType,
     targetId: string,
-    rating: number | null,
+    rawRating: number | null,
   ): Promise<void> {
+    const rating = rawRating === null ? null : toRatingStep(rawRating);
     if (rating !== null && targetType === ReviewTargetType.MEDIA)
       await assertMediaReleased(this.prisma, targetId);
     if (rating !== null && targetType === ReviewTargetType.GAME)

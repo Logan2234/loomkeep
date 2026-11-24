@@ -1,4 +1,4 @@
-import type { CommentEmote, DataExportCommentReaction } from "@loomkeep/shared";
+import type { DataExportCommentReaction, Emote } from "@loomkeep/shared";
 
 export class DataExportCommentReactionResponseDto implements DataExportCommentReaction {
   /**
@@ -11,7 +11,7 @@ export class DataExportCommentReactionResponseDto implements DataExportCommentRe
    * The reaction.
    * @example "LOVE"
    */
-  emote!: CommentEmote;
+  emote!: Emote;
 
   /**
    * When it was added.

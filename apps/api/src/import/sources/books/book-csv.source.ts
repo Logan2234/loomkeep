@@ -16,6 +16,10 @@ import assert from "node:assert/strict";
 import { BookItemService } from "../../../books/book-item.service";
 import { AppException } from "../../../common/app.exception";
 import { mapWithConcurrency, refKey } from "../../../common/concurrency.util";
+import {
+  loanUpdate,
+  ownershipSourceUpdate,
+} from "../../../common/entry-loan.util";
 import { PrismaService } from "../../../prisma/prisma.service";
 import { ReviewService } from "../../../reviews/review.service";
 import { AgeGateService } from "../../../users/age-gate.service";
@@ -302,11 +306,22 @@ export abstract class BookCsvSource<
     // Only a first-time import backfills reading cycles from "Read Count".
     const existing = await this.prisma.bookEntry.findUnique({
       where: { userId_bookItemId: { userId, bookItemId: bookItem.id } },
-      select: { id: true },
+      select: { id: true, ownershipStatus: true, lentOut: true },
     });
+    const ownership = { ownershipStatus: row.ownershipStatus };
     const entry = await this.prisma.bookEntry.upsert({
       where: { userId_bookItemId: { userId, bookItemId: bookItem.id } },
-      update: data,
+      // A new ownership status drops the source and loan it no longer fits.
+      update: existing
+        ? {
+            ...data,
+            ownershipSource: ownershipSourceUpdate(
+              existing.ownershipStatus,
+              ownership,
+            ),
+            ...loanUpdate(existing, ownership),
+          }
+        : data,
       create: { userId, bookItemId: bookItem.id, ...data },
     });
 

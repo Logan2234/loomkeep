@@ -598,7 +598,7 @@ export type CommentTargetType =
   (typeof CommentTargetType)[keyof typeof CommentTargetType];
 
 /** Fixed reaction set accepted by the API and client. */
-export const CommentEmote = {
+export const Emote = {
   LIKE: "LIKE",
   LOVE: "LOVE",
   LAUGH: "LAUGH",
@@ -607,7 +607,7 @@ export const CommentEmote = {
   DISLIKE: "DISLIKE",
 } as const;
 
-export type CommentEmote = (typeof CommentEmote)[keyof typeof CommentEmote];
+export type Emote = (typeof Emote)[keyof typeof Emote];
 
 /** What a report targets. */
 export const ReportTargetType = {

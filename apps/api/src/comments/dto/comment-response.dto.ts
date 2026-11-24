@@ -1,8 +1,4 @@
-import type {
-  CommentDto,
-  CommentEmote,
-  CommentTargetType,
-} from "@loomkeep/shared";
+import type { CommentDto, CommentTargetType, Emote } from "@loomkeep/shared";
 import { UserSummaryResponseDto } from "../../common/dto/user-summary-response.dto";
 import { CommentMentionResponseDto } from "./comment-mention-response.dto";
 import { CommentReactionSummaryResponseDto } from "./comment-reaction-summary-response.dto";
@@ -23,7 +19,7 @@ export class CommentResponseDto implements CommentDto {
   author!: UserSummaryResponseDto | null;
   mentions!: CommentMentionResponseDto[];
   reactions!: CommentReactionSummaryResponseDto[];
-  myReaction!: CommentEmote | null;
+  myReaction!: Emote | null;
   replies!: CommentResponseDto[];
   replyCount!: number;
 }

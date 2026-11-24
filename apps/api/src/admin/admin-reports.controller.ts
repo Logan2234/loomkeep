@@ -392,14 +392,14 @@ export class AdminReportsController {
         if (!subject)
           throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.UserNotFound);
 
+        if (body.removeAvatar)
+          await tx.userAvatar.deleteMany({
+            where: { userId: report.targetId },
+          });
         await tx.user.update({
           where: { id: report.targetId },
           data: {
-            ...(body.removeAvatar && {
-              avatar: null,
-              avatarMimeType: null,
-              avatarUpdatedAt: null,
-            }),
+            ...(body.removeAvatar && { avatarUpdatedAt: null }),
             ...(body.clearBio && { bio: null }),
             ...(displayName && { displayName }),
             ...(suspendUntil && { suspendedUntil: suspendUntil }),

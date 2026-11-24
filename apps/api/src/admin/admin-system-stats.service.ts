@@ -74,7 +74,7 @@ export class AdminSystemStatsService {
       lastBackup: lastBackup
         ? {
             createdAt: lastBackup.createdAt.toISOString(),
-            sizeBytes: lastBackup.sizeBytes,
+            sizeBytes: Number(lastBackup.sizeBytes),
           }
         : null,
     };

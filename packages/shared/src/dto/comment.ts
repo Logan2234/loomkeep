@@ -1,9 +1,9 @@
-import type { CommentEmote, CommentTargetType } from "../enums";
+import type { CommentTargetType, Emote } from "../enums";
 import type { UserSummaryDto } from "./social";
 
 /** Reaction counts on a comment, one entry per emote actually used. */
 export interface CommentReactionSummaryDto {
-  emote: CommentEmote;
+  emote: Emote;
   count: number;
 }
 
@@ -50,7 +50,7 @@ export interface CommentDto {
   mentions: CommentMentionDto[];
   reactions: CommentReactionSummaryDto[];
   /** The viewer's own active reaction, or null. */
-  myReaction: CommentEmote | null;
+  myReaction: Emote | null;
   /**
    * Only populated on top-level comments, and capped: the most recent few
    * replies (oldest-first, conversation order), not the whole thread. Fetch

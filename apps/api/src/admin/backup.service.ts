@@ -252,7 +252,7 @@ export class BackupService {
     try {
       const { size } = await stat(join(this.dir, filename));
       row = await this.prisma.backupFile.create({
-        data: { filename, sizeBytes: size },
+        data: { filename, sizeBytes: BigInt(size) },
       });
     } catch (error) {
       try {
@@ -468,13 +468,15 @@ export class BackupService {
 function toDto(row: {
   id: string;
   filename: string;
-  sizeBytes: number;
+  sizeBytes: bigint;
   createdAt: Date;
 }): AdminBackupFileDto {
   return {
     id: row.id,
     filename: row.filename,
-    sizeBytes: row.sizeBytes,
+    // BigInt in the database (a dump outgrows Int's 2 GiB), a plain number on
+    // the wire: JSON has no bigint, and a file stays far below 2^53 bytes.
+    sizeBytes: Number(row.sizeBytes),
     createdAt: row.createdAt.toISOString(),
     status: "AVAILABLE",
   };

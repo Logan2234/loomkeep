@@ -1,7 +1,7 @@
-import type { CommentEmote } from "@loomkeep/shared";
+import type { Emote } from "@loomkeep/shared";
 
-/** Display glyph for each CommentEmote, in a fixed picker order. */
-export const COMMENT_EMOTE_DISPLAY: Record<CommentEmote, string> = {
+/** Display glyph for each Emote, in a fixed picker order. */
+export const COMMENT_EMOTE_DISPLAY: Record<Emote, string> = {
   LIKE: "👍",
   LOVE: "❤️",
   LAUGH: "😂",

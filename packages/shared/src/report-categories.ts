@@ -10,6 +10,8 @@ import {
  * source of truth for both the picker UI (category -> motif options) and
  * server-side validation (ReportService.create rejects a mismatched pair).
  * OTHER maps to an empty list: it has no motif, only the free-text `reason`.
+ * Also written as SQL in the Report_motif_check constraint (migration
+ * 20261124130000_schema_hardening): a change here needs a migration too.
  */
 export const REPORT_CATEGORY_MOTIFS: Record<ReportCategory, ReportMotif[]> = {
   SPAM: [

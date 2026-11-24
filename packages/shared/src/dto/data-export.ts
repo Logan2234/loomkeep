@@ -3,9 +3,9 @@ import type {
   BookSource,
   BookStatus,
   CatalogSource,
-  CommentEmote,
   CommentTargetType,
   Domain,
+  Emote,
   EntryStatus,
   FollowStatus,
   GameOwnershipStatus,
@@ -226,7 +226,7 @@ export interface DataExportComment {
 
 export interface DataExportCommentReaction {
   commentId: string;
-  emote: CommentEmote;
+  emote: Emote;
   createdAt: string;
 }
 

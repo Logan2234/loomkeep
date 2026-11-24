@@ -390,8 +390,7 @@ describe("DataExportService.buildExport", () => {
       makeUser({
         acceptedTermsAt: new Date("2026-01-01T00:00:00.000Z"),
         certifiedAgeAt: new Date("2026-01-01T00:00:00.000Z"),
-        avatar: Buffer.from("png-bytes"),
-        avatarMimeType: "image/png",
+        avatarImage: { data: Buffer.from("png-bytes"), mimeType: "image/png" },
         equippedBadgeKeys: ["first_review"],
         acquisitionSource: "OTHER",
         acquisitionSourceOther: "A podcast",

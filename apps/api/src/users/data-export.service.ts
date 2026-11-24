@@ -30,7 +30,10 @@ export class DataExportService {
   ) {}
 
   async buildExport(userId: string): Promise<UserDataExportDto> {
-    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: { avatarImage: true },
+    });
 
     if (!user) {
       throw new AppException(
@@ -403,13 +406,12 @@ export class DataExportService {
         suspendedUntil: user.suspendedUntil?.toISOString() ?? null,
         equippedBadgeKeys: user.equippedBadgeKeys ?? [],
         acquisitionSourceOther: user.acquisitionSourceOther,
-        avatar:
-          user.avatar && user.avatarMimeType
-            ? {
-                mimeType: user.avatarMimeType,
-                base64: Buffer.from(user.avatar).toString("base64"),
-              }
-            : null,
+        avatar: user.avatarImage
+          ? {
+              mimeType: user.avatarImage.mimeType,
+              base64: Buffer.from(user.avatarImage.data).toString("base64"),
+            }
+          : null,
         pendingEmailChange: pendingEmailChange
           ? {
               newEmail: pendingEmailChange.newEmail,

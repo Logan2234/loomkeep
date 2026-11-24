@@ -1,12 +1,12 @@
 import {
-  CommentEmote,
+  Emote,
   MESSAGE_TEXT_MAX_LENGTH,
   POLL_OPTION_MAX_LENGTH,
   POLL_OPTIONS_MAX,
   POLL_OPTIONS_MIN,
   POLL_QUESTION_MAX_LENGTH,
   RECOMMEND_MAX_FRIENDS,
-  type CommentEmote as CommentEmoteT,
+  type Emote as CommentEmoteT,
   type EditMessageRequestDto,
   type ForwardMessageRequestDto,
   type MarkWorkUnreadRequestDto,
@@ -224,7 +224,7 @@ export class ForwardMessageBody implements ForwardMessageRequestDto {
 }
 
 export class ReactMessageBody implements ReactMessageRequestDto {
-  @IsIn(Object.values(CommentEmote))
+  @IsIn(Object.values(Emote))
   emote!: CommentEmoteT;
 }
 

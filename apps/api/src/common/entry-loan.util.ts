@@ -66,6 +66,26 @@ export function loanUpdate(
   };
 }
 
+/**
+ * Statuses with no ownership source: NONE (unset) and BORROWED (the loan's
+ * person says where it came from). The database refuses a source on them
+ * (the entry tables' ownershipSource CHECK).
+ */
+const SOURCELESS_OWNERSHIP = new Set(["NONE", "BORROWED"]);
+
+/**
+ * The ownershipSource an entry update writes: the requested one, cleared when
+ * the resulting status carries none — including a status change that doesn't
+ * mention the source, so a former "Netflix" never outlives its status.
+ */
+export function ownershipSourceUpdate(
+  currentStatus: string,
+  dto: { ownershipStatus?: string; ownershipSource?: string | null },
+): string | null | undefined {
+  const status = dto.ownershipStatus ?? currentStatus;
+  return SOURCELESS_OWNERSHIP.has(status) ? null : dto.ownershipSource;
+}
+
 /** The loan as an entry DTO carries it. */
 export function loanFields(entry: Omit<LoanState, "ownershipStatus">) {
   return {

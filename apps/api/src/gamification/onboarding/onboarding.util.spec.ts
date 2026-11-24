@@ -11,7 +11,9 @@ function makePrisma(overrides: Record<string, unknown> = {}): PrismaService {
     musicEntry: { ...notFound },
     review: { ...notFound },
     user: {
-      findUnique: vi.fn().mockResolvedValue({ avatar: null, bio: null }),
+      findUnique: vi
+        .fn()
+        .mockResolvedValue({ avatarUpdatedAt: null, bio: null }),
     },
     importRun: { ...notFound },
     list: { ...notFound },
@@ -49,7 +51,7 @@ describe("computeOnboardingDoneMap", () => {
       user: {
         findUnique: vi
           .fn()
-          .mockResolvedValue({ avatar: Buffer.from("x"), bio: "  " }),
+          .mockResolvedValue({ avatarUpdatedAt: new Date(), bio: "  " }),
       },
     });
 
