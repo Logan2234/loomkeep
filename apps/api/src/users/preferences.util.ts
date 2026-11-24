@@ -1,7 +1,7 @@
 import type { Prisma, UserPreferences } from "@prisma/client";
 
 /** UserPreferences' column defaults, as the schema declares them. */
-export const PREFERENCE_DEFAULTS: Omit<UserPreferences, "userId"> = {
+const PREFERENCE_DEFAULTS: Omit<UserPreferences, "userId"> = {
   allowAdultContent: false,
   hideProgression: false,
   chatShowPresence: true,
