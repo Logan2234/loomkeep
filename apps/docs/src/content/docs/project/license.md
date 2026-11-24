@@ -37,6 +37,16 @@ Contributors sign a
 before their first pull request is merged. They keep the copyright; the
 agreement lets the project ship their code under both licenses above.
 
+## Third-party code
+
+The dependencies Loomkeep ships are under permissive open-source licenses,
+with one exception: the API image contains `sentry`, Sentry's command-line
+tool, under the
+[Functional Source License](https://fsl.software/) (FSL-1.1-Apache-2.0).
+It arrives with the error-reporting SDK and is never run. That license
+allows any use except offering a product that competes with Sentry, and
+each release becomes Apache-2.0 two years after it is published.
+
 ## Catalogue data
 
 Titles, covers and details come from catalogues with licenses of their own,

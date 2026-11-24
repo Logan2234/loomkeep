@@ -279,6 +279,28 @@ describe("MailService", () => {
     expect(mail.replyTo).toBe("contact@loomkeep.app");
   });
 
+  it.each([
+    ["465", undefined, false],
+    ["587", "false", false],
+  ])(
+    "leaves STARTTLS optional on port %s with SMTP_REQUIRE_TLS=%s",
+    (port, requireTls, expected) => {
+      process.env.SMTP_HOST = "smtp.example.com";
+      process.env.SMTP_PORT = port;
+      process.env.SMTP_USER = "user";
+      process.env.SMTP_PASS = "pass";
+      if (requireTls === undefined) delete process.env.SMTP_REQUIRE_TLS;
+      else process.env.SMTP_REQUIRE_TLS = requireTls;
+      (nodemailer.createTransport as Mock).mockReturnValue({});
+
+      new MailService(quota);
+
+      expect(nodemailer.createTransport).toHaveBeenCalledWith(
+        expect.objectContaining({ requireTLS: expected }),
+      );
+    },
+  );
+
   it("sends through the configured transport when SMTP is set", async () => {
     process.env.SMTP_HOST = "smtp.example.com";
     process.env.SMTP_PORT = "587";
@@ -301,6 +323,8 @@ describe("MailService", () => {
         host: "smtp.example.com",
         port: 587,
         secure: false,
+        requireTLS: true,
+        connectionTimeout: 10_000,
         auth: { user: "user", pass: "pass" },
       }),
     );

@@ -100,6 +100,25 @@ describe("PushService.subscribe", () => {
 
     expect(prisma.pushSubscription.upsert).not.toHaveBeenCalled();
   });
+
+  it("drops the oldest devices beyond twenty", async () => {
+    const { service, prisma } = makeService();
+    vi.mocked(prisma.pushSubscription.findMany).mockResolvedValue([
+      { id: "oldest" },
+    ] as never);
+
+    await service.subscribe("u1", ALLOWED_ENDPOINT, "p256dh", "auth");
+
+    expect(prisma.pushSubscription.findMany).toHaveBeenCalledWith({
+      where: { userId: "u1" },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      skip: 20,
+      select: { id: true },
+    });
+    expect(prisma.pushSubscription.deleteMany).toHaveBeenCalledWith({
+      where: { id: { in: ["oldest"] } },
+    });
+  });
 });
 
 describe("PushService.sendToUserDetailed", () => {

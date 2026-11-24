@@ -1,5 +1,7 @@
 # Audit de refactoring — monorepo Loomkeep
 
+> **Instantané non maintenu** : les chiffres et numéros de ligne datent de la v1.10.0 et ne sont plus à jour ; ne pas s'en servir comme état actuel du code.
+>
 > Audit en lecture seule réalisé le 2026-10-04 sur `main` @ `bbb3c9a1` (v1.10.0).
 > Périmètre : `apps/api/src`, `apps/web/src`, `packages/shared/src`, configs racine.
 > Exclus : `apps/web/src/lib/paraglide` et `apps/web/src/lib/api/generated` (générés), contenu d'`apps/docs`.

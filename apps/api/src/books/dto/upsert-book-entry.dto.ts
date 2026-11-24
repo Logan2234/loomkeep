@@ -2,6 +2,7 @@ import {
   BookSource,
   BookStatus,
   ENTRY_NOTES_MAX_LENGTH,
+  MAX_REFERENCE_PAGE_COUNT,
   UpsertBookEntryDto as UpsertBookEntryContract,
 } from "@loomkeep/shared";
 import {
@@ -52,5 +53,6 @@ export class UpsertBookEntryDto implements UpsertBookEntryContract {
   @IsOptional()
   @IsInt()
   @Min(1)
+  @Max(MAX_REFERENCE_PAGE_COUNT)
   referencePageCount?: number | null;
 }

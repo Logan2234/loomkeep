@@ -3,6 +3,7 @@ import {
   BookStatus,
   ENTRY_NOTES_MAX_LENGTH,
   LOAN_PERSON_MAX_LENGTH,
+  MAX_REFERENCE_PAGE_COUNT,
   OWNERSHIP_SOURCE_MAX_LENGTH,
   UpdateBookEntryDto as UpdateBookEntryContract,
 } from "@loomkeep/shared";
@@ -54,6 +55,7 @@ export class UpdateBookEntryDto implements UpdateBookEntryContract {
   @IsOptional()
   @IsInt()
   @Min(1)
+  @Max(MAX_REFERENCE_PAGE_COUNT)
   referencePageCount?: number | null;
 
   @IsOptional()

@@ -63,6 +63,7 @@ describe("EventsGateway.handleConnection", () => {
       verifyAsync: vi.fn().mockResolvedValue({
         sub: "user-1",
         email: "alice@example.com",
+        sid: "sid-1",
         exp: Math.floor(Date.now() / 1000) + 900,
       }),
     } as unknown as JwtService;
@@ -120,6 +121,21 @@ describe("EventsGateway.handleConnection", () => {
 
     expect(client.disconnect).toHaveBeenCalledWith(true);
     expect(metrics.recordWsRejection).toHaveBeenCalledWith("invalid_token");
+  });
+
+  it("disconnects a socket whose token names no session", async () => {
+    const { gateway, jwtService } = make(null);
+    (jwtService.verifyAsync as ReturnType<typeof vi.fn>).mockResolvedValue({
+      sub: "user-1",
+      email: "alice@example.com",
+      exp: Math.floor(Date.now() / 1000) + 900,
+    });
+    const client = fakeSocket(cookieHeader());
+
+    await gateway.handleConnection(client);
+
+    expect(client.join).not.toHaveBeenCalled();
+    expect(client.disconnect).toHaveBeenCalled();
   });
 
   it("also joins the admin reports room for an ADMIN account", async () => {

@@ -42,18 +42,33 @@ describe("LinkResolverService", () => {
     ).resolves.toEqual({ domain: "MEDIA", href: "/app/media/series/95396" });
   });
 
-  it("finds an IMDb title among series once no movie matches", async () => {
+  it("finds an IMDb title among series with a single TMDB lookup", async () => {
+    const findByImdbId = vi.fn().mockResolvedValue({
+      movie: null,
+      series: { type: "SERIES", sourceId: "95396" },
+      episode: null,
+    });
+    const resolver = makeResolver({ tmdb: { findByImdbId } });
+
+    await expect(
+      resolver.resolve("https://www.imdb.com/title/tt11280740/"),
+    ).resolves.toEqual({ domain: "MEDIA", href: "/app/media/series/95396" });
+    expect(findByImdbId).toHaveBeenCalledTimes(1);
+  });
+
+  it("opens an IMDb episode link on its series", async () => {
     const resolver = makeResolver({
       tmdb: {
-        findMovieSummaryByImdbId: vi.fn().mockResolvedValue(null),
-        findSeriesSummaryByImdbId: vi
-          .fn()
-          .mockResolvedValue({ type: "SERIES", sourceId: "95396" }),
+        findByImdbId: vi.fn().mockResolvedValue({
+          movie: null,
+          series: null,
+          episode: { seriesTmdbId: "95396", season: 1, episode: 3 },
+        }),
       },
     });
 
     await expect(
-      resolver.resolve("https://www.imdb.com/title/tt11280740/"),
+      resolver.resolve("https://www.imdb.com/title/tt11650328/"),
     ).resolves.toEqual({ domain: "MEDIA", href: "/app/media/series/95396" });
   });
 

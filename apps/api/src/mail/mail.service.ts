@@ -779,10 +779,20 @@ export class MailService {
 
     if (SMTP_HOST && SMTP_USER && SMTP_PASS) {
       const port = Number(SMTP_PORT ?? 587);
+      const secure = port === 465;
       this.transporter = nodemailer.createTransport({
         host: SMTP_HOST,
         port,
-        secure: port === 465,
+        secure,
+        // Without it, someone on the path who strips the server's STARTTLS
+        // offer gets the SMTP password and every reset link in clear. Only a
+        // relay on the same host or network may opt out.
+        requireTLS: !secure && process.env.SMTP_REQUIRE_TLS !== "false",
+        // Password reset, email change and MFA codes wait on the send:
+        // nodemailer's own defaults would hold them for minutes.
+        connectionTimeout: 10_000,
+        greetingTimeout: 10_000,
+        socketTimeout: 20_000,
         auth: { user: SMTP_USER, pass: SMTP_PASS },
       });
 

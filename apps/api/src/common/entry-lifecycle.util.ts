@@ -280,9 +280,10 @@ export const searchTerm = (filters: ListEntriesFilters): string | undefined =>
   filters.q?.trim() || undefined;
 
 /**
- * Loads an entry and refuses it unless it belongs to the caller. A missing
- * entry is a 404 and someone else's a 403 — never an implicit "track it for
- * them".
+ * Loads an entry and refuses it unless it belongs to the caller — never an
+ * implicit "track it for them". Someone else's entry is a 404 too, like a
+ * saved view: an entry id leaked in a log or a screenshot then says nothing
+ * about whether it still exists.
  */
 export async function assertEntryOwnership<T extends { userId: string }>(
   userId: string,
@@ -290,17 +291,10 @@ export async function assertEntryOwnership<T extends { userId: string }>(
 ): Promise<T> {
   const entry = await findEntry();
 
-  if (!entry) {
+  if (!entry || entry.userId !== userId) {
     throw new AppException(
       HttpStatus.NOT_FOUND,
       ErrorCode.LibraryEntryNotFound,
-    );
-  }
-
-  if (entry.userId !== userId) {
-    throw new AppException(
-      HttpStatus.FORBIDDEN,
-      ErrorCode.LibraryEntryForbidden,
     );
   }
 
@@ -324,17 +318,11 @@ export async function deleteOwnedReplay(
 ): Promise<void> {
   const ownerId = await args.findOwnerId();
 
-  if (ownerId === null) {
+  // Someone else's replay is a 404 too, as for entries.
+  if (ownerId !== args.userId) {
     throw new AppException(
       HttpStatus.NOT_FOUND,
       ErrorCode.LibraryReplayNotFound,
-    );
-  }
-
-  if (ownerId !== args.userId) {
-    throw new AppException(
-      HttpStatus.FORBIDDEN,
-      ErrorCode.LibraryReplayForbidden,
     );
   }
 

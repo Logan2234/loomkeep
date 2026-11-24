@@ -60,6 +60,26 @@ describe("SessionTimerService", () => {
     );
   });
 
+  it.each([Domain.GAMES, Domain.BOOKS])(
+    "answers 404 for another account's %s entry",
+    async (domain) => {
+      const { service, prisma } = makeService();
+      prisma.sessionTimer.findUnique.mockResolvedValue(null);
+      const owner = { userId: "user-2", gameItemId: "item-1" };
+      prisma.gameEntry.findUnique.mockResolvedValue(owner);
+      (
+        prisma as unknown as { bookEntry: typeof prisma.gameEntry }
+      ).bookEntry.findUnique.mockResolvedValue(owner);
+
+      await expect(
+        service.start("user-1", { domain, entryId: "entry-1" }),
+      ).rejects.toMatchObject({
+        status: 404,
+        code: ErrorCode.LibraryEntryNotFound,
+      });
+    },
+  );
+
   it("rejects a second active timer", async () => {
     const { service, prisma } = makeService();
     prisma.sessionTimer.findUnique.mockResolvedValue({ id: "timer-1" });

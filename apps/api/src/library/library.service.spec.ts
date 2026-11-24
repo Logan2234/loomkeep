@@ -9,7 +9,7 @@ import type { PrismaService } from "../prisma/prisma.service";
 import type { ReviewService } from "../reviews/review.service";
 import type { ActivityService } from "../social/activity.service";
 import { stubAchievements, stubEvents, stubXp } from "../test-utils/stubs";
-import type { AgeGateService } from "../users/age-gate.service";
+import { AgeGateService } from "../users/age-gate.service";
 import { compareMediaEntries, LibraryService } from "./library.service";
 
 function makeRow(overrides: Partial<Record<string, unknown>> = {}) {
@@ -505,6 +505,68 @@ describe("LibraryService — XP wiring", () => {
     } as never);
 
     expect(upsert).toHaveBeenCalledTimes(2);
+  });
+
+  it.each([
+    ["TMDB", "ANIME"],
+    ["ANILIST", "SERIES"],
+  ])("refuses a %s source paired with an %s type", async (source, type) => {
+    const upsertFromSource = vi.fn();
+    const service = new LibraryService(
+      {} as PrismaService,
+      { upsertFromSource } as unknown as MediaItemService,
+      {} as AgeGateService,
+      {} as ReviewService,
+      {} as ActivityService,
+      stubXp(),
+      stubAchievements(),
+      stubEvents(),
+      {} as import("../lists/list.service").ListService,
+    );
+
+    await expect(
+      service.upsertEntry("user-1", { source, sourceId: "1", type } as never),
+    ).rejects.toMatchObject({ code: ErrorCode.ValidationFailed });
+    expect(upsertFromSource).not.toHaveBeenCalled();
+  });
+
+  it("refuses to track an 18+ title for an account without adult content", async () => {
+    const upsert = vi.fn();
+    const prisma = {
+      mediaEntry: { findUnique: vi.fn(), upsert },
+    } as unknown as PrismaService;
+    const service = new LibraryService(
+      prisma,
+      {
+        upsertFromSource: vi
+          .fn()
+          .mockResolvedValue({ id: "media-1", type: "MOVIE", isAdult: true }),
+      } as unknown as MediaItemService,
+      new AgeGateService({
+        user: {
+          findUnique: vi.fn().mockResolvedValue({
+            allowAdultContent: false,
+            birthDate: null,
+          }),
+        },
+      } as unknown as PrismaService),
+      {} as ReviewService,
+      {} as ActivityService,
+      stubXp(),
+      stubAchievements(),
+      stubEvents(),
+      {} as import("../lists/list.service").ListService,
+    );
+
+    await expect(
+      service.upsertEntry("user-1", {
+        source: "TMDB",
+        sourceId: "1",
+        type: "MOVIE",
+        status: "PLANNED",
+      } as never),
+    ).rejects.toMatchObject({ code: ErrorCode.UserAdultContentDisabled });
+    expect(upsert).not.toHaveBeenCalled();
   });
 
   it("awards WORK_ADDED + DOMAIN_STARTED only on true first creation, and MOVIE_WATCHED on the COMPLETED transition", async () => {

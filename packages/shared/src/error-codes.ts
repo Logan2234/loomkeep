@@ -201,7 +201,6 @@ export const ErrorCode = {
   // A platform the game isn't listed on (GameItem.platforms).
   LibraryGamePlatformInvalid: "library.game_platform_invalid",
   LibraryReplayNotFound: "library.replay_not_found",
-  LibraryReplayForbidden: "library.replay_forbidden",
   LibrarySessionNotFound: "library.session_not_found",
   LibrarySessionForbidden: "library.session_forbidden",
   LibrarySessionDateFuture: "library.session_date_future",

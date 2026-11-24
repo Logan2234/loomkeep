@@ -19,6 +19,9 @@ history from before it was started.
   An instance in production (or served over https) refuses to start
   otherwise. Generate each with `openssl rand -hex 32`; changing them signs
   everyone out once.
+- **Self-hosting: email on any port but 465 now requires STARTTLS.** If your
+  relay sits on the same host or private network and sends in clear, set
+  `SMTP_REQUIRE_TLS=false`.
 
 ### Added
 
@@ -63,6 +66,18 @@ history from before it was started.
 - Docs: a `robots.txt` points search engines to the sitemap.
 
 ### Fixed
+
+- Re-importing over your library keeps the dates and ratings you set in
+  Loomkeep, and only fills in what was missing.
+- Search keeps loading results when a whole page was hidden as 18+.
+- An IMDb episode link opens its series.
+- Finishing a book earns XP by its catalogued length, whatever page count
+  the edition was given.
+- Asking twice at once to delete your account no longer breaks the first
+  cancel link emailed.
+- An account without 18+ content can no longer add an 18+ title to its
+  library.
+- An account keeps push notifications on its 20 latest devices.
 
 - Downloading all your data now asks you to confirm it's you, and that
   confirmation no longer uses up the hourly download.
