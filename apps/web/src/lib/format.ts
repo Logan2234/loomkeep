@@ -85,13 +85,25 @@ export const DATETIME_NUMERIC_OPTIONS: Intl.DateTimeFormatOptions = {
   minute: "2-digit",
 };
 
-/** Formats a date as e.g. "03/01/2026" by default. Accepts an ISO string or a `Date`. */
+const CALENDAR_DAY = /^\d{4}-\d{2}-\d{2}$/;
+
+/**
+ * Formats a date as e.g. "03/01/2026" by default. Accepts an ISO string or a
+ * `Date`. A bare "YYYY-MM-DD" (a release date, a birth date) is a calendar
+ * day, not an instant: it is read in UTC, where it was parsed, so it never
+ * shows as the day before west of Greenwich.
+ */
 export const formatDate = (
   date: string | Date,
   options: Intl.DateTimeFormatOptions = DATE_OPTIONS,
   locale?: string,
 ): string =>
-  getDateTimeFormat(resolveLocale(locale), options).format(new Date(date));
+  getDateTimeFormat(
+    resolveLocale(locale),
+    typeof date === "string" && CALENDAR_DAY.test(date)
+      ? { ...options, timeZone: "UTC" }
+      : options,
+  ).format(new Date(date));
 
 /** Formats a date as a time, e.g. "14:32" by default. Accepts an ISO string or a `Date`. */
 export function formatTime(

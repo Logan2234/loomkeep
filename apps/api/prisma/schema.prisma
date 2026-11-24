@@ -533,7 +533,7 @@ model User {
   // Unique login handle (alongside email). Assigned at registration, editable
   // in Sécurité. Stored lowercase like email (User_username_lowercase_check).
   username                String                 @unique
-  birthDate               DateTime?
+  birthDate               DateTime?              @db.Date
   // Opt-in to 18+ titles; only effective when birthDate proves the account is 18+.
   allowAdultContent       Boolean                @default(false)
   // Opt-out from showing gamification progression (level/XP) to OTHER
@@ -2016,7 +2016,7 @@ model MediaItem {
   posterUrl         String?
   backdropUrl       String?
   overview          String?
-  releaseDate       DateTime?
+  releaseDate       DateTime?     @db.Date
   // Null identifies cached movies whose regional release dates have not been fetched yet.
   movieReleaseDates Json?
   // Airing status as reported by the source (free-form: "Returning Series", "FINISHED"…).
@@ -2401,7 +2401,7 @@ model GameItem {
   overview                String?
   // The first day of the announced period unless the precision is DAY:
   // IGDB's own timestamp for "2028" is December 31st, not a real date.
-  releaseDate             DateTime?
+  releaseDate             DateTime?             @db.Date
   releaseDatePrecision    ReleaseDatePrecision?
   genres                  String[]
   platforms               String[]
@@ -2534,7 +2534,7 @@ model BookItem {
   authors         String[]
   coverUrl        String?
   overview        String?
-  releaseDate     DateTime?
+  releaseDate     DateTime?  @db.Date
   genres          String[]
   // Number of pages, when the source knows it.
   pageCount       Int?
@@ -2706,7 +2706,7 @@ model MusicItem {
   title           String
   artists         String[]
   coverUrl        String?
-  releaseDate     DateTime?
+  releaseDate     DateTime?   @db.Date
   genres          String[]
   // Release-group primary type (Album/EP/Single/Compilation…), informational.
   albumType       String?

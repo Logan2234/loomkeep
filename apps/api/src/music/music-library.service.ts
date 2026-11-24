@@ -32,7 +32,7 @@ import {
   assertBulkTarget,
   assertBulkUpdate,
 } from "../common/bulk-entries.util";
-import { toDateOrNull } from "../common/date.util";
+import { toDateOrNull, utcDateKey } from "../common/date.util";
 import type {
   EntryStatusChange,
   ListEntriesFilters,
@@ -585,7 +585,7 @@ export class MusicLibraryService {
       genres: item.genres,
       albumType: item.albumType,
       trackCount: item.trackCount,
-      releaseDate: item.releaseDate?.toISOString() ?? null,
+      releaseDate: item.releaseDate ? utcDateKey(item.releaseDate) : null,
       releaseDatePrecision: null,
       sameArtistAlbums: [],
       tags: [],
