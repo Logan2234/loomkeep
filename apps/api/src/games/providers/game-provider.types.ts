@@ -1,5 +1,6 @@
 import type {
   CreatorRefDto,
+  GameLanguageDto,
   GameSagaMemberDto,
   GameSource,
   GameStoreLinkDto,
@@ -24,6 +25,7 @@ export interface ProviderGameDetails {
   releaseDatePrecision: ReleaseDatePrecision | null;
   website: string | null;
   stores: GameStoreLinkDto[];
+  languages: GameLanguageDto[];
   similarGames: GameSummaryDto[];
   developers: string[];
   publishers: string[];

@@ -1,5 +1,6 @@
 import type {
   CreatorRefDto,
+  GameLanguageDto,
   GameTimeToBeatDto,
   RatingDto,
 } from "@loomkeep/shared";
@@ -78,6 +79,12 @@ interface IgdbNamed {
   name: string;
 }
 
+interface IgdbLanguageSupport {
+  language?: { locale?: string };
+  // "Audio", "Subtitles" or "Interface".
+  language_support_type?: { name?: string };
+}
+
 interface IgdbWebsite {
   url: string;
   // Official site is category 1 (legacy) / type 1 (newer enum); IGDB is
@@ -134,6 +141,7 @@ interface IgdbGame {
   themes?: number[];
   websites?: IgdbWebsite[];
   external_games?: { url?: string }[];
+  language_supports?: IgdbLanguageSupport[];
   similar_games?: IgdbGame[];
   involved_companies?: IgdbInvolvedCompany[];
   game_modes?: IgdbNamed[];
@@ -277,7 +285,7 @@ export class IgdbProvider implements GameCatalogProvider {
   }
 
   private static readonly DETAIL_FIELDS =
-    "name, slug, summary, storyline, first_release_date, release_dates.date, release_dates.date_format, cover.image_id, artworks.image_id, screenshots.image_id, genres.name, platforms.name, themes, websites.url, websites.category, websites.type, external_games.url, " +
+    "name, slug, summary, storyline, first_release_date, release_dates.date, release_dates.date_format, cover.image_id, artworks.image_id, screenshots.image_id, genres.name, platforms.name, themes, websites.url, websites.category, websites.type, external_games.url, language_supports.language.locale, language_supports.language_support_type.name, " +
     "similar_games.name, similar_games.cover.image_id, similar_games.first_release_date, similar_games.themes, " +
     "involved_companies.company.id, involved_companies.company.name, involved_companies.developer, involved_companies.publisher, " +
     "game_modes.name, player_perspectives.name, " +
@@ -432,6 +440,7 @@ export class IgdbProvider implements GameCatalogProvider {
       website:
         game.websites?.find((w) => w.category === 1 || w.type === 1)?.url ??
         null,
+      languages: gameLanguages(game.language_supports ?? []),
       // External games carry store links that websites lack (GOG, the
       // current Epic URL…).
       stores: gameStoreLinks([
@@ -834,4 +843,28 @@ function uniqueRefs(entities: { id: number; name: string }[]): CreatorRefDto[] {
 /** Whether a raw id is a plausible IGDB/Steam numeric id, safe to interpolate. */
 function isIgdbId(id: string): boolean {
   return /^\d+$/.test(id);
+}
+
+/** IGDB's language rows folded to one per locale, in IGDB's order. */
+function gameLanguages(rows: IgdbLanguageSupport[]): GameLanguageDto[] {
+  const byLocale = new Map<string, GameLanguageDto>();
+
+  for (const row of rows) {
+    const locale = row.language?.locale;
+    const kind = row.language_support_type?.name;
+    if (!locale || !kind) continue;
+
+    const language = byLocale.get(locale) ?? {
+      locale,
+      interface: false,
+      subtitles: false,
+      audio: false,
+    };
+    if (kind === "Interface") language.interface = true;
+    else if (kind === "Subtitles") language.subtitles = true;
+    else if (kind === "Audio") language.audio = true;
+    byLocale.set(locale, language);
+  }
+
+  return [...byLocale.values()];
 }
