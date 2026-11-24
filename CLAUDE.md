@@ -36,8 +36,9 @@ pnpm lint / pnpm check / pnpm knip
 
 **Never lint, format, typecheck, or run the test suite yourself as a
 verification step.** `pre-commit` formats/lints staged files, `pre-push`
-typechecks what changed, and CI runs the full suite + e2e on every PR. Run a
-test only for new/changed logic or a bug fix, not for a style tweak, a
+typechecks what changed, and CI runs the lint, test and e2e jobs whose
+paths a PR touches (a PR limited to `docker/` or `.github/deploy/` runs
+none of them). Run a test only for new/changed logic or a bug fix, not for a style tweak, a
 wording change or a rename.
 
 ## Architecture
@@ -110,7 +111,10 @@ wording change or a rename.
 - Query keys come from `src/lib/api/keys.ts`. `invalidates` lists only what
   is displayed alongside the mutation.
 - Paginated `GET` lists share one contract: `page`/`limit` params
-  (`parsePageQuery`), `PagedResult<T>` response.
+  (`parsePageQuery`), `PagedResult<T>` response. The reading/play
+  sessions of an entry (`GET /books|games/entries/:id/sessions`) are the
+  exception: `page` only, and a summary DTO with its totals beside
+  `items`/`hasMore`.
 
 ### Web tests
 

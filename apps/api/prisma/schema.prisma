@@ -249,8 +249,8 @@ enum ReviewVoteValue {
   DOWN
 }
 
-// What a report targets. COMMENT is the only kind produced today; REVIEW/USER
-// are modelled now so a future "report a review/profile" needs no migration.
+// What a report targets: a comment, a review, a profile, a list or a private
+// message.
 enum ReportTargetType {
   COMMENT
   REVIEW
@@ -1818,8 +1818,8 @@ model NewsletterSend {
 
 // One row per external provider per UTC day — the raw series the /admin/services
 // page aggregates into "today" and "this month" depending on each provider's
-// documented quota window. Unbounded (like SecurityEvent/ImportRun): a few
-// rows per provider per day is negligible volume.
+// documented quota window. Never purged: a few rows per provider per day is
+// negligible volume.
 model ApiCallCounter {
   id       String   @id @default(cuid())
   provider String
