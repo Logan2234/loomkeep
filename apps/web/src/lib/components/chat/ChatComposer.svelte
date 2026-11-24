@@ -697,7 +697,7 @@
       class="mb-2 flex items-center gap-2.5 rounded-xl border px-2 py-1.5 text-sm
         {linked ? 'border-border border-dashed' : 'border-accent bg-accent/10'}"
       style="transform-origin: bottom left;">
-      <span class="w-[22px] shrink-0 overflow-hidden rounded-sm">
+      <span class="w-5.5 shrink-0 overflow-hidden rounded-sm">
         {#if images.length > 1}
           <ListCoverGrid
             images={images.filter((src) => src !== null)}

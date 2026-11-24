@@ -247,7 +247,7 @@ body {
       @apply mb-2.5 px-1;
     }
     .panel-body {
-      @apply bg-surface rounded-[14px] px-[17px] py-[18px];
+      @apply bg-surface rounded-[14px] px-4.25 py-4.5;
     }
     /* A poster strip is its own row of objects: no block around it, and
        none of its padding either (PhoneHome shortens the box to match). */

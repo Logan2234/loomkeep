@@ -2,7 +2,7 @@ const path = require("node:path");
 const { randomBytes } = require("node:crypto");
 const dotenv = require("dotenv");
 
-dotenv.config({ path: path.join(__dirname, "..", ".env") });
+dotenv.config({ path: path.join(__dirname, "..", ".env"), quiet: true });
 
 if (!process.env.DATABASE_URL) {
   throw new Error("DATABASE_URL is required to run the e2e tests");

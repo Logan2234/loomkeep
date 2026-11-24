@@ -131,7 +131,7 @@
     <aside
       aria-label={m.chat_conversations()}
       class="border-border bg-surface flex min-h-0 shrink-0 flex-col gap-2 px-2.5 pt-5 pb-2.5
-        {layout.compact ? 'w-full' : 'w-[340px] border-r'}">
+        {layout.compact ? 'w-full' : 'w-85 border-r'}">
       <div class="flex items-center px-2">
         <h1 class="font-display min-w-0 flex-1 text-2xl font-extrabold">
           {m.chat_title()}

@@ -11,7 +11,7 @@
 // compiled dist/ output instead, so ts-node never touches the plugin-
 // dependent files at all.
 import { config } from "dotenv";
-config();
+config({ quiet: true });
 
 import { NestFactory } from "@nestjs/core";
 import { FastifyAdapter } from "@nestjs/platform-fastify";
