@@ -47,7 +47,8 @@ describe("ScheduledDeletionService.schedule", () => {
 
     const days = (new Date(scheduledFor).getTime() - Date.now()) / DAY_MS;
     expect(Math.round(days)).toBe(ACCOUNT_DELETION_GRACE_DAYS);
-    const [[{ data }]] = (prisma.user.update as Mock).mock.calls;
+    const [[{ where, data }]] = (prisma.user.updateMany as Mock).mock.calls;
+    expect(where).toEqual({ id: "user-1", deletionScheduledFor: null });
     expect(data.deletionReason).toBe("PRIVACY");
     const [[recipient, date, token]] = (
       mail.sendAccountDeletionScheduled as Mock
@@ -67,7 +68,21 @@ describe("ScheduledDeletionService.schedule", () => {
     await expect(service.schedule("user-1")).resolves.toEqual({
       scheduledFor: first.toISOString(),
     });
-    expect(prisma.user.update).not.toHaveBeenCalled();
+    expect(prisma.user.updateMany).not.toHaveBeenCalled();
+    expect(mail.sendAccountDeletionScheduled).not.toHaveBeenCalled();
+  });
+
+  it("leaves a concurrent request's date and link alone, without a second email", async () => {
+    const theirs = new Date("2026-11-03T05:15:00Z");
+    const { service, prisma, mail } = make();
+    (prisma.user.updateMany as Mock).mockResolvedValue({ count: 0 });
+    (prisma.user.findUnique as Mock)
+      .mockResolvedValueOnce({ ...ALICE, deletionScheduledFor: null })
+      .mockResolvedValueOnce({ deletionScheduledFor: theirs });
+
+    await expect(service.schedule("user-1")).resolves.toEqual({
+      scheduledFor: theirs.toISOString(),
+    });
     expect(mail.sendAccountDeletionScheduled).not.toHaveBeenCalled();
   });
 });

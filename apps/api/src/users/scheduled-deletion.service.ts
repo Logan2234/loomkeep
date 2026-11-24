@@ -56,14 +56,30 @@ export class ScheduledDeletionService {
       Date.now() + ACCOUNT_DELETION_GRACE_DAYS * DAY_MS,
     );
     const token = randomToken(32, "hex");
-    await this.prisma.user.update({
-      where: { id: userId },
+    // Conditional: two requests at once would otherwise both write, and the
+    // first emailed link would carry a hash the second already replaced.
+    const { count } = await this.prisma.user.updateMany({
+      where: { id: userId, deletionScheduledFor: null },
       data: {
         deletionScheduledFor: scheduledFor,
         deletionReason: reason ?? null,
         deletionCancelTokenHash: sha256Hex(token),
       },
     });
+
+    if (count === 0) {
+      const current = await this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { deletionScheduledFor: true },
+      });
+
+      if (current?.deletionScheduledFor) {
+        return { scheduledFor: current.deletionScheduledFor.toISOString() };
+      }
+
+      throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.UserNotFound);
+    }
+
     await this.mail.sendAccountDeletionScheduled(
       { email: user.email, locale: user.locale },
       scheduledFor,
