@@ -68,9 +68,19 @@ describe("AdvancedStatsService", () => {
     });
 
     const video = await service.video("user-1", {
-      episodeWatches: [{ watchedAt: null, genres: ["Drama"] }],
+      episodeWatches: [
+        {
+          watchedAt: null,
+          genres: ["Drama"],
+          mediaItemId: "series-1",
+          originCountries: ["GB"],
+          minutes: 50,
+        },
+      ],
       completedMovies: [
         {
+          mediaItemId: "movie-1",
+          originCountries: ["US"],
           title: "Arrival",
           runtimeMin: 116,
           genres: ["Drama"],

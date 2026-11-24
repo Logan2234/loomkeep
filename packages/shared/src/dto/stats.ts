@@ -120,6 +120,16 @@ export interface VideoFilmExtremeDto {
 
 // The Vidéo deep section on /stats — everything not already covered by the
 // cross-domain overview (statuses/favorites live there via `breakdowns`).
+/** Where the films and series someone watched come from (CAT-01). */
+export interface VideoCountryDto {
+  /** ISO 3166-1 alpha-2, as TMDB names it ("FR", "KR"). */
+  country: string;
+  /** Distinct films and series. A co-production counts for each country. */
+  titles: number;
+  /** Watch time, rewatches included. */
+  minutes: number;
+}
+
 export interface VideoStatsDto {
   totalMinutes: number;
   /** Episode viewings, rewatches included, specials excluded. */
@@ -145,6 +155,8 @@ export interface VideoStatsDto {
   longestBingeCount: number;
   /** Completed movie rewatches beyond each movie's first completion. */
   moviesRewatchedCount: number;
+  /** Every country of origin, most titles first. */
+  countries: VideoCountryDto[];
 }
 
 /** Staleness bucket for a WATCHING series/anime — mutually exclusive. */

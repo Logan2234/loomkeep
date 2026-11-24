@@ -1,4 +1,5 @@
 import type {
+  VideoCountryDto,
   VideoFilmExtremeDto,
   VideoStatsDto,
   VideoTypeSplitDto,
@@ -21,6 +22,12 @@ class VideoGenreCountResponseDto {
   count!: number;
 }
 
+class VideoCountryResponseDto implements VideoCountryDto {
+  country!: string;
+  titles!: number;
+  minutes!: number;
+}
+
 export class VideoStatsResponseDto implements VideoStatsDto {
   totalMinutes!: number;
   episodesWatched!: number;
@@ -35,4 +42,5 @@ export class VideoStatsResponseDto implements VideoStatsDto {
   ghostCount!: number;
   longestBingeCount!: number;
   moviesRewatchedCount!: number;
+  countries!: VideoCountryResponseDto[];
 }

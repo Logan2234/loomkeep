@@ -152,6 +152,7 @@ export function toMediaDetails(
     format: media.format ?? null,
     releaseDate: toIsoDate(media.startDate),
     runtimeMin: media.duration ?? null,
+    originCountries: [],
     externalIds: [
       { source: MediaSource.ANILIST, externalId: String(media.id) },
     ],

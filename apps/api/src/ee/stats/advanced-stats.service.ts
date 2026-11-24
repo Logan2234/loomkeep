@@ -40,6 +40,7 @@ import {
   computeLongestBinge,
   toRankedList,
 } from "./aggregates.util";
+import { computeCountries } from "./countries.util";
 import { computePossessionBreakdown } from "./possession.util";
 import { computeAverageRatingByGroup } from "./rating-by-group.util";
 import {
@@ -134,6 +135,7 @@ export class AdvancedStatsService implements AdvancedStatsSource {
       pausedCount: staleness.filter((s) => s.staleness === "PAUSED").length,
       ghostCount: staleness.filter((s) => s.staleness === "GHOST").length,
       moviesRewatchedCount,
+      countries: computeCountries(episodeWatches, completedMovies),
       longestBingeCount: computeLongestBinge(
         episodeWatches.flatMap((w) => (w.watchedAt ? [w.watchedAt] : [])),
       ),

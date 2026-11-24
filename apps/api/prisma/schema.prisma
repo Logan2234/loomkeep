@@ -2025,6 +2025,10 @@ model MediaItem {
   // type already tells a film apart. Lets the Letterboxd export include anime films.
   format            String?
   genres            String[]
+  // ISO 3166-1 alpha-2 countries of origin (TMDB `origin_country`), for the
+  // stats map and the "tour du monde" achievement. Empty until the next sync
+  // of an item cached before it existed.
+  originCountries   String[]      @default([])
   // Average minutes per episode (series/anime) or the film's runtime; null until
   // captured from the source. Used by the stats aggregation for watch time.
   runtimeMin        Int?

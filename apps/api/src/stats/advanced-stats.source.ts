@@ -30,6 +30,7 @@ export type VideoAdvanced = Pick<
   | "ghostCount"
   | "longestBingeCount"
   | "moviesRewatchedCount"
+  | "countries"
 >;
 export type GameAdvanced = Pick<
   GameStatsDto,
@@ -56,8 +57,16 @@ export interface OverviewInput {
 
 export interface VideoInput {
   /** One per episode watch (season 0 excluded). */
-  episodeWatches: { watchedAt: Date | null; genres: string[] }[];
+  episodeWatches: {
+    watchedAt: Date | null;
+    genres: string[];
+    mediaItemId: string;
+    originCountries: string[];
+    minutes: number;
+  }[];
   completedMovies: {
+    mediaItemId: string;
+    originCountries: string[];
     title: string;
     runtimeMin: number | null;
     genres: string[];
@@ -126,6 +135,7 @@ export const EMPTY_VIDEO_ADVANCED: VideoAdvanced = {
   ghostCount: 0,
   longestBingeCount: 0,
   moviesRewatchedCount: 0,
+  countries: [],
 };
 
 export const EMPTY_GAME_ADVANCED: GameAdvanced = {
