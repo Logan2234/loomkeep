@@ -244,9 +244,6 @@ export class ImportJobService {
     // first is still awaiting its quota check, and the user gets two imports.
     const job = this.newJob(userId, sourceId, "analyze", null);
     this.jobs.set(job.id, job);
-    // Only the newest analysis can still be committed, so no older one needs
-    // to keep its parse model alive.
-    this.releasePayloads(userId);
 
     let parsed: unknown;
 
@@ -269,6 +266,11 @@ export class ImportJobService {
       );
     }
 
+    // Only the newest analysis can still be committed, so no older one needs
+    // to keep its parse model alive. Released once the new file is read, not
+    // before: a wrong file (or the free quota) mustn't cost the analysis the
+    // user already reviewed.
+    this.releasePayloads(userId);
     job.parsed = parsed;
 
     const progress = this.progressFor(job);
