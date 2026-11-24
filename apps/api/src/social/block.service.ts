@@ -49,7 +49,7 @@ export class BlockService {
           { blockerId: b, blockedId: a },
         ],
       },
-      select: { id: true },
+      select: { blockerId: true },
     });
     return block !== null;
   }

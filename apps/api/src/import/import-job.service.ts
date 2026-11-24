@@ -572,7 +572,8 @@ export class ImportJobService {
       userId,
       sourceId: job.sourceId,
       domain,
-      status: job.status === "failed" ? "FAILURE" : "SUCCESS",
+      status:
+        job.status === "failed" ? ("FAILURE" as const) : ("SUCCESS" as const),
       itemCount: job.progress.total,
       overwrite,
       summary: job.report

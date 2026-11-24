@@ -47,7 +47,7 @@ describe("BlockService.isBlockedEitherWay", () => {
           { blockerId: B, blockedId: A },
         ],
       },
-      select: { id: true },
+      select: { blockerId: true },
     });
   });
 
