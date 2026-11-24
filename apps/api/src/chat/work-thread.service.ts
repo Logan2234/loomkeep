@@ -475,7 +475,7 @@ export class WorkThreadService {
           : [],
       );
     const [media, games, books, music] = await Promise.all([
-      this.prisma.libraryEntry.findMany({
+      this.prisma.mediaEntry.findMany({
         where: { userId, mediaItemId: { in: idsOf("MEDIA") } },
         select: { mediaItemId: true },
       }),

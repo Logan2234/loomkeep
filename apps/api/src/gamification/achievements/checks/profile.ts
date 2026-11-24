@@ -76,11 +76,11 @@ export async function checkNoFavorites(
     bookFav,
     musicFav,
   ] = await Promise.all([
-    prisma.libraryEntry.count({ where: { userId } }),
+    prisma.mediaEntry.count({ where: { userId } }),
     prisma.gameEntry.count({ where: { userId } }),
     prisma.bookEntry.count({ where: { userId } }),
     prisma.musicEntry.count({ where: { userId } }),
-    prisma.libraryEntry.count({ where: { userId, favorite: true } }),
+    prisma.mediaEntry.count({ where: { userId, favorite: true } }),
     prisma.gameEntry.count({ where: { userId, favorite: true } }),
     prisma.bookEntry.count({ where: { userId, favorite: true } }),
     prisma.musicEntry.count({ where: { userId, favorite: true } }),
@@ -101,7 +101,7 @@ export async function checkFullInventory(
   prisma: PrismaService,
   userId: string,
 ): Promise<AchievementCheckResult> {
-  const rows = await prisma.libraryEntry.findMany({
+  const rows = await prisma.mediaEntry.findMany({
     where: { userId, ownershipStatus: { not: "NONE" } },
     select: { ownershipStatus: true },
     distinct: ["ownershipStatus"],
@@ -119,7 +119,7 @@ export async function checkGuiltyPleasure(
   prisma: PrismaService,
   userId: string,
 ): Promise<AchievementCheckResult> {
-  const entries = await prisma.libraryEntry.findMany({
+  const entries = await prisma.mediaEntry.findMany({
     where: {
       userId,
       status: "COMPLETED",
@@ -155,7 +155,7 @@ export async function checkHiddenGem(
   const select = { id: true } as const;
   const onlyTrackedBy = { entries: { every: { userId } } };
   const found = await Promise.all([
-    prisma.libraryEntry.findFirst({
+    prisma.mediaEntry.findFirst({
       where: { userId, mediaItem: onlyTrackedBy },
       select,
     }),

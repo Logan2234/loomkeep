@@ -85,7 +85,7 @@ describe("checkFirstEpisode", () => {
 describe("checkCinephileTier", () => {
   it("unlocks once the movie count reaches the tier's target, and reports progress either way", async () => {
     const count = vi.fn().mockResolvedValue(10);
-    const prisma = { libraryEntry: { count } } as unknown as PrismaService;
+    const prisma = { mediaEntry: { count } } as unknown as PrismaService;
 
     await expect(checkCinephileTier(10)(prisma, "user-1")).resolves.toEqual({
       unlocked: true,
@@ -248,7 +248,7 @@ describe("checkNightOwl / checkEarlyBird (hour-window family)", () => {
           .fn()
           .mockResolvedValue([{ watchedAt: new Date("2026-01-01T03:00:00Z") }]),
       },
-      libraryEntry: { findMany: vi.fn().mockResolvedValue([]) },
+      mediaEntry: { findMany: vi.fn().mockResolvedValue([]) },
       movieReplay: { findMany: vi.fn().mockResolvedValue([]) },
     } as unknown as PrismaService;
 
@@ -265,7 +265,7 @@ describe("checkNightOwl / checkEarlyBird (hour-window family)", () => {
           .fn()
           .mockResolvedValue([{ watchedAt: new Date("2026-01-01T12:00:00Z") }]),
       },
-      libraryEntry: { findMany: vi.fn().mockResolvedValue([]) },
+      mediaEntry: { findMany: vi.fn().mockResolvedValue([]) },
       movieReplay: { findMany: vi.fn().mockResolvedValue([]) },
     } as unknown as PrismaService;
 
@@ -285,7 +285,7 @@ describe("behaviour achievements", () => {
         findUnique: vi.fn().mockResolvedValue({ timezone: "UTC", createdAt }),
       },
       episodeWatch: { findMany: vi.fn().mockResolvedValue([]) },
-      libraryEntry: { findMany: vi.fn().mockResolvedValue([]) },
+      mediaEntry: { findMany: vi.fn().mockResolvedValue([]) },
       movieReplay: { findMany: vi.fn().mockResolvedValue([]) },
     } as unknown as PrismaService;
 
@@ -296,7 +296,7 @@ describe("behaviour achievements", () => {
         where: expect.objectContaining({ watchedAt: { gte: createdAt } }),
       }),
     );
-    expect(prisma.libraryEntry.findMany).toHaveBeenCalledWith(
+    expect(prisma.mediaEntry.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({ finishedAt: { gte: createdAt } }),
       }),
@@ -333,7 +333,7 @@ describe("checkStreakTier", () => {
 describe("checkDecadesTier / checkGenresTier (exploration family)", () => {
   it("counts distinct decades across media/games/books", async () => {
     const prisma = {
-      libraryEntry: {
+      mediaEntry: {
         findMany: vi
           .fn()
           .mockResolvedValue([
@@ -362,7 +362,7 @@ describe("checkDecadesTier / checkGenresTier (exploration family)", () => {
 
   it("counts distinct genres across media/games/books", async () => {
     const prisma = {
-      libraryEntry: {
+      mediaEntry: {
         findMany: vi
           .fn()
           .mockResolvedValue([{ mediaItem: { genres: ["Horror", "Drama"] } }]),
@@ -389,7 +389,7 @@ describe("checkDecadesTier / checkGenresTier (exploration family)", () => {
 describe("checkOmnivore", () => {
   it("unlocks only once all 4 domains have at least one tracked entry", async () => {
     const prisma = {
-      libraryEntry: { count: vi.fn().mockResolvedValue(1) },
+      mediaEntry: { count: vi.fn().mockResolvedValue(1) },
       gameEntry: { count: vi.fn().mockResolvedValue(1) },
       bookEntry: { count: vi.fn().mockResolvedValue(1) },
       musicEntry: { count: vi.fn().mockResolvedValue(0) },
@@ -407,7 +407,7 @@ describe("checkBigScreen", () => {
     const bigSeries = { mediaItem: { seasons: Array(5).fill({ id: "s" }) } };
     const smallSeries = { mediaItem: { seasons: Array(2).fill({ id: "s" }) } };
     const prisma = {
-      libraryEntry: {
+      mediaEntry: {
         findMany: vi
           .fn()
           .mockResolvedValue(Array(5).fill(bigSeries).concat(smallSeries)),
@@ -424,7 +424,7 @@ describe("checkBigScreen", () => {
 describe("checkWellRounded", () => {
   it("counts how many of the 4 domains reach 10+ finished titles", async () => {
     const prisma = {
-      libraryEntry: { count: vi.fn().mockResolvedValue(10) },
+      mediaEntry: { count: vi.fn().mockResolvedValue(10) },
       gameEntry: { count: vi.fn().mockResolvedValue(10) },
       bookEntry: { count: vi.fn().mockResolvedValue(10) },
       musicEntry: { count: vi.fn().mockResolvedValue(10) },
@@ -446,7 +446,7 @@ describe("checkHalloween", () => {
           .fn()
           .mockResolvedValue([{ watchedAt: new Date("2026-10-15T00:00:00Z") }]),
       },
-      libraryEntry: { findMany: vi.fn().mockResolvedValue([]) },
+      mediaEntry: { findMany: vi.fn().mockResolvedValue([]) },
       movieReplay: { findMany: vi.fn().mockResolvedValue([]) },
     } as unknown as PrismaService;
 
@@ -464,7 +464,7 @@ describe("checkContemporary", () => {
           .fn()
           .mockResolvedValue({ birthDate: new Date("1995-05-01") }),
       },
-      libraryEntry: { findFirst: vi.fn().mockResolvedValue({ id: "e1" }) },
+      mediaEntry: { findFirst: vi.fn().mockResolvedValue({ id: "e1" }) },
     } as unknown as PrismaService;
 
     await expect(checkContemporary(prisma, "user-1")).resolves.toEqual({
@@ -487,7 +487,7 @@ describe("checkNewYearFinish", () => {
   it("unlocks off a work finished on January 1st, local time", async () => {
     const prisma = {
       user: { findUnique: vi.fn().mockResolvedValue({ timezone: "UTC" }) },
-      libraryEntry: {
+      mediaEntry: {
         findMany: vi
           .fn()
           .mockResolvedValue([
@@ -756,7 +756,7 @@ describe("checkPremiereSeance", () => {
 describe("checkNoFavorites", () => {
   it("unlocks only past 100 tracked titles with zero favorites", async () => {
     const prisma = {
-      libraryEntry: {
+      mediaEntry: {
         count: vi.fn((args?: { where?: { favorite?: boolean } }) =>
           Promise.resolve(args?.where?.favorite ? 0 : 100),
         ),
@@ -775,7 +775,7 @@ describe("checkNoFavorites", () => {
 describe("checkFullInventory", () => {
   it("requires every MediaOwnershipStatus value used at least once", async () => {
     const prisma = {
-      libraryEntry: {
+      mediaEntry: {
         findMany: vi
           .fn()
           .mockResolvedValue(
@@ -796,7 +796,7 @@ describe("checkFullInventory", () => {
 describe("checkGuiltyPleasure", () => {
   it("unlocks off a completed series rated 1-3 by the user", async () => {
     const prisma = {
-      libraryEntry: {
+      mediaEntry: {
         findMany: vi.fn().mockResolvedValue([{ mediaItemId: "m1" }]),
       },
       review: { findFirst: vi.fn().mockResolvedValue({ id: "r1" }) },
@@ -811,7 +811,7 @@ describe("checkGuiltyPleasure", () => {
 describe("checkHiddenGem", () => {
   function prismaWith(found: { media?: boolean; game?: boolean }) {
     return {
-      libraryEntry: {
+      mediaEntry: {
         findFirst: vi.fn().mockResolvedValue(found.media ? { id: "e1" } : null),
       },
       gameEntry: {
@@ -828,7 +828,7 @@ describe("checkHiddenGem", () => {
       unlocked: true,
     });
     // The user's entries whose work has no entry from anyone else.
-    expect(prisma.libraryEntry.findFirst).toHaveBeenCalledWith({
+    expect(prisma.mediaEntry.findFirst).toHaveBeenCalledWith({
       where: {
         userId: "user-1",
         mediaItem: { entries: { every: { userId: "user-1" } } },
@@ -847,7 +847,7 @@ describe("checkHiddenGem", () => {
 describe("checkFullCircle", () => {
   it("unlocks off a replay of the very first tracked title", async () => {
     const prisma = {
-      libraryEntry: {
+      mediaEntry: {
         findFirst: vi
           .fn()
           .mockResolvedValue({ id: "e1", createdAt: new Date("2026-01-01") }),
@@ -920,7 +920,7 @@ describe("checkPhoenix", () => {
       gamePlaythrough: {
         findMany: vi.fn().mockResolvedValue(rows.playthroughs ?? []),
       },
-      libraryEntry: { findMany: vi.fn().mockResolvedValue(rows.series ?? []) },
+      mediaEntry: { findMany: vi.fn().mockResolvedValue(rows.series ?? []) },
       episodeWatch: { findMany: vi.fn().mockResolvedValue(rows.watches ?? []) },
     } as unknown as PrismaService;
   }
@@ -1182,7 +1182,7 @@ describe("checkWorthTheWait", () => {
   const prismaWith = (createdAt: string, finishedAt: string) =>
     ({
       user: { findUnique: vi.fn().mockResolvedValue(SIGNED_UP) },
-      libraryEntry: {
+      mediaEntry: {
         findMany: vi.fn().mockResolvedValue([
           {
             createdAt: new Date(createdAt),
@@ -1218,8 +1218,8 @@ describe("the loyal trio", () => {
     const prisma = {
       movieReplay: {
         groupBy: vi.fn().mockResolvedValue([
-          { libraryEntryId: "e1", _count: { _all: 1 } },
-          { libraryEntryId: "e2", _count: { _all: 2 } },
+          { mediaEntryId: "e1", _count: { _all: 1 } },
+          { mediaEntryId: "e2", _count: { _all: 2 } },
         ]),
       },
     } as unknown as PrismaService;

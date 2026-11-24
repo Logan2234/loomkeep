@@ -46,7 +46,7 @@ function makeService(opts: {
   } = opts;
 
   const prisma = {
-    libraryEntry: {
+    mediaEntry: {
       findMany: vi
         .fn()
         .mockResolvedValue(

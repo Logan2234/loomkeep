@@ -17,7 +17,7 @@ function makeService(
       update: vi.fn().mockResolvedValue({ calendarToken: "fresh-token" }),
     },
     episode: { findMany: vi.fn().mockResolvedValue([]) },
-    libraryEntry: { findMany: vi.fn().mockResolvedValue([]) },
+    mediaEntry: { findMany: vi.fn().mockResolvedValue([]) },
     gameEntry: { findMany: vi.fn().mockResolvedValue([]) },
   } as unknown as PrismaService;
   const entitlements = {
@@ -219,9 +219,7 @@ describe("CalendarFeedService.getReleasesFeed", () => {
         },
       },
     ]);
-    (
-      prisma.libraryEntry.findMany as ReturnType<typeof vi.fn>
-    ).mockResolvedValue([
+    (prisma.mediaEntry.findMany as ReturnType<typeof vi.fn>).mockResolvedValue([
       {
         movieReleaseRegion: null,
         mediaItem: {

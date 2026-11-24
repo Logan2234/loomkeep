@@ -40,7 +40,7 @@ aux commentaires dans `schema.prisma`, qui restent la source de vérité.
 | `SeasonTranslation`  | Titre/synopsis d'une `Season` dans une autre langue que l'anglais.              |
 | `Episode`            | Épisode d'une `Season`.                                                         |
 | `EpisodeTranslation` | Titre/synopsis d'un `Episode` dans une autre langue que l'anglais.              |
-| `LibraryEntry`       | Entrée de bibliothèque reliant un `User` à un `MediaItem` (statut, notes…).     |
+| `MediaEntry`         | Entrée de bibliothèque reliant un `User` à un `MediaItem` (statut, notes…).     |
 | `EpisodeWatch`       | Un visionnage d'un `Episode` par un `User` (une ligne par vue, rewatch inclus). |
 
 ## Jeux vidéo

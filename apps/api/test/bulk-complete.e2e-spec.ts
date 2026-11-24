@@ -76,7 +76,7 @@ describe("Bulk completion of a series (e2e)", () => {
       }
     }
 
-    const entry = await prisma.libraryEntry.create({
+    const entry = await prisma.mediaEntry.create({
       data: { userId, mediaItemId: item.id, status: "WATCHING" },
     });
 

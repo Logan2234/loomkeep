@@ -385,7 +385,7 @@ export abstract class MediaImportSource<
         this.prisma.episodeWatch.deleteMany({
           where: { userId, episode: { season: { mediaItemId: media.id } } },
         }),
-        this.prisma.libraryEntry.deleteMany({
+        this.prisma.mediaEntry.deleteMany({
           where: { userId, mediaItemId: media.id },
         }),
       ]);
@@ -433,7 +433,7 @@ export abstract class MediaImportSource<
             episode: { season: { mediaItemId: { notIn: kept } } },
           },
         }),
-        this.prisma.libraryEntry.deleteMany({
+        this.prisma.mediaEntry.deleteMany({
           where: { userId, mediaItemId: { notIn: kept } },
         }),
       ]);
@@ -653,7 +653,7 @@ export abstract class MediaImportSource<
     const watched = movie.watched && (await this.isReleased(media.id));
     // A movie is a single sitting — start and finish share the same instant.
     const watchedAt = watched ? movie.watchedAt : null;
-    const existing = await this.prisma.libraryEntry.findUnique({
+    const existing = await this.prisma.mediaEntry.findUnique({
       where: { userId_mediaItemId: { userId, mediaItemId: media.id } },
       select: { status: true, notes: true, startedAt: true, finishedAt: true },
     });
@@ -664,7 +664,7 @@ export abstract class MediaImportSource<
     // Only ever turns favorite ON — an importer never has grounds to unset
     // something the user set manually in the app.
     const favorite = movie.favorite === true;
-    const entry = await this.prisma.libraryEntry.upsert({
+    const entry = await this.prisma.mediaEntry.upsert({
       where: { userId_mediaItemId: { userId, mediaItemId: media.id } },
       // Re-importing over an entry adds what the source knows and never
       // takes anything away: no status moved back, and no date or note the
@@ -843,16 +843,16 @@ export abstract class MediaImportSource<
   }
 
   private async recordMovieReplays(
-    libraryEntryId: string,
+    mediaEntryId: string,
     dates: Date[],
   ): Promise<void> {
     const existing = await this.prisma.movieReplay.count({
-      where: { libraryEntryId },
+      where: { mediaEntryId },
     });
     if (existing > 0) return; // Idempotent re-run.
 
     await this.prisma.movieReplay.createMany({
-      data: dates.map((finishedAt) => ({ libraryEntryId, finishedAt })),
+      data: dates.map((finishedAt) => ({ mediaEntryId, finishedAt })),
     });
   }
 
@@ -928,7 +928,7 @@ export abstract class MediaImportSource<
     });
     if (!ref) return incoming; // upsertFromSource ran just before, so this always exists.
 
-    const existing = await this.prisma.libraryEntry.findUnique({
+    const existing = await this.prisma.mediaEntry.findUnique({
       where: { userId_mediaItemId: { userId, mediaItemId: ref.mediaItemId } },
       select: {
         status: true,
@@ -946,7 +946,7 @@ export abstract class MediaImportSource<
     // Only ever turns favorite ON — an importer never has grounds to unset
     // something the user set manually in the app.
     const favorite = show.favorite === true;
-    await this.prisma.libraryEntry.upsert({
+    await this.prisma.mediaEntry.upsert({
       where: { userId_mediaItemId: { userId, mediaItemId: ref.mediaItemId } },
       // Same rule as films: the status only moves forward, and a date is
       // written only where the entry has none.

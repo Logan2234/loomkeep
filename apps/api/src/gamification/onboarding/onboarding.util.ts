@@ -20,7 +20,7 @@ export async function computeOnboardingDoneMap(
   userId: string,
 ): Promise<Record<OnboardingStepKey, boolean>> {
   const [
-    libraryEntry,
+    mediaEntry,
     gameEntry,
     bookEntry,
     musicEntry,
@@ -34,11 +34,11 @@ export async function computeOnboardingDoneMap(
     list,
     comment,
   ] = await Promise.all([
-    prisma.libraryEntry.findFirst({ where: { userId }, select: { id: true } }),
+    prisma.mediaEntry.findFirst({ where: { userId }, select: { id: true } }),
     prisma.gameEntry.findFirst({ where: { userId }, select: { id: true } }),
     prisma.bookEntry.findFirst({ where: { userId }, select: { id: true } }),
     prisma.musicEntry.findFirst({ where: { userId }, select: { id: true } }),
-    prisma.libraryEntry.findFirst({
+    prisma.mediaEntry.findFirst({
       where: { userId, status: "COMPLETED" },
       select: { id: true },
     }),
@@ -71,7 +71,7 @@ export async function computeOnboardingDoneMap(
   ]);
 
   return {
-    add_title: !!(libraryEntry ?? gameEntry ?? bookEntry ?? musicEntry),
+    add_title: !!(mediaEntry ?? gameEntry ?? bookEntry ?? musicEntry),
     mark_complete: !!(
       completedLibraryEntry ??
       completedGameEntry ??

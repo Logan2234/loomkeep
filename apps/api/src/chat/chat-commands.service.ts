@@ -295,7 +295,7 @@ export class ChatCommandsService {
   private async pile(userId: string, domain: PickDomain): Promise<Set<string>> {
     switch (domain) {
       case Domain.MEDIA: {
-        const rows = await this.prisma.libraryEntry.findMany({
+        const rows = await this.prisma.mediaEntry.findMany({
           where: { userId, status: "PLANNED", mediaItem: { isAdult: false } },
           select: { mediaItemId: true },
         });

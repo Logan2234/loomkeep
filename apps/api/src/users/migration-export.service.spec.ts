@@ -11,7 +11,7 @@ function makeService(data: {
   episodeWatches?: unknown[];
 }) {
   const prisma = {
-    libraryEntry: {
+    mediaEntry: {
       findMany: vi.fn().mockResolvedValue(data.libraryEntries ?? []),
     },
     bookEntry: { findMany: vi.fn().mockResolvedValue(data.bookEntries ?? []) },
@@ -172,7 +172,7 @@ describe("MigrationExportService.buildLetterboxd", () => {
 
     const [diary] = await service.buildLetterboxd("u1", false);
 
-    const [query] = (prisma.libraryEntry.findMany as Mock).mock.calls[0];
+    const [query] = (prisma.mediaEntry.findMany as Mock).mock.calls[0];
     expect(query.where.mediaItem.OR).toContainEqual({
       type: "ANIME",
       format: "MOVIE",

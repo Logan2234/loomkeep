@@ -14,7 +14,7 @@ function makeService(user: Record<string, unknown> | null) {
   const prisma = {
     user: { findUnique: vi.fn().mockResolvedValue(user) },
     userEntitlement: list(),
-    libraryEntry: entries(),
+    mediaEntry: entries(),
     gameEntry: entries(),
     bookEntry: entries(),
     musicEntry: entries(),

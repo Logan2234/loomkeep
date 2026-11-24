@@ -33,7 +33,7 @@ function makeService({
       findMany: vi.fn().mockResolvedValue(announced),
       update: vi.fn().mockResolvedValue({}),
     },
-    libraryEntry: {
+    mediaEntry: {
       findMany: vi.fn((args: { where: Record<string, unknown> }) =>
         Promise.resolve(args.where.finishedAt ? recipients : []),
       ),
@@ -146,7 +146,7 @@ describe("NotificationService · sequel announcements", () => {
 
     await service.scanAll();
 
-    const query = prisma.libraryEntry.findMany.mock.calls
+    const query = prisma.mediaEntry.findMany.mock.calls
       .map(([args]) => args.where)
       .find((where) => where.finishedAt);
     expect(query).toMatchObject({

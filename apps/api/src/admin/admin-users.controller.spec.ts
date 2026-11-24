@@ -67,7 +67,7 @@ function makeController() {
     securityEvent: { updateMany: vi.fn() },
     invitation: { updateMany: vi.fn() },
     notification: { deleteMany: vi.fn() },
-    libraryEntry: {
+    mediaEntry: {
       count: vi.fn(),
       findMany: vi.fn(),
       groupBy: vi.fn().mockResolvedValue([]),
@@ -363,7 +363,7 @@ describe("AdminUsersController.listUsers columns, filters and sorting", () => {
         onboardedAt: null,
       }),
     ]);
-    (prisma.libraryEntry.groupBy as Mock).mockResolvedValue([
+    (prisma.mediaEntry.groupBy as Mock).mockResolvedValue([
       { userId: "user-1", _count: 12 },
     ]);
     (prisma.bookEntry.groupBy as Mock).mockResolvedValue([
@@ -437,7 +437,7 @@ describe("AdminUsersController.listUsers columns, filters and sorting", () => {
         userRow({ id: "big" }),
         userRow({ id: "empty" }),
       ]);
-    (prisma.libraryEntry.groupBy as Mock).mockResolvedValue([
+    (prisma.mediaEntry.groupBy as Mock).mockResolvedValue([
       { userId: "small", _count: 2 },
       { userId: "big", _count: 5 },
     ]);
@@ -506,7 +506,7 @@ describe("AdminUsersController.listUserOptions", () => {
 describe("AdminUsersController.getUserLibraryStats", () => {
   it("counts every persisted library domain, splitting media by type", async () => {
     const { controller, prisma } = makeController();
-    (prisma.libraryEntry.count as Mock)
+    (prisma.mediaEntry.count as Mock)
       .mockResolvedValueOnce(3)
       .mockResolvedValueOnce(5)
       .mockResolvedValueOnce(2);
@@ -524,13 +524,13 @@ describe("AdminUsersController.getUserLibraryStats", () => {
       total: 21,
     });
 
-    expect(prisma.libraryEntry.count).toHaveBeenCalledWith({
+    expect(prisma.mediaEntry.count).toHaveBeenCalledWith({
       where: { userId: "user-2", mediaItem: { type: "MOVIE" } },
     });
-    expect(prisma.libraryEntry.count).toHaveBeenCalledWith({
+    expect(prisma.mediaEntry.count).toHaveBeenCalledWith({
       where: { userId: "user-2", mediaItem: { type: "SERIES" } },
     });
-    expect(prisma.libraryEntry.count).toHaveBeenCalledWith({
+    expect(prisma.mediaEntry.count).toHaveBeenCalledWith({
       where: { userId: "user-2", mediaItem: { type: "ANIME" } },
     });
   });
@@ -541,7 +541,7 @@ describe("AdminUsersController.getUserLibrary", () => {
 
   it("lists the works of a media tile with their page link", async () => {
     const { controller, prisma } = makeController();
-    (prisma.libraryEntry.findMany as Mock).mockResolvedValue([
+    (prisma.mediaEntry.findMany as Mock).mockResolvedValue([
       {
         id: "entry-1",
         status: "WATCHING",
@@ -572,7 +572,7 @@ describe("AdminUsersController.getUserLibrary", () => {
       ],
       hasMore: false,
     });
-    expect(prisma.libraryEntry.findMany).toHaveBeenCalledWith(
+    expect(prisma.mediaEntry.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { userId: "user-2", mediaItem: { type: "MOVIE" } },
         skip: 0,

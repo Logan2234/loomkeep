@@ -466,10 +466,9 @@ export class ChatService {
       data: {
         text,
         spoiler,
-        edited:
-          message.edited ||
-          message.text !== text ||
-          message.spoiler !== spoiler,
+        ...(message.text !== text || message.spoiler !== spoiler
+          ? { editedAt: new Date() }
+          : {}),
       },
       include: MESSAGE_INCLUDE,
     });
@@ -1064,7 +1063,7 @@ export class ChatService {
 
     const [mediaRows, gameRows, bookRows, musicRows] = await Promise.all([
       media.length > 0
-        ? this.prisma.libraryEntry.findMany({
+        ? this.prisma.mediaEntry.findMany({
             where: { userId, mediaItemId: { in: media } },
             select: { mediaItemId: true },
           })
@@ -1140,7 +1139,6 @@ export class ChatService {
         createdAt: true,
         text: true,
         spoiler: true,
-        edited: true,
       },
     });
 
@@ -1489,7 +1487,7 @@ function toMessageDto(
     mine: row.authorId === viewerId,
     text: row.deletedAt ? null : row.text,
     spoiler: row.spoiler,
-    edited: row.edited,
+    edited: row.editedAt !== null,
     deleted: row.deletedAt !== null,
     deletedByAdmin: row.deletedByAdmin,
     reactions,

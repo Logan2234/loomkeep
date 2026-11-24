@@ -41,7 +41,7 @@ interface WorkRef {
 export const SUBJECT_SOURCE_TYPES = [
   "EpisodeWatch",
   "Season",
-  "LibraryEntry",
+  "MediaEntry",
   "MovieReplay",
   "GameEntry",
   "GamePlaythrough",
@@ -161,9 +161,9 @@ async function workRefs(
       }));
     }
 
-    case "LibraryEntry":
+    case "MediaEntry":
       return refs(
-        await prisma.libraryEntry.findMany({
+        await prisma.mediaEntry.findMany({
           where,
           select: { id: true, mediaItemId: true },
         }),
@@ -174,9 +174,9 @@ async function workRefs(
       return refs(
         await prisma.movieReplay.findMany({
           where,
-          select: { id: true, libraryEntry: { select: { mediaItemId: true } } },
+          select: { id: true, mediaEntry: { select: { mediaItemId: true } } },
         }),
-        (row) => work("MEDIA", row.libraryEntry.mediaItemId),
+        (row) => work("MEDIA", row.mediaEntry.mediaItemId),
       );
 
     case "GameEntry":
@@ -227,7 +227,7 @@ async function workRefs(
     // WORK_ADDED is credited for whichever entry table the work went into.
     case "Entry": {
       const found = await Promise.all(
-        ["LibraryEntry", "GameEntry", "BookEntry", "MusicEntry"].map((type) =>
+        ["MediaEntry", "GameEntry", "BookEntry", "MusicEntry"].map((type) =>
           workRefs(prisma, type, ids),
         ),
       );

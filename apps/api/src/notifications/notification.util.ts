@@ -12,7 +12,7 @@ export interface CandidateEpisode {
   mediaTitle: string;
   mediaType: MediaType;
   sourceId: string;
-  /** When the user started tracking this media (their `LibraryEntry.createdAt`). */
+  /** When the user started tracking this media (their `MediaEntry.createdAt`). */
   trackedSince: Date;
 }
 

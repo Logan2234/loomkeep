@@ -135,7 +135,7 @@ export class AdminCatalogueStatsService {
       this.prisma.gameItem.count(),
       this.prisma.bookItem.count(),
       this.prisma.musicItem.count(),
-      this.prisma.libraryEntry.groupBy({
+      this.prisma.mediaEntry.groupBy({
         by: ["mediaItemId"],
         _count: { _all: true },
       }),

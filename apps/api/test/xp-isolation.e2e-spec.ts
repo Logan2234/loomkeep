@@ -86,7 +86,7 @@ describe("XP isolation between users (e2e)", () => {
     }
 
     for (const viewer of Object.values(viewers)) {
-      const entry = await prisma.libraryEntry.create({
+      const entry = await prisma.mediaEntry.create({
         data: { userId: viewer.id, mediaItemId: item.id, status: "WATCHING" },
       });
       viewer.entryId = entry.id;

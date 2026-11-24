@@ -47,7 +47,7 @@ function makeService(allowAdult = false) {
     allowsAdultContent: vi.fn().mockResolvedValue(allowAdult),
   };
   const prisma = {
-    libraryEntry: { findMany: vi.fn().mockResolvedValue([]) },
+    mediaEntry: { findMany: vi.fn().mockResolvedValue([]) },
     saga: {
       findMany: vi.fn().mockResolvedValue([]),
       findUnique: vi.fn().mockResolvedValue(null),
@@ -131,7 +131,7 @@ describe("SagaService", () => {
       isAdult: false,
       upcoming,
     });
-    prisma.libraryEntry.findMany.mockResolvedValue([
+    prisma.mediaEntry.findMany.mockResolvedValue([
       { updatedAt: new Date("2026-09-01"), mediaItem: { sagaKey: "TMDB:1" } },
       { updatedAt: new Date("2026-10-01"), mediaItem: { sagaKey: "TMDB:2" } },
       { updatedAt: new Date("2026-08-01"), mediaItem: { sagaKey: "TMDB:3" } },
@@ -203,7 +203,7 @@ describe("SagaService", () => {
       isAdult: false,
       upcoming: false,
     });
-    prisma.libraryEntry.findMany.mockResolvedValue([
+    prisma.mediaEntry.findMany.mockResolvedValue([
       {
         updatedAt: new Date("2026-10-01"),
         mediaItem: { sagaKey: "TMDB:726871" },
@@ -284,7 +284,7 @@ describe("SagaService", () => {
         isAdult: false,
         upcoming: false,
       });
-      setup.prisma.libraryEntry.findMany.mockResolvedValue([
+      setup.prisma.mediaEntry.findMany.mockResolvedValue([
         {
           updatedAt: new Date("2026-10-01"),
           mediaItem: { sagaKey: "TMDB:726871" },

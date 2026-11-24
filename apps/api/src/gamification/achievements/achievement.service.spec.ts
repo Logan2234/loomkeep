@@ -43,7 +43,7 @@ function makeService(configValues: Record<string, string> = {}) {
       groupBy: vi.fn().mockResolvedValue([]),
     },
     episodeWatch: { findFirst: vi.fn().mockResolvedValue(null) },
-    libraryEntry: { count: vi.fn().mockResolvedValue(0) },
+    mediaEntry: { count: vi.fn().mockResolvedValue(0) },
     xpEntry: { findMany: vi.fn().mockResolvedValue([]) },
     user: {
       findMany: vi.fn().mockResolvedValue([]),

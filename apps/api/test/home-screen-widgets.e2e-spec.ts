@@ -91,7 +91,7 @@ describe("Home-screen widgets (e2e)", () => {
     await prisma.episodeWatch.create({
       data: { userId, episodeId: episodeIds[0] },
     });
-    ({ id: entryId } = await prisma.libraryEntry.create({
+    ({ id: entryId } = await prisma.mediaEntry.create({
       data: { userId, mediaItemId: show.id, status: "WATCHING" },
     }));
 

@@ -34,7 +34,7 @@ function makeService(overrides: Record<string, unknown> = {}) {
   const upsert = vi.fn().mockResolvedValue(row);
   const replayCreate = vi.fn();
   const prisma = {
-    libraryEntry: {
+    mediaEntry: {
       findUnique: vi.fn().mockResolvedValue(row),
       update,
       upsert,
