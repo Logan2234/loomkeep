@@ -169,15 +169,20 @@ export class ActivityFeedService {
     locale: string;
     profileAccess: string;
   } | null> {
-    const user = await this.prisma.user.findUnique({
+    const row = await this.prisma.userUrlToken.findUnique({
       where: { activityFeedToken: token },
       select: {
-        id: true,
-        username: true,
-        locale: true,
-        profileAccess: true,
+        user: {
+          select: {
+            id: true,
+            username: true,
+            locale: true,
+            profileAccess: true,
+          },
+        },
       },
     });
+    const user = row?.user;
 
     if (!user || !(await this.entitlements.isEffectivelyPremium(user.id))) {
       return null;
@@ -193,13 +198,13 @@ export class ActivityFeedService {
   async getToken(userId: string): Promise<ActivityFeedTokenDto> {
     await this.requirePremium(userId);
 
-    const user = await this.prisma.user.findUniqueOrThrow({
-      where: { id: userId },
+    const row = await this.prisma.userUrlToken.findUnique({
+      where: { userId },
       select: { activityFeedToken: true },
     });
 
-    if (user.activityFeedToken) {
-      return { token: user.activityFeedToken };
+    if (row?.activityFeedToken) {
+      return { token: row.activityFeedToken };
     }
 
     return this.issueToken(userId);
@@ -212,10 +217,10 @@ export class ActivityFeedService {
 
   private async issueToken(userId: string): Promise<ActivityFeedTokenDto> {
     const token = randomToken(24, "base64url");
-    await this.prisma.user.update({
-      where: { id: userId },
-      data: { activityFeedToken: token },
-      select: { activityFeedToken: true },
+    await this.prisma.userUrlToken.upsert({
+      where: { userId },
+      create: { userId, activityFeedToken: token },
+      update: { activityFeedToken: token },
     });
     return { token };
   }

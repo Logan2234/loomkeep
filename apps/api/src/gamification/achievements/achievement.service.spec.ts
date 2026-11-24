@@ -427,7 +427,7 @@ describe("AchievementService rarity snapshot", () => {
     const [[{ where }]] = (prisma.user.count as ReturnType<typeof vi.fn>).mock
       .calls;
     expect(where).toMatchObject({
-      onboardedAt: { not: null },
+      onboarding: { onboardedAt: { not: null } },
       profileAccess: { not: "GHOST" },
       hideProgression: false,
     });

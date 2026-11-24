@@ -11,13 +11,13 @@ describe("NewsletterService.handleChangelogPublished", () => {
       id: string;
       email: string;
       locale: string;
-      newsletterUnsubscribeToken: string | null;
+      urlTokens: { newsletterUnsubscribeToken: string | null } | null;
     }[] = [
       {
         id: "user_1",
         email: "a@example.com",
         locale: "en",
-        newsletterUnsubscribeToken: null,
+        urlTokens: null,
       },
     ],
   ) {
@@ -28,9 +28,8 @@ describe("NewsletterService.handleChangelogPublished", () => {
       },
       user: {
         findMany: vi.fn().mockResolvedValue(recipients),
-        update: vi.fn(),
-        findUnique: vi.fn(),
       },
+      userUrlToken: { upsert: vi.fn() },
     } as unknown as PrismaService;
     const mail = { sendNewsletter: vi.fn() } as unknown as MailService;
     const service = new NewsletterService(prisma, mail);
@@ -55,9 +54,13 @@ describe("NewsletterService.handleChangelogPublished", () => {
     expect(prisma.newsletterSend.create).toHaveBeenCalledWith({
       data: { quackbackChangelogId: "changelog_1", title: "Loomkeep 1.3.0" },
     });
-    expect(prisma.user.update).toHaveBeenCalledWith({
-      where: { id: "user_1" },
-      data: { newsletterUnsubscribeToken: expect.any(String) },
+    expect(prisma.userUrlToken.upsert).toHaveBeenCalledWith({
+      where: { userId: "user_1" },
+      create: {
+        userId: "user_1",
+        newsletterUnsubscribeToken: expect.any(String),
+      },
+      update: { newsletterUnsubscribeToken: expect.any(String) },
     });
     expect(mail.sendNewsletter).toHaveBeenCalledWith(
       { email: "a@example.com", locale: "en" },
@@ -82,7 +85,7 @@ describe("NewsletterService.handleChangelogPublished", () => {
         id: "user_1",
         email: "a@example.com",
         locale: "en",
-        newsletterUnsubscribeToken: "existing-token",
+        urlTokens: { newsletterUnsubscribeToken: "existing-token" },
       },
     ]);
     (prisma.newsletterSend.create as Mock).mockResolvedValue({
@@ -97,7 +100,7 @@ describe("NewsletterService.handleChangelogPublished", () => {
     );
     await new Promise((resolve) => setImmediate(resolve));
 
-    expect(prisma.user.update).not.toHaveBeenCalled();
+    expect(prisma.userUrlToken.upsert).not.toHaveBeenCalled();
     expect(mail.sendNewsletter).toHaveBeenCalledWith(
       { email: "a@example.com", locale: "en" },
       "Loomkeep 1.3.0",
@@ -194,10 +197,8 @@ describe("NewsletterService.handleChangelogPublished", () => {
 describe("NewsletterService.unsubscribe", () => {
   function makeService() {
     const prisma = {
-      user: {
-        findUnique: vi.fn(),
-        update: vi.fn(),
-      },
+      user: { update: vi.fn() },
+      userUrlToken: { findUnique: vi.fn() },
     } as unknown as PrismaService;
     const mail = {} as unknown as MailService;
     const service = new NewsletterService(prisma, mail);
@@ -206,14 +207,15 @@ describe("NewsletterService.unsubscribe", () => {
 
   it("flips notifyNewsletter off for the user matching the token", async () => {
     const { service, prisma } = makeService();
-    (prisma.user.findUnique as Mock).mockResolvedValue({
-      id: "user_1",
+    (prisma.userUrlToken.findUnique as Mock).mockResolvedValue({
+      userId: "user_1",
     });
 
     await service.unsubscribe("stable-token");
 
-    expect(prisma.user.findUnique).toHaveBeenCalledWith({
+    expect(prisma.userUrlToken.findUnique).toHaveBeenCalledWith({
       where: { newsletterUnsubscribeToken: "stable-token" },
+      select: { userId: true },
     });
     expect(prisma.user.update).toHaveBeenCalledWith({
       where: { id: "user_1" },
@@ -223,7 +225,7 @@ describe("NewsletterService.unsubscribe", () => {
 
   it("rejects an unknown token", async () => {
     const { service, prisma } = makeService();
-    (prisma.user.findUnique as Mock).mockResolvedValue(null);
+    (prisma.userUrlToken.findUnique as Mock).mockResolvedValue(null);
 
     await expect(service.unsubscribe("bogus")).rejects.toThrow(
       "Invalid unsubscribe link",

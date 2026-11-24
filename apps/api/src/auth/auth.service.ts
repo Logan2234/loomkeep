@@ -181,9 +181,13 @@ export class AuthService {
       displayName: dto.displayName,
       username: await this.generateUniqueUsername(dto.displayName),
       locale: dto.locale ?? detectLocale(acceptLanguage),
-      acceptedTermsAt: new Date(),
-      acceptedTermsVersion: LEGAL_VERSION,
-      certifiedAgeAt: new Date(),
+      consent: {
+        create: {
+          acceptedTermsAt: new Date(),
+          acceptedTermsVersion: LEGAL_VERSION,
+          certifiedAgeAt: new Date(),
+        },
+      },
       lastActiveAt: new Date(),
       emailVerified,
       invitationId: invitation?.id,
@@ -239,7 +243,7 @@ export class AuthService {
 
     const promoted = await this.ensureAdminRole(user);
     return {
-      user: toUserDto(promoted),
+      user: toUserDto(await this.withDtoParts(promoted)),
       tokens: await this.startSession(promoted, userAgent),
     };
   }
@@ -739,7 +743,7 @@ export class AuthService {
       );
     }
 
-    return { user: toUserDto(promoted), tokens };
+    return { user: toUserDto(await this.withDtoParts(promoted)), tokens };
   }
 
   /**
@@ -1051,6 +1055,15 @@ export class AuthService {
    * without SMTP can't send the link, and requiring it there would leave the
    * operator with no way to become admin.
    */
+  /** `user` with the related rows toUserDto reads. */
+  private async withDtoParts(user: User): Promise<UserForDto> {
+    const parts = await this.prisma.user.findUniqueOrThrow({
+      where: { id: user.id },
+      select: { consent: true, onboarding: true },
+    });
+    return { ...user, ...parts };
+  }
+
   private async ensureAdminRole(user: User): Promise<User> {
     const adminEmail = this.configService.get<string>("ADMIN_EMAIL");
 
@@ -1246,7 +1259,17 @@ function detectLocale(acceptLanguage?: string): string {
   return first?.startsWith("fr") ? "fr" : "en";
 }
 
-export function toUserDto(user: User): UserDto {
+/** What toUserDto reads besides the User row. */
+export const USER_DTO_INCLUDE = {
+  consent: true,
+  onboarding: true,
+} satisfies Prisma.UserInclude;
+
+export type UserForDto = Prisma.UserGetPayload<{
+  include: typeof USER_DTO_INCLUDE;
+}>;
+
+export function toUserDto(user: UserForDto): UserDto {
   return {
     id: user.id,
     email: user.email,
@@ -1271,9 +1294,10 @@ export function toUserDto(user: User): UserDto {
     locale: user.locale as Locale,
     createdAt: user.createdAt.toISOString(),
     avatarUrl: avatarUrl(user),
-    onboardedAt: user.onboardedAt?.toISOString() ?? null,
-    acquisitionSource: user.acquisitionSource as UserDto["acquisitionSource"],
-    acceptedTermsVersion: user.acceptedTermsVersion,
+    onboardedAt: user.onboarding?.onboardedAt?.toISOString() ?? null,
+    acquisitionSource: (user.onboarding?.acquisitionSource ??
+      null) as UserDto["acquisitionSource"],
+    acceptedTermsVersion: user.consent?.acceptedTermsVersion ?? null,
     mfaTotpEnabled: user.mfaTotpEnabled,
     mfaEmailEnabled: user.mfaEmailEnabled,
     hideProgression: user.hideProgression,

@@ -66,6 +66,17 @@ function sha256(value: string): string {
   return createHash("sha256").update(value).digest("hex");
 }
 
+// An account past the wizard and on the current terms: an older version
+// opens the re-acceptance modal over every /app page.
+function onboardedOn(date: Date) {
+  return {
+    onboarding: { create: { onboardedAt: date } },
+    consent: {
+      create: { acceptedTermsVersion: LEGAL_VERSION, acceptedTermsAt: date },
+    },
+  };
+}
+
 const connectionString = process.env.DATABASE_URL;
 
 if (!connectionString) {
@@ -96,7 +107,6 @@ async function main() {
       notifyEmail: DigestCadence.DAILY,
       notifyPush: DigestCadence.DAILY,
       notifyNewsletter: true,
-      newsletterOptInAt: new Date("2026-01-05"),
       emailVerified: true,
       bio: "Créateur de Loomkeep. Séries, jeux, bouquins — un peu de tout.",
       profileAccess: ProfileAccess.PUBLIC,
@@ -105,12 +115,17 @@ async function main() {
       role: Role.ADMIN,
       enabledDomains: [Domain.MEDIA, Domain.BOOKS, Domain.GAMES, Domain.MUSIC],
       locale: "fr",
-      calendarToken: randomUUID(),
-      onboardedAt: new Date("2026-01-05"),
+      urlTokens: { create: { calendarToken: randomUUID() } },
+      onboarding: { create: { onboardedAt: new Date("2026-01-05") } },
       // On the current terms: an older version opens the re-acceptance
       // modal over every /app page (and web-audit would audit that).
-      acceptedTermsVersion: LEGAL_VERSION,
-      acceptedTermsAt: new Date("2026-01-05"),
+      consent: {
+        create: {
+          acceptedTermsVersion: LEGAL_VERSION,
+          acceptedTermsAt: new Date("2026-01-05"),
+          newsletterOptInAt: new Date("2026-01-05"),
+        },
+      },
     },
   });
 
@@ -128,9 +143,7 @@ async function main() {
       role: Role.USER,
       enabledDomains: [Domain.MEDIA, Domain.BOOKS],
       locale: "fr",
-      onboardedAt: new Date("2026-01-06"),
-      acceptedTermsVersion: LEGAL_VERSION,
-      acceptedTermsAt: new Date("2026-01-06"),
+      ...onboardedOn(new Date("2026-01-06")),
     },
   });
 
@@ -150,9 +163,7 @@ async function main() {
       role: Role.USER,
       enabledDomains: [Domain.MEDIA, Domain.GAMES, Domain.BOOKS, Domain.MUSIC],
       locale: "fr",
-      onboardedAt: new Date("2026-02-01"),
-      acceptedTermsVersion: LEGAL_VERSION,
-      acceptedTermsAt: new Date("2026-02-01"),
+      ...onboardedOn(new Date("2026-02-01")),
     },
   });
 
@@ -167,9 +178,7 @@ async function main() {
       role: Role.USER,
       enabledDomains: [Domain.MEDIA, Domain.GAMES],
       locale: "fr",
-      onboardedAt: new Date("2026-03-10"),
-      acceptedTermsVersion: LEGAL_VERSION,
-      acceptedTermsAt: new Date("2026-03-10"),
+      ...onboardedOn(new Date("2026-03-10")),
     },
   });
 
@@ -184,9 +193,7 @@ async function main() {
       role: Role.USER,
       enabledDomains: [Domain.MEDIA, Domain.MUSIC],
       locale: "fr",
-      onboardedAt: new Date("2026-04-02"),
-      acceptedTermsVersion: LEGAL_VERSION,
-      acceptedTermsAt: new Date("2026-04-02"),
+      ...onboardedOn(new Date("2026-04-02")),
     },
   });
 

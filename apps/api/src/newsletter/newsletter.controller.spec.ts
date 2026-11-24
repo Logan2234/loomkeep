@@ -14,7 +14,10 @@ import { NewsletterService } from "./newsletter.service";
 
 describe("newsletter one-click HTTP endpoint", () => {
   let app: NestFastifyApplication;
-  const prisma = { user: { findUnique: vi.fn(), update: vi.fn() } };
+  const prisma = {
+    user: { update: vi.fn() },
+    userUrlToken: { findUnique: vi.fn() },
+  };
   const path = "/api/newsletter/unsubscribe/one-click?token=stable-token";
 
   beforeAll(async () => {
@@ -48,7 +51,9 @@ describe("newsletter one-click HTTP endpoint", () => {
   });
   beforeEach(() => {
     vi.clearAllMocks();
-    prisma.user.findUnique.mockResolvedValue({ id: "newsletter-user" });
+    prisma.userUrlToken.findUnique.mockResolvedValue({
+      userId: "newsletter-user",
+    });
     prisma.user.update.mockResolvedValue({});
   });
   afterAll(async () => {
@@ -69,8 +74,9 @@ describe("newsletter one-click HTTP endpoint", () => {
       expect(response.body).toBe("");
     }
 
-    expect(prisma.user.findUnique).toHaveBeenCalledWith({
+    expect(prisma.userUrlToken.findUnique).toHaveBeenCalledWith({
       where: { newsletterUnsubscribeToken: "stable-token" },
+      select: { userId: true },
     });
     expect(prisma.user.update).toHaveBeenCalledTimes(2);
     expect(prisma.user.update).toHaveBeenCalledWith({
@@ -118,7 +124,7 @@ describe("newsletter one-click HTTP endpoint", () => {
     expect((await app.inject({ method: "GET", url: path })).statusCode).toBe(
       404,
     );
-    prisma.user.findUnique.mockResolvedValue(null);
+    prisma.userUrlToken.findUnique.mockResolvedValue(null);
     const response = await app.inject({
       method: "POST",
       url: path,

@@ -182,7 +182,10 @@ export class AdminUsersController {
       ...(activeFilter === "suspended"
         ? { suspendedUntil: { gt: new Date() } }
         : {}),
-      ...(activeFilter === "onboarding" ? { onboardedAt: null } : {}),
+      // No onboarding row at all counts as not onboarded.
+      ...(activeFilter === "onboarding"
+        ? { NOT: { onboarding: { onboardedAt: { not: null } } } }
+        : {}),
       ...(activeFilter === "inactive"
         ? { lastActiveAt: { lt: new Date(Date.now() - INACTIVE_AFTER_MS) } }
         : {}),

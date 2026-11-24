@@ -698,8 +698,8 @@ describe("checkPremiereSeance", () => {
       comment: true,
     });
     const prisma = {
-      user: {
-        findUnique: vi.fn().mockResolvedValue({ onboardingSkippedSteps: [] }),
+      userOnboarding: {
+        findUnique: vi.fn().mockResolvedValue({ skippedSteps: [] }),
       },
     } as unknown as PrismaService;
 
@@ -719,8 +719,8 @@ describe("checkPremiereSeance", () => {
       comment: true,
     });
     const prisma = {
-      user: {
-        findUnique: vi.fn().mockResolvedValue({ onboardingSkippedSteps: [] }),
+      userOnboarding: {
+        findUnique: vi.fn().mockResolvedValue({ skippedSteps: [] }),
       },
     } as unknown as PrismaService;
 
@@ -740,10 +740,8 @@ describe("checkPremiereSeance", () => {
       comment: true,
     });
     const prisma = {
-      user: {
-        findUnique: vi
-          .fn()
-          .mockResolvedValue({ onboardingSkippedSteps: ["add_title"] }),
+      userOnboarding: {
+        findUnique: vi.fn().mockResolvedValue({ skippedSteps: ["add_title"] }),
       },
     } as unknown as PrismaService;
 

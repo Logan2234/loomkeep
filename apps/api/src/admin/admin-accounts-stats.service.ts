@@ -248,14 +248,14 @@ export class AdminAccountsStatsService {
    */
   private async acquisition(): Promise<AdminAccountsSectionDto["acquisition"]> {
     const [rows, recentOther] = await Promise.all([
-      this.prisma.user.groupBy({
+      this.prisma.userOnboarding.groupBy({
         by: ["acquisitionSource"],
         where: { acquisitionSource: { not: null } },
         _count: { _all: true },
       }),
-      this.prisma.user.findMany({
+      this.prisma.userOnboarding.findMany({
         where: { acquisitionSourceOther: { not: null } },
-        orderBy: { createdAt: "desc" },
+        orderBy: { user: { createdAt: "desc" } },
         take: RECENT_OTHER_ACQUISITION_LIMIT,
         select: { acquisitionSourceOther: true },
       }),

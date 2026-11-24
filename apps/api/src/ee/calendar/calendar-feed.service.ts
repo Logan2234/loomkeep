@@ -253,10 +253,13 @@ export class CalendarFeedService {
    * premium.
    */
   private async premiumUserForToken(token: string): Promise<FeedUser | null> {
-    const user = await this.prisma.user.findUnique({
+    const row = await this.prisma.userUrlToken.findUnique({
       where: { calendarToken: token },
-      select: { id: true, locale: true, watchRegion: true },
+      select: {
+        user: { select: { id: true, locale: true, watchRegion: true } },
+      },
     });
+    const user = row?.user;
 
     if (!user || !(await this.entitlements.isEffectivelyPremium(user.id))) {
       return null;
@@ -272,13 +275,13 @@ export class CalendarFeedService {
   async getToken(userId: string): Promise<CalendarTokenDto> {
     await this.requirePremium(userId);
 
-    const user = await this.prisma.user.findUniqueOrThrow({
-      where: { id: userId },
+    const row = await this.prisma.userUrlToken.findUnique({
+      where: { userId },
       select: { calendarToken: true },
     });
 
-    if (user.calendarToken) {
-      return { token: user.calendarToken };
+    if (row?.calendarToken) {
+      return { token: row.calendarToken };
     }
 
     return this.issueToken(userId);
@@ -291,10 +294,10 @@ export class CalendarFeedService {
 
   private async issueToken(userId: string): Promise<CalendarTokenDto> {
     const token = randomToken(24, "base64url");
-    await this.prisma.user.update({
-      where: { id: userId },
-      data: { calendarToken: token },
-      select: { calendarToken: true },
+    await this.prisma.userUrlToken.upsert({
+      where: { userId },
+      create: { userId, calendarToken: token },
+      update: { calendarToken: token },
     });
     return { token };
   }
