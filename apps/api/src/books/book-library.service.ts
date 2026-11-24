@@ -230,21 +230,19 @@ export class BookLibraryService {
   ) {}
 
   /**
-   * A finish paid by the book's length — the edition read, else the work's
-   * catalogued count — a reread half that.
+   * A finish paid by the work's catalogued length, a reread half that. Not by
+   * the edition's page count: the reader types that one, as games are paid
+   * by IGDB's time to beat and never by the hours logged.
    */
   private async finishXp(
     bookItemId: string,
-    reading: { referencePageCount: number | null },
     reason: XpReason,
   ): Promise<number> {
     const item = await this.prisma.bookItem.findUnique({
       where: { id: bookItemId },
       select: { pageCount: true },
     });
-    const first = bookFinishedXp(
-      reading.referencePageCount ?? item?.pageCount ?? null,
-    );
+    const first = bookFinishedXp(item?.pageCount ?? null);
     return reason === XpReason.BOOK_REPLAYED ? replayXp(first) : first;
   }
 
@@ -415,8 +413,7 @@ export class BookLibraryService {
         sourceType: "BookReading",
         firstReason: XpReason.BOOK_FINISHED,
         replayReason: XpReason.BOOK_REPLAYED,
-        amount: (reason) =>
-          this.finishXp(entry.bookItemId, statusReading, reason),
+        amount: (reason) => this.finishXp(entry.bookItemId, reason),
       }))
     ) {
       await this.awardFinishMilestones(
@@ -706,8 +703,7 @@ export class BookLibraryService {
         sourceType: "BookReading",
         firstReason: XpReason.BOOK_FINISHED,
         replayReason: XpReason.BOOK_REPLAYED,
-        amount: (reason) =>
-          this.finishXp(entry.bookItemId, completedReading, reason),
+        amount: (reason) => this.finishXp(entry.bookItemId, reason),
       }))
     ) {
       await this.awardFinishMilestones(

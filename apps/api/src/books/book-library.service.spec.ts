@@ -576,6 +576,8 @@ describe("BookLibraryService — XP wiring", () => {
   async function finishBook(
     extra: {
       pages?: number | null;
+      /** The edition's page count the reader declared for this reading. */
+      declaredPages?: number | null;
       goal?: { target: number; updatedAt: Date } | null;
       booksThisYear?: number;
       seriesKey?: string | null;
@@ -609,11 +611,13 @@ describe("BookLibraryService — XP wiring", () => {
           id: "reading-1",
           number: 1,
           finishedAt: new Date("2026-10-05T12:00:00Z"),
+          referencePageCount: extra.declaredPages ?? null,
         }),
         update: vi.fn().mockResolvedValue({
           id: "reading-1",
           number: 1,
           finishedAt: new Date("2026-10-05T12:00:00Z"),
+          referencePageCount: extra.declaredPages ?? null,
         }),
         count: vi.fn().mockResolvedValue(extra.booksThisYear ?? 0),
       },
@@ -674,6 +678,17 @@ describe("BookLibraryService — XP wiring", () => {
 
   it("pays a finished book by its length", async () => {
     const xp = await finishBook({ pages: 48 });
+
+    expect(xp.award).toHaveBeenCalledWith(
+      "user-1",
+      "BOOK_FINISHED",
+      "reading-1",
+      66,
+    );
+  });
+
+  it("pays by the catalogue's length, whatever page count the reader declared", async () => {
+    const xp = await finishBook({ pages: 48, declaredPages: 100_000 });
 
     expect(xp.award).toHaveBeenCalledWith(
       "user-1",
