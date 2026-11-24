@@ -63,6 +63,11 @@ wording change or a rename.
   `BookCsvSource`): a new source only supplies its parsing.
 - Shared enums (`packages/shared/src/enums.ts`) mirror Prisma enums with
   identical values — cast at boundaries, don't write a mapping function.
+- Prisma's types miss an unknown key in a `select` that also names a valid
+  one, and in a `data`: a dropped column only fails at runtime. A query shape
+  kept in a constant is written `satisfies Prisma.UserSelect` (or the
+  matching `…Include`/`…DefaultArgs`), never `as const`; after moving or
+  renaming a column, grep its name across `src` and `test`.
 
 ### Auth & errors
 

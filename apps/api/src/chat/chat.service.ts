@@ -56,7 +56,7 @@ const PEER_SELECT = {
   preferences: {
     select: { chatShowPresence: true, chatShowReadReceipts: true },
   },
-} as const;
+} satisfies Prisma.UserSelect;
 
 type Peer = Prisma.UserGetPayload<{ select: typeof PEER_SELECT }>;
 
@@ -99,7 +99,7 @@ const MESSAGE_INCLUDE = {
       },
     },
   },
-} as const satisfies Prisma.MessageInclude;
+} satisfies Prisma.MessageInclude satisfies Prisma.MessageInclude;
 
 type MessageRow = Prisma.MessageGetPayload<{
   include: typeof MESSAGE_INCLUDE;
@@ -183,7 +183,7 @@ const MEMBERSHIP_SELECT = {
       },
     },
   },
-} as const;
+} satisfies Prisma.ConversationMemberSelect;
 
 /**
  * Private conversations between friends. Two accounts can write to each other

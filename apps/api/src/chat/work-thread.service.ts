@@ -329,7 +329,7 @@ export class WorkThreadService {
       posterUrl: true,
       type: true,
       ...CANONICAL_EXTERNAL_ID_SELECT,
-    } as const;
+    } satisfies Prisma.MediaItemSelect;
 
     const mediaHref = (item: {
       type: string;

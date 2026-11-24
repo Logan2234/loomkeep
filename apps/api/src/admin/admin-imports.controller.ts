@@ -40,7 +40,7 @@ const IMPORT_SELECT = {
   startedAt: true,
   finishedAt: true,
   user: { select: { email: true } },
-} as const;
+} satisfies Prisma.ImportRunSelect;
 type ImportRow = Prisma.ImportRunGetPayload<{ select: typeof IMPORT_SELECT }>;
 
 function toRunDto(row: ImportRow): AdminImportRunDto {

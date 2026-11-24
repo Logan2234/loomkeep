@@ -10,6 +10,7 @@ import {
   type UserSummaryDto,
 } from "@loomkeep/shared";
 import { HttpStatus, Injectable } from "@nestjs/common";
+import type { Prisma } from "@prisma/client";
 import { AppException } from "../common/app.exception";
 import { type ParsedPage, toPagedResult } from "../common/pagination.util";
 import { EventsGateway } from "../events/events.gateway";
@@ -35,7 +36,7 @@ const USER_SUMMARY_SELECT = {
   displayName: true,
   profileAccess: true,
   avatarUpdatedAt: true,
-} as const;
+} satisfies Prisma.UserSelect;
 
 @Injectable()
 export class FollowService {

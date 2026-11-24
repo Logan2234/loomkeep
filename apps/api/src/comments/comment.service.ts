@@ -73,7 +73,7 @@ const AUTHOR_SELECT = {
   // forwarded to toUserSummaryDto/the client (that would leak the setting
   // itself, not just its effect).
   preferences: { select: { hideProgression: true } },
-} as const;
+} satisfies Prisma.UserSelect;
 
 type CommentAuthor = {
   id: string;
@@ -115,7 +115,7 @@ const MENTION_SELECT = {
   userId: true,
   start: true,
   user: { select: { id: true, username: true } },
-} as const;
+} satisfies Prisma.CommentMentionSelect;
 
 @Injectable()
 export class CommentService {

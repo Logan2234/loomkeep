@@ -15,6 +15,7 @@ import {
   type WatchOfferKind,
 } from "@loomkeep/shared";
 import { HttpStatus, Injectable } from "@nestjs/common";
+import type { Prisma } from "@prisma/client";
 import { BookSagaService } from "../books/book-saga.service";
 import { MediaItemService } from "../catalog/media-item.service";
 import { resolveWatchRegion } from "../catalog/watch-region.util";
@@ -36,7 +37,7 @@ const USER_SELECT = {
   displayName: true,
   profileAccess: true,
   avatarUpdatedAt: true,
-} as const;
+} satisfies Prisma.UserSelect;
 
 // What a member's status in a saga's work reads as on the card.
 const STEP: Record<SagaDomain, Partial<Record<string, SagaStep>>> = {

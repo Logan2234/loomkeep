@@ -52,7 +52,7 @@ const AUTHOR_SELECT = {
   displayName: true,
   profileAccess: true,
   avatarUpdatedAt: true,
-} as const;
+} satisfies Prisma.UserSelect;
 
 /** How many items feed the collage preview (1 = full cover, 2-4 = quadrants). */
 const PREVIEW_ITEM_COUNT = 4;
