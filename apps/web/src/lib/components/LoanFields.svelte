@@ -23,6 +23,7 @@
   import { m } from "#lib/paraglide/messages.js";
   import { toast } from "#lib/toast.svelte.js";
   import { LOAN_PERSON_MAX_LENGTH } from "@loomkeep/shared";
+  import Combobox from "./Combobox.svelte";
   import Icon from "./Icon.svelte";
 
   // Under the ownership menu. A PHYSICAL copy is lent with a button, and
@@ -50,7 +51,6 @@
     (loan.loanActive && (physical || borrowed)) || (borrowed && addingDetails),
   );
   const today = new Date().toISOString().slice(0, 10);
-  const uid = $props.id();
 
   const friendsQuery = createApiQuery(() => ({
     key: keys.chat.friends(""),
@@ -61,8 +61,37 @@
     [...new Set((friendsQuery.data ?? []).map((f) => f.displayName))].sort(),
   );
 
-  function savePerson(e: Event) {
-    const value = (e.currentTarget as HTMLInputElement).value.trim();
+  // Friends are suggestions, not a closed list: whatever is typed can be kept
+  // as is, offered first unless it is a friend's name already.
+  const personLabel = $derived(
+    borrowed ? m.ownership_borrowed_from() : m.ownership_lent_to(),
+  );
+  let personQuery = $state("");
+  const typedName = $derived(
+    personQuery.trim().slice(0, LOAN_PERSON_MAX_LENGTH),
+  );
+  const personOptions = $derived.by(() => {
+    const typed = typedName.toLowerCase();
+    const friends = friendNames.filter((name) =>
+      name.toLowerCase().includes(typed),
+    );
+    return [
+      ...(typedName && !friends.some((name) => name.toLowerCase() === typed)
+        ? [
+            {
+              value: typedName,
+              label: m.ownership_loan_use_name({ name: typedName }),
+            },
+          ]
+        : []),
+      ...friends.map((name) => ({ value: name, label: name })),
+      ...(loan.loanPerson && !typedName
+        ? [{ value: "", label: m.common_none() }]
+        : []),
+    ];
+  });
+
+  function savePerson([value = ""]: string[]) {
     if (value !== (loan.loanPerson ?? ""))
       onChange({ loanPerson: value || null });
   }
@@ -111,19 +140,23 @@
             ? 'border-warning'
             : 'border-border'
           : 'border-accent'}">
-        <label class="flex min-w-0 flex-col gap-1">
-          <span class="timecode text-micro tracking-[0.18em] uppercase">
-            {borrowed ? m.ownership_borrowed_from() : m.ownership_lent_to()}
+        <div class="flex min-w-0 flex-col gap-1">
+          <span
+            aria-hidden="true"
+            class="timecode text-micro tracking-[0.18em] uppercase">
+            {personLabel}
           </span>
-          <input
-            class="input"
-            type="text"
-            list={friendNames.length > 0 ? `${uid}-friends` : undefined}
-            maxlength={LOAN_PERSON_MAX_LENGTH}
-            placeholder={m.ownership_loan_person_placeholder()}
-            value={loan.loanPerson ?? ""}
-            onchange={savePerson} />
-        </label>
+          <Combobox
+            label={personLabel}
+            options={personOptions}
+            values={loan.loanPerson ? [loan.loanPerson] : []}
+            searchable
+            searchPlaceholder={m.ownership_loan_person_placeholder()}
+            selectedLabel={loan.loanPerson ??
+              m.ownership_loan_person_placeholder()}
+            onSearch={(query) => (personQuery = query)}
+            onChange={savePerson} />
+        </div>
         <label class="flex min-w-0 flex-col gap-1">
           <span class="timecode text-micro tracking-[0.18em] uppercase">
             {m.ownership_loan_since()}
@@ -135,13 +168,6 @@
             value={loan.loanSince ?? ""}
             onchange={saveSince} />
         </label>
-        {#if friendNames.length > 0}
-          <datalist id="{uid}-friends">
-            {#each friendNames as name (name)}
-              <option value={name}></option>
-            {/each}
-          </datalist>
-        {/if}
         <p class="text-dim text-xs sm:col-span-2">
           {m.ownership_loan_private()}
         </p>

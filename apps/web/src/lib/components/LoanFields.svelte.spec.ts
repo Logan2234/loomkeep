@@ -1,7 +1,7 @@
 import { m } from "#lib/paraglide/messages.js";
 import { renderWithQuery } from "#lib/test/render.js";
 import { toast } from "#lib/toast.svelte.js";
-import { fireEvent, screen } from "@testing-library/svelte";
+import { screen } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import LoanFields from "./LoanFields.svelte";
@@ -37,8 +37,13 @@ describe("LoanFields", () => {
     renderWithQuery(LoanFields, { status: "PHYSICAL", loan: LENT, onChange });
 
     expect(
-      (screen.getByLabelText(m.ownership_lent_to()) as HTMLInputElement).value,
-    ).toBe("Julie");
+      screen.getByRole("button", {
+        name: m.common_selection_summary({
+          label: m.ownership_lent_to(),
+          selection: "Julie",
+        }),
+      }),
+    ).toBeTruthy();
     await user.click(
       screen.getByRole("button", { name: m.ownership_lent_returned() }),
     );
@@ -63,8 +68,23 @@ describe("LoanFields", () => {
       screen.getByRole("button", { name: m.ownership_loan_add_details() }),
     );
 
-    const person = screen.getByLabelText(m.ownership_borrowed_from());
-    await fireEvent.change(person, { target: { value: "  Max " } });
+    // Any name can be kept, not only a friend's.
+    await user.click(
+      screen.getByRole("button", {
+        name: new RegExp(m.ownership_borrowed_from()),
+      }),
+    );
+    await user.type(
+      screen.getByRole("combobox", {
+        name: m.ownership_loan_person_placeholder(),
+      }),
+      "  Max ",
+    );
+    await user.click(
+      screen.getByRole("option", {
+        name: m.ownership_loan_use_name({ name: "Max" }),
+      }),
+    );
     expect(onChange).toHaveBeenCalledWith({ loanPerson: "Max" });
     expect(screen.getByText(m.ownership_loan_private())).toBeTruthy();
     // Nothing runs until the entry comes back with its borrowing.
@@ -90,6 +110,19 @@ describe("LoanFields", () => {
     expect(onChange).not.toHaveBeenCalledWith(
       expect.objectContaining({ ownershipStatus: expect.anything() }),
     );
+  });
+
+  it("clears the person of a running loan", async () => {
+    const onChange = vi.fn();
+    const user = userEvent.setup();
+    renderWithQuery(LoanFields, { status: "PHYSICAL", loan: LENT, onChange });
+
+    await user.click(
+      screen.getByRole("button", { name: new RegExp(m.ownership_lent_to()) }),
+    );
+    await user.click(screen.getByRole("option", { name: m.common_none() }));
+
+    expect(onChange).toHaveBeenCalledWith({ loanPerson: null });
   });
 
   it("shows nothing for a digital copy", () => {
