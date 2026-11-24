@@ -523,13 +523,15 @@ enum MusicStatus {
 
 model User {
   id                      String                 @id @default(cuid())
+  // Stored lowercase (normalizeEmail; User_email_lowercase_check), so the
+  // unique index is case-insensitive in practice.
   email                   String                 @unique
   passwordHash            String
   // Free-form label shown around the app; not unique. See `username` for the
   // unique, login-capable handle.
   displayName             String
   // Unique login handle (alongside email). Assigned at registration, editable
-  // in Sécurité.
+  // in Sécurité. Stored lowercase like email (User_username_lowercase_check).
   username                String                 @unique
   birthDate               DateTime?
   // Opt-in to 18+ titles; only effective when birthDate proves the account is 18+.

@@ -67,6 +67,8 @@ history from before it was started.
 
 ### Fixed
 
+- Usernames are saved in lowercase, so two accounts can no longer differ
+  only by case and signing in with a passkey ignores case too.
 - Re-importing over your library keeps the dates and ratings you set in
   Loomkeep, and only fills in what was missing.
 - Search keeps loading results when a whole page was hidden as 18+.

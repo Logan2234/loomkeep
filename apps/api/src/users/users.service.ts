@@ -993,7 +993,7 @@ export class UsersService {
     }
 
     const existing = await this.prisma.user.findUnique({
-      where: { username: value },
+      where: { username: value.trim().toLowerCase() },
       select: { id: true },
     });
     return { available: !existing || existing.id === userId };
