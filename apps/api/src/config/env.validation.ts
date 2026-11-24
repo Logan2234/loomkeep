@@ -33,5 +33,34 @@ export function validateEnv(
     );
   }
 
+  if (isHardened((key) => env[key])) assertStrongJwtSecrets(env);
+
   return env;
+}
+
+// What `openssl rand -hex 32` gives is 64; 32 rules out a word or an example
+// value, which could be tested offline against one captured cookie.
+const JWT_SECRET_MIN_LENGTH = 32;
+
+/**
+ * The two secrets sign the JWTs and, together, derive the key encrypting
+ * the session cookies: a guessable pair gives away both. Checked on an
+ * exposed deployment only, where MFA_ENCRYPTION_KEY is required too.
+ */
+function assertStrongJwtSecrets(env: Record<string, string | undefined>): void {
+  const short = (["JWT_ACCESS_SECRET", "JWT_REFRESH_SECRET"] as const).filter(
+    (key) => (env[key] ?? "").length < JWT_SECRET_MIN_LENGTH,
+  );
+
+  if (short.length > 0) {
+    throw new Error(
+      `${short.join(", ")} must be at least ${JWT_SECRET_MIN_LENGTH} characters: generate each with \`openssl rand -hex 32\`.`,
+    );
+  }
+
+  if (env.JWT_ACCESS_SECRET === env.JWT_REFRESH_SECRET) {
+    throw new Error(
+      "JWT_ACCESS_SECRET and JWT_REFRESH_SECRET must be different: generate each with `openssl rand -hex 32`.",
+    );
+  }
 }

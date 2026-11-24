@@ -150,6 +150,8 @@
   "apierr_reports_cannot_report_own_content": "Tu ne peux pas signaler ton propre contenu.",
   "apierr_reviews_unknown_target_type": "Type de contenu noté inconnu.",
   "apierr_reviews_not_found": "Cette critique est introuvable.",
+  "apierr_reviews_target_not_found": "Cette œuvre est introuvable.",
+  "apierr_users_export_too_soon": "Tu peux télécharger toutes tes données une fois par heure : réessaie un peu plus tard.",
   "apierr_reviews_cannot_vote_self": "Tu ne peux pas voter sur ta propre critique.",
   "apierr_social_cannot_follow_self": "Tu ne peux pas te suivre toi-même.",
   "apierr_social_ghost_public_only": "En mode Figurant, tu ne peux suivre que des profils publics.",

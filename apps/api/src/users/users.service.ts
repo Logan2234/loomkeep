@@ -63,6 +63,8 @@ import type { UploadAvatarDto } from "./dto/upload-avatar.dto";
 import { toHomeLayoutJson } from "./home-layout.util";
 import { signWidgetToken } from "./widget-token.util";
 
+const FULL_EXPORT_INTERVAL_MS = 60 * 60 * 1000;
+
 // Decoded byte ceiling for an uploaded avatar — base64 for this is checked by
 // UploadAvatarDto's MaxLength, this is the belt-and-suspenders check on the
 // actual decoded buffer.
@@ -73,6 +75,9 @@ const MAX_EMAIL_CHANGE_ATTEMPTS = 5;
 
 @Injectable()
 export class UsersService {
+  // userId → when its last full export started; one instance, in memory.
+  private readonly lastFullExportAt = new Map<string, number>();
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly mail: MailService,
@@ -245,9 +250,38 @@ export class UsersService {
     return toUserDto(user);
   }
 
-  /** Full portable dump of the account's data (GDPR "download my data"). */
-  exportData(userId: string): Promise<UserDataExportDto> {
-    return this.dataExport.buildExport(userId);
+  /**
+   * Full portable dump of the account's data (GDPR "download my data"), one
+   * an hour per account: one call fans out into two dozen unbounded queries.
+   * Counted here, once the route's re-auth check has passed, rather than by
+   * a route throttle: that one ran before the check, so a call refused for
+   * re-auth used up the hour and the confirmed retry got a 429.
+   */
+  async exportData(
+    userId: string,
+    now = Date.now(),
+  ): Promise<UserDataExportDto> {
+    for (const [id, at] of this.lastFullExportAt) {
+      if (now - at >= FULL_EXPORT_INTERVAL_MS) this.lastFullExportAt.delete(id);
+    }
+
+    if (this.lastFullExportAt.has(userId)) {
+      throw new AppException(
+        HttpStatus.TOO_MANY_REQUESTS,
+        ErrorCode.UserExportTooSoon,
+      );
+    }
+
+    this.lastFullExportAt.set(userId, now);
+
+    try {
+      return await this.dataExport.buildExport(userId);
+    } catch (err) {
+      // A failed export didn't give the user their data: no reason to make
+      // them wait the hour out.
+      this.lastFullExportAt.delete(userId);
+      throw err;
+    }
   }
 
   /**

@@ -189,6 +189,24 @@ function materializedProgress(entry: {
     : null;
 }
 
+// A day ahead covers a date the viewer picked in their own time zone (up to
+// UTC+14) and clock drift; anything beyond is a mistake, and a 2099 viewing
+// would pin the show at the top of "recent" for good.
+const WATCH_DATE_FUTURE_TOLERANCE_MS = 24 * 60 * 60 * 1000;
+
+function assertWatchDateNotFuture(
+  watchedAt: string | null | undefined,
+  now = new Date(),
+): void {
+  if (
+    watchedAt &&
+    new Date(watchedAt).getTime() >
+      now.getTime() + WATCH_DATE_FUTURE_TOLERANCE_MS
+  ) {
+    throw new AppException(HttpStatus.BAD_REQUEST, ErrorCode.ValidationFailed);
+  }
+}
+
 /**
  * Whether a viewing belongs to the current one: any viewing outside a
  * rewatch, only those since it began during one. An undated (imported)
@@ -1171,6 +1189,8 @@ export class LibraryService {
       );
     }
 
+    assertWatchDateNotFuture(dto.watchedAt);
+
     const previouslyWatchedIds = await this.watchedEpisodeIds(userId, {
       episode: { seasonId: episode.seasonId },
     });
@@ -1735,6 +1755,27 @@ export class LibraryService {
         ...restore.map((row) => row.episodeId),
       ]),
     ]);
+
+    // A restore only brings back what a bulk action removed, so it obeys
+    // the same rules as the viewing it restores: aired, not dated ahead.
+    const now = new Date();
+    const restoredIds = new Set(restore.map((row) => row.episodeId));
+
+    if (
+      episodes.some(
+        (episode) =>
+          restoredIds.has(episode.id) &&
+          episode.airDate &&
+          episode.airDate > now,
+      )
+    ) {
+      throw new AppException(
+        HttpStatus.BAD_REQUEST,
+        ErrorCode.LibraryEpisodeNotAired,
+      );
+    }
+
+    restore.forEach((row) => assertWatchDateNotFuture(row.watchedAt, now));
 
     const [, created] = await this.prisma.$transaction([
       this.prisma.episodeWatch.deleteMany({
@@ -2607,7 +2648,7 @@ export class LibraryService {
       title: translation?.title ?? media.title,
       // Original title is not persisted separately; only used for matching.
       originalTitle: null,
-      year: media.releaseDate ? media.releaseDate.getFullYear() : null,
+      year: media.releaseDate ? media.releaseDate.getUTCFullYear() : null,
       posterUrl: media.posterUrl,
       backdropUrl: media.backdropUrl,
       overview: translation?.overview ?? media.overview,

@@ -49,6 +49,9 @@ import { VisibilityService } from "../social/visibility.service";
 import { resolveReviewVisibility } from "../social/visibility.util";
 import { toUserSummaryDto } from "../users/avatar.util";
 
+// How far past the threshold a burst of concurrent upvotes may land.
+const VOTE_NOTIFY_WINDOW = 5;
+
 /** Feed domain for a review target ("GAME" work lives in the GAMES domain…). */
 
 type ReviewRow = {
@@ -258,7 +261,18 @@ export class ReviewService {
     const count = await this.prisma.reviewVote.count({
       where: { reviewId, value: ReviewVoteValue.UP },
     });
-    if (count !== REVIEW_VOTE_NOTIFY_THRESHOLD) return;
+
+    // At or just past the threshold, not exactly on it: two upvotes landing
+    // together (9 → 11) each count 11, and neither saw 10. The dedupe key,
+    // the threshold's and not the count's, keeps it to one notification;
+    // the window keeps a long-popular review from notifying again once
+    // that notification is gone.
+    if (
+      count < REVIEW_VOTE_NOTIFY_THRESHOLD ||
+      count >= REVIEW_VOTE_NOTIFY_THRESHOLD + VOTE_NOTIFY_WINDOW
+    ) {
+      return;
+    }
 
     const copy = (await this.notifications.copyFor(authorId)).reviewVotes;
     const work = await resolveWorkLink(
@@ -270,10 +284,13 @@ export class ReviewService {
       userId: authorId,
       type: NotificationType.REVIEW_VOTES,
       title: copy.title,
-      body: copy.body(count),
+      body: copy.body(REVIEW_VOTE_NOTIFY_THRESHOLD),
       url: work?.href ?? null,
-      dedupeKey: `review-votes:${reviewId}:${count}`,
-      data: { count, workTitle: work?.title ?? null },
+      dedupeKey: `review-votes:${reviewId}:${REVIEW_VOTE_NOTIFY_THRESHOLD}`,
+      data: {
+        count: REVIEW_VOTE_NOTIFY_THRESHOLD,
+        workTitle: work?.title ?? null,
+      },
     });
   }
 
@@ -318,6 +335,50 @@ export class ReviewService {
   }
 
   /**
+   * A review needs a work, season or episode that exists: nothing checked it,
+   * so any id made a review that showed in the author's list, the export and
+   * moderation, and a feed event pointing nowhere.
+   */
+  // A switch rather than a lookup keyed by the type: targetType comes from
+  // the request, and an unexpected one must answer 0, not call something.
+  private countTarget(
+    targetType: ReviewTargetType,
+    where: { where: { id: string } },
+  ): Promise<number> {
+    switch (targetType) {
+      case ReviewTargetType.MEDIA:
+        return this.prisma.mediaItem.count(where);
+      case ReviewTargetType.SEASON:
+        return this.prisma.season.count(where);
+      case ReviewTargetType.EPISODE:
+        return this.prisma.episode.count(where);
+      case ReviewTargetType.GAME:
+        return this.prisma.gameItem.count(where);
+      case ReviewTargetType.BOOK:
+        return this.prisma.bookItem.count(where);
+      case ReviewTargetType.MUSIC:
+        return this.prisma.musicItem.count(where);
+      default:
+        return Promise.resolve(0);
+    }
+  }
+
+  private async assertTargetExists(
+    targetType: ReviewTargetType,
+    targetId: string,
+  ): Promise<void> {
+    const where = { where: { id: targetId } };
+    const count = await this.countTarget(targetType, where);
+
+    if (count === 0) {
+      throw new AppException(
+        HttpStatus.NOT_FOUND,
+        ErrorCode.ReviewTargetNotFound,
+      );
+    }
+  }
+
+  /**
    * Creates or updates the user's review for a target, snapshotting the new
    * state as a revision. Not social-gated — rating your own items always works.
    */
@@ -327,6 +388,7 @@ export class ReviewService {
     targetId: string,
     dto: UpsertReviewDto,
   ): Promise<ReviewDto> {
+    await this.assertTargetExists(targetType, targetId);
     if (targetType === ReviewTargetType.MEDIA)
       await assertMediaReleased(this.prisma, targetId);
     if (targetType === ReviewTargetType.GAME)

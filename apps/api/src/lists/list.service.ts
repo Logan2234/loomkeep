@@ -154,7 +154,7 @@ export class ListService {
 
   /**
    * Updates a list's title/description/kind/items — owner or editor
-   * (ListMember). Visibility changes are owner-only: an editor could
+   * (ListMember), never a moderating admin. Visibility changes are owner-only: an editor could
    * otherwise expose a private list. Emits LIST_SHARED on a PRIVATE→shared
    * transition.
    */
@@ -164,6 +164,10 @@ export class ListService {
     dto: UpdateListBody,
   ): Promise<ListDto> {
     const { row: existing, role } = await this.canEdit(userId, id);
+    // Moderation takes items off a reported list (and adminRemove deletes
+    // it); it never renames it or changes who can see it.
+    if (role === "MODERATOR")
+      throw new AppException(HttpStatus.FORBIDDEN, ErrorCode.ListForbidden);
 
     if (dto.visibility && role === "EDITOR") {
       throw new AppException(
@@ -887,7 +891,7 @@ export class ListService {
       title: owner.displayName,
       body: copy.listEditorAdded(list.title),
       url: `/app/lists/${id}`,
-      dedupeKey: `list-member:${id}:${target.id}`,
+      dedupeKey: memberNotificationKey(id, target.id),
       data: {
         actorUsername: owner.username,
         actorDisplayName: owner.displayName,
@@ -924,6 +928,14 @@ export class ListService {
     // A mute belongs to the membership: someone re-added later starts fresh.
     await this.prisma.listNotificationMute.deleteMany({
       where: { listId: id, userId: memberUserId },
+    });
+    // So does the "added as editor" notification: left in place, its dedupe
+    // key would swallow the one a later re-invitation sends.
+    await this.prisma.notification.deleteMany({
+      where: {
+        userId: memberUserId,
+        dedupeKey: memberNotificationKey(id, memberUserId),
+      },
     });
     this.events.emitToList(id, "list-updated");
     await this.events.evictFromList(id, memberUserId);
@@ -1290,3 +1302,6 @@ export class ListService {
       : `/${domain}/${sourceId}`;
   }
 }
+
+const memberNotificationKey = (listId: string, userId: string) =>
+  `list-member:${listId}:${userId}`;

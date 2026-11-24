@@ -508,4 +508,39 @@ describe("BookCsvSource (via StoryGraphImportSource)", () => {
       expect(job.status).toBe("failed");
     });
   });
+
+  // A book read without a date (common on Babelio and Goodreads) got a
+  // reading finished "today": a whole library landed in this year's stats
+  // and reading goal (audit 2026-11-17, BUG-42).
+  it("leaves the finish date empty for a book read without one", async () => {
+    const { service, createMany } = setup({
+      getStoredDetails: vi.fn().mockResolvedValue({
+        summary: summary({ sourceId: "OL1W" }),
+        overview: null,
+        genres: [],
+        pageCount: 100,
+        releaseDate: null,
+        externalIds: [{ source: "OPEN_LIBRARY", externalId: "OL1W" }],
+      }),
+      resolveByIsbns: vi.fn().mockResolvedValue({
+        matches: new Map([["9782228937597", summary({ sourceId: "OL1W" })]]),
+        failedIsbns: [],
+      }),
+    });
+    const csv = [
+      HEADER,
+      'X,Author,"",9782228937597,paperback,read,2025/07/23,"","",0,"",,,,,,,,"","","","",Yes',
+    ].join("\n");
+    const analyzed = await service.startAnalyze("user-1", "storygraph", {
+      input: csv,
+    });
+    await runToEnd(service, "user-1", analyzed.id);
+    const committed = service.commit("user-1", "storygraph", analyzed.id, {
+      include: ["b0"],
+    });
+    await runToEnd(service, "user-1", committed.id);
+
+    const [{ data }] = createMany.mock.calls[0];
+    expect(data[0]).toMatchObject({ status: "COMPLETED", finishedAt: null });
+  });
 });

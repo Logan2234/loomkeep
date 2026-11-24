@@ -388,18 +388,22 @@ export class InvitationService {
         select: { displayName: true, locale: true },
       });
       // The invitee has no locale yet: the inviter's is the best guess.
-      await this.mail.sendInvitation(
+      emailed = await this.mail.sendInvitation(
         { email: invitation.email, locale: creator?.locale ?? "fr" },
         creator?.displayName ?? null,
         url,
         invitation.expiresAt,
       );
-      invitation = await this.prisma.invitation.update({
-        where: { id: invitation.id },
-        data: { emailedAt: new Date() },
-        include: INVITATION_INCLUDE,
-      });
-      emailed = true;
+
+      // A failed send (send() logs and answers false) leaves the invitation
+      // unmailed, so the admin knows to share the link by hand.
+      if (emailed) {
+        invitation = await this.prisma.invitation.update({
+          where: { id: invitation.id },
+          data: { emailedAt: new Date() },
+          include: INVITATION_INCLUDE,
+        });
+      }
     }
 
     return { invitation: this.toDto(invitation), url, emailed };

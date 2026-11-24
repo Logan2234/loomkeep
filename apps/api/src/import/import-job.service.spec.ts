@@ -704,9 +704,13 @@ describe("ImportJobService — retained payloads", () => {
     return (service as unknown as { jobs: JobMap }).jobs;
   }
 
-  function makeService(commitImpl?: ImportReq["commit"]) {
+  function makeService(
+    commitImpl?: ImportReq["commit"],
+    parseInput?: ImportReq["parseInput"],
+  ) {
     const source = fakeSource("tvtime");
     if (commitImpl) source.commit = commitImpl;
+    if (parseInput) source.parseInput = parseInput;
     const prisma = {
       importRun: {
         create: vi.fn().mockResolvedValue({}),
@@ -785,6 +789,23 @@ describe("ImportJobService — retained payloads", () => {
       expect(service.getJob("u1", job.id).status).toBe("failed");
     });
     expect(jobs(service).get("analyzed-1")!.parsed).not.toBeNull();
+  });
+
+  // The older analyses were released before the new file was even read: a
+  // wrong file lost the one already reviewed, matches included (audit
+  // 2026-11-17, BUG-71).
+  it("keeps the previous analysis when the new file can't be read", async () => {
+    const service = makeService(undefined, () => {
+      throw new Error("not a TV Time export");
+    });
+    seedAnalyzed(service, "old-1");
+
+    await expect(
+      service.startAnalyze("u1", "tvtime", { input: {} } as never),
+    ).rejects.toMatchObject({ code: ErrorCode.ImportMalformedExport });
+
+    expect(jobs(service).get("old-1")!.parsed).not.toBeNull();
+    expect(jobs(service).get("old-1")!.plan).not.toBeNull();
   });
 
   it("keeps only the newest analysis loaded when a new one starts", async () => {

@@ -13,6 +13,13 @@ history from before it was started.
 
 ## [Unreleased]
 
+### Breaking changes
+
+- **Self-hosting: JWT secrets need 32 characters and two different values.**
+  An instance in production (or served over https) refuses to start
+  otherwise. Generate each with `openssl rand -hex 32`; changing them signs
+  everyone out once.
+
 ### Added
 
 - Admin: a premium grant can end at a date you set, after which the account
@@ -56,6 +63,16 @@ history from before it was started.
 
 ### Fixed
 
+- Downloading all your data now asks you to confirm it's you, and that
+  confirmation no longer uses up the hourly download.
+- Books imported as read without a date no longer count as finished on the
+  import day in your stats and reading goal.
+- An invitation whose email failed to send is no longer shown as sent.
+- An editor removed from a list and invited again gets notified again.
+- A review reaching 10 upvotes notifies its author even when two votes land
+  at once.
+- Starting an import with a wrong file keeps the analysis you had reviewed.
+- A work's year no longer shows the year before for a 1 January release.
 - Changing your password or two-step verification now signs your other
   devices out at once, instead of up to 15 minutes later.
 - Reopening the authenticator app setup while it is already on no longer

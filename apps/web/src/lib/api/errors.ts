@@ -231,6 +231,8 @@ const MESSAGES = {
     m.apierr_reports_cannot_report_own_content(),
   [ErrorCode.ReviewUnknownTargetType]: () =>
     m.apierr_reviews_unknown_target_type(),
+  [ErrorCode.UserExportTooSoon]: () => m.apierr_users_export_too_soon(),
+  [ErrorCode.ReviewTargetNotFound]: () => m.apierr_reviews_target_not_found(),
   [ErrorCode.ReviewNotFound]: () => m.apierr_reviews_not_found(),
   [ErrorCode.ReviewCannotVoteSelf]: () => m.apierr_reviews_cannot_vote_self(),
   [ErrorCode.SocialCannotFollowSelf]: () =>

@@ -159,6 +159,8 @@ export const ErrorCode = {
   // reviews
   ReviewUnknownTargetType: "reviews.unknown_target_type",
   ReviewNotFound: "reviews.not_found",
+  ReviewTargetNotFound: "reviews.target_not_found",
+  UserExportTooSoon: "users.export_too_soon",
   ReviewCannotVoteSelf: "reviews.cannot_vote_self",
 
   // social

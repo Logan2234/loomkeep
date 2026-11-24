@@ -7,6 +7,7 @@ describe("unreleased movie reviews", () => {
     const deleteMany = vi.fn();
     const prisma = {
       mediaItem: {
+        count: vi.fn().mockResolvedValue(1),
         findUnique: vi.fn().mockResolvedValue({
           type: "MOVIE",
           status: "Post Production",

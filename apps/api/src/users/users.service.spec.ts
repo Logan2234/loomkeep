@@ -1015,3 +1015,52 @@ describe("UsersService — setAcquisitionSource", () => {
     expect(updateMany).not.toHaveBeenCalled();
   });
 });
+
+// One full export an hour, counted here rather than by the route's throttle:
+// the throttle ran before the re-auth check, so the refused first call used
+// up the hour and the confirmed retry got a 429 (audit 2026-11-17, SEC-20).
+describe("UsersService.exportData", () => {
+  const HOUR = 60 * 60 * 1000;
+
+  function makeService() {
+    const buildExport = vi.fn().mockResolvedValue({ user: {} });
+    const service = new UsersService(
+      {} as unknown as PrismaService,
+      {} as unknown as MailService,
+      {} as unknown as SecurityEventService,
+      { buildExport } as unknown as DataExportService,
+      {} as unknown as CsvExportService,
+      {} as unknown as ConfigService,
+      {} as unknown as HibpService,
+      {} as unknown as EntitlementService,
+      {} as unknown as ProfileService,
+      {} as unknown as XpService,
+      {} as unknown as EventsGateway,
+      {} as unknown as ApiKeysService,
+      sessionCache,
+    );
+    return { service, buildExport };
+  }
+
+  it("builds one export an hour per account", async () => {
+    const { service, buildExport } = makeService();
+    const now = Date.UTC(2026, 10, 24, 10);
+
+    await service.exportData("u1", now);
+    await expect(
+      service.exportData("u1", now + HOUR / 2),
+    ).rejects.toMatchObject({ code: "users.export_too_soon" });
+    await service.exportData("u2", now + HOUR / 2);
+    await service.exportData("u1", now + HOUR);
+
+    expect(buildExport).toHaveBeenCalledTimes(3);
+  });
+
+  it("lets a failed export be tried again at once", async () => {
+    const { service, buildExport } = makeService();
+    buildExport.mockRejectedValueOnce(new Error("db hiccup"));
+
+    await expect(service.exportData("u1", 0)).rejects.toThrow("db hiccup");
+    await expect(service.exportData("u1", 1000)).resolves.toEqual({ user: {} });
+  });
+});

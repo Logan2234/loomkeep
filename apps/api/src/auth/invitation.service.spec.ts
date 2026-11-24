@@ -54,7 +54,7 @@ function makeService({ smtp = true }: { smtp?: boolean } = {}) {
   } as unknown as PrismaService;
   const mail = {
     isConfigured: vi.fn().mockReturnValue(smtp),
-    sendInvitation: vi.fn(),
+    sendInvitation: vi.fn().mockResolvedValue(true),
   } as unknown as MailService;
   const config = {
     get: vi.fn((key: string) =>
@@ -156,6 +156,23 @@ describe("InvitationService.create", () => {
     );
     expect(result.emailed).toBe(true);
     expect(result.invitation.emailedAt).not.toBeNull();
+  });
+
+  // send() swallows SMTP errors and answers false: the invitation was still
+  // marked mailed, and the admin never thought to copy the link (audit
+  // 2026-11-17, BUG-50).
+  it("leaves the invitation unmailed when the SMTP send failed", async () => {
+    const { service, mail } = makeService();
+    (mail.sendInvitation as Mock).mockResolvedValueOnce(false);
+
+    const result = await service.create("admin-1", {
+      email: "bob@example.com",
+      maxUses: 1,
+      validityDays: 7,
+    });
+
+    expect(result.emailed).toBe(false);
+    expect(result.invitation.emailedAt).toBeNull();
   });
 
   it("still returns the link without SMTP, just unmailed", async () => {

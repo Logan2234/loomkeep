@@ -906,6 +906,9 @@ describe("ListService member management — owner only", () => {
       listNotificationMute: {
         deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
       },
+      notification: {
+        deleteMany: vi.fn().mockResolvedValue({ count: 1 }),
+      },
     } as unknown as PrismaService;
     const notifications = fakeNotifications();
     const events = stubEvents();
@@ -985,6 +988,16 @@ describe("ListService member management — owner only", () => {
     await svc.removeMember("friend", "l1", "friend");
     expect(prisma.listNotificationMute.deleteMany).toHaveBeenCalledWith({
       where: { listId: "l1", userId: "friend" },
+    });
+  });
+
+  // The "added as editor" notification stayed, and its dedupe key swallowed
+  // the notification of a later re-invitation (audit 2026-11-17, BUG-64).
+  it("forgets the editor's invitation notification, so a re-add notifies again", async () => {
+    const { svc, prisma } = make("owner");
+    await svc.removeMember("owner", "l1", "friend");
+    expect(prisma.notification.deleteMany).toHaveBeenCalledWith({
+      where: { userId: "friend", dedupeKey: "list-member:l1:friend" },
     });
   });
 
@@ -1260,5 +1273,43 @@ describe("ListService editable lists follow canEdit's Social gate", () => {
     expect(prisma.listItem.findMany.mock.calls[0][0].where.list).toEqual({
       OR: [{ userId: "u1" }, memberOf],
     });
+  });
+});
+
+// An admin moderating a reported list may take items off it, nothing more:
+// update() only refused EDITOR, so they could rename it and make a private
+// list public (audit 2026-11-17, SEC-28).
+describe("ListService.update by a moderating admin", () => {
+  it("is refused, and the list stays as it was", async () => {
+    const update = vi.fn();
+    const prisma = {
+      list: {
+        findUnique: vi
+          .fn()
+          .mockResolvedValue(
+            listRow({ userId: "owner", visibility: "PRIVATE" }),
+          ),
+        update,
+      },
+      listMember: { findUnique: vi.fn().mockResolvedValue(null) },
+      user: { findUnique: vi.fn().mockResolvedValue({ role: "ADMIN" }) },
+      report: { findFirst: vi.fn().mockResolvedValue({ id: "report-1" }) },
+    } as unknown as PrismaService;
+    const svc = new ListService(
+      prisma,
+      {} as VisibilityService,
+      { emit: vi.fn() } as unknown as ActivityService,
+      fakeConfig(),
+      fakeNotifications(),
+      stubXp(),
+      stubAchievements(),
+      stubEvents(),
+      stubFollow(),
+    );
+
+    await expect(
+      svc.update("admin", "l1", { visibility: "PUBLIC", title: "Mine now" }),
+    ).rejects.toMatchObject({ code: "lists.forbidden" });
+    expect(update).not.toHaveBeenCalled();
   });
 });
