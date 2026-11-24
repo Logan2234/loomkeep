@@ -30,7 +30,7 @@
   import { toast } from "#lib/toast.svelte.js";
   import {
     type CommentDto,
-    type CommentEmote,
+    type Emote,
     type CommentTargetType,
     type PagedResult,
     type ReportCategory,
@@ -292,7 +292,7 @@
     onSuccess: invalidate,
   }));
   const reactMut = createMutation(() => ({
-    mutationFn: (vars: { id: string; emote: CommentEmote }) =>
+    mutationFn: (vars: { id: string; emote: Emote }) =>
       reactToComment(vars.id, vars.emote),
     onSuccess: invalidate,
   }));
@@ -509,7 +509,7 @@
     }
   }
 
-  async function react(id: string, emote: CommentEmote) {
+  async function react(id: string, emote: Emote) {
     try {
       await reactMut.mutateAsync({ id, emote });
     } catch (err) {
@@ -562,7 +562,7 @@
         onclick={() => {
           onpicked();
           if (c.myReaction === emote) void unreact(c.id);
-          else void react(c.id, emote as CommentEmote);
+          else void react(c.id, emote as Emote);
         }}>
         {glyph}
       </button>
@@ -671,7 +671,7 @@
           onclick={() =>
             c.myReaction === emote
               ? unreact(c.id)
-              : react(c.id, emote as CommentEmote)}>
+              : react(c.id, emote as Emote)}>
           {glyph}
           {count > 0 ? count : ""}
         </button>

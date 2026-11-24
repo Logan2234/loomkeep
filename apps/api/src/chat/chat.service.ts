@@ -3,12 +3,12 @@ import {
   CHAT_SEARCH_MIN_LENGTH,
   type ChatMessageEvent,
   type ChatReadEvent,
-  type CommentEmote,
   type CommentReactionSummaryDto,
   type ConversationDto,
   type ConversationReadOnlyReason,
   type ConversationWorkDto,
   type Domain,
+  type Emote,
   ErrorCode,
   FollowStatus,
   isAlertEnabled,
@@ -795,11 +795,7 @@ export class ChatService {
   }
 
   /** One reaction per member and message: a second emote replaces the first. */
-  async react(
-    userId: string,
-    messageId: string,
-    emote: CommentEmote,
-  ): Promise<void> {
+  async react(userId: string, messageId: string, emote: Emote): Promise<void> {
     const { message, membership } = await this.memberMessage(userId, messageId);
     await this.ensureWritable(userId, peerOf(membership, userId));
 
@@ -1470,8 +1466,8 @@ function toMessageDto(
   viewerId: string,
   cards: MessageCards,
 ): MessageDto {
-  const counts = new Map<CommentEmote, number>();
-  let myReaction: CommentEmote | null = null;
+  const counts = new Map<Emote, number>();
+  let myReaction: Emote | null = null;
 
   for (const reaction of row.reactions) {
     counts.set(reaction.emote, (counts.get(reaction.emote) ?? 0) + 1);

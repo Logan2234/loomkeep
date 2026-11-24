@@ -18,7 +18,7 @@
   import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
   import { toast } from "#lib/toast.svelte.js";
-  import { type CommentEmote, type MessageDto } from "@loomkeep/shared";
+  import { type Emote, type MessageDto } from "@loomkeep/shared";
   import { fade, scale } from "svelte/transition";
   import ChatForwardModal from "./ChatForwardModal.svelte";
   import ChatMessageText from "./ChatMessageText.svelte";
@@ -61,7 +61,7 @@
   let forwarding = $state(false);
 
   const reactMut = createApiMutation(() => ({
-    mutate: (emote: CommentEmote) =>
+    mutate: (emote: Emote) =>
       message.myReaction === emote
         ? unreactToMessage(message.id)
         : reactToMessage(message.id, emote),
@@ -104,12 +104,9 @@
       !message.gone &&
       isJumboEmoji(message.text),
   );
-  const EMOTES = Object.entries(COMMENT_EMOTE_DISPLAY) as [
-    CommentEmote,
-    string,
-  ][];
+  const EMOTES = Object.entries(COMMENT_EMOTE_DISPLAY) as [Emote, string][];
 
-  function react(emote: CommentEmote) {
+  function react(emote: Emote) {
     sheetOpen = false;
     reactMut.mutate(emote);
   }

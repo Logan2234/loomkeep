@@ -82,7 +82,7 @@ describe("AdminSystemStatsService", () => {
   it("serialises the most recent backup's date and size", async () => {
     const createdAt = new Date("2026-09-14T03:00:00Z");
     const { service, prisma } = make({
-      backup: { createdAt, sizeBytes: 2048 },
+      backup: { createdAt, sizeBytes: 2048n },
     });
 
     const stats = await service.getStats();

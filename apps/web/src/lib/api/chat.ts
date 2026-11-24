@@ -1,10 +1,10 @@
 import type {
   ChatUnreadDto,
-  CommentEmote,
   CommentTargetType,
   ConversationDto,
   ConversationWorkDto,
   EditMessageRequestDto,
+  Emote,
   ForwardMessageRequestDto,
   MarkWorkUnreadRequestDto,
   MessageDto,
@@ -125,7 +125,7 @@ export const forwardMessage = (
 export const deleteMessage = (messageId: string) =>
   request<void>(`/chat/messages/${id(messageId)}`, { method: "DELETE" });
 
-export const reactToMessage = (messageId: string, emote: CommentEmote) =>
+export const reactToMessage = (messageId: string, emote: Emote) =>
   request<void>(`/chat/messages/${id(messageId)}/reaction`, {
     method: "PUT",
     body: { emote },

@@ -24,9 +24,9 @@ import {
   BookSource,
   BookStatus,
   CatalogSource,
-  CommentEmote,
   CommentTargetType,
   Domain,
+  Emote,
   EntryStatus,
   ExternalSource,
   FollowStatus,
@@ -839,17 +839,17 @@ async function main() {
       {
         commentId: breakingBadComment.id,
         userId: alice.id,
-        emote: CommentEmote.LIKE,
+        emote: Emote.LIKE,
       },
       {
         commentId: breakingBadComment.id,
         userId: chloe.id,
-        emote: CommentEmote.LOVE,
+        emote: Emote.LOVE,
       },
       {
         commentId: breakingBadReply.id,
         userId: logan.id,
-        emote: CommentEmote.LAUGH,
+        emote: Emote.LAUGH,
       },
     ],
   });
@@ -1159,12 +1159,12 @@ async function main() {
     data: [
       {
         filename: "loomkeep-2026-08-15.sql.gz",
-        sizeBytes: 4_582_912,
+        sizeBytes: 4_582_912n,
         createdAt: new Date("2026-08-15T03:00:00Z"),
       },
       {
         filename: "loomkeep-2026-08-16.sql.gz",
-        sizeBytes: 4_611_004,
+        sizeBytes: 4_611_004n,
         createdAt: new Date("2026-08-16T03:00:00Z"),
       },
     ],

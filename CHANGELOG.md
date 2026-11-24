@@ -69,6 +69,12 @@ history from before it was started.
   long as the process runs.
 - Calendar: episodes airing the same day now always appear in order (7, 8, 9…)
   instead of sometimes being reversed.
+- Admin › Backup: a backup larger than 2 GB is now recorded instead of
+  failing.
+- Imported ratings off the half-point scale (e.g. a 7.3) are rounded to the
+  nearest half point.
+- Deleting a game session no longer takes your total play time below zero
+  when you had lowered it by hand.
 
 ## 1.15.0 — Admin overhaul, premieres calendar and instance hardening
 

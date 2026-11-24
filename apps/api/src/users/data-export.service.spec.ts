@@ -1,10 +1,12 @@
-import type { User } from "@prisma/client";
+import type { User, UserAvatar } from "@prisma/client";
 import { vi, type Mock } from "vitest";
 import { AppException } from "../common/app.exception";
 import type { PrismaService } from "../prisma/prisma.service";
 import { DataExportService } from "./data-export.service";
 
-function makeUser(overrides: Partial<User> = {}): User {
+function makeUser(
+  overrides: Partial<User & { avatarImage: UserAvatar | null }> = {},
+): User {
   return {
     id: "user-1",
     email: "alice@example.com",
@@ -390,8 +392,11 @@ describe("DataExportService.buildExport", () => {
       makeUser({
         acceptedTermsAt: new Date("2026-01-01T00:00:00.000Z"),
         certifiedAgeAt: new Date("2026-01-01T00:00:00.000Z"),
-        avatar: Buffer.from("png-bytes"),
-        avatarMimeType: "image/png",
+        avatarImage: {
+          userId: "user-1",
+          data: Buffer.from("png-bytes"),
+          mimeType: "image/png",
+        },
         equippedBadgeKeys: ["first_review"],
         acquisitionSource: "OTHER",
         acquisitionSourceOther: "A podcast",

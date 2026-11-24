@@ -172,7 +172,13 @@ export class GameSessionService {
           data: {
             trackedPlaytimeMinutes: { increment: delta },
             ...(before.gameEntry.steamPlaytimeMinutes === null
-              ? { playtimeMinutes: { increment: delta } }
+              ? {
+                  playtimeMinutes: await shiftedPlaytime(
+                    tx,
+                    before.gameEntryId,
+                    delta,
+                  ),
+                }
               : {}),
           },
         });
@@ -234,7 +240,13 @@ export class GameSessionService {
         data: {
           trackedPlaytimeMinutes: { decrement: session.durationMinutes },
           ...(session.gameEntry.steamPlaytimeMinutes === null
-            ? { playtimeMinutes: { decrement: session.durationMinutes } }
+            ? {
+                playtimeMinutes: await shiftedPlaytime(
+                  tx,
+                  session.gameEntryId,
+                  -session.durationMinutes,
+                ),
+              }
             : {}),
           ...lifecycleData,
         },
@@ -445,4 +457,21 @@ function toDto(
     createdAt: session.createdAt.toISOString(),
     updatedAt: session.updatedAt.toISOString(),
   };
+}
+
+/**
+ * The entry's play time moved by `delta`, floored at 0. The total is
+ * hand-editable, so it can be lower than the sessions it once counted, and
+ * the database refuses a negative one (GameEntry_playtimeMinutes_check).
+ */
+async function shiftedPlaytime(
+  tx: Prisma.TransactionClient,
+  gameEntryId: string,
+  delta: number,
+): Promise<number> {
+  const { playtimeMinutes } = await tx.gameEntry.findUniqueOrThrow({
+    where: { id: gameEntryId },
+    select: { playtimeMinutes: true },
+  });
+  return Math.max(0, playtimeMinutes + delta);
 }

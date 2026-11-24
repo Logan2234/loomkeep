@@ -1,6 +1,6 @@
-import type { CommentEmote, CommentReactionSummaryDto } from "@loomkeep/shared";
+import type { CommentReactionSummaryDto, Emote } from "@loomkeep/shared";
 
 export class CommentReactionSummaryResponseDto implements CommentReactionSummaryDto {
-  emote!: CommentEmote;
+  emote!: Emote;
   count!: number;
 }

@@ -57,7 +57,7 @@ export async function computeOnboardingDoneMap(
     prisma.review.findFirst({ where: { userId }, select: { id: true } }),
     prisma.user.findUnique({
       where: { id: userId },
-      select: { avatar: true, bio: true },
+      select: { avatarUpdatedAt: true, bio: true },
     }),
     prisma.importRun.findFirst({
       where: { userId, status: "SUCCESS" },
@@ -79,7 +79,7 @@ export async function computeOnboardingDoneMap(
       completedMusicEntry
     ),
     rate: review !== null,
-    complete_profile: !!user?.avatar && !!user.bio?.trim(),
+    complete_profile: !!user?.avatarUpdatedAt && !!user.bio?.trim(),
     import: importRun !== null,
     create_list: list !== null,
     comment: comment !== null,

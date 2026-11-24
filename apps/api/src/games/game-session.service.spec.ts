@@ -16,7 +16,7 @@ describe("GameSessionService", () => {
   };
   const tx = {
     gameSession: { count: vi.fn(), create: vi.fn(), delete: vi.fn() },
-    gameEntry: { update: vi.fn() },
+    gameEntry: { findUniqueOrThrow: vi.fn(), update: vi.fn() },
     gamePlaythrough: {
       aggregate: vi.fn(),
       create: vi.fn(),
@@ -54,6 +54,7 @@ describe("GameSessionService", () => {
     tx.gameSession.delete.mockResolvedValue(created);
     tx.gameSession.count.mockResolvedValue(0);
     tx.gameEntry.update.mockResolvedValue({});
+    tx.gameEntry.findUniqueOrThrow.mockResolvedValue({ playtimeMinutes: 90 });
     tx.gamePlaythrough.aggregate.mockResolvedValue({ _max: { number: null } });
     tx.gamePlaythrough.findFirst.mockResolvedValue(null);
     tx.gamePlaythrough.update.mockImplementation(({ where, data }) =>
@@ -506,10 +507,28 @@ describe("GameSessionService", () => {
       where: { id: "entry-1" },
       data: {
         trackedPlaytimeMinutes: { decrement: 60 },
-        playtimeMinutes: { decrement: 60 },
+        playtimeMinutes: 30,
         status: "BACKLOG",
         startedAt: null,
       },
     });
+  });
+
+  it("floors the play time at 0 when it was set by hand below the deleted session", async () => {
+    prisma.gameSession.findUnique.mockResolvedValue({
+      ...created,
+      playthroughId: null,
+      playthrough: null,
+      gameEntry: {
+        userId: "user-1",
+        status: "PLAYING",
+        steamPlaytimeMinutes: null,
+      },
+    });
+    tx.gameEntry.findUniqueOrThrow.mockResolvedValue({ playtimeMinutes: 20 });
+
+    await service.delete("user-1", "session-1");
+
+    expect(tx.gameEntry.update.mock.calls[0]?.[0].data.playtimeMinutes).toBe(0);
   });
 });

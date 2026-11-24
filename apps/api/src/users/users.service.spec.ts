@@ -517,15 +517,15 @@ describe("UsersService — uploadAvatar", () => {
 
     const { data } = (prisma.user.update as Mock).mock.calls[0][0];
     // Stored as the re-encoder's own output, never the uploaded bytes.
-    expect(data.avatarMimeType).toBe("image/webp");
-    expect(Buffer.from(data.avatar).equals(PNG_1X1)).toBe(false);
+    const stored = data.avatarImage.upsert.create;
+    expect(stored.mimeType).toBe("image/webp");
+    expect(Buffer.from(stored.data).equals(PNG_1X1)).toBe(false);
     expect(dto.avatarUrl).toContain(`/users/${userId}/avatar`);
   });
 
   it("pushes onboarding-updated once the profile is complete (avatar set, bio already present)", async () => {
     (prisma.user.update as Mock).mockResolvedValueOnce({
       ...updatedUser(),
-      avatar: PNG_1X1,
       bio: "Ciné, jeux, romans noirs.",
     });
 
@@ -543,7 +543,6 @@ describe("UsersService — uploadAvatar", () => {
   it("pushes nothing when the avatar is set but bio is still empty", async () => {
     (prisma.user.update as Mock).mockResolvedValueOnce({
       ...updatedUser(),
-      avatar: PNG_1X1,
       bio: null,
     });
 

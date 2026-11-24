@@ -1,8 +1,8 @@
 import type {
   CommentDto,
-  CommentEmote,
   CommentTargetType,
   CreateCommentDto,
+  Emote,
   PagedResult,
   ReportCategory,
   ReportMotif,
@@ -59,10 +59,7 @@ export const updateComment = (id: string, body: UpdateCommentDto) =>
 export const deleteComment = (id: string): Promise<void> =>
   typedRequest("/comments/{id}", { method: "DELETE", params: { id } });
 
-export const reactToComment = (
-  id: string,
-  emote: CommentEmote,
-): Promise<void> =>
+export const reactToComment = (id: string, emote: Emote): Promise<void> =>
   typedRequest("/comments/{id}/react", {
     method: "POST",
     params: { id },

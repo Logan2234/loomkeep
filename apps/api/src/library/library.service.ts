@@ -82,7 +82,12 @@ import { compareTitles, timeMs } from "../common/sort.util";
 import { EventsGateway } from "../events/events.gateway";
 import { AchievementService } from "../gamification/achievements/achievement.service";
 
-import { loanFields, loanUpdate, loanWhere } from "../common/entry-loan.util";
+import {
+  loanFields,
+  loanUpdate,
+  loanWhere,
+  ownershipSourceUpdate,
+} from "../common/entry-loan.util";
 import { retryAfterUniqueRace } from "../common/prisma-error.util";
 import { ACHIEVEMENT_KEYS_BY_XP_REASON } from "../gamification/achievements/triggers";
 import {
@@ -824,7 +829,7 @@ export class LibraryService {
             ? undefined
             : toDateOrNull(dto.finishedAt),
         ownershipStatus: dto.ownershipStatus,
-        ownershipSource: dto.ownershipSource,
+        ownershipSource: ownershipSourceUpdate(owned.ownershipStatus, dto),
         ...loanUpdate(owned, dto),
         episodeAlertsMuted: dto.episodeAlertsMuted,
         rewatchStartedAt: await this.rewatchStartedAtFor(

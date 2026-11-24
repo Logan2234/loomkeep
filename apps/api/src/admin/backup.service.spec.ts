@@ -152,7 +152,7 @@ describe("BackupService file consistency", () => {
       "-----BEGIN AGE ENCRYPTED FILE-----",
     );
     (prisma.backupFile.create as Mock).mockImplementation(
-      ({ data }: { data: { filename: string; sizeBytes: number } }) => ({
+      ({ data }: { data: { filename: string; sizeBytes: bigint } }) => ({
         id: "b1",
         ...data,
         createdAt: new Date(),
@@ -207,7 +207,7 @@ describe("BackupService file consistency", () => {
       {
         id: "missing-1",
         filename: "loomkeep-2026-09-22-12-00-00.sql.age",
-        sizeBytes: 10,
+        sizeBytes: 10n,
         createdAt: new Date("2026-09-22T12:00:00Z"),
       },
     ]);
@@ -228,7 +228,7 @@ describe("BackupService file consistency", () => {
     const row = {
       id: "missing-1",
       filename: "loomkeep-2026-09-22-12-00-00.sql.age",
-      sizeBytes: 10,
+      sizeBytes: 10n,
       createdAt: new Date("2026-09-22T12:00:00Z"),
     };
     (prisma.backupFile.findMany as Mock).mockResolvedValueOnce([row]);

@@ -1,4 +1,8 @@
-import { loanFields, loanUpdate } from "./entry-loan.util";
+import {
+  loanFields,
+  loanUpdate,
+  ownershipSourceUpdate,
+} from "./entry-loan.util";
 
 const PHYSICAL = { ownershipStatus: "PHYSICAL", lentOut: false };
 
@@ -80,5 +84,35 @@ describe("loanFields", () => {
         loanSince: new Date("2026-03-08"),
       }),
     ).toEqual({ lentOut: true, loanPerson: "Julie", loanSince: "2026-03-08" });
+  });
+});
+
+describe("ownershipSourceUpdate", () => {
+  it("writes the requested source on a status that carries one", () => {
+    expect(
+      ownershipSourceUpdate("NONE", {
+        ownershipStatus: "STREAMING",
+        ownershipSource: "Netflix",
+      }),
+    ).toBe("Netflix");
+    expect(ownershipSourceUpdate("DIGITAL", { ownershipSource: "Steam" })).toBe(
+      "Steam",
+    );
+  });
+
+  it("leaves the source alone when the update touches neither", () => {
+    expect(ownershipSourceUpdate("DIGITAL", {})).toBeUndefined();
+  });
+
+  it("clears the source once the status no longer carries one", () => {
+    expect(
+      ownershipSourceUpdate("STREAMING", { ownershipStatus: "NONE" }),
+    ).toBeNull();
+    expect(
+      ownershipSourceUpdate("DIGITAL", {
+        ownershipStatus: "BORROWED",
+        ownershipSource: "Kindle",
+      }),
+    ).toBeNull();
   });
 });

@@ -8,11 +8,11 @@ import {
   XpReason,
   type AdminUserCommentDto,
   type CommentDto,
-  type CommentEmote,
   type CommentMentionDto,
   type CommentMentionInputDto,
   type CommentReactionSummaryDto,
   type CommentTargetType,
+  type Emote,
   type PagedResult,
 } from "@loomkeep/shared";
 import { HttpStatus, Injectable } from "@nestjs/common";
@@ -666,11 +666,7 @@ export class CommentService {
   }
 
   /** Upserts the viewer's reaction on a comment (a 2nd emote replaces the 1st). */
-  async react(
-    userId: string,
-    commentId: string,
-    emote: CommentEmote,
-  ): Promise<void> {
+  async react(userId: string, commentId: string, emote: Emote): Promise<void> {
     const comment = await this.prisma.comment.findUnique({
       where: { id: commentId },
       select: {
@@ -883,9 +879,7 @@ export class CommentService {
   private async loadReactions(
     viewerId: string,
     commentIds: string[],
-  ): Promise<
-    [Map<string, CommentReactionSummaryDto[]>, Map<string, CommentEmote>]
-  > {
+  ): Promise<[Map<string, CommentReactionSummaryDto[]>, Map<string, Emote>]> {
     if (commentIds.length === 0) return [new Map(), new Map()];
 
     const rows = await this.prisma.commentReaction.findMany({
@@ -893,8 +887,8 @@ export class CommentService {
       select: { commentId: true, userId: true, emote: true },
     });
 
-    const counts = new Map<string, Map<CommentEmote, number>>();
-    const mine = new Map<string, CommentEmote>();
+    const counts = new Map<string, Map<Emote, number>>();
+    const mine = new Map<string, Emote>();
 
     for (const r of rows) {
       if (r.userId === viewerId) mine.set(r.commentId, r.emote);
@@ -918,7 +912,7 @@ export class CommentService {
   private async toDto(
     row: CommentRow,
     reactionMap: Map<string, CommentReactionSummaryDto[]>,
-    myReactionMap: Map<string, CommentEmote>,
+    myReactionMap: Map<string, Emote>,
     viewerId: string,
     xpMap: Map<string, number>,
     hideProgressionByUser: Map<string, boolean>,

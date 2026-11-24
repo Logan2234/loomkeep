@@ -164,12 +164,12 @@ export class UsersService {
   async getAvatar(
     id: string,
   ): Promise<{ avatar: Buffer; avatarMimeType: string }> {
-    const user = await this.prisma.user.findUnique({
-      where: { id },
-      select: { avatar: true, avatarMimeType: true },
+    const avatar = await this.prisma.userAvatar.findUnique({
+      where: { userId: id },
+      select: { data: true, mimeType: true },
     });
 
-    if (!user?.avatar || !user.avatarMimeType) {
+    if (!avatar) {
       throw new AppException(
         HttpStatus.NOT_FOUND,
         ErrorCode.UserAvatarNotFound,
@@ -177,8 +177,8 @@ export class UsersService {
     }
 
     return {
-      avatar: Buffer.from(user.avatar),
-      avatarMimeType: user.avatarMimeType,
+      avatar: Buffer.from(avatar.data),
+      avatarMimeType: avatar.mimeType,
     };
   }
 
@@ -221,9 +221,13 @@ export class UsersService {
     const user = await this.prisma.user.update({
       where: { id: userId },
       data: {
-        avatar: encoded,
-        avatarMimeType: STORED_AVATAR_MIME_TYPE,
         avatarUpdatedAt: new Date(),
+        avatarImage: {
+          upsert: {
+            create: { data: encoded, mimeType: STORED_AVATAR_MIME_TYPE },
+            update: { data: encoded, mimeType: STORED_AVATAR_MIME_TYPE },
+          },
+        },
       },
     });
     await this.maybeAwardProfileCompleted(userId, user);
@@ -231,10 +235,13 @@ export class UsersService {
   }
 
   async deleteAvatar(userId: string): Promise<UserDto> {
-    const user = await this.prisma.user.update({
-      where: { id: userId },
-      data: { avatar: null, avatarMimeType: null, avatarUpdatedAt: null },
-    });
+    const [, user] = await this.prisma.$transaction([
+      this.prisma.userAvatar.deleteMany({ where: { userId } }),
+      this.prisma.user.update({
+        where: { id: userId },
+        data: { avatarUpdatedAt: null },
+      }),
+    ]);
     return toUserDto(user);
   }
 
@@ -499,9 +506,9 @@ export class UsersService {
    */
   private async maybeAwardProfileCompleted(
     userId: string,
-    user: Pick<User, "avatar" | "bio">,
+    user: Pick<User, "avatarUpdatedAt" | "bio">,
   ): Promise<void> {
-    if (user.avatar && user.bio?.trim()) {
+    if (user.avatarUpdatedAt && user.bio?.trim()) {
       await this.xp.award(userId, XpReason.PROFILE_COMPLETED, userId);
       // complete_profile is one of the onboarding checklist's steps
       // (OnboardingService) — this method's own condition is exactly that

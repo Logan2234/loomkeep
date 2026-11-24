@@ -46,7 +46,12 @@ import {
   searchTerm,
   titleContains,
 } from "../common/entry-lifecycle.util";
-import { loanFields, loanUpdate, loanWhere } from "../common/entry-loan.util";
+import {
+  loanFields,
+  loanUpdate,
+  loanWhere,
+  ownershipSourceUpdate,
+} from "../common/entry-loan.util";
 import { canonicalExternalId } from "../common/external-id.util";
 import { retryAfterUniqueRace } from "../common/prisma-error.util";
 import { compareTitles, timeMs } from "../common/sort.util";
@@ -445,7 +450,7 @@ export class MusicLibraryService {
               : undefined
             : toDateOrNull(dto.finishedAt),
         ownershipStatus: dto.ownershipStatus,
-        ownershipSource: dto.ownershipSource,
+        ownershipSource: ownershipSourceUpdate(before.ownershipStatus, dto),
         ...loanUpdate(before, dto),
       },
       include: ENTRY_INCLUDE,

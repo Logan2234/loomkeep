@@ -70,6 +70,7 @@ function makeController(
       findMany: vi.fn().mockResolvedValue([]),
       groupBy: vi.fn().mockResolvedValue([]),
     },
+    userAvatar: { deleteMany: vi.fn() },
     user: {
       findMany: vi.fn().mockResolvedValue([]),
       update: vi.fn().mockResolvedValue({}),
@@ -427,10 +428,13 @@ describe("AdminReportsController.takeProfileMeasures", () => {
     expect(prisma.user.update).toHaveBeenCalledWith({
       where: { id: "u1" },
       data: expect.objectContaining({
-        avatar: null,
+        avatarUpdatedAt: null,
         bio: null,
         suspendedUntil: new Date(until),
       }),
+    });
+    expect(prisma.userAvatar.deleteMany).toHaveBeenCalledWith({
+      where: { userId: "u1" },
     });
     const [, notices] = (
       moderationDecisions.recordManyForReportInTransaction as Mock

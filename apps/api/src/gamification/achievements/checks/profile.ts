@@ -52,9 +52,9 @@ export async function checkProfileComplete(
 ): Promise<AchievementCheckResult> {
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { avatar: true, bio: true },
+    select: { avatarUpdatedAt: true, bio: true },
   });
-  const unlocked = !!user?.avatar && !!user.bio?.trim();
+  const unlocked = !!user?.avatarUpdatedAt && !!user.bio?.trim();
   return { unlocked };
 }
 

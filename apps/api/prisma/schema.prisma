@@ -229,10 +229,10 @@ enum CommentTargetType {
   MUSIC
 }
 
-// Fixed reaction set for comments (backlog: a full emoji picker). Display
-// glyphs live in web code (COMMENT_EMOTE_DISPLAY) — this enum stores the
-// identifier, not the glyph.
-enum CommentEmote {
+// Fixed reaction set for comments and messages (backlog: a full emoji
+// picker). Display glyphs live in web code (COMMENT_EMOTE_DISPLAY) — this
+// enum stores the identifier, not the glyph.
+enum Emote {
   LIKE
   LOVE
   LAUGH
@@ -280,10 +280,12 @@ enum ReportCategory {
   OTHER
 }
 
-// Precise reason within a ReportCategory. The category->motif mapping is
-// enforced in ReportService.create, not here — Prisma has no cross-column
-// check constraint for this. OTHER has no motif (null): the free-text
-// `reason` carries the detail instead.
+// Precise reason within a ReportCategory. The category->motif mapping
+// (REPORT_CATEGORY_MOTIFS) is checked in ReportService.create and enforced by
+// the Report_motif_check / ModerationDecision_reasonMotif_check constraints,
+// written in SQL in the migration (Prisma can't declare them): a new motif
+// updates both. OTHER has no motif (null): the free-text `reason` carries
+// the detail instead.
 enum ReportMotif {
   SPAM_PROMOTIONAL
   SPAM_SUSPICIOUS_LINK
@@ -569,15 +571,15 @@ model User {
   // IANA timezone (e.g. "Europe/Paris"), used to time the digest at a local
   // hour. Auto-detected client-side at onboarding, editable afterwards.
   timezone                      String                 @default("Europe/Paris")
-  // Opt-in to the release newsletter (sent automatically when a changelog
-  // entry is published on Quackback — see NewsletterService) — separate
-  // from notifyEmail, which is scoped to "new episode" alerts, not marketing.
   // Per-alert channel choices that differ from the default, keyed like
   // ALERTS in packages/shared/src/alerts.ts: { COMMENT_REPLY: { push: true } }.
   alertPrefs                    Json                   @default("{}")
   // Last time the bell or the notifications page was opened: what arrived
   // after it counts toward the badge, the rest is seen but maybe unread.
   notificationsSeenAt           DateTime?
+  // Opt-in to the release newsletter (sent automatically when a changelog
+  // entry is published on Quackback — see NewsletterService) — separate
+  // from notifyEmail, which is scoped to "new episode" alerts, not marketing.
   notifyNewsletter              Boolean                @default(false)
   // Proof-of-consent timestamp (GDPR art. 7(1)): set the moment
   // notifyNewsletter flips false → true, left untouched afterwards — including
@@ -595,12 +597,9 @@ model User {
   emailVerified                 Boolean                @default(false)
   // Free-form public bio shown on the social profile (P4). Null until set.
   bio                           String?
-  // Profile picture, stored in-row (not on disk) so it rides along with
-  // pg_dump backups like everything else. avatarMimeType/avatarUpdatedAt are
-  // null together with avatar; avatarUpdatedAt also cache-busts the public
-  // GET /users/:id/avatar URL.
-  avatar                        Bytes?
-  avatarMimeType                String?
+  // When the profile picture (UserAvatar) was last set: null exactly when
+  // there is none. Kept here, not on UserAvatar, because every user summary
+  // reads it to build (and cache-bust) the GET /users/:id/avatar URL.
   avatarUpdatedAt               DateTime?
   // Social (P4): how reachable this profile is. Default PRIVATE — the safe
   // default (nothing exposed to the public without an accepted follow). The
@@ -635,10 +634,6 @@ model User {
   watchProviderIds              Int[]                  @default([])
   // ListenService values, put first on an album's page.
   listenServices                String[]               @default([])
-  // Ordered ids of the mobile bottom-bar shortcuts (see web navigation.ts,
-  // `MobileNavId`). Free-form strings, not a Prisma enum: the set is a web-UI
-  // concern (includes the "menu" launcher and non-domain routes), gated at
-  // render time. Default mirrors DEFAULT_BOTTOM_SHORTCUTS.
   // The home page's widget grid (shared HomeLayoutDto). Null means the
   // default grid, which the web builds from the enabled domains — stored
   // only once the user edits the page, so the default keeps evolving.
@@ -781,11 +776,24 @@ model User {
   score                      UserScore?
   achievements               UserAchievement[]
   sessionTimer               SessionTimer?
+  avatarImage                UserAvatar?
   invitation                 Invitation?            @relation("InvitedVia", fields: [invitationId], references: [id], onDelete: SetNull)
   invitationsCreated         Invitation[]           @relation("InvitationsCreated")
 
   @@index([lastActiveAt])
   @@index([invitationId])
+}
+
+// The profile picture's bytes, in the database (not on disk) so they ride
+// along with pg_dump backups like everything else. Its own table so the
+// image never travels with a User row read without a `select`. Created and
+// deleted together with User.avatarUpdatedAt.
+model UserAvatar {
+  userId   String @id
+  data     Bytes
+  mimeType String
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 // Social (P4): per-user, per-domain, per-facet audience. One row overrides the
@@ -853,6 +861,8 @@ model Review {
   userId     String?
   targetType ReviewTargetType
   targetId   String
+  // 0–10 in half points (RATING_STEP), enforced by Review_rating_check —
+  // exact in a float, hence no Decimal.
   rating     Float
   text       String?
   visibility ReviewVisibility @default(FRIENDS)
@@ -945,11 +955,11 @@ model Comment {
 // One active reaction per (user, comment) — posting a new emote replaces it
 // (upsert on the unique pair), not a multi-emote-per-user model.
 model CommentReaction {
-  id        String       @id @default(cuid())
+  id        String   @id @default(cuid())
   commentId String
   userId    String
-  emote     CommentEmote
-  createdAt DateTime     @default(now())
+  emote     Emote
+  createdAt DateTime @default(now())
 
   comment Comment @relation(fields: [commentId], references: [id], onDelete: Cascade)
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -960,9 +970,6 @@ model CommentReaction {
   @@index([userId])
 }
 
-// An explicit recipient selected from the discussion's mention picker. A raw
-// `@handle` in comment text intentionally creates no row and remains plain
-// text: only a deliberate picker choice may link or notify a person.
 // Up to when a member read a work's discussion: the unread count of the
 // "Œuvres" tab in Messages. Writing in a discussion reads it too.
 model CommentThreadRead {
@@ -984,6 +991,9 @@ model CommentThreadRead {
   @@id([userId, targetType, targetId])
 }
 
+// An explicit recipient selected from the discussion's mention picker. A raw
+// `@handle` in comment text intentionally creates no row and remains plain
+// text: only a deliberate picker choice may link or notify a person.
 model CommentMention {
   commentId String
   userId    String
@@ -1086,11 +1096,11 @@ model Message {
 }
 
 model MessageReaction {
-  id        String       @id @default(cuid())
+  id        String   @id @default(cuid())
   messageId String
   userId    String
-  emote     CommentEmote
-  createdAt DateTime     @default(now())
+  emote     Emote
+  createdAt DateTime @default(now())
 
   message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -1102,8 +1112,8 @@ model MessageReaction {
 }
 
 // A work, season or episode attached to a message (a recommendation card).
-// A work card in a message. The card is a snapshot of the work as it was sent:
-// the message reads the same later, and showing it costs no catalogue lookup.
+// The card is a snapshot of the work as it was sent: the message reads the
+// same later, and showing it costs no catalogue lookup.
 model MessageEmbed {
   id         String           @id @default(cuid())
   messageId  String
@@ -1384,18 +1394,17 @@ model PushSubscription {
   @@index([userId])
 }
 
-// In-app notifications. Payload is denormalised so a notification survives
-// catalogue-cache refreshes. Generic in-app notification. Kinds ("NEW_EPISODE",
-// "FOLLOW", "FOLLOW_REQUEST", "FOLLOW_ACCEPTED"…) share one shape: a title, an
-// optional body/link, and a `data` bag for kind-specific display extras
-// (episode airDate, the social actor's username/avatar seed…). A string `type`
-// means new kinds need no migration. There's no "read" state: reading a
-// notification (the notification bell) deletes its row, so a row's mere
-// existence means unread. NEW_EPISODE rows are kept around only as an
-// idempotency record for the hourly scan (push/email, never shown in the
-// bell) and FOLLOW_REQUEST rows are superseded by the live `Follow` table
-// (the bell shows pending requests from there, with accept/reject) — both
-// are excluded from the bell feed.
+// Generic in-app notification. The payload is denormalised so it survives
+// catalogue-cache refreshes. Kinds ("NEW_EPISODE", "FOLLOW",
+// "FOLLOW_REQUEST", "FOLLOW_ACCEPTED"…) share one shape: a title, an optional
+// body/link, and a `data` bag for kind-specific display extras (episode
+// airDate, the social actor's username/avatar seed…). A string `type` means
+// new kinds need no migration. Reading one sets `readAt`; read rows stay in
+// the history for 90 days, then are purged. NEW_EPISODE rows are kept only
+// as an idempotency record for the hourly scan (push/email, never shown in
+// the bell) and FOLLOW_REQUEST rows are superseded by the live `Follow`
+// table (the bell shows pending requests from there, with accept/reject) —
+// both are excluded from the bell feed.
 model Notification {
   id              String    @id @default(cuid())
   userId          String
@@ -1806,7 +1815,8 @@ model ImportRun {
 model BackupFile {
   id        String   @id @default(cuid())
   filename  String
-  sizeBytes Int
+  // BigInt: Int tops out at 2 GiB, which a dump reaches.
+  sizeBytes BigInt
   createdAt DateTime @default(now())
 
   @@index([createdAt])
@@ -2254,15 +2264,18 @@ model LibraryEntry {
   favorite               Boolean              @default(false)
   startedAt              DateTime?
   finishedAt             DateTime?
+  // Source and loan follow the rules of entry-loan.util.ts, enforced by the
+  // *_ownershipSource_check / *_loan_check constraints on all four entry
+  // tables (written in SQL in the migration).
   ownershipStatus        MediaOwnershipStatus @default(NONE)
   // Free-form detail for DIGITAL/STREAMING (e.g. "Netflix"); null otherwise.
   ownershipSource        String?
   // A PHYSICAL copy currently at someone else's place.
-  lentOut                Boolean   @default(false)
+  lentOut                Boolean              @default(false)
   // Who it was borrowed from (BORROWED) or lent to (lentOut), and since
   // when: private notes, nobody is told.
   loanPerson             String?
-  loanSince              DateTime? @db.Date
+  loanSince              DateTime?            @db.Date
   // Series/anime only: skip this show in the new-episode push/email digest.
   // It stays in the release calendar — only the alerts are silenced.
   episodeAlertsMuted     Boolean              @default(false)
@@ -2397,11 +2410,11 @@ model GameEntry {
   // Free-form detail for DIGITAL/SUBSCRIPTION (e.g. "Steam"); null otherwise.
   ownershipSource        String?
   // A PHYSICAL copy currently at someone else's place.
-  lentOut                Boolean   @default(false)
+  lentOut                Boolean             @default(false)
   // Who it was borrowed from (BORROWED) or lent to (lentOut), and since
   // when: private notes, nobody is told.
   loanPerson             String?
-  loanSince              DateTime? @db.Date
+  loanSince              DateTime?           @db.Date
   // The platform it's played on, one of GameItem.platforms (IGDB's names).
   platform               String?
   // Set when the user asked to be told of the release; a release dated
@@ -2535,11 +2548,11 @@ model BookEntry {
   // Free-form detail for DIGITAL/AUDIO (e.g. "Kindle"); null otherwise.
   ownershipSource       String?
   // A PHYSICAL copy currently at someone else's place.
-  lentOut               Boolean   @default(false)
+  lentOut               Boolean             @default(false)
   // Who it was borrowed from (BORROWED) or lent to (lentOut), and since
   // when: private notes, nobody is told.
   loanPerson            String?
-  loanSince             DateTime? @db.Date
+  loanSince             DateTime?           @db.Date
   createdAt             DateTime            @default(now())
   updatedAt             DateTime            @updatedAt
 
@@ -2690,11 +2703,11 @@ model MusicEntry {
   // Free-form detail for DIGITAL/STREAMING (e.g. "Spotify"); null otherwise.
   ownershipSource String?
   // A PHYSICAL copy currently at someone else's place.
-  lentOut         Boolean   @default(false)
+  lentOut         Boolean              @default(false)
   // Who it was borrowed from (BORROWED) or lent to (lentOut), and since
   // when: private notes, nobody is told.
   loanPerson      String?
-  loanSince       DateTime? @db.Date
+  loanSince       DateTime?            @db.Date
   createdAt       DateTime             @default(now())
   updatedAt       DateTime             @updatedAt
 

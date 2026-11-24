@@ -1,10 +1,7 @@
-import {
-  CommentEmote,
-  type CommentEmote as CommentEmoteT,
-} from "@loomkeep/shared";
+import { Emote, type Emote as CommentEmoteT } from "@loomkeep/shared";
 import { IsIn } from "class-validator";
 
 export class ReactCommentBody {
-  @IsIn(Object.values(CommentEmote))
+  @IsIn(Object.values(Emote))
   emote!: CommentEmoteT;
 }

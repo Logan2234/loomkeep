@@ -1,7 +1,7 @@
 import type {
-  CommentEmote,
   CommentTargetType,
   Domain,
+  Emote,
   ListKind,
   ListVisibility,
   MediaType,
@@ -146,7 +146,7 @@ export interface MessageDto {
   /** Taken down by moderation rather than by its author. */
   deletedByAdmin: boolean;
   reactions: CommentReactionSummaryDto[];
-  myReaction: CommentEmote | null;
+  myReaction: Emote | null;
   /** The attached work first, then the work links found in the text. */
   works: MessageWorkDto[];
   /** Attached with `/review`. */
@@ -393,7 +393,7 @@ export interface RecommendWorkResultDto {
 }
 
 export interface ReactMessageRequestDto {
-  emote: CommentEmote;
+  emote: Emote;
 }
 
 export interface MuteConversationRequestDto {

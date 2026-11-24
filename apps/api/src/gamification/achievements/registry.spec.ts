@@ -664,7 +664,7 @@ describe("checkProfileComplete", () => {
       user: {
         findUnique: vi
           .fn()
-          .mockResolvedValue({ avatar: Buffer.from("x"), bio: "Hello" }),
+          .mockResolvedValue({ avatarUpdatedAt: new Date(), bio: "Hello" }),
       },
     } as unknown as PrismaService;
     await expect(checkProfileComplete(prisma, "user-1")).resolves.toEqual({
@@ -677,7 +677,7 @@ describe("checkProfileComplete", () => {
       user: {
         findUnique: vi
           .fn()
-          .mockResolvedValue({ avatar: Buffer.from("x"), bio: "   " }),
+          .mockResolvedValue({ avatarUpdatedAt: new Date(), bio: "   " }),
       },
     } as unknown as PrismaService;
     await expect(checkProfileComplete(prisma, "user-1")).resolves.toEqual({
