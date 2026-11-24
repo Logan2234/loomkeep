@@ -71,6 +71,7 @@ services:
       FCM_SERVICE_ACCOUNT_BASE64: ${FCM_SERVICE_ACCOUNT_BASE64:-}
       SMTP_HOST: ${SMTP_HOST:-}
       SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_REQUIRE_TLS: ${SMTP_REQUIRE_TLS:-}
       SMTP_USER: ${SMTP_USER:-}
       SMTP_PASS: ${SMTP_PASS:-}
       # Empty = noreply@<WEB_ORIGIN host>, and no Reply-To/support link to
