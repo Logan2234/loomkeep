@@ -887,7 +887,7 @@ export class ListService {
       title: owner.displayName,
       body: copy.listEditorAdded(list.title),
       url: `/app/lists/${id}`,
-      dedupeKey: `list-member:${id}:${target.id}`,
+      dedupeKey: memberNotificationKey(id, target.id),
       data: {
         actorUsername: owner.username,
         actorDisplayName: owner.displayName,
@@ -924,6 +924,14 @@ export class ListService {
     // A mute belongs to the membership: someone re-added later starts fresh.
     await this.prisma.listNotificationMute.deleteMany({
       where: { listId: id, userId: memberUserId },
+    });
+    // So does the "added as editor" notification: left in place, its dedupe
+    // key would swallow the one a later re-invitation sends.
+    await this.prisma.notification.deleteMany({
+      where: {
+        userId: memberUserId,
+        dedupeKey: memberNotificationKey(id, memberUserId),
+      },
     });
     this.events.emitToList(id, "list-updated");
     await this.events.evictFromList(id, memberUserId);
@@ -1290,3 +1298,6 @@ export class ListService {
       : `/${domain}/${sourceId}`;
   }
 }
+
+const memberNotificationKey = (listId: string, userId: string) =>
+  `list-member:${listId}:${userId}`;

@@ -906,6 +906,9 @@ describe("ListService member management — owner only", () => {
       listNotificationMute: {
         deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
       },
+      notification: {
+        deleteMany: vi.fn().mockResolvedValue({ count: 1 }),
+      },
     } as unknown as PrismaService;
     const notifications = fakeNotifications();
     const events = stubEvents();
@@ -985,6 +988,16 @@ describe("ListService member management — owner only", () => {
     await svc.removeMember("friend", "l1", "friend");
     expect(prisma.listNotificationMute.deleteMany).toHaveBeenCalledWith({
       where: { listId: "l1", userId: "friend" },
+    });
+  });
+
+  // The "added as editor" notification stayed, and its dedupe key swallowed
+  // the notification of a later re-invitation (audit 2026-11-17, BUG-64).
+  it("forgets the editor's invitation notification, so a re-add notifies again", async () => {
+    const { svc, prisma } = make("owner");
+    await svc.removeMember("owner", "l1", "friend");
+    expect(prisma.notification.deleteMany).toHaveBeenCalledWith({
+      where: { userId: "friend", dedupeKey: "list-member:l1:friend" },
     });
   });
 
