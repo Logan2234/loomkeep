@@ -195,7 +195,16 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
             get label() {
               return m.settings_subscription_links_title();
             },
-            keywords: ["ics", "calendrier", "calendar", "atom", "rss", "flux"],
+            keywords: [
+              "ics",
+              "calendrier",
+              "calendar",
+              "atom",
+              "rss",
+              "flux",
+              "radarr",
+              "sonarr",
+            ],
           },
         ],
       },

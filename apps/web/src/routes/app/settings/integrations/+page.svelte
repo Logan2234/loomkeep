@@ -17,7 +17,10 @@
   import Tooltip from "#lib/components/Tooltip.svelte";
   import { appConfig } from "#lib/config.svelte.js";
   import { DOCS_URL } from "#lib/constants/external-links.js";
+  import ArrFeedModal from "#lib/ee/arr/ArrFeedModal.svelte";
   import CalendarSubscribeModal from "#lib/ee/calendar/CalendarSubscribeModal.svelte";
+  import { isFeatureNew } from "#lib/feature-badges.js";
+  import NewBadge from "#lib/components/NewBadge.svelte";
   import { useEeLock } from "#lib/ee/license.svelte.js";
   import ActivityFeedSubscribeModal from "#lib/ee/social/ActivityFeedSubscribeModal.svelte";
   import { m } from "#lib/paraglide/messages.js";
@@ -46,7 +49,7 @@
   let recipe = $state<Recipe | null>(null);
   let revoking = $state<ApiKeyDto | null>(null);
   let revokingAll = $state(false);
-  let subscription = $state<"calendar" | "activity" | null>(null);
+  let subscription = $state<"calendar" | "activity" | "arr" | null>(null);
 
   const revokeMut = createApiMutation(() => ({
     mutate: (id: string) => revokeApiKey(id),
@@ -80,6 +83,13 @@
           },
         ]
       : []),
+    {
+      id: "arr" as const,
+      icon: "download" as IconName,
+      label: m.settings_arr_row(),
+      formats: m.settings_arr_row_formats(),
+      isNew: isFeatureNew("arr-feeds"),
+    },
   ]);
 </script>
 
@@ -201,7 +211,10 @@
             name={link.icon}
             class="text-dim hidden h-5 w-5 shrink-0 sm:block" />
           <div class="min-w-0 flex-1">
-            <p class="font-semibold">{link.label}</p>
+            <p class="flex items-center gap-2 font-semibold">
+              {link.label}
+              {#if "isNew" in link && link.isNew}<NewBadge />{/if}
+            </p>
             <p class="text-dim text-sm">{link.formats}</p>
           </div>
           {#snippet manage()}
@@ -268,4 +281,6 @@
   <CalendarSubscribeModal onclose={() => (subscription = null)} />
 {:else if subscription === "activity"}
   <ActivityFeedSubscribeModal onclose={() => (subscription = null)} />
+{:else if subscription === "arr"}
+  <ArrFeedModal onclose={() => (subscription = null)} />
 {/if}

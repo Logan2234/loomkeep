@@ -47,6 +47,8 @@
   import ListItemNoteModal from "./components/ListItemNoteModal.svelte";
   import NewBadge from "#lib/components/NewBadge.svelte";
   import { isFeatureNew } from "#lib/feature-badges.js";
+  import ArrFeedModal from "#lib/ee/arr/ArrFeedModal.svelte";
+  import { useEeLock } from "#lib/ee/license.svelte.js";
   import { dndzone } from "svelte-dnd-action";
 
   const id = $derived(page.params.id ?? "");
@@ -142,6 +144,8 @@
   const role = $derived(list?.viewerRole ?? "VIEWER");
   const canEditList = $derived(role !== "VIEWER");
   const isOwner = $derived(role === "OWNER");
+  const eeLock = useEeLock();
+  let sendingToArr = $state(false);
   const isModerator = $derived(role === "MODERATOR");
   // Moderation removes what a list shouldn't hold; it never adds to it.
   const canAdd = $derived(role === "OWNER" || role === "EDITOR");
@@ -483,6 +487,36 @@
             {m.list_leave()}
           </button>
         {/if}
+        {#if isOwner && !eeLock.locked}
+          <Dropdown placement="bottom-end" role="menu" class="min-w-52">
+            {#snippet trigger({ open, toggle, onkeydown })}
+              <button
+                type="button"
+                class="btn btn-ghost px-3"
+                aria-label={m.common_more_actions()}
+                title={m.common_more_actions()}
+                aria-haspopup="menu"
+                aria-expanded={open}
+                {onkeydown}
+                onclick={toggle}>
+                <Icon name="dots-horizontal" class="h-4 w-4" />
+              </button>
+            {/snippet}
+            {#snippet children({ close })}
+              <button
+                role="menuitem"
+                class="menu-item"
+                onclick={() => {
+                  close();
+                  sendingToArr = true;
+                }}>
+                <Icon name="download" class="h-4 w-4" />
+                {m.settings_arr_send()}
+                {#if isFeatureNew("arr-feeds")}<NewBadge />{/if}
+              </button>
+            {/snippet}
+          </Dropdown>
+        {/if}
         {#if role === "VIEWER" && appConfig.socialEnabled}
           <Dropdown placement="bottom-end" role="menu" class="min-w-44">
             {#snippet trigger({ open, toggle, onkeydown })}
@@ -729,6 +763,12 @@
       </div>
     </div>
   </Drawer>
+{/if}
+
+{#if sendingToArr && list}
+  <ArrFeedModal
+    list={{ id: list.id, title: list.title }}
+    onclose={() => (sendingToArr = false)} />
 {/if}
 
 {#if notingItem && list}

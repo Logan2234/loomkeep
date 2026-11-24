@@ -1,6 +1,9 @@
 const NEW_BADGE_DAYS = 21;
 
 const SHIPPED = {
+  "invite-link": "2026-11-25",
+  "country-map": "2026-11-25",
+  "arr-feeds": "2026-11-25",
   loans: "2026-11-24",
   "game-languages": "2026-11-24",
   "upgrade-notes": "2026-11-24",

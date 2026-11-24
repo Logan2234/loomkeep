@@ -14,6 +14,8 @@
     type WatchStaleness,
     type MediaType,
   } from "@loomkeep/shared";
+  import { isFeatureNew } from "#lib/feature-badges.js";
+  import NewBadge from "#lib/components/NewBadge.svelte";
   import PremiumTeaser from "../PremiumTeaser.svelte";
   import CountryMap from "./CountryMap.svelte";
   import RankBars from "./RankBars.svelte";
@@ -171,8 +173,9 @@
       <section class="panel mt-5 md:p-5">
         <div
           class="panel-head flex items-baseline justify-between gap-2 md:mb-2">
-          <h3 class="font-display text-lg font-bold">
+          <h3 class="font-display flex items-center gap-2 text-lg font-bold">
             {m.stats_video_countries()}
+            {#if isFeatureNew("country-map")}<NewBadge />{/if}
           </h3>
           <span class="timecode">
             {video.countries.length === 1
