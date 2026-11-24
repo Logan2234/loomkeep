@@ -187,12 +187,15 @@ describe("assertEntryOwnership", () => {
     ).rejects.toMatchObject({ code: ErrorCode.LibraryEntryNotFound });
   });
 
-  it("403s someone else's entry rather than tracking it for them", async () => {
+  it("404s someone else's entry, as if it didn't exist", async () => {
     await expect(
       assertEntryOwnership("user-1", () =>
         Promise.resolve({ userId: "user-2" }),
       ),
-    ).rejects.toMatchObject({ code: ErrorCode.LibraryEntryForbidden });
+    ).rejects.toMatchObject({
+      status: 404,
+      code: ErrorCode.LibraryEntryNotFound,
+    });
   });
 });
 
@@ -378,7 +381,10 @@ describe("deleteOwnedReplay", () => {
         findOwnerId: () => Promise.resolve("user-2"),
         remove,
       }),
-    ).rejects.toMatchObject({ code: ErrorCode.LibraryReplayForbidden });
+    ).rejects.toMatchObject({
+      status: 404,
+      code: ErrorCode.LibraryReplayNotFound,
+    });
     expect(remove).not.toHaveBeenCalled();
     expect(xp.revokeBySource).not.toHaveBeenCalled();
   });

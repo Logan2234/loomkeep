@@ -172,17 +172,10 @@ export class SessionTimerService {
       select: { userId: true, gameItemId: true },
     });
 
-    if (!entry) {
+    if (!entry || entry.userId !== userId) {
       throw new AppException(
         HttpStatus.NOT_FOUND,
         ErrorCode.LibraryEntryNotFound,
-      );
-    }
-
-    if (entry.userId !== userId) {
-      throw new AppException(
-        HttpStatus.FORBIDDEN,
-        ErrorCode.LibraryEntryForbidden,
       );
     }
 
@@ -195,17 +188,10 @@ export class SessionTimerService {
       select: { userId: true },
     });
 
-    if (!entry) {
+    if (!entry || entry.userId !== userId) {
       throw new AppException(
         HttpStatus.NOT_FOUND,
         ErrorCode.LibraryEntryNotFound,
-      );
-    }
-
-    if (entry.userId !== userId) {
-      throw new AppException(
-        HttpStatus.FORBIDDEN,
-        ErrorCode.LibraryEntryForbidden,
       );
     }
   }

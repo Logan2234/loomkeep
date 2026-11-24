@@ -46,7 +46,6 @@
   "apierr_library_entry_forbidden": "This item belongs to another account.",
   "apierr_library_replay_not_movie": "Only movies can have replays, series/anime rewatches are tracked per episode.",
   "apierr_library_replay_not_found": "This replay could not be found.",
-  "apierr_library_replay_forbidden": "This replay belongs to another account.",
   "apierr_library_saved_view_not_found": "This view no longer exists.",
   "apierr_library_bulk_invalid": "Pick some items and a single action to apply to them.",
   "apierr_library_saved_view_free_quota_exceeded": "A free account keeps {free} saved views. Go premium to add more.",

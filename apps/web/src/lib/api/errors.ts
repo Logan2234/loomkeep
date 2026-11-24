@@ -111,7 +111,6 @@ const MESSAGES = {
     m.apierr_library_book_edition_required(),
   [ErrorCode.LibraryReplayNotMovie]: () => m.apierr_library_replay_not_movie(),
   [ErrorCode.LibraryReplayNotFound]: () => m.apierr_library_replay_not_found(),
-  [ErrorCode.LibraryReplayForbidden]: () => m.apierr_library_replay_forbidden(),
   [ErrorCode.LibrarySavedViewNotFound]: () =>
     m.apierr_library_saved_view_not_found(),
   [ErrorCode.LibraryBulkInvalid]: () => m.apierr_library_bulk_invalid(),

@@ -46,7 +46,6 @@
   "apierr_library_entry_forbidden": "Questo elemento appartiene a un altro account.",
   "apierr_library_replay_not_movie": "Solo i film possono avere nuove visioni: per serie e anime vengono registrate episodio per episodio.",
   "apierr_library_replay_not_found": "Impossibile trovare questa nuova visione.",
-  "apierr_library_replay_forbidden": "Questa nuova visione appartiene a un altro account.",
   "apierr_library_saved_view_not_found": "Questa vista non esiste più.",
   "apierr_library_bulk_invalid": "Scegli alcuni elementi e una sola azione da applicare.",
   "apierr_library_saved_view_free_quota_exceeded": "Un account gratuito può salvare {free} viste. Passa a premium per aggiungerne altre.",
