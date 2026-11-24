@@ -1,4 +1,7 @@
 import type {
+  BookOwnershipStatus,
+  GameOwnershipStatus,
+  MusicOwnershipStatus,
   SavedViewDomain,
   SavedViewFiltersDto,
   UserDataExportDto,
@@ -7,7 +10,7 @@ import { ErrorCode, ReviewTargetType } from "@loomkeep/shared";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { toUserDto } from "../auth/auth.service";
 import { AppException } from "../common/app.exception";
-import { loanFields } from "../common/entry-loan.util";
+import { LOAN_INCLUDE, loanFields } from "../common/entry-loan.util";
 import {
   canonicalExternalId,
   toExternalIdDtos,
@@ -97,6 +100,7 @@ export class DataExportService {
         where: { userId },
         include: {
           gameItem: { include: { externalIds: true } },
+          ...LOAN_INCLUDE,
           playthroughs: { orderBy: { number: "asc" } },
           sessions: {
             orderBy: { occurredAt: "asc" },
@@ -109,6 +113,7 @@ export class DataExportService {
         where: { userId },
         include: {
           bookItem: { include: { externalIds: true } },
+          ...LOAN_INCLUDE,
           readings: { orderBy: { number: "asc" } },
           sessions: {
             orderBy: { occurredAt: "asc" },
@@ -119,7 +124,10 @@ export class DataExportService {
       }),
       this.prisma.musicEntry.findMany({
         where: { userId },
-        include: { musicItem: { include: { externalIds: true } } },
+        include: {
+          musicItem: { include: { externalIds: true } },
+          ...LOAN_INCLUDE,
+        },
         orderBy: { createdAt: "asc" },
       }),
       this.prisma.notification.findMany({
@@ -477,7 +485,7 @@ export class DataExportService {
         trackedPlaytimeMinutes: entry.trackedPlaytimeMinutes,
         steamPlaytimeMinutes: entry.steamPlaytimeMinutes,
         steamSyncedAt: entry.steamSyncedAt?.toISOString() ?? null,
-        ownershipStatus: entry.ownershipStatus,
+        ownershipStatus: entry.ownershipStatus as GameOwnershipStatus,
         ownershipSource: entry.ownershipSource,
         ...loanFields(entry),
         startedAt: entry.startedAt?.toISOString() ?? null,
@@ -519,7 +527,7 @@ export class DataExportService {
         editionKey: entry.editionKey,
         referencePageCount: entry.referencePageCount,
         trackedReadingMinutes: entry.trackedReadingMinutes,
-        ownershipStatus: entry.ownershipStatus,
+        ownershipStatus: entry.ownershipStatus as BookOwnershipStatus,
         ownershipSource: entry.ownershipSource,
         ...loanFields(entry),
         startedAt: entry.startedAt?.toISOString() ?? null,
@@ -564,7 +572,7 @@ export class DataExportService {
         rating: musicRatings.get(entry.musicItemId) ?? null,
         notes: entry.notes,
         favorite: entry.favorite,
-        ownershipStatus: entry.ownershipStatus,
+        ownershipStatus: entry.ownershipStatus as MusicOwnershipStatus,
         ownershipSource: entry.ownershipSource,
         ...loanFields(entry),
         startedAt: entry.startedAt?.toISOString() ?? null,

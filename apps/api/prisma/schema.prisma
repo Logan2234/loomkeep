@@ -399,19 +399,6 @@ enum EntryStatus {
   UP_TO_DATE
 }
 
-// How the user holds a movie/series/anime, if at all. NONE (default) means
-// unset — most entries never get this filled in. DIGITAL/STREAMING carry a
-// free-form `ownershipSource` (e.g. "Netflix", "Apple TV"); PHYSICAL may carry
-// its format as a code ("BLU_RAY", "DVD"…, translated by the web);
-// BORROWED needs none.
-enum MediaOwnershipStatus {
-  NONE
-  PHYSICAL
-  DIGITAL
-  STREAMING
-  BORROWED
-}
-
 // Source a game's catalogue data comes from. IGDB is the only one today.
 enum GameSource {
   IGDB
@@ -424,19 +411,6 @@ enum GameStatus {
   PLAYING
   COMPLETED
   DROPPED
-}
-
-// How the user holds a game, if at all. NONE (default) means unset. DIGITAL
-// carries a free-form `ownershipSource` (e.g. "Steam"), SUBSCRIPTION too (e.g.
-// "Xbox Game Pass"); PHYSICAL may carry its
-// format as a code ("PAPERBACK", "BLU_RAY"…, translated by the web);
-// BORROWED needs none.
-enum GameOwnershipStatus {
-  NONE
-  PHYSICAL
-  DIGITAL
-  SUBSCRIPTION
-  BORROWED
 }
 
 // How precisely a game's release date is known (IGDB's `date_format`).
@@ -463,16 +437,29 @@ enum BookStatus {
   DROPPED
 }
 
-// How the user holds a book, if at all. NONE (default) means unset. DIGITAL
-// carries a free-form `ownershipSource` (e.g. "Kindle"), AUDIO too (e.g.
-// "Audible"); PHYSICAL may carry its
-// format as a code ("PAPERBACK", "BLU_RAY"…, translated by the web);
-// BORROWED needs none.
-enum BookOwnershipStatus {
+// How the user holds a work, if at all, in any domain. NONE (default) means
+// unset. Each domain accepts its own subset — MEDIA and MUSIC: PHYSICAL,
+// DIGITAL, STREAMING; GAMES: PHYSICAL, DIGITAL, SUBSCRIPTION; BOOKS:
+// PHYSICAL, DIGITAL, AUDIO; all: NONE, BORROWED — checked by the DTOs (the
+// domain lists in packages/shared/src/enums.ts) and by each entry table's
+// *_ownershipStatus_check. DIGITAL/STREAMING/SUBSCRIPTION/AUDIO carry a
+// free-form `ownershipSource` ("Netflix", "Steam", "Kindle"…); PHYSICAL may
+// carry its format as a code ("BLU_RAY", "PAPERBACK"…, translated by the
+// web); a BORROWED entry's open Loan, if any, says who from.
+enum OwnershipStatus {
   NONE
   PHYSICAL
   DIGITAL
+  STREAMING
+  SUBSCRIPTION
   AUDIO
+  BORROWED
+}
+
+// Which way a Loan goes: the user's copy LENT to someone, or a copy the user
+// BORROWED from someone (the entry's ownershipStatus is then BORROWED).
+enum LoanDirection {
+  LENT
   BORROWED
 }
 
@@ -505,19 +492,6 @@ enum MusicSource {
 enum MusicStatus {
   TO_LISTEN
   LISTENED
-}
-
-// How the user holds an album, if at all. NONE (default) means unset.
-// DIGITAL/STREAMING carry a free-form `ownershipSource` (e.g. "Bandcamp",
-// "Spotify"); PHYSICAL may carry its
-// format as a code ("PAPERBACK", "BLU_RAY"…, translated by the web);
-// BORROWED needs none.
-enum MusicOwnershipStatus {
-  NONE
-  PHYSICAL
-  DIGITAL
-  STREAMING
-  BORROWED
 }
 
 model User {
@@ -2256,29 +2230,23 @@ model EpisodeTranslation {
 }
 
 model LibraryEntry {
-  id                     String               @id @default(cuid())
+  id                     String          @id @default(cuid())
   userId                 String
   mediaItemId            String
-  status                 EntryStatus          @default(PLANNED)
+  status                 EntryStatus     @default(PLANNED)
   notes                  String?
-  favorite               Boolean              @default(false)
+  favorite               Boolean         @default(false)
   startedAt              DateTime?
   finishedAt             DateTime?
-  // Source and loan follow the rules of entry-loan.util.ts, enforced by the
-  // *_ownershipSource_check / *_loan_check constraints on all four entry
+  // Source and loans follow the rules of entry-loan.util.ts; the source one
+  // is enforced by the *_ownershipSource_check constraint on all four entry
   // tables (written in SQL in the migration).
-  ownershipStatus        MediaOwnershipStatus @default(NONE)
+  ownershipStatus        OwnershipStatus @default(NONE)
   // Free-form detail for DIGITAL/STREAMING (e.g. "Netflix"); null otherwise.
   ownershipSource        String?
-  // A PHYSICAL copy currently at someone else's place.
-  lentOut                Boolean              @default(false)
-  // Who it was borrowed from (BORROWED) or lent to (lentOut), and since
-  // when: private notes, nobody is told.
-  loanPerson             String?
-  loanSince              DateTime?            @db.Date
   // Series/anime only: skip this show in the new-episode push/email digest.
   // It stays in the release calendar — only the alerts are silenced.
-  episodeAlertsMuted     Boolean              @default(false)
+  episodeAlertsMuted     Boolean         @default(false)
   // Set while the user rewatches a title they had finished: a series counts
   // only the watches since this instant for its progress, a movie goes back
   // to "to watch". Cleared once every aired episode is seen again (series)
@@ -2291,14 +2259,15 @@ model LibraryEntry {
   // EpisodeWatch (and on insert here) keep them equal to what the watches
   // say — regular episodes (season > 0) watched, last viewing of any
   // episode. See migration 20261019160000_materialized_library_progress.
-  watchedEpisodes        Int                  @default(0)
+  watchedEpisodes        Int             @default(0)
   lastWatchedAt          DateTime?
-  createdAt              DateTime             @default(now())
-  updatedAt              DateTime             @updatedAt
+  createdAt              DateTime        @default(now())
+  updatedAt              DateTime        @updatedAt
 
   user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   mediaItem MediaItem     @relation(fields: [mediaItemId], references: [id], onDelete: Cascade)
   replays   MovieReplay[]
+  loans     Loan[]
 
   @@unique([userId, mediaItemId])
   // "Who tracks this work": notification scans, WorkFriends, hidden_gem.
@@ -2316,6 +2285,38 @@ model MovieReplay {
   libraryEntry LibraryEntry @relation(fields: [libraryEntryId], references: [id], onDelete: Cascade)
 
   @@index([libraryEntryId])
+}
+
+// A copy lent out or borrowed, on an entry of any domain: exactly one of the
+// four entry ids is set (Loan_entry_check, in SQL). Open while `returnedAt`
+// is null — at most one per entry and direction (partial unique indexes, in
+// SQL) — then kept as history once returned. Who and since when are private
+// notes: nobody is told. Written only through entry-loan.util.ts, which keeps
+// it in step with the entry's ownershipStatus: a LENT loan on a PHYSICAL copy
+// lent out; a BORROWED one on a BORROWED entry given a person or a date — a
+// BORROWED entry alone only says the work was borrowed, and has none. Giving
+// it back returns the loan and leaves the status as it is.
+model Loan {
+  id             String        @id @default(cuid())
+  libraryEntryId String?
+  gameEntryId    String?
+  bookEntryId    String?
+  musicEntryId   String?
+  direction      LoanDirection
+  person         String?
+  since          DateTime?     @db.Date
+  returnedAt     DateTime?
+  createdAt      DateTime      @default(now())
+
+  libraryEntry LibraryEntry? @relation(fields: [libraryEntryId], references: [id], onDelete: Cascade)
+  gameEntry    GameEntry?    @relation(fields: [gameEntryId], references: [id], onDelete: Cascade)
+  bookEntry    BookEntry?    @relation(fields: [bookEntryId], references: [id], onDelete: Cascade)
+  musicEntry   MusicEntry?   @relation(fields: [musicEntryId], references: [id], onDelete: Cascade)
+
+  @@index([libraryEntryId])
+  @@index([gameEntryId])
+  @@index([bookEntryId])
+  @@index([musicEntryId])
 }
 
 // One row per viewing: watching the same episode twice = two rows (rewatch).
@@ -2390,44 +2391,39 @@ model GameExternalId {
 }
 
 model GameEntry {
-  id                     String              @id @default(cuid())
+  id                     String          @id @default(cuid())
   userId                 String
   gameItemId             String
-  status                 GameStatus          @default(BACKLOG)
+  status                 GameStatus      @default(BACKLOG)
   notes                  String?
-  favorite               Boolean             @default(false)
+  favorite               Boolean         @default(false)
   // Total time played, in minutes. Imported from Steam (playtime_forever);
   // manually editable. No session history yet — this is the running total.
-  playtimeMinutes        Int                 @default(0)
+  playtimeMinutes        Int             @default(0)
   // Dated Loomkeep sessions and Steam's external counter intentionally stay
   // separate because the same play time can be present in both.
-  trackedPlaytimeMinutes Int                 @default(0)
+  trackedPlaytimeMinutes Int             @default(0)
   steamPlaytimeMinutes   Int?
   steamSyncedAt          DateTime?
   startedAt              DateTime?
   finishedAt             DateTime?
-  ownershipStatus        GameOwnershipStatus @default(NONE)
+  ownershipStatus        OwnershipStatus @default(NONE)
   // Free-form detail for DIGITAL/SUBSCRIPTION (e.g. "Steam"); null otherwise.
   ownershipSource        String?
-  // A PHYSICAL copy currently at someone else's place.
-  lentOut                Boolean             @default(false)
-  // Who it was borrowed from (BORROWED) or lent to (lentOut), and since
-  // when: private notes, nobody is told.
-  loanPerson             String?
-  loanSince              DateTime?           @db.Date
   // The platform it's played on, one of GameItem.platforms (IGDB's names).
   platform               String?
   // Set when the user asked to be told of the release; a release dated
   // before it never alerts.
   releaseReminderAt      DateTime?
-  createdAt              DateTime            @default(now())
-  updatedAt              DateTime            @updatedAt
+  createdAt              DateTime        @default(now())
+  updatedAt              DateTime        @updatedAt
 
   user          User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   gameItem      GameItem          @relation(fields: [gameItemId], references: [id], onDelete: Cascade)
   playthroughs  GamePlaythrough[]
   sessions      GameSession[]
   sessionTimers SessionTimer[]
+  loans         Loan[]
 
   @@unique([userId, gameItemId])
   // "Who tracks this work" (see LibraryEntry).
@@ -2528,39 +2524,34 @@ model BookExternalId {
 }
 
 model BookEntry {
-  id                    String              @id @default(cuid())
+  id                    String          @id @default(cuid())
   userId                String
   bookItemId            String
-  status                BookStatus          @default(TO_READ)
+  status                BookStatus      @default(TO_READ)
   notes                 String?
-  favorite              Boolean             @default(false)
+  favorite              Boolean         @default(false)
   // Current reading position, derived from the baseline and dated sessions.
-  currentPage           Int                 @default(0)
+  currentPage           Int             @default(0)
   // Stable progress reference for the selected edition. `readingBaselinePage`
   // preserves the position that existed before dated sessions were introduced.
   editionKey            String?
   referencePageCount    Int?
-  readingBaselinePage   Int                 @default(0)
-  trackedReadingMinutes Int                 @default(0)
+  readingBaselinePage   Int             @default(0)
+  trackedReadingMinutes Int             @default(0)
   startedAt             DateTime?
   finishedAt            DateTime?
-  ownershipStatus       BookOwnershipStatus @default(NONE)
+  ownershipStatus       OwnershipStatus @default(NONE)
   // Free-form detail for DIGITAL/AUDIO (e.g. "Kindle"); null otherwise.
   ownershipSource       String?
-  // A PHYSICAL copy currently at someone else's place.
-  lentOut               Boolean             @default(false)
-  // Who it was borrowed from (BORROWED) or lent to (lentOut), and since
-  // when: private notes, nobody is told.
-  loanPerson            String?
-  loanSince             DateTime?           @db.Date
-  createdAt             DateTime            @default(now())
-  updatedAt             DateTime            @updatedAt
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
 
   user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   bookItem      BookItem       @relation(fields: [bookItemId], references: [id], onDelete: Cascade)
   readings      BookReading[]
   sessions      BookSession[]
   sessionTimers SessionTimer[]
+  loans         Loan[]
 
   @@unique([userId, bookItemId])
   // "Who tracks this work" (see LibraryEntry).
@@ -2691,28 +2682,23 @@ model MusicExternalId {
 }
 
 model MusicEntry {
-  id              String               @id @default(cuid())
+  id              String          @id @default(cuid())
   userId          String
   musicItemId     String
-  status          MusicStatus          @default(TO_LISTEN)
+  status          MusicStatus     @default(TO_LISTEN)
   notes           String?
-  favorite        Boolean              @default(false)
+  favorite        Boolean         @default(false)
   startedAt       DateTime?
   finishedAt      DateTime?
-  ownershipStatus MusicOwnershipStatus @default(NONE)
+  ownershipStatus OwnershipStatus @default(NONE)
   // Free-form detail for DIGITAL/STREAMING (e.g. "Spotify"); null otherwise.
   ownershipSource String?
-  // A PHYSICAL copy currently at someone else's place.
-  lentOut         Boolean              @default(false)
-  // Who it was borrowed from (BORROWED) or lent to (lentOut), and since
-  // when: private notes, nobody is told.
-  loanPerson      String?
-  loanSince       DateTime?            @db.Date
-  createdAt       DateTime             @default(now())
-  updatedAt       DateTime             @updatedAt
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
 
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   musicItem MusicItem @relation(fields: [musicItemId], references: [id], onDelete: Cascade)
+  loans     Loan[]
 
   @@unique([userId, musicItemId])
   // "Who tracks this work" (see LibraryEntry).

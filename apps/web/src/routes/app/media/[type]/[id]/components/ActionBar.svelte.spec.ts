@@ -29,6 +29,7 @@ const entry: LibraryEntryDto = {
   ownershipStatus: "NONE",
   ownershipSource: null,
   lentOut: false,
+  loanActive: false,
   loanPerson: null,
   loanSince: null,
   episodeAlertsMuted: false,

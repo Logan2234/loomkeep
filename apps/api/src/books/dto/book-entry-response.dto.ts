@@ -40,6 +40,7 @@ export class BookEntryResponseDto implements BookEntryDto {
   ownershipStatus!: BookOwnershipStatus;
   ownershipSource!: string | null;
   lentOut!: boolean;
+  loanActive!: boolean;
   loanPerson!: string | null;
   loanSince!: string | null;
 }

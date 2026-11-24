@@ -23,6 +23,7 @@ export class LibraryEntryResponseDto implements LibraryEntryDto {
   ownershipStatus!: MediaOwnershipStatus;
   ownershipSource!: string | null;
   lentOut!: boolean;
+  loanActive!: boolean;
   loanPerson!: string | null;
   loanSince!: string | null;
   episodeAlertsMuted!: boolean;

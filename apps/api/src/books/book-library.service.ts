@@ -4,6 +4,7 @@ import {
   type BookEntryDto,
   bookFinishedXp,
   type BookItemDto,
+  type BookOwnershipStatus,
   type BookSortKey,
   type BookSource,
   BookStatus,
@@ -61,6 +62,8 @@ import { EventsGateway } from "../events/events.gateway";
 import { AchievementService } from "../gamification/achievements/achievement.service";
 
 import {
+  isLoanActive,
+  LOAN_INCLUDE,
   loanFields,
   loanUpdate,
   loanWhere,
@@ -96,6 +99,7 @@ const GOAL_SETTLED_DAYS = 30;
 
 const ENTRY_INCLUDE = {
   bookItem: { include: { externalIds: true } },
+  ...LOAN_INCLUDE,
   readings: {
     orderBy: { number: "desc" },
     include: { _count: { select: { sessions: true } } },
@@ -894,7 +898,10 @@ export class BookLibraryService {
 
   private assertEntryOwnership(userId: string, entryId: string) {
     return assertEntryOwnership(userId, () =>
-      this.prisma.bookEntry.findUnique({ where: { id: entryId } }),
+      this.prisma.bookEntry.findUnique({
+        where: { id: entryId },
+        include: LOAN_INCLUDE,
+      }),
     );
   }
 
@@ -1088,8 +1095,9 @@ function toEntryDto(entry: EntryWithBook, rating: number | null): BookEntryDto {
     finishedAt: entry.finishedAt?.toISOString() ?? null,
     createdAt: entry.createdAt.toISOString(),
     readings: entry.readings.map(toReadingDto),
-    ownershipStatus: entry.ownershipStatus,
+    ownershipStatus: entry.ownershipStatus as BookOwnershipStatus,
     ownershipSource: entry.ownershipSource,
     ...loanFields(entry),
+    loanActive: isLoanActive(entry),
   };
 }

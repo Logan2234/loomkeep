@@ -110,7 +110,7 @@ export const updateLibraryEntry = (
       | "movieReleaseAlertsEnabled"
       | "rewatching"
     >
-  >,
+  > & { loanReturned?: boolean },
 ) =>
   typedRequest("/library/entries/{id}", {
     method: "PATCH",

@@ -23,6 +23,7 @@ import {
   MEDIA_SYNTHETIC_STATUS,
   type MediaDetailDto,
   type MediaItemDto,
+  type MediaOwnershipStatus,
   type MediaSortKey,
   MediaType,
   movieReleaseDates,
@@ -83,6 +84,8 @@ import { EventsGateway } from "../events/events.gateway";
 import { AchievementService } from "../gamification/achievements/achievement.service";
 
 import {
+  isLoanActive,
+  LOAN_INCLUDE,
   loanFields,
   loanUpdate,
   loanWhere,
@@ -114,6 +117,7 @@ import { deriveStatus, normalizeAiringFinished } from "./status.util";
 // plus their replay history (movies only in practice), most recent first.
 const ENTRY_INCLUDE = {
   mediaItem: { include: { externalIds: true } },
+  ...LOAN_INCLUDE,
   replays: { orderBy: { finishedAt: "desc" } },
 } satisfies Prisma.LibraryEntryInclude;
 
@@ -1969,7 +1973,10 @@ export class LibraryService {
 
   private assertEntryOwnership(userId: string, entryId: string) {
     return assertEntryOwnership(userId, () =>
-      this.prisma.libraryEntry.findUnique({ where: { id: entryId } }),
+      this.prisma.libraryEntry.findUnique({
+        where: { id: entryId },
+        include: LOAN_INCLUDE,
+      }),
     );
   }
 
@@ -2368,9 +2375,10 @@ export class LibraryService {
       updatedAt: entry.updatedAt.toISOString(),
       lastWatchedAt: lastWatchedAt?.toISOString() ?? null,
       progress,
-      ownershipStatus: entry.ownershipStatus,
+      ownershipStatus: entry.ownershipStatus as MediaOwnershipStatus,
       ownershipSource: entry.ownershipSource,
       ...loanFields(entry),
+      loanActive: isLoanActive(entry),
       episodeAlertsMuted: entry.episodeAlertsMuted,
       rewatching: !!entry.rewatchStartedAt,
       ...(entry.movieReleaseReminderAt

@@ -113,6 +113,7 @@ describe("DataExportService.buildExport", () => {
         steamPlaytimeMinutes: 120,
         steamSyncedAt: new Date("2026-02-02T00:00:00.000Z"),
         ownershipStatus: "DIGITAL",
+        loans: [],
         ownershipSource: "Steam",
         startedAt: new Date("2026-02-01T00:00:00.000Z"),
         finishedAt: null,
@@ -170,6 +171,7 @@ describe("DataExportService.buildExport", () => {
         referencePageCount: 320,
         trackedReadingMinutes: 0,
         ownershipStatus: "PHYSICAL",
+        loans: [],
         ownershipSource: null,
         startedAt: null,
         finishedAt: new Date("2026-02-10T00:00:00.000Z"),
@@ -222,6 +224,7 @@ describe("DataExportService.buildExport", () => {
         notes: null,
         favorite: true,
         ownershipStatus: "PHYSICAL",
+        loans: [],
         ownershipSource: null,
         startedAt: null,
         finishedAt: new Date("2026-02-10T00:00:00.000Z"),
@@ -536,6 +539,7 @@ describe("DataExportService.buildExport", () => {
         favorite: false,
         platform: null,
         ownershipStatus: null,
+        loans: [],
         startedAt: null,
         finishedAt: null,
         createdAt: new Date("2026-02-01T00:00:00.000Z"),
@@ -561,6 +565,7 @@ describe("DataExportService.buildExport", () => {
     (prisma.bookEntry.findMany as Mock).mockResolvedValue([
       {
         bookItemId: "b1",
+        loans: [],
         bookItem: {
           title: "Dune",
           canonicalSource: "OPEN_LIBRARY",

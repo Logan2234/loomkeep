@@ -6,6 +6,7 @@ import {
   type MusicDetailDto,
   type MusicEntryDto,
   type MusicItemDto,
+  type MusicOwnershipStatus,
   type MusicSortKey,
   type MusicSource,
   MusicStatus,
@@ -47,6 +48,8 @@ import {
   titleContains,
 } from "../common/entry-lifecycle.util";
 import {
+  isLoanActive,
+  LOAN_INCLUDE,
   loanFields,
   loanUpdate,
   loanWhere,
@@ -70,6 +73,7 @@ import { MusicItemService } from "./music-item.service";
 // Entries always need the album + its external IDs (canonical sourceId).
 const ENTRY_INCLUDE = {
   musicItem: { include: { externalIds: true } },
+  ...LOAN_INCLUDE,
 } satisfies Prisma.MusicEntryInclude;
 
 type EntryWithAlbum = Prisma.MusicEntryGetPayload<{
@@ -616,7 +620,10 @@ export class MusicLibraryService {
 
   private assertEntryOwnership(userId: string, entryId: string) {
     return assertEntryOwnership(userId, () =>
-      this.prisma.musicEntry.findUnique({ where: { id: entryId } }),
+      this.prisma.musicEntry.findUnique({
+        where: { id: entryId },
+        include: LOAN_INCLUDE,
+      }),
     );
   }
 }
@@ -649,8 +656,9 @@ function toEntryDto(
     startedAt: entry.startedAt?.toISOString() ?? null,
     finishedAt: entry.finishedAt?.toISOString() ?? null,
     createdAt: entry.createdAt.toISOString(),
-    ownershipStatus: entry.ownershipStatus,
+    ownershipStatus: entry.ownershipStatus as MusicOwnershipStatus,
     ownershipSource: entry.ownershipSource,
     ...loanFields(entry),
+    loanActive: isLoanActive(entry),
   };
 }

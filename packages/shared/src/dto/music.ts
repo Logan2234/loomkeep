@@ -116,6 +116,8 @@ export interface MusicEntryDto {
   ownershipSource: string | null;
   /** A PHYSICAL copy currently lent to someone. */
   lentOut: boolean;
+  /** A loan runs: a PHYSICAL copy lent out, or a BORROWED one given a person or a date. */
+  loanActive: boolean;
   /** Who it was borrowed from (BORROWED) or lent to (lentOut); a private note. */
   loanPerson: string | null;
   /** Since when the loan runs (YYYY-MM-DD). */
@@ -144,6 +146,8 @@ export interface UpdateMusicEntryDto {
   ownershipSource?: string | null;
   /** See the entry's `lentOut`; only kept while the copy is PHYSICAL. */
   lentOut?: boolean;
+  /** true: the running loan comes back (the status stays); false: undoes that. */
+  loanReturned?: boolean;
   loanPerson?: string | null;
   /** YYYY-MM-DD, not in the future. */
   loanSince?: string | null;

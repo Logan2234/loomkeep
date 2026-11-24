@@ -242,7 +242,26 @@ export const GameStatus = {
 export type GameStatus = (typeof GameStatus)[keyof typeof GameStatus];
 
 /**
- * How the user holds a game, if at all. NONE (default, unset) is the vast
+ * How the user holds a work, in any domain — mirrors the Prisma enum. Each
+ * domain accepts only its own subset (MediaOwnershipStatus,
+ * GameOwnershipStatus, BookOwnershipStatus, MusicOwnershipStatus below),
+ * which its DTOs validate against and the entry tables enforce in SQL.
+ */
+export const OwnershipStatus = {
+  NONE: "NONE",
+  PHYSICAL: "PHYSICAL",
+  DIGITAL: "DIGITAL",
+  STREAMING: "STREAMING",
+  SUBSCRIPTION: "SUBSCRIPTION",
+  AUDIO: "AUDIO",
+  BORROWED: "BORROWED",
+} as const;
+
+export type OwnershipStatus =
+  (typeof OwnershipStatus)[keyof typeof OwnershipStatus];
+
+/**
+ * How the user holds a game, if at all: the games subset of OwnershipStatus. NONE (default, unset) is the vast
  * majority of entries — this is opt-in. DIGITAL/SUBSCRIPTION pair with a
  * free-form `ownershipSource` (e.g. "Steam", "Xbox Game Pass").
  */
@@ -298,6 +317,7 @@ export type BookStatus = (typeof BookStatus)[keyof typeof BookStatus];
  * How the user holds a book, if at all. NONE (default, unset) is the vast
  * majority of entries — this is opt-in. DIGITAL/AUDIO pair with a free-form
  * `ownershipSource` (e.g. "Kindle", "Audible").
+ * The subset of OwnershipStatus this domain accepts.
  */
 export const BookOwnershipStatus = {
   NONE: "NONE",
@@ -334,6 +354,7 @@ export type EntryStatus = (typeof EntryStatus)[keyof typeof EntryStatus];
  * How the user holds a movie/series/anime, if at all. NONE (default, unset)
  * is the vast majority of entries — this is opt-in. DIGITAL/STREAMING pair
  * with a free-form `ownershipSource` (e.g. "Apple TV", "Netflix").
+ * The subset of OwnershipStatus this domain accepts.
  */
 export const MediaOwnershipStatus = {
   NONE: "NONE",
@@ -369,6 +390,7 @@ export type MusicStatus = (typeof MusicStatus)[keyof typeof MusicStatus];
  * How the user holds an album, if at all. NONE (default, unset) is the vast
  * majority of entries — this is opt-in. DIGITAL/STREAMING pair with a
  * free-form `ownershipSource` (e.g. "Bandcamp", "Spotify").
+ * The subset of OwnershipStatus this domain accepts.
  */
 export const MusicOwnershipStatus = {
   NONE: "NONE",

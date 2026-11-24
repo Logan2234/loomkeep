@@ -25,6 +25,7 @@ function makeRow(overrides: Partial<Record<string, unknown>> = {}) {
     startedAt: null,
     finishedAt: overrides.finishedAt ?? null,
     ownershipStatus: "NONE",
+    loans: [],
     ownershipSource: null,
     createdAt: overrides.createdAt ?? new Date("2026-01-01T00:00:00.000Z"),
     updatedAt: overrides.updatedAt ?? new Date("2026-01-01T00:00:00.000Z"),
@@ -435,6 +436,7 @@ describe("LibraryService — XP wiring", () => {
       status: overrides.status ?? "PLANNED",
       notes: null,
       favorite: false,
+      loans: [],
       startedAt: null,
       finishedAt: null,
       createdAt: new Date(),
@@ -1295,6 +1297,7 @@ describe("LibraryService.bulkUpdate", () => {
     status,
     favorite: false,
     ownershipStatus: "NONE",
+    loans: [],
     mediaItem: { type },
   });
 
