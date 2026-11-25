@@ -263,6 +263,9 @@ export function compareMediaEntries(
     case "rating":
       return (b.rating ?? -1) - (a.rating ?? -1);
     case "progress":
+      // The whole series' progress (the triggers' watchedEpisodes), even
+      // during a rewatch whose card shows its own: accepted and documented
+      // in the guide rather than materialising a second count.
       return progressPercent(b.progress) - progressPercent(a.progress);
     case "finished":
       return timeMs(b.finishedAt) - timeMs(a.finishedAt);
