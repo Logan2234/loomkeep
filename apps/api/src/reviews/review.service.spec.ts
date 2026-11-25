@@ -474,6 +474,8 @@ describe("ReviewService.upsert — revision snapshotting", () => {
 
 function makeForVoting(opts: {
   reviewOwnerId: string;
+  reviewVisibility?: string;
+  viewerRelation?: ViewerRelation;
   grouped?: { reviewId: string; value: string; _count: { _all: number } }[];
   existingVote?: { id: string; value: string } | null;
   upvotes?: number;
@@ -489,7 +491,13 @@ function makeForVoting(opts: {
     );
   const prisma = {
     review: {
-      findUnique: vi.fn().mockResolvedValue({ userId: opts.reviewOwnerId }),
+      findUnique: vi.fn().mockResolvedValue({
+        userId: opts.reviewOwnerId,
+        targetType: "MEDIA",
+        targetId: "m1",
+        visibility: opts.reviewVisibility ?? "PUBLIC",
+        user: { id: opts.reviewOwnerId, profileAccess: "PUBLIC" },
+      }),
     },
     reviewVote: {
       upsert,
@@ -504,9 +512,18 @@ function makeForVoting(opts: {
   const xp = stubXp();
   const achievements = stubAchievements();
   const notifications = stubNotifications();
+  const visibility = {
+    getRelation: vi.fn((viewerId: string, target: { id: string }) =>
+      Promise.resolve(
+        viewerId === target.id
+          ? relation({ isSelf: true, isFriend: true })
+          : (opts.viewerRelation ?? relation({})),
+      ),
+    ),
+  } as unknown as VisibilityService;
   const svc = new ReviewService(
     prisma,
-    {} as unknown as VisibilityService,
+    visibility,
     {} as unknown as ActivityService,
     xp,
     CONFIG,
@@ -517,6 +534,28 @@ function makeForVoting(opts: {
 }
 
 describe("ReviewService.vote", () => {
+  // Voting went through on a review the viewer couldn't see, which confirmed
+  // it existed (audit 2026-11-17, SEC-29).
+  it.each([
+    ["a friends-only review of a stranger", "FRIENDS", relation({})],
+    [
+      "a review of someone who blocked the viewer",
+      "PUBLIC",
+      relation({ blockedByTarget: true }),
+    ],
+  ])("answers 404 on %s", async (_label, reviewVisibility, viewerRelation) => {
+    const { svc, upsert } = makeForVoting({
+      reviewOwnerId: "author",
+      reviewVisibility,
+      viewerRelation,
+    });
+
+    await expect(svc.vote("voter", "r1", "UP" as never)).rejects.toMatchObject({
+      code: "reviews.not_found",
+    });
+    expect(upsert).not.toHaveBeenCalled();
+  });
+
   it("rejects voting on your own review", async () => {
     const { svc } = makeForVoting({ reviewOwnerId: "author" });
     await expect(svc.vote("author", "r1", "UP" as never)).rejects.toThrow(

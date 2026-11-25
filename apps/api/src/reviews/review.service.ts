@@ -206,12 +206,7 @@ export class ReviewService {
     reviewId: string,
     value: ReviewVoteValue,
   ): Promise<{ score: number; myVote: ReviewVoteValue }> {
-    const review = await this.prisma.review.findUnique({
-      where: { id: reviewId },
-      select: { userId: true, targetType: true, targetId: true },
-    });
-    if (!review)
-      throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.ReviewNotFound);
+    const review = await this.assertVisibleTo(viewerId, reviewId);
 
     if (review.userId === viewerId) {
       throw new AppException(
@@ -833,6 +828,42 @@ export class ReviewService {
    * own audience choice doesn't apply — they have no friends by design) but
    * shown under their derived pseudonym instead of their real identity.
    */
+  /**
+   * The review, when the viewer may see it by the rules of `listForTarget`
+   * (audience, profile access, blocks). One they can't see answers 404, like
+   * one that doesn't exist: voting on or reporting it would confirm it does.
+   */
+  async assertVisibleTo(
+    viewerId: string,
+    reviewId: string,
+  ): Promise<{ userId: string | null; targetType: string; targetId: string }> {
+    const review = await this.prisma.review.findUnique({
+      where: { id: reviewId },
+      select: {
+        userId: true,
+        targetType: true,
+        targetId: true,
+        visibility: true,
+        user: { select: { id: true, profileAccess: true } },
+      },
+    });
+
+    const visible =
+      review !== null &&
+      (!review.user ||
+        resolveReviewVisibility(
+          review.visibility,
+          review.user.profileAccess,
+          await this.visibility.getRelation(viewerId, review.user),
+        ));
+
+    if (!review || !visible) {
+      throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.ReviewNotFound);
+    }
+
+    return review;
+  }
+
   async listForTarget(
     viewerId: string,
     targetType: ReviewTargetType,
