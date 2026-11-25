@@ -187,7 +187,6 @@ describe("TvTimeImportSource (via ImportJobService)", () => {
     expect(tracked[0]).toMatchObject({
       key: "tvdb:100",
       title: "My Show",
-      context: { kind: "series", episodesWatched: 2 },
       context: {
         kind: "series",
         episodesWatched: 2,
