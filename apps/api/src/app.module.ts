@@ -113,13 +113,17 @@ import { UsersModule } from "./users/users.module";
   ],
   controllers: [],
   providers: [
-    {
-      provide: APP_GUARD,
-      useClass: JwtAuthGuard,
-    },
+    // Global guards run in this order. The throttle comes first so that a
+    // request refused for want of a valid session counts against its IP too:
+    // after the authentication, guessing tokens went unthrottled. It counts
+    // by IP, so a signed-in user's budget is the same either way.
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: JwtAuthGuard,
     },
     {
       provide: APP_FILTER,
