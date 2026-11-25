@@ -91,7 +91,7 @@
   "calendar_premieres_added_toast": "{title} added to your list",
   "calendar_premieres_attribution": "Premiere dates are the first broadcast in the network's country, from TMDB. This product uses the TMDB API but is not endorsed or certified by TMDB.",
   "calendar_premieres_feed_title": "Premieres",
-  "calendar_premieres_feed_description": "The series premiering over the next eight weeks, in your calendar app. Same personal link: regenerating it revokes this one too.",
+  "calendar_premieres_feed_description": "The series premiering over the next eight weeks, in your calendar app.",
   "library_sort_added": "Recently added",
   "library_rating": "Rating",
   "library_sort_finished": "Recently finished",
@@ -137,10 +137,9 @@
   "calendar_game_release": "Game release",
   "calendar_game_this_month": "Due out this month",
   "calendar_feed_title": "Release feed",
-  "calendar_feed_description": "To follow the episodes, movies and games released over the last 30 days in a feed reader (Feedly, FreshRSS, Thunderbird…). It's the same personal link: regenerating it revokes the feed too.",
-  "calendar_feed_copy_rss": "Copy RSS link",
+  "calendar_feed_description": "To follow the episodes, movies and games released over the last 30 days in a feed reader (Feedly, FreshRSS, Thunderbird…).",
   "calendar_link_generating": "Generating link…",
-  "calendar_link_regenerate_confirm": "The old link will stop working, for the calendar and the feed alike — you'll need to subscribe again from your calendars and your feed reader. Continue?",
+  "calendar_link_regenerate_confirm": "All these links will stop working — calendar, premieres and feed alike. You'll need to subscribe again. Continue?",
   "calendar_subscription_description": "Use this link to subscribe to upcoming releases of what you follow (episodes, movies and games) in Google Calendar, Apple Calendar or any compatible app — new dates appear automatically, with no need to import again.",
   "calendar_subscription_private": "This link is personal: don't share it.",
   "calendar_link_regenerate": "Regenerate link",
@@ -314,5 +313,8 @@
   "library_loan_lent": "Lent out",
   "library_loan_lent_hint": "Physical copies someone else has right now",
   "library_loan_borrowed": "To give back",
-  "library_loan_borrowed_hint": "Borrowed from someone"
+  "library_loan_borrowed_hint": "Borrowed from someone",
+  "calendar_subscription_title": "Upcoming releases",
+  "calendar_feed_rss_label": "RSS link",
+  "calendar_feed_atom_label": "Atom link"
 }

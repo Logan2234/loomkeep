@@ -91,7 +91,7 @@
   "calendar_premieres_added_toast": "{title} ajoutée à ta liste",
   "calendar_premieres_attribution": "Les dates sont celles de la première diffusion dans le pays de la chaîne, d'après TMDB. Ce produit utilise l'API TMDB sans être approuvé ni certifié par TMDB.",
   "calendar_premieres_feed_title": "Premières",
-  "calendar_premieres_feed_description": "Les séries qui démarrent dans les huit prochaines semaines, dans ton agenda. C'est le même lien personnel : le régénérer révoque aussi celui-ci.",
+  "calendar_premieres_feed_description": "Les séries qui démarrent dans les huit prochaines semaines, dans ton agenda.",
   "library_sort_added": "Ajout récent",
   "library_rating": "Note",
   "library_sort_finished": "Terminé récemment",
@@ -137,10 +137,9 @@
   "calendar_game_release": "Sortie du jeu",
   "calendar_game_this_month": "Sortie prévue ce mois-ci",
   "calendar_feed_title": "Flux des sorties",
-  "calendar_feed_description": "Pour suivre dans un lecteur de flux (Feedly, FreshRSS, Thunderbird…) les épisodes, films et jeux sortis ces 30 derniers jours. C'est le même lien personnel : le régénérer révoque aussi le flux.",
-  "calendar_feed_copy_rss": "Copier le lien RSS",
+  "calendar_feed_description": "Pour suivre dans un lecteur de flux (Feedly, FreshRSS, Thunderbird…) les épisodes, films et jeux sortis ces 30 derniers jours.",
   "calendar_link_generating": "Génération du lien…",
-  "calendar_link_regenerate_confirm": "L'ancien lien cessera de fonctionner, pour le calendrier comme pour le flux : tu devras t'abonner à nouveau depuis tes agendas et ton lecteur de flux. Continuer ?",
+  "calendar_link_regenerate_confirm": "Tous ces liens cesseront de fonctionner, agenda, premières et flux : tu devras t'abonner à nouveau. Continuer ?",
   "calendar_subscription_description": "Ce lien te permet de t'abonner au calendrier des prochaines sorties de ce que tu suis (épisodes, films et jeux) depuis Google Calendar, Apple Calendar ou toute application compatible — les nouvelles dates apparaissent automatiquement, sans rien réimporter.",
   "calendar_subscription_private": "Le lien est personnel : ne le partage pas.",
   "calendar_link_regenerate": "Régénérer le lien",
@@ -314,5 +313,8 @@
   "library_loan_lent": "Prêtés",
   "library_loan_lent_hint": "Exemplaires physiques chez quelqu'un en ce moment",
   "library_loan_borrowed": "À rendre",
-  "library_loan_borrowed_hint": "Empruntés à quelqu'un"
+  "library_loan_borrowed_hint": "Empruntés à quelqu'un",
+  "calendar_subscription_title": "Prochaines sorties",
+  "calendar_feed_rss_label": "Lien RSS",
+  "calendar_feed_atom_label": "Lien Atom"
 }

@@ -433,14 +433,12 @@
   "settings_arr_row": "Radarr e Sonarr",
   "settings_arr_row_formats": "Film e serie della tua pila o di una lista",
   "settings_arr_pile_body": "I titoli «Da vedere» della tua pila arrivano in Radarr e Sonarr, che li aggiungono alla tua mediateca.",
-  "settings_arr_list_body": "Radarr legge i film di questa lista, Sonarr le sue serie. Ciò che aggiungi dal telefono arriva da solo.",
+  "settings_arr_list_body": "I film di questa lista arrivano in Radarr e le sue serie in Sonarr, che li aggiungono alla tua mediateca. Ciò che aggiungi alla lista in seguito li raggiunge da solo.",
   "settings_arr_pile_movies": "Film da vedere → Radarr",
   "settings_arr_pile_series": "Serie da vedere → Sonarr",
   "settings_arr_list_movies": "Film della lista → Radarr",
   "settings_arr_list_series": "Serie della lista → Sonarr",
-  "settings_arr_radarr_how": "In Radarr: Settings › Lists › + › StevenLu Custom, poi incolla il link.",
-  "settings_arr_sonarr_how": "In Sonarr: Settings › Import Lists › + › Custom List, poi incolla il link.",
-  "settings_arr_private": "Questi link aprono la tua pila senza password: tienili per te. Condividono la chiave del tuo calendario, quindi rigenerare il link del calendario cambia anche loro. I titoli senza ID IMDb (film) o TVDB (serie) vengono esclusi.",
+  "settings_arr_private": "Questi link aprono la tua pila e le tue liste senza password: tienili per te.",
   "settings_arr_send": "Invia a Radarr o Sonarr",
   "settings_subscription_links_activity": "Feed attività",
   "settings_subscription_links_activity_formats": "Atom",
@@ -605,5 +603,9 @@
   "settings_help_onboarding_title": "Rivedi il benvenuto di Loomkeep",
   "settings_help_onboarding_hint": "Il percorso del primo avvio, con le tue impostazioni attuali.",
   "settings_streaming_music_title": "Servizi musicali",
-  "settings_streaming_music_body": "Quelli che usi vengono mostrati per primi nella scheda di un album."
+  "settings_streaming_music_body": "Quelli che usi vengono mostrati per primi nella scheda di un album.",
+  "settings_arr_how_in": "In {tool}:",
+  "settings_arr_how_paste": "poi incolla il link.",
+  "settings_arr_skipped": "I titoli senza ID IMDb (film) o TVDB (serie) vengono esclusi.",
+  "settings_arr_regenerate_confirm": "Tutti i tuoi link Radarr e Sonarr smetteranno di funzionare, sia per la pila sia per le liste: dovrai incollarli di nuovo. Continuare?"
 }

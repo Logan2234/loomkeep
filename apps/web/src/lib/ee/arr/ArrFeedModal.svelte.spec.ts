@@ -10,7 +10,7 @@ import ArrFeedModal from "./ArrFeedModal.svelte";
 
 function withToken() {
   server.use(
-    http.get(apiUrl("/users/me/calendar-token"), () =>
+    http.get(apiUrl("/users/me/arr-token"), () =>
       HttpResponse.json({ token: "tok" }),
     ),
   );
@@ -52,5 +52,36 @@ describe("ArrFeedModal", () => {
         `${API_URL}/lists/list-1/sonarr.json?token=tok`,
       ),
     );
+  });
+
+  it("shows the new links once regenerated, not the revoked ones", async () => {
+    let token = "old";
+    server.use(
+      http.get(apiUrl("/users/me/arr-token"), () =>
+        HttpResponse.json({ token }),
+      ),
+      http.post(apiUrl("/users/me/arr-token/regenerate"), () => {
+        token = "new";
+        return HttpResponse.json({ token });
+      }),
+    );
+    const user = userEvent.setup();
+    renderWithQuery(ArrFeedModal, { onclose: () => {} });
+
+    await screen.findByText(`${API_URL}/library/radarr.json?token=old`);
+    await user.click(
+      screen.getByRole("button", { name: m.calendar_link_regenerate() }),
+    );
+    expect(screen.getByText(m.settings_arr_regenerate_confirm())).toBeTruthy();
+    await user.click(
+      screen.getByRole("button", { name: m.common_regenerate() }),
+    );
+
+    expect(
+      await screen.findByText(`${API_URL}/library/radarr.json?token=new`),
+    ).toBeTruthy();
+    expect(
+      screen.queryByText(`${API_URL}/library/radarr.json?token=old`),
+    ).toBeNull();
   });
 });

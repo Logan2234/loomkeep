@@ -433,14 +433,12 @@
   "settings_arr_row": "Radarr and Sonarr",
   "settings_arr_row_formats": "Films and series from your pile or a list",
   "settings_arr_pile_body": "The “to watch” titles of your pile reach Radarr and Sonarr, which add them to your media library.",
-  "settings_arr_list_body": "Radarr reads this list's films and Sonarr its series. What you add to it from your phone arrives on its own.",
+  "settings_arr_list_body": "This list's films reach Radarr and its series Sonarr, which add them to your media library. Whatever you add to the list later follows on its own.",
   "settings_arr_pile_movies": "Films to watch → Radarr",
   "settings_arr_pile_series": "Series to watch → Sonarr",
   "settings_arr_list_movies": "The list's films → Radarr",
   "settings_arr_list_series": "The list's series → Sonarr",
-  "settings_arr_radarr_how": "In Radarr: Settings › Lists › + › StevenLu Custom, then paste the link.",
-  "settings_arr_sonarr_how": "In Sonarr: Settings › Import Lists › + › Custom List, then paste the link.",
-  "settings_arr_private": "These links open your pile without a password: keep them to yourself. They share your calendar's key, so regenerating the calendar link changes them too. Titles without an IMDb id (films) or a TVDB id (series) are left out.",
+  "settings_arr_private": "These links open your pile and lists without a password: keep them to yourself.",
   "settings_arr_send": "Send to Radarr or Sonarr",
   "settings_subscription_links_activity": "Activity feed",
   "settings_subscription_links_activity_formats": "Atom",
@@ -605,5 +603,9 @@
   "settings_help_onboarding_title": "Replay Loomkeep's welcome",
   "settings_help_onboarding_hint": "The first-run tour, with your current settings.",
   "settings_streaming_music_title": "Music services",
-  "settings_streaming_music_body": "The ones you listen on come first on an album's page."
+  "settings_streaming_music_body": "The ones you listen on come first on an album's page.",
+  "settings_arr_how_in": "In {tool}:",
+  "settings_arr_how_paste": "then paste the link.",
+  "settings_arr_skipped": "Titles without an IMDb id (films) or a TVDB id (series) are left out.",
+  "settings_arr_regenerate_confirm": "All your Radarr and Sonarr links will stop working, for your pile and your lists alike — you'll need to paste them again. Continue?"
 }

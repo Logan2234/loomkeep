@@ -433,14 +433,12 @@
   "settings_arr_row": "Radarr et Sonarr",
   "settings_arr_row_formats": "Films et séries de ta pile ou d'une liste",
   "settings_arr_pile_body": "Les titres « À voir » de ta pile arrivent dans Radarr et Sonarr, qui les ajoutent à ta médiathèque.",
-  "settings_arr_list_body": "Radarr lit les films de cette liste, Sonarr ses séries. Ce que tu y ajoutes depuis ton téléphone arrive tout seul.",
+  "settings_arr_list_body": "Les films de cette liste arrivent dans Radarr, ses séries dans Sonarr, qui les ajoutent à ta médiathèque. Ce que tu ajoutes ensuite à la liste les rejoint de lui-même.",
   "settings_arr_pile_movies": "Films à voir → Radarr",
   "settings_arr_pile_series": "Séries à voir → Sonarr",
   "settings_arr_list_movies": "Films de la liste → Radarr",
   "settings_arr_list_series": "Séries de la liste → Sonarr",
-  "settings_arr_radarr_how": "Dans Radarr : Settings › Lists › + › StevenLu Custom, puis colle le lien.",
-  "settings_arr_sonarr_how": "Dans Sonarr : Settings › Import Lists › + › Custom List, puis colle le lien.",
-  "settings_arr_private": "Ces liens ouvrent ta pile sans mot de passe : garde-les pour toi. Ils partagent la clé de ton calendrier : régénérer le lien du calendrier les change aussi. Les titres sans identifiant IMDb (films) ou TVDB (séries) sont laissés de côté.",
+  "settings_arr_private": "Ces liens ouvrent ta pile et tes listes sans mot de passe : garde-les pour toi.",
   "settings_arr_send": "Envoyer à Radarr ou Sonarr",
   "settings_subscription_links_activity": "Flux d'activité",
   "settings_subscription_links_activity_formats": "Atom",
@@ -605,5 +603,9 @@
   "settings_help_onboarding_title": "Revoir l'accueil de Loomkeep",
   "settings_help_onboarding_hint": "Le parcours du premier lancement, avec tes réglages actuels.",
   "settings_streaming_music_title": "Services de musique",
-  "settings_streaming_music_body": "Ceux que tu utilises passent en premier sur la fiche d'un album."
+  "settings_streaming_music_body": "Ceux que tu utilises passent en premier sur la fiche d'un album.",
+  "settings_arr_how_in": "Dans {tool} :",
+  "settings_arr_how_paste": "puis colle le lien.",
+  "settings_arr_skipped": "Les titres sans identifiant IMDb (films) ou TVDB (séries) sont laissés de côté.",
+  "settings_arr_regenerate_confirm": "Tous tes liens Radarr et Sonarr cesseront de fonctionner, ceux de ta pile comme ceux de tes listes : tu devras les coller à nouveau. Continuer ?"
 }

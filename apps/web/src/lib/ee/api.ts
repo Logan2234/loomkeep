@@ -16,3 +16,9 @@ export const regenerateActivityFeedToken = () =>
   typedRequest("/users/me/activity-feed-token/regenerate", {
     method: "POST",
   });
+
+// Creates the token on first call.
+export const getArrToken = () => typedRequest("/users/me/arr-token");
+
+export const regenerateArrToken = () =>
+  typedRequest("/users/me/arr-token/regenerate", { method: "POST" });

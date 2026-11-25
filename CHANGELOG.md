@@ -72,6 +72,9 @@ history from before it was started.
   is (a free, open-source, self-hostable media tracker), in English, French
   and Italian, and the sitemap dates each page.
 - Docs: a `robots.txt` points search engines to the sitemap.
+- Calendar and activity feed subscriptions show every link in full, each
+  with its own copy button, and « Regenerate » now sits at the bottom.
+- The stats rankings unfold and fold smoothly on « See all ».
 
 ### Fixed
 
