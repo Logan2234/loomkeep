@@ -321,6 +321,7 @@ const MESSAGES = {
   [ErrorCode.InternalConflict]: () => m.apierr_internal_conflict(),
   [ErrorCode.InternalRecordGone]: () => m.apierr_internal_record_gone(),
   [ErrorCode.NetworkOffline]: () => m.apierr_network_offline(),
+  [ErrorCode.NetworkTimeout]: () => m.apierr_network_timeout(),
   [ErrorCode.AuthReauthCancelled]: () => m.apierr_auth_reauth_cancelled(),
   [ErrorCode.GamificationAchievementNotFound]: () =>
     m.apierr_gamification_achievement_not_found(),

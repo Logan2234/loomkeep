@@ -5,7 +5,7 @@ import type {
   ImportSource,
   PagedResult,
 } from "@loomkeep/shared";
-import { request } from "./core";
+import { LONG_REQUEST_TIMEOUT_MS, request } from "./core";
 import { typedRequest } from "./generated/typed-request";
 
 export const getImportAvailability = () => typedRequest("/import/availability");
@@ -25,6 +25,7 @@ export const analyzeImport = (
     method: "POST",
     params: { source },
     body,
+    timeoutMs: LONG_REQUEST_TIMEOUT_MS,
   });
 
 export const commitImport = (

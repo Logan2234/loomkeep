@@ -91,6 +91,7 @@
   "apierr_internal_conflict": "Qualcun altro l'ha modificato nello stesso momento. Ricarica e riprova.",
   "apierr_internal_record_gone": "Questo elemento non esiste più. Ricarica la pagina.",
   "apierr_network_offline": "Impossibile raggiungere il server, controlla la connessione.",
+  "apierr_network_timeout": "Il server ha impiegato troppo tempo a rispondere, riprova.",
   "apierr_status_400": "Impossibile elaborare questa richiesta.",
   "apierr_status_401": "La tua sessione è scaduta, accedi di nuovo.",
   "apierr_status_403": "Non hai accesso a questa risorsa.",
