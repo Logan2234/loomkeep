@@ -410,6 +410,7 @@ describe("DataExportService.buildExport", () => {
           acceptedTermsVersion: null,
           certifiedAgeAt: new Date("2026-01-01T00:00:00.000Z"),
           newsletterOptInAt: null,
+          newsletterOptOutAt: new Date("2026-02-01T00:00:00.000Z"),
         },
         avatarImage: {
           userId: "user-1",
@@ -493,6 +494,7 @@ describe("DataExportService.buildExport", () => {
       acquisitionSourceOther: "A podcast",
       termsAcceptedAt: "2026-01-01T00:00:00.000Z",
       ageCertifiedAt: "2026-01-01T00:00:00.000Z",
+      newsletterOptOutAt: "2026-02-01T00:00:00.000Z",
       equippedBadgeKeys: ["first_review"],
       avatar: {
         mimeType: "image/png",

@@ -515,9 +515,15 @@ export class UsersService {
     // Proof-of-consent timestamp (GDPR art. 7(1)): only stamped on the
     // false → true transition, never overwritten afterwards (a later opt-out
     // leaves it as the historical record of when consent was last given).
-    const newsletterOptInAt =
-      dto.notifyNewsletter === true && !currentPrefs.notifyNewsletter
-        ? new Date()
+    const optingIn =
+      dto.notifyNewsletter === true && !currentPrefs.notifyNewsletter;
+    // Withdrawing consent is dated too (art. 7(3)), separately.
+    const optingOut =
+      dto.notifyNewsletter === false && currentPrefs.notifyNewsletter;
+    const consentStamp = optingIn
+      ? { newsletterOptInAt: new Date() }
+      : optingOut
+        ? { newsletterOptOutAt: new Date() }
         : undefined;
 
     const nextBirthDate =
@@ -582,11 +588,16 @@ export class UsersService {
           watchProviderIds: dto.watchProviderIds,
           listenServices: dto.listenServices,
         }),
-        consent: newsletterOptInAt
+        consent: consentStamp
+          ? { upsert: { create: consentStamp, update: consentStamp } }
+          : undefined,
+        // A new consent gets a new unsubscribe link (minted at the next
+        // send): the ones in emails from before it stop working.
+        urlTokens: optingIn
           ? {
               upsert: {
-                create: { newsletterOptInAt },
-                update: { newsletterOptInAt },
+                create: {},
+                update: { newsletterUnsubscribeToken: null },
               },
             }
           : undefined,

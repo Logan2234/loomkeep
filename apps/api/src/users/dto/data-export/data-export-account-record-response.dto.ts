@@ -62,6 +62,12 @@ export class DataExportAccountRecordResponseDto implements DataExportAccountReco
   newsletterOptInAt!: string | null;
 
   /**
+   * When the newsletter was last opted out of, if it was.
+   * @example "2026-06-12T08:30:00.000Z"
+   */
+  newsletterOptOutAt!: string | null;
+
+  /**
    * Last activity on the account.
    * @example "2026-09-30T21:00:00.000Z"
    */

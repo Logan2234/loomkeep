@@ -325,6 +325,7 @@ export interface DataExportAccountRecord {
   termsAcceptedAt: string | null;
   ageCertifiedAt: string | null;
   newsletterOptInAt: string | null;
+  newsletterOptOutAt: string | null;
   lastActiveAt: string | null;
   suspendedUntil: string | null;
   equippedBadgeKeys: string[];

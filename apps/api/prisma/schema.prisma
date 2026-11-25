@@ -771,6 +771,9 @@ model UserConsent {
   // afterwards — including across a later opt-out — so it always records
   // when consent was last given.
   newsletterOptInAt    DateTime?
+  // Its counterpart: when consent was last withdrawn, from the settings or
+  // an email's unsubscribe link (GDPR art. 7(3)).
+  newsletterOptOutAt   DateTime?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
@@ -1255,14 +1258,14 @@ model Report {
   resolvedBy          User?                @relation("ReportsResolved", fields: [resolvedById], references: [id], onDelete: SetNull)
   targetOwner         User?                @relation("ReportsReceived", fields: [targetOwnerId], references: [id], onDelete: SetNull)
   moderationDecisions ModerationDecision[]
+  // Plus, in SQL only (Prisma can't declare a partial index): one PENDING
+  // report per (reporterId, targetType, targetId), see
+  // 20261125160000_one_pending_report_per_reporter.
 
   @@index([status, createdAt])
   @@index([category])
   @@index([reporterId, status, createdAt])
   @@index([targetOwnerId])
-  // Plus, in SQL only (Prisma can't declare a partial index): one PENDING
-  // report per (reporterId, targetType, targetId), see
-  // 20261125160000_one_pending_report_per_reporter.
 }
 
 // DSA art. 17 "statement of reasons" record — one row per restrictive measure

@@ -411,6 +411,8 @@ export class DataExportService {
         ageCertifiedAt: user.consent?.certifiedAgeAt?.toISOString() ?? null,
         newsletterOptInAt:
           user.consent?.newsletterOptInAt?.toISOString() ?? null,
+        newsletterOptOutAt:
+          user.consent?.newsletterOptOutAt?.toISOString() ?? null,
         lastActiveAt: user.lastActiveAt?.toISOString() ?? null,
         suspendedUntil: user.suspendedUntil?.toISOString() ?? null,
         equippedBadgeKeys: user.equippedBadgeKeys ?? [],
