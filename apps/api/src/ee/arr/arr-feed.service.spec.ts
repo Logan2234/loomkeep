@@ -1,21 +1,25 @@
 import { vi } from "vitest";
+import type { EntitlementService } from "../../entitlements/entitlement.service";
 import type { PrismaService } from "../../prisma/prisma.service";
-import type { CalendarFeedService } from "../calendar/calendar-feed.service";
 import { ArrFeedService } from "./arr-feed.service";
 
-function makeService(user: { id: string } | null) {
+function makeService(user: { id: string } | null, premium = true) {
   const prisma = {
+    userUrlToken: {
+      findUnique: vi.fn().mockResolvedValue(user ? { userId: user.id } : null),
+      upsert: vi.fn().mockResolvedValue({}),
+    },
     mediaEntry: { findMany: vi.fn().mockResolvedValue([]) },
     list: { findFirst: vi.fn().mockResolvedValue(null) },
     mediaItem: { findMany: vi.fn().mockResolvedValue([]) },
   };
-  const calendarFeed = {
-    premiumUserForToken: vi.fn().mockResolvedValue(user),
+  const entitlements = {
+    isEffectivelyPremium: vi.fn().mockResolvedValue(premium),
   };
   return {
     service: new ArrFeedService(
       prisma as unknown as PrismaService,
-      calendarFeed as unknown as CalendarFeedService,
+      entitlements as unknown as EntitlementService,
     ),
     prisma,
   };
@@ -28,6 +32,35 @@ describe("ArrFeedService", () => {
     expect(await service.pile("tok")).toBeNull();
     expect(await service.list("tok", "list-1")).toBeNull();
     expect(prisma.mediaEntry.findMany).not.toHaveBeenCalled();
+  });
+
+  it("serves nothing once the token's owner is no longer premium", async () => {
+    const { service, prisma } = makeService({ id: "alice" }, false);
+
+    expect(await service.pile("tok")).toBeNull();
+    expect(prisma.mediaEntry.findMany).not.toHaveBeenCalled();
+  });
+
+  it("opens only with the arr token, not the calendar's", async () => {
+    const { service, prisma } = makeService({ id: "alice" });
+
+    await service.pile("tok");
+
+    expect(prisma.userUrlToken.findUnique).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { arrToken: "tok" } }),
+    );
+  });
+
+  it("regenerates its own token and leaves the calendar's alone", async () => {
+    const { service, prisma } = makeService({ id: "alice" });
+
+    const { token } = await service.regenerateToken("alice");
+
+    expect(prisma.userUrlToken.upsert).toHaveBeenCalledWith({
+      where: { userId: "alice" },
+      create: { userId: "alice", arrToken: token },
+      update: { arrToken: token },
+    });
   });
 
   it("reads only the token owner's own lists", async () => {

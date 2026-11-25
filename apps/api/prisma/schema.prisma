@@ -806,6 +806,9 @@ model UserUrlToken {
   // The public Atom activity feed (ee/social/activity-feed). Null until
   // first requested from Réglages > Vie privée.
   activityFeedToken          String? @unique
+  // The Radarr and Sonarr import lists (ee/arr), pile and lists alike. Its
+  // own token, so revoking one integration leaves the calendar untouched.
+  arrToken                   String? @unique
   // The newsletter's unsubscribe link, generated on first send and reused
   // in every later one — not a single-use UserToken, which would grow
   // without bound with each send. Low-stakes if it leaked (it only turns

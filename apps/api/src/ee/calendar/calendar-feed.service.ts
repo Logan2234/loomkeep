@@ -252,7 +252,7 @@ export class CalendarFeedService {
    * the moment its plan changes, instead of forever on a token minted while
    * premium.
    */
-  async premiumUserForToken(token: string): Promise<FeedUser | null> {
+  private async premiumUserForToken(token: string): Promise<FeedUser | null> {
     const row = await this.prisma.userUrlToken.findUnique({
       where: { calendarToken: token },
       select: {
