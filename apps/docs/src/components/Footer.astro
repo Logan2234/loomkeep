@@ -1,0 +1,21 @@
+---
+// Starlight's footer, followed by the privacy policy: the site counts its
+// visits (Umami, see src/analytics.mjs), so it says where that is explained.
+import Default from "@astrojs/starlight/components/Footer.astro";
+---
+
+<Default />
+<p class="privacy-link">
+  <a href="https://loomkeep.app/legal/privacy-policy">Privacy policy</a>
+</p>
+
+<style>
+  .privacy-link {
+    font-size: var(--sl-text-sm);
+    margin-top: 1rem;
+  }
+
+  .privacy-link a {
+    color: var(--sl-color-gray-3);
+  }
+</style>
