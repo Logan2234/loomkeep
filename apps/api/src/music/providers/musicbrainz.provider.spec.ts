@@ -1,3 +1,4 @@
+import { Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { vi, type Mock } from "vitest";
 import type { QuotaTrackerService } from "../../common/quota-tracker.service";
@@ -303,6 +304,23 @@ describe("MusicBrainzProvider", () => {
     expect(details.disambiguation).toBeNull();
     expect(details.externalLinks).toEqual([]);
     expect(details.extraCoverImages).toEqual([]);
+  });
+
+  it("flags the details as partial when the editions request fails", async () => {
+    const warn = vi
+      .spyOn(Logger.prototype, "warn")
+      .mockImplementation(() => {});
+    mockFetchByUrl([
+      ["/release-group/rg1?", { id: "rg1", title: "Album" }],
+      ["/release?release-group=", new Response("{}", { status: 404 })],
+      ["coverartarchive.org/release-group/rg1", null],
+      ["/release-group?artist=", { "release-groups": [] }],
+    ]);
+
+    const details = await providerWith().getDetails("rg1");
+
+    expect(details.partial).toBe(true);
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining("rg1"));
   });
 
   it("throws when MusicBrainz returns an error status for an id", async () => {

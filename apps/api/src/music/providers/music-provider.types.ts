@@ -27,6 +27,11 @@ export interface ProviderMusicDetails {
   tracks: MusicTrackDto[];
   totalDurationMs: number | null;
   extraCoverImages: { url: string; type: string }[];
+  /**
+   * The editions request failed: tracks, duration, label and listening links
+   * are missing, so the copy must not pass for a fresh one.
+   */
+  partial?: boolean;
 }
 
 export interface MusicCatalogProvider {
