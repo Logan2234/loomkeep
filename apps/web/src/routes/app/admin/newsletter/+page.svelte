@@ -21,8 +21,6 @@
   import AdminQueryError from "../AdminQueryError.svelte";
   import { filterNewsletterSends } from "./newsletter-filters";
   import NewsletterPreviewModal from "./NewsletterPreviewModal.svelte";
-  import NewBadge from "#lib/components/NewBadge.svelte";
-  import { isFeatureNew } from "#lib/feature-badges.js";
   import type { NewsletterSendDto } from "@loomkeep/shared";
 
   let previewed = $state<NewsletterSendDto | null>(null);
@@ -146,9 +144,8 @@
             type="button"
             class="hover:bg-surface-2 -mx-2 min-w-0 flex-1 rounded-lg px-2 py-1 text-left transition-colors"
             onclick={() => (previewed = send)}>
-            <span class="text-fg block text-sm font-semibold break-words">
+            <span class="text-fg block text-sm font-semibold wrap-break-word">
               {send.title}
-              {#if isFeatureNew("newsletter-preview")}<NewBadge />{/if}
             </span>
             <span class="timecode mt-1 block text-xs">
               {formatDateTime(send.sentAt, DATETIME_NUMERIC_OPTIONS)} · {send.recipientCount ===

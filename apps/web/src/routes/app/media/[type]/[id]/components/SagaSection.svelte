@@ -4,7 +4,6 @@
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
   import SagaBlock from "#lib/components/saga/SagaBlock.svelte";
-  import { isFeatureNew } from "#lib/feature-badges.js";
   import { m } from "#lib/paraglide/messages.js";
   import { mediaSagaMember } from "#lib/saga.js";
   import type { EntryStatus, MediaType, SagaMemberDto } from "@loomkeep/shared";
@@ -65,5 +64,4 @@
     if (member) addMut.mutate(member);
   }}
   addButton={m.media_status_planned()}
-  addLabel={(title) => m.media_saga_add_label({ title })}
-  isNew={isFeatureNew("sagas")} />
+  addLabel={(title) => m.media_saga_add_label({ title })} />

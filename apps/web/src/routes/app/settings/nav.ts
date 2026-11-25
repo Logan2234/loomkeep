@@ -181,7 +181,6 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
         },
         icon: "key",
         keywords: ["api", "token", "jeton", "integration", "script"],
-        newBadgeKey: "integrations",
         entries: [
           {
             id: "api-keys",
@@ -195,7 +194,16 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
             get label() {
               return m.settings_subscription_links_title();
             },
-            keywords: ["ics", "calendrier", "calendar", "atom", "rss", "flux"],
+            keywords: [
+              "ics",
+              "calendrier",
+              "calendar",
+              "atom",
+              "rss",
+              "flux",
+              "radarr",
+              "sonarr",
+            ],
           },
         ],
       },
@@ -226,7 +234,6 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
         icon: "eye",
         keywords: ["privacy", "public", "prive", "fantome", "ghost"],
         social: true,
-        newBadgeKey: "default-list-visibility",
         legacyHash: "confidentialite",
         entries: [
           {
@@ -416,7 +423,6 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
         icon: "sun",
         keywords: ["apparence", "appearance", "ui"],
         legacyHash: "apparence",
-        newBadgeKey: "home-layout",
         entries: [
           {
             id: "home-layout",
@@ -599,7 +605,6 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
           "ou regarder",
           "where to watch",
         ],
-        newBadgeKey: "watch-providers",
         domains: [Domain.MEDIA, Domain.MUSIC],
         entries: [
           {
@@ -635,7 +640,6 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
         },
         icon: "bell",
         keywords: ["notifications", "emails", "alertes", "cloche", "push"],
-        newBadgeKey: "alert-settings",
         legacyHash: "communications",
         entries: [
           {
@@ -789,7 +793,6 @@ export const SETTINGS_GROUPS: SettingsGroupDef[] = [
         },
         keywords: ["export", "json", "csv", "telecharger", "download", "rgpd"],
         legacyHash: "export",
-        newBadgeKey: "migration-export",
         entries: [
           {
             id: "export-json",
@@ -1077,7 +1080,6 @@ const SETTINGS_SUBPAGES: SettingsSectionDef[] = [
       "ip",
       "securite",
     ],
-    newBadgeKey: "account-activity",
     entries: [],
   },
 ];

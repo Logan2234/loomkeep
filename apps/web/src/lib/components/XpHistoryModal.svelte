@@ -4,9 +4,7 @@
   import { keys } from "#lib/api/keys.js";
   import Icon from "#lib/components/Icon.svelte";
   import Modal from "#lib/components/Modal.svelte";
-  import NewBadge from "#lib/components/NewBadge.svelte";
   import Tooltip from "#lib/components/Tooltip.svelte";
-  import { isFeatureNew } from "#lib/feature-badges.js";
   import { formatDate, formatNumber, formatTime } from "#lib/format.js";
   import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
@@ -143,10 +141,6 @@
     next: progress.level + 1,
   })}
   {onclose}>
-  {#snippet badge()}
-    {#if isFeatureNew("xp-history")}<NewBadge />{/if}
-  {/snippet}
-
   <figure class="mb-2" aria-label={m.gamification_xp_history_chart_label()}>
     <div class="grid h-24 grid-cols-14 gap-1">
       {#each bars as bar (bar.day)}

@@ -193,6 +193,30 @@ export class FollowService {
     return this.relationship(viewerId, username);
   }
 
+  /**
+   * A sign-up through a member's personal link: the member and the newcomer
+   * follow each other at once, both ways accepted whatever their privacy.
+   * The link stands for the member's consent, the sign-up for the
+   * newcomer's. No follow notification: the member is told of the sign-up.
+   */
+  async followEachOther(inviterId: string, inviteeId: string): Promise<void> {
+    await this.prisma.follow.createMany({
+      data: [
+        { followerId: inviterId, followeeId: inviteeId, status: "ACCEPTED" },
+        { followerId: inviteeId, followeeId: inviterId, status: "ACCEPTED" },
+      ],
+      skipDuplicates: true,
+    });
+    await this.achievements.evaluate(
+      inviterId,
+      ACHIEVEMENT_KEYS_ON_FOLLOW_ACCEPTED,
+    );
+    await this.achievements.evaluate(
+      inviteeId,
+      ACHIEVEMENT_KEYS_ON_FOLLOW_ACCEPTED,
+    );
+  }
+
   /** Unfollows (or cancels a pending request). Idempotent. */
   async unfollow(viewerId: string, username: string): Promise<RelationshipDto> {
     const target = await this.resolveTarget(viewerId, username);

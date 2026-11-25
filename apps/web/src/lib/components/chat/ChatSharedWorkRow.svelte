@@ -31,7 +31,7 @@
 </script>
 
 {#snippet line()}
-  <span class="w-[38px] shrink-0 overflow-hidden rounded-[5px]">
+  <span class="w-9.5 shrink-0 overflow-hidden rounded-[5px]">
     <Poster src={work.imageUrl} title={work.title} alt="" caption={false} />
   </span>
   <span class="flex min-w-0 flex-1 flex-col gap-0.5">

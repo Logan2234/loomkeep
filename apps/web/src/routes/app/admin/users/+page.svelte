@@ -312,18 +312,13 @@
     {#snippet actions()}
       <!-- The badge sits beside the button: inside it, it would be
            accent-on-accent and vanish. -->
-      <div class="flex items-center gap-2">
-        {#if isFeatureNew("admin-invitations")}
-          <NewBadge />
-        {/if}
-        <button
-          type="button"
-          class="btn btn-primary"
-          onclick={() => openInvite()}>
-          <Icon name="plus" class="h-4 w-4" />
-          {m.admin_invitations_invite()}
-        </button>
-      </div>
+      <button
+        type="button"
+        class="btn btn-primary"
+        onclick={() => openInvite()}>
+        <Icon name="plus" class="h-4 w-4" />
+        {m.admin_invitations_invite()}
+      </button>
     {/snippet}
   </PageHeader>
 
@@ -414,9 +409,6 @@
             onclick={() => (advancedOpen = !advancedOpen)}>
             <span class="flex flex-wrap items-center gap-2">
               {m.admin_users_advanced_filters()}
-              {#if isFeatureNew("admin-user-filters")}
-                <NewBadge />
-              {/if}
               {#if activeAdvanced.length > 0}
                 <span class="text-dim">({activeAdvanced.length})</span>
               {/if}

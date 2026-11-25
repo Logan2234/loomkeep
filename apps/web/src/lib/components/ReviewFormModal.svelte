@@ -216,7 +216,7 @@
     {/if}
   {/snippet}
 
-  <div class="flex flex-col gap-[18px]">
+  <div class="flex flex-col gap-4.5">
     <RatingSlider value={formRating} onChange={setRating} />
 
     <div>
@@ -228,7 +228,7 @@
       <textarea
         id="review-text"
         name="text"
-        class="input min-h-[110px] resize-y leading-normal"
+        class="input min-h-27.5 resize-y leading-normal"
         rows="4"
         placeholder={m.reviews_text_placeholder()}
         maxlength={REVIEW_TEXT_MAX_LENGTH}

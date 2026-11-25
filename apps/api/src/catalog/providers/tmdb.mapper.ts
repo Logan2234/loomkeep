@@ -87,6 +87,8 @@ export interface TmdbMovieDetails extends TmdbMovieResult {
   external_ids?: TmdbExternalIds;
   release_dates?: { results?: TmdbReleaseDatesResult[] };
   belongs_to_collection?: { id: number } | null;
+  origin_country?: string[];
+  production_countries?: { iso_3166_1: string }[];
 }
 
 export interface TmdbCollection {
@@ -104,6 +106,8 @@ export interface TmdbTvDetails extends TmdbTvResult {
   episode_run_time?: number[];
   external_ids?: TmdbExternalIds;
   seasons?: { season_number: number; name?: string | null }[];
+  origin_country?: string[];
+  production_countries?: { iso_3166_1: string }[];
 }
 
 interface TmdbCrewMember {
@@ -352,6 +356,7 @@ export function toMovieDetails(movie: TmdbMovieDetails): ProviderMediaDetails {
       ),
     ),
     runtimeMin: movie.runtime ?? null,
+    originCountries: originCountries(movie),
     externalIds: toExternalIds(String(movie.id), movie.external_ids),
     seasons: [],
   };
@@ -372,9 +377,28 @@ export function toTvDetails(
     format: null,
     releaseDate: tv.first_air_date || null,
     runtimeMin: tv.episode_run_time?.[0] ?? medianEpisodeRuntime(seasons),
+    originCountries: originCountries(tv),
     externalIds: toExternalIds(String(tv.id), tv.external_ids),
     seasons,
   };
+}
+
+/**
+ * `origin_country` names where a work comes from (The Dark Knight: US), where
+ * `production_countries` lists every co-producer (GB, US). The latter only
+ * stands in when TMDB leaves the former empty, as on some older entries.
+ */
+function originCountries(
+  details: Pick<TmdbMovieDetails, "origin_country" | "production_countries">,
+): string[] {
+  const codes = details.origin_country?.length
+    ? details.origin_country
+    : (details.production_countries ?? []).map((c) => c.iso_3166_1);
+  return [
+    ...new Set(
+      codes.map((c) => c.toUpperCase()).filter((c) => /^[A-Z]{2}$/.test(c)),
+    ),
+  ];
 }
 
 /**

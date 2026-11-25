@@ -49,6 +49,7 @@ const ANIME_DETAILS: ProviderMediaDetails = {
   format: "TV",
   releaseDate: "2024-01-05",
   runtimeMin: null,
+  originCountries: [],
   externalIds: [{ source: MediaSource.ANILIST, externalId: "4242" }],
   seasons: [
     {

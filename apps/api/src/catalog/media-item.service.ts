@@ -682,6 +682,7 @@ export class MediaItemService {
       status: details.status,
       format: details.format,
       genres: details.genres,
+      originCountries: details.originCountries,
       runtimeMin: details.runtimeMin,
       isAdult: details.summary.isAdult,
       lastSyncedAt: new Date(),

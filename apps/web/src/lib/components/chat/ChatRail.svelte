@@ -89,7 +89,7 @@
 <nav
   aria-label={m.chat_conversations()}
   class="bg-bg border-border flex shrink-0 flex-col gap-1.5 overflow-x-hidden overflow-y-auto rounded-l-2xl border-r py-2.5 transition-[width] duration-200 ease-out motion-reduce:transition-none
-    {unfolded ? 'w-[284px]' : 'w-[76px]'}">
+    {unfolded ? 'w-71' : 'w-19'}">
   <div
     class="flex shrink-0 gap-1.5 px-4
       {unfolded ? 'flex-row items-center' : 'flex-col items-center'}">
@@ -150,7 +150,7 @@
     </div>
   {/if}
 
-  <span class="bg-border mx-[22px] my-1 h-px shrink-0"></span>
+  <span class="bg-border mx-5.5 my-1 h-px shrink-0"></span>
 
   {#if !friendsTab}
     {#each threads as thread (`${thread.targetType}:${thread.targetId}`)}
@@ -196,7 +196,7 @@
             </span>
             {#if thread.unread > 0}
               <span
-                class="ring-bg text-micro absolute -top-1.5 -right-2.5 grid h-[18px] min-w-[18px] place-items-center rounded-full px-1 font-mono font-bold ring-2 {badgeTone(
+                class="ring-bg text-micro absolute -top-1.5 -right-2.5 grid h-4.5 min-w-4.5 place-items-center rounded-full px-1 font-mono font-bold ring-2 {badgeTone(
                   thread.muted,
                 )}">
                 {thread.unread > 99 ? "99+" : thread.unread}
@@ -204,7 +204,7 @@
             {/if}
             {#if thread.muted}
               <span
-                class="bg-surface-2 text-dim ring-bg absolute -bottom-1 -left-1.5 grid h-[18px] w-[18px] place-items-center rounded-full ring-2">
+                class="bg-surface-2 text-dim ring-bg absolute -bottom-1 -left-1.5 grid h-4.5 w-4.5 place-items-center rounded-full ring-2">
                 <Icon name="bell-off" class="h-2.5 w-2.5" />
               </span>
             {/if}
@@ -288,7 +288,7 @@
             {/if}
             {#if unread > 0}
               <span
-                class="ring-bg text-micro absolute -top-1.5 -right-2 grid h-[18px] min-w-[18px] place-items-center rounded-full px-1 font-mono font-bold ring-2 {badgeTone(
+                class="ring-bg text-micro absolute -top-1.5 -right-2 grid h-4.5 min-w-4.5 place-items-center rounded-full px-1 font-mono font-bold ring-2 {badgeTone(
                   conversation.muted,
                 )}">
                 {unread > 99 ? "99+" : unread}
@@ -296,7 +296,7 @@
             {/if}
             {#if conversation.muted}
               <span
-                class="bg-surface-2 text-dim ring-bg absolute -bottom-1 -left-1.5 grid h-[18px] w-[18px] place-items-center rounded-full ring-2">
+                class="bg-surface-2 text-dim ring-bg absolute -bottom-1 -left-1.5 grid h-4.5 w-4.5 place-items-center rounded-full ring-2">
                 <Icon name="bell-off" class="h-2.5 w-2.5" />
               </span>
             {/if}
@@ -370,7 +370,7 @@
   {@const context = workThreadContext(card)}
   <div
     transition:scale={{ duration: reduced ? 0 : 120, start: 0.96 }}
-    class="border-border bg-surface pointer-events-none fixed z-[60] flex w-64 flex-col gap-1 rounded-xl border px-3.5 py-3 shadow-xl"
+    class="border-border bg-surface pointer-events-none fixed z-60 flex w-64 flex-col gap-1 rounded-xl border px-3.5 py-3 shadow-xl"
     style="top: {hoveredWork.top}px; left: {hoveredWork.left}px; transform-origin: left top;"
     aria-hidden="true">
     <span class="flex items-baseline justify-between gap-2">
@@ -403,7 +403,7 @@
   {@const unread = card.unread}
   <div
     transition:scale={{ duration: reduced ? 0 : 120, start: 0.96 }}
-    class="border-border bg-surface pointer-events-none fixed z-[60] flex w-64 flex-col gap-1 rounded-xl border px-3.5 py-3 shadow-xl"
+    class="border-border bg-surface pointer-events-none fixed z-60 flex w-64 flex-col gap-1 rounded-xl border px-3.5 py-3 shadow-xl"
     style="top: {hovered.top}px; left: {hovered.left}px; transform-origin: left top;"
     aria-hidden="true">
     <span class="flex items-baseline justify-between gap-2">

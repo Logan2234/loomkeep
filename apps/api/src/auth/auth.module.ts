@@ -8,10 +8,12 @@ import { MailModule } from "../mail/mail.module";
 import { AdminAlertModule } from "../notifications/admin-alert.module";
 import { NotificationModule } from "../notifications/notification.module";
 import { SecurityModule } from "../security/security.module";
+import { SocialModule } from "../social/social.module";
 import { AuthController } from "./auth.controller";
 import { AuthService } from "./auth.service";
 import { InvitationService } from "./invitation.service";
 import { MfaService } from "./mfa.service";
+import { PersonalInvitationController } from "./personal-invitation.controller";
 import { ReauthController } from "./reauth.controller";
 import { ReauthService } from "./reauth.service";
 import { SessionsController } from "./sessions.controller";
@@ -33,9 +35,11 @@ import { WebauthnService } from "./webauthn.service";
     NotificationModule,
     AdminAlertModule,
     JobsModule,
+    SocialModule,
   ],
   controllers: [
     AuthController,
+    PersonalInvitationController,
     SessionsController,
     VerificationController,
     ReauthController,

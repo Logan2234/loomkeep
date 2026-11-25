@@ -2,7 +2,6 @@
   import { upsertGameEntry } from "#lib/api/client.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import SagaBlock from "#lib/components/saga/SagaBlock.svelte";
-  import { isFeatureNew } from "#lib/feature-badges.js";
   import { m } from "#lib/paraglide/messages.js";
   import { gameSagaMember } from "#lib/saga.js";
   import type {
@@ -56,5 +55,4 @@
     if (member) addMut.mutate(member);
   }}
   addButton={m.game_status_backlog()}
-  addLabel={(title) => m.game_saga_add_label({ title })}
-  isNew={isFeatureNew("game-sagas")} />
+  addLabel={(title) => m.game_saga_add_label({ title })} />

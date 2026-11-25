@@ -96,6 +96,25 @@ export function checkGenresTier(target: number) {
   };
 }
 
+/**
+ * "world_tour" tiers (GAM-03): distinct countries of origin among finished
+ * films and series. A co-production counts each of its countries.
+ */
+export function checkWorldTourTier(target: number) {
+  return async (
+    prisma: PrismaService,
+    userId: string,
+  ): Promise<AchievementCheckResult> => {
+    const entries = await prisma.mediaEntry.findMany({
+      where: { userId, status: "COMPLETED" },
+      select: { mediaItem: { select: { originCountries: true } } },
+    });
+    const current = new Set(entries.flatMap((e) => e.mediaItem.originCountries))
+      .size;
+    return { unlocked: current >= target, progress: { current, target } };
+  };
+}
+
 /** "omnivore": at least one tracked title (any status) in every one of the 4 tracked domains. */
 export async function checkOmnivore(
   prisma: PrismaService,

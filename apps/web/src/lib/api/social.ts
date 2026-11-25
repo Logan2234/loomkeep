@@ -10,6 +10,12 @@ import type {
 import { request } from "./core";
 import { typedRequest } from "./generated/typed-request";
 
+/** Your own sign-up link, minted on first ask (SOC-02). */
+export const getPersonalInvitation = () => typedRequest("/users/me/invitation");
+
+export const renewPersonalInvitation = () =>
+  typedRequest("/users/me/invitation/renew", { method: "POST" });
+
 export const getProfile = (username: string) =>
   typedRequest("/social/users/{username}", { params: { username } });
 

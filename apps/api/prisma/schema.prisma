@@ -816,6 +816,9 @@ model UserUrlToken {
   // The public Atom activity feed (ee/social/activity-feed). Null until
   // first requested from Réglages > Vie privée.
   activityFeedToken          String? @unique
+  // The Radarr and Sonarr import lists (ee/arr), pile and lists alike. Its
+  // own token, so revoking one integration leaves the calendar untouched.
+  arrToken                   String? @unique
   // The newsletter's unsubscribe link, generated on first send and reused
   // in every later one — not a single-use UserToken, which would grow
   // without bound with each send. Low-stakes if it leaked (it only turns
@@ -1751,6 +1754,12 @@ model Invitation {
   revokedAt     DateTime?
   // Last time the link was mailed to `email` (null: shared by hand only).
   emailedAt     DateTime?
+  // A member's own reusable link (SOC-02), at most one per member (partial
+  // unique index in the migration). Kept out of the admin list, refused while
+  // registration is closed, and its token kept in clear so the member can
+  // copy it again: it only ever opens an instance that is already open.
+  personal      Boolean   @default(false)
+  token         String?   @unique
   createdAt     DateTime  @default(now())
 
   createdBy  User?  @relation("InvitationsCreated", fields: [createdById], references: [id], onDelete: SetNull)
@@ -2035,6 +2044,10 @@ model MediaItem {
   // type already tells a film apart. Lets the Letterboxd export include anime films.
   format            String?
   genres            String[]
+  // ISO 3166-1 alpha-2 countries of origin (TMDB `origin_country`), for the
+  // stats map and the "tour du monde" achievement. Empty until the next sync
+  // of an item cached before it existed.
+  originCountries   String[]      @default([])
   // Average minutes per episode (series/anime) or the film's runtime; null until
   // captured from the source. Used by the stats aggregation for watch time.
   runtimeMin        Int?

@@ -25,6 +25,14 @@ history from before it was started.
 
 ### Added
 
+- Stats (premium): a world map of where the films and series you watched
+  come from, next to the full ranking by titles or watch time.
+- A « Tour du monde » achievement: films and series from 5, 15 and 30
+  countries finished.
+- Messages: invite friends with your own link. Whoever signs up with it and
+  you follow each other. Offered only while registration is open.
+- Radarr and Sonarr (premium): import lists fed by your pile, from
+  Settings › Integrations, or by any of your lists, from its menu.
 - Admin: a premium grant can end at a date you set, after which the account
   is back on the free plan.
 - Brand logos for the services Loomkeep talks to: import sources, export
@@ -64,6 +72,9 @@ history from before it was started.
   is (a free, open-source, self-hostable media tracker), in English, French
   and Italian, and the sitemap dates each page.
 - Docs: a `robots.txt` points search engines to the sitemap.
+- Calendar and activity feed subscriptions show every link in full, each
+  with its own copy button, and « Regenerate » now sits at the bottom.
+- The stats rankings unfold and fold smoothly on « See all ».
 
 ### Fixed
 

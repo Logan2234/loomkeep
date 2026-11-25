@@ -148,6 +148,9 @@ export const keys = {
   activityFeedSubscribe: {
     token: () => ["activity-feed-subscribe", "token"] as const,
   },
+  arrSubscribe: {
+    token: () => ["arr-subscribe", "token"] as const,
+  },
   privacy: {
     settings: () => ["privacy", "settings"] as const,
   },
@@ -213,6 +216,7 @@ export const keys = {
   social: {
     followRequests: () => ["social", "follow-requests"] as const,
     blockedUsers: () => ["social", "blocked-users"] as const,
+    invitation: () => ["social", "invitation"] as const,
     workFriends: (targetType: string, targetId: string) =>
       ["social", "work-friends", targetType, targetId] as const,
   },

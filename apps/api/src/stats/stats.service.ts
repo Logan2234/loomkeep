@@ -408,6 +408,7 @@ export class StatsService {
               type: true,
               runtimeMin: true,
               genres: true,
+              originCountries: true,
               ...CANONICAL_EXTERNAL_ID_SELECT,
             },
           },
@@ -429,7 +430,12 @@ export class StatsService {
                 select: {
                   mediaItemId: true,
                   mediaItem: {
-                    select: { type: true, genres: true, runtimeMin: true },
+                    select: {
+                      type: true,
+                      genres: true,
+                      runtimeMin: true,
+                      originCountries: true,
+                    },
                   },
                 },
               },
@@ -439,19 +445,26 @@ export class StatsService {
       }),
     ]);
 
-    const regularWatches = watches;
+    const regularWatches = watches.map((w) => {
+      const mi = w.episode.season.mediaItem;
+      return {
+        ...w,
+        minutes: episodeRuntimeFor(
+          mi.type,
+          w.episode.runtimeMin,
+          mi.runtimeMin,
+        ),
+      };
+    });
     const typeSplitRows: TypeSplitInput[] = [];
     let episodeMinutes = 0;
 
     for (const w of regularWatches) {
-      const mi = w.episode.season.mediaItem;
-      const minutes = episodeRuntimeFor(
-        mi.type,
-        w.episode.runtimeMin,
-        mi.runtimeMin,
-      );
-      episodeMinutes += minutes;
-      typeSplitRows.push({ type: mi.type, minutes });
+      episodeMinutes += w.minutes;
+      typeSplitRows.push({
+        type: w.episode.season.mediaItem.type,
+        minutes: w.minutes,
+      });
     }
 
     const completedMovies = entries.filter(
@@ -509,8 +522,13 @@ export class StatsService {
           episodeWatches: regularWatches.map((w) => ({
             watchedAt: w.watchedAt,
             genres: w.episode.season.mediaItem.genres,
+            mediaItemId: w.episode.season.mediaItemId,
+            originCountries: w.episode.season.mediaItem.originCountries,
+            minutes: w.minutes,
           })),
           completedMovies: completedMovies.map((m) => ({
+            mediaItemId: m.mediaItem.id,
+            originCountries: m.mediaItem.originCountries,
             title: m.mediaItem.title,
             runtimeMin: m.mediaItem.runtimeMin,
             genres: m.mediaItem.genres,

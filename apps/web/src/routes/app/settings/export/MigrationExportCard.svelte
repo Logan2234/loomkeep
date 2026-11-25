@@ -4,10 +4,8 @@
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import Icon from "#lib/components/Icon.svelte";
   import ProviderMark from "#lib/components/ProviderMark.svelte";
-  import NewBadge from "#lib/components/NewBadge.svelte";
   import Switch from "#lib/components/Switch.svelte";
   import { downloadBlob, datedFilename } from "#lib/download.js";
-  import { isFeatureNew } from "#lib/feature-badges.js";
   import { m } from "#lib/paraglide/messages.js";
   import { toast } from "#lib/toast.svelte.js";
   import type { MigrationExportDto } from "@loomkeep/shared";
@@ -84,11 +82,8 @@
   id="export-services"
   use:flashAnchor={{ anchor: "export-services", hash: page.url.hash }}
   class="inset-card p-5 md:p-6">
-  <p class="flex items-center gap-2 font-semibold">
+  <p class="font-semibold">
     {m.settings_export_services_title()}
-    {#if isFeatureNew("migration-export")}
-      <NewBadge />
-    {/if}
   </p>
   <p class="text-dim mt-1 max-w-xl text-sm">
     {m.settings_export_services_body()}

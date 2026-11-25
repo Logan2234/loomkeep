@@ -3,7 +3,7 @@ import { webOrigins } from "./common/web-origin.util";
 // at module-load time (not through ConfigModule), so .env has to be loaded
 // before app.module.ts (and everything it imports) even starts resolving.
 import { config } from "dotenv";
-config();
+config({ quiet: true });
 
 import "./instrument";
 

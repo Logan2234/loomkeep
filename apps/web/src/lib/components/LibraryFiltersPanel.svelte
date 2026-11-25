@@ -128,7 +128,7 @@
 
   <div
     data-drawer-scroll
-    class="min-h-0 flex-1 touch-pan-y overflow-x-hidden overflow-y-auto overscroll-contain px-5 pb-4">
+    class="min-h-0 flex-1 touch-pan-y overflow-x-hidden overflow-y-auto overscroll-contain px-5 pb-4 text-sm">
     {@render savedViews?.()}
 
     {#if extraLabel && (extraOptions.length > 0 || extra.length > 0)}
@@ -162,11 +162,12 @@
     {#each switches as item (item.key)}
       <label
         class="flex min-h-11 cursor-pointer items-center justify-between gap-3"
-        class:mt-4={!favorites}>
+        class:mt-4={!favorites}
+        class:mt-2={favorites}>
         <span class="flex flex-col">
-          <span class="font-medium">
-            {item.label}{#if item.isNew}
-              <NewBadge />{/if}
+          <span class="flex items-center gap-2 font-medium">
+            {item.label}
+            {#if item.isNew}<NewBadge />{/if}
           </span>
           {#if item.hint}
             <span class="text-dim text-xs">{item.hint}</span>
@@ -190,7 +191,7 @@
           type="button"
           role="radio"
           aria-checked={on}
-          class="hover:bg-surface-2 -mx-2 flex min-h-11 items-center justify-between gap-3 rounded-lg px-2 text-left transition-colors {on
+          class="hover:bg-surface-2 -mx-2 flex items-center justify-between gap-3 rounded-lg p-2 text-left transition-colors {on
             ? 'font-semibold'
             : ''}"
           onclick={() => (sort = option.value)}>
@@ -246,7 +247,7 @@
       </div>
       <button
         type="button"
-        class="link-accent mt-1 text-sm font-semibold"
+        class="link-accent mt-1 font-semibold"
         onclick={onResetColumns}>
         {m.library_columns_reset()}
       </button>

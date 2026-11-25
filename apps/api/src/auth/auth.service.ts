@@ -45,6 +45,7 @@ import { readAlertPrefs } from "../notifications/alert-prefs.util";
 import { NotificationService } from "../notifications/notification.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { SecurityEventService } from "../security/security-event.service";
+import { FollowService } from "../social/follow.service";
 import { isSocialEnabled } from "../social/social.config";
 import { avatarUrl } from "../users/avatar.util";
 import { readHomeLayout, readHomePhoneLayout } from "../users/home-layout.util";
@@ -124,6 +125,7 @@ export class AuthService {
     private readonly sessionCache: SessionCacheService,
     private readonly events: EventsGateway,
     private readonly invitations: InvitationService,
+    private readonly follows: FollowService,
     private readonly apiKeys: ApiKeysService,
     private readonly notifications: NotificationService,
     private readonly adminAlerts: AdminAlertService,
@@ -243,6 +245,14 @@ export class AuthService {
     // Seed this device so it isn't flagged as "new" on the user's next login.
     await this.recordDevice(user.id, userAgent);
     await this.announceArrival(user, invitation?.createdById ?? null);
+
+    if (
+      invitation?.personal &&
+      invitation.createdById &&
+      isSocialEnabled(this.configService)
+    ) {
+      await this.follows.followEachOther(invitation.createdById, user.id);
+    }
 
     const promoted = await this.ensureAdminRole(user);
     return {

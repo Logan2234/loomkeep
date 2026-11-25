@@ -51,6 +51,7 @@ function details(
     releaseDate: null,
     movieReleaseDates: [],
     runtimeMin: 50,
+    originCountries: [],
     externalIds: [{ source: MediaSource.TMDB, externalId: base.sourceId }],
     seasons:
       episodes === 0

@@ -9,19 +9,14 @@
   } from "#lib/search/recent-searches.js";
   import EmptyState from "#lib/components/EmptyState.svelte";
   import { MEDIA_TYPE_OPTIONS } from "#lib/constants/media-types.js";
-
   import { enumParam } from "#lib/url-params.js";
-
   import { type SelectOption } from "#lib/types/select-option.js";
-
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
   import { keys } from "#lib/api/keys.js";
   import { resolveLink } from "#lib/api/links.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
   import Icon from "#lib/components/Icon.svelte";
-  import NewBadge from "#lib/components/NewBadge.svelte";
-  import { isFeatureNew } from "#lib/feature-badges.js";
   import PageHeader from "#lib/components/PageHeader.svelte";
   import BookSearchPanel from "#lib/components/search/BookSearchPanel.svelte";
   import GameSearchPanel from "#lib/components/search/GameSearchPanel.svelte";
@@ -297,7 +292,6 @@
           onclick={() => (domain = ALL)}>
           <Icon name="search" class="h-3.5 w-3.5" />
           {m.search_tab_all()}
-          {#if isFeatureNew("unified-search")}<NewBadge />{/if}
         </button>
         {#each enabledTabs as tab (tab[0])}
           <button

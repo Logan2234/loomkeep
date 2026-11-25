@@ -8,6 +8,7 @@
   import { createApiQuery } from "#lib/api/query.svelte.js";
   import { chat } from "#lib/chat/chat.svelte.js";
   import Icon from "#lib/components/Icon.svelte";
+  import { appConfig } from "#lib/config.svelte.js";
   import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
   import ChatSearchField from "./ChatSearchField.svelte";
@@ -18,9 +19,13 @@
   import ChatThread from "./ChatThread.svelte";
   import ChatWorkList from "./ChatWorkList.svelte";
   import ChatWorkThread from "./ChatWorkThread.svelte";
+  import InviteFriendModal from "./InviteFriendModal.svelte";
   import { shownUnread } from "./conversation-presentation";
 
   const reduced = prefersReducedMotion();
+
+  let inviting = $state(false);
+  const canInvite = $derived(appConfig.registrationEnabled);
   const slide = {
     x: "100%",
     opacity: 1,
@@ -85,6 +90,15 @@
       <h2 class="font-display min-w-0 flex-1 text-2xl font-extrabold">
         {m.chat_title()}
       </h2>
+      {#if chat.tab === "friends" && canInvite}
+        <button
+          type="button"
+          class="btn-icon h-11 w-11"
+          aria-label={m.chat_invite()}
+          onclick={() => (inviting = true)}>
+          <Icon name="user-plus" class="h-5 w-5" />
+        </button>
+      {/if}
       {#if chat.tab === "friends"}
         <button
           type="button"
@@ -159,6 +173,15 @@
                   onclick={() => chat.newMessage()}>
                   {m.chat_new_message()}
                 </button>
+                {#if canInvite}
+                  <button
+                    type="button"
+                    class="btn btn-ghost btn-sm"
+                    onclick={() => (inviting = true)}>
+                    <Icon name="user-plus" class="h-4 w-4" />
+                    {m.chat_invite_title()}
+                  </button>
+                {/if}
               {/if}
             </div>
           {/if}
@@ -198,3 +221,7 @@
     </div>
   {/if}
 </div>
+
+{#if inviting}
+  <InviteFriendModal onclose={() => (inviting = false)} />
+{/if}

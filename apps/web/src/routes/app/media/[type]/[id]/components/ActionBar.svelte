@@ -126,7 +126,6 @@
         ? m.media_movie_reminder_active()
         : m.media_movie_reminder_enable()}
     </span>
-    {#if !inline && isFeatureNew("movie-releases")}<NewBadge />{/if}
   {:else if entry && isMovie}
     <span class="truncate">
       {#if isWatched}
@@ -375,9 +374,6 @@
                   {entry.episodeAlertsMuted
                     ? m.media_unmute_episode_alerts()
                     : m.media_mute_episode_alerts()}
-                  {#if isFeatureNew("episode-alerts-mute")}
-                    <span class="ml-auto"><NewBadge /></span>
-                  {/if}
                 </button>
               {/snippet}
               {@render digestOffTooltip(episodeAlerts, true)}

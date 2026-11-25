@@ -1,6 +1,4 @@
 <script lang="ts">
-  import NewBadge from "#lib/components/NewBadge.svelte";
-  import { isFeatureNew } from "#lib/feature-badges.js";
   import { formatHours } from "#lib/format.js";
   import { m } from "#lib/paraglide/messages.js";
   import type { GameTimeToBeatDto } from "@loomkeep/shared";
@@ -29,10 +27,8 @@
 </script>
 
 <section class="card p-4">
-  <h2
-    class="font-display flex items-center gap-1.5 text-sm font-bold tracking-tight">
+  <h2 class="font-display text-sm font-bold tracking-tight">
     {m.game_time_to_beat()}
-    {#if isFeatureNew("game-time-to-beat")}<NewBadge />{/if}
   </h2>
   <ul class="mt-3 flex flex-col gap-1.5">
     {#each rows as row (row.label)}

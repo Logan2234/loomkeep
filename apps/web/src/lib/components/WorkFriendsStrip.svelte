@@ -5,8 +5,6 @@
   import { auth } from "#lib/auth.svelte.js";
   import Avatar from "#lib/components/Avatar.svelte";
   import Icon from "#lib/components/Icon.svelte";
-  import NewBadge from "#lib/components/NewBadge.svelte";
-  import { isFeatureNew } from "#lib/feature-badges.js";
   import { formatHours, formatNumber, formatRelative } from "#lib/format.js";
   import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
@@ -302,7 +300,6 @@
             </b>
           {/if}
         {/if}
-        {#if isFeatureNew("work-friends")}<NewBadge />{/if}
       </span>
       <Icon
         name="chevron-down"

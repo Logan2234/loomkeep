@@ -17,7 +17,6 @@
   import NotificationRow from "#lib/components/notifications/NotificationRow.svelte";
   import PageHeader from "#lib/components/PageHeader.svelte";
   import Tabs from "#lib/components/Tabs.svelte";
-  import { isFeatureNew } from "#lib/feature-badges.js";
   import { prefersReducedMotion } from "#lib/motion.js";
   import {
     cascade,
@@ -105,7 +104,6 @@
     title={m.common_notifications()}
     back="/app"
     backInHistory
-    isNew={isFeatureNew("notification-history")}
     class="mb-5" />
 
   <Tabs

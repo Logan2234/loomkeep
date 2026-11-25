@@ -56,6 +56,8 @@ export interface ProviderMediaDetails {
   movieReleaseDates?: import("@loomkeep/shared").MovieReleaseDate[];
   /** Average minutes per episode (series/anime) or the film's runtime; null if unknown. */
   runtimeMin: number | null;
+  /** ISO 3166-1 alpha-2 countries of origin; empty when the source names none. */
+  originCountries: string[];
   externalIds: ProviderExternalId[];
   seasons: ProviderSeason[];
 }

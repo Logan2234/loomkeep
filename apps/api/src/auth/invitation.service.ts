@@ -4,6 +4,7 @@ import type {
   AdminInvitationStatus,
   InvitationPreviewDto,
   PagedResult,
+  PersonalInvitationDto,
 } from "@loomkeep/shared";
 import { ErrorCode } from "@loomkeep/shared";
 import { HttpStatus, Injectable, Logger } from "@nestjs/common";
@@ -20,10 +21,17 @@ import { JobRunService } from "../jobs/job-run.service";
 import { MailService } from "../mail/mail.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { avatarUrl } from "../users/avatar.util";
+import { isRegistrationEnabled } from "./registration.config";
 
 /** How long an unused, dead (expired or revoked) invitation is kept for the admin list. */
 const DEAD_INVITATION_RETENTION_DAYS = 30;
 const DEAD_INVITATION_PURGE_CRON = "30 6 * * *";
+
+// A personal link has no use limit nor end date of its own: it stops with
+// a renewal, or as soon as registration closes. The columns are required,
+// so they get values nothing reaches.
+const PERSONAL_MAX_USES = 2_147_483_647;
+const PERSONAL_VALIDITY_DAYS = 100 * 365;
 
 const INVITATION_INCLUDE = {
   createdBy: { select: { displayName: true } },
@@ -65,7 +73,8 @@ export function invitationStatus(
 /**
  * Sign-up invitations (ADM-01): minted from the admin users screen, redeemed
  * by AuthService.register(). An invitation bypasses REGISTRATION_ENABLED —
- * a closed instance stays reachable by invitation only.
+ * a closed instance stays reachable by invitation only. A member's personal
+ * link (SOC-02) is the exception: it works only while registration is open.
  */
 @Injectable()
 export class InvitationService {
@@ -75,7 +84,7 @@ export class InvitationService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly mail: MailService,
-    config: ConfigService,
+    private readonly config: ConfigService,
     private readonly jobRuns: JobRunService,
   ) {
     // WEB_ORIGIN may list several origins (see main.ts's CORS setup); links
@@ -104,6 +113,7 @@ export class InvitationService {
     };
     const query = filters.query?.trim();
     const where: Prisma.InvitationWhereInput = {
+      personal: false,
       AND: [
         ...(filters.status ? [states[filters.status]] : []),
         ...(query
@@ -212,6 +222,45 @@ export class InvitationService {
     return this.toDto(invitation);
   }
 
+  /** The member's own link, minted the first time it's asked for. */
+  async personalLink(userId: string): Promise<PersonalInvitationDto> {
+    this.assertRegistrationOpen();
+
+    const existing = await this.prisma.invitation.findFirst({
+      where: { createdById: userId, personal: true },
+    });
+    const invitation =
+      existing ??
+      (await this.prisma.invitation.create({
+        data: {
+          ...this.personalToken(),
+          createdById: userId,
+          personal: true,
+          maxUses: PERSONAL_MAX_USES,
+          expiresAt: addDays(new Date(), PERSONAL_VALIDITY_DAYS),
+        },
+      }));
+
+    return this.toPersonalDto(invitation);
+  }
+
+  /** A fresh personal link: the one that was shared stops working. */
+  async renewPersonalLink(userId: string): Promise<PersonalInvitationDto> {
+    this.assertRegistrationOpen();
+
+    const existing = await this.prisma.invitation.findFirst({
+      where: { createdById: userId, personal: true },
+      select: { id: true },
+    });
+    if (!existing) return this.personalLink(userId);
+
+    const invitation = await this.prisma.invitation.update({
+      where: { id: existing.id },
+      data: { ...this.personalToken(), tokenIssuedAt: new Date() },
+    });
+    return this.toPersonalDto(invitation);
+  }
+
   /** The sign-up page's view of a link — throws when it can't be redeemed. */
   async preview(token: string): Promise<InvitationPreviewDto> {
     const invitation = await this.findRedeemable(token);
@@ -287,6 +336,7 @@ export class InvitationService {
     const before = sinceDaysAgo(now, DEAD_INVITATION_RETENTION_DAYS);
     const { count } = await this.prisma.invitation.deleteMany({
       where: {
+        personal: false,
         useCount: 0,
         OR: [{ expiresAt: { lt: before } }, { revokedAt: { lt: before } }],
       },
@@ -304,6 +354,18 @@ export class InvitationService {
       include: { createdBy: { select: { displayName: true } } },
     });
     const status = invitation ? invitationStatus(invitation) : null;
+
+    // A personal link only opens an instance that is open anyway; with its
+    // member gone, nobody is left to follow.
+    if (
+      invitation?.personal &&
+      (!invitation.createdById || !isRegistrationEnabled(this.config))
+    ) {
+      throw new AppException(
+        HttpStatus.NOT_FOUND,
+        ErrorCode.AuthInvalidInvitation,
+      );
+    }
 
     if (status === "expired") {
       throw new AppException(HttpStatus.GONE, ErrorCode.AuthInvitationExpired);
@@ -371,6 +433,27 @@ export class InvitationService {
         ErrorCode.AdminInvitationEmailRegistered,
       );
     }
+  }
+
+  private assertRegistrationOpen(): void {
+    if (!isRegistrationEnabled(this.config)) {
+      throw new AppException(
+        HttpStatus.FORBIDDEN,
+        ErrorCode.AuthRegistrationDisabled,
+      );
+    }
+  }
+
+  private personalToken(): { token: string; tokenHash: string } {
+    const token = randomToken(16, "base64url");
+    return { token, tokenHash: sha256Hex(token) };
+  }
+
+  private toPersonalDto(invitation: Invitation): PersonalInvitationDto {
+    return {
+      url: `${this.webOrigin}/register?invite=${invitation.token}`,
+      joinedCount: invitation.useCount,
+    };
   }
 
   /** Mails the link when there's an address and SMTP to send it with. */
