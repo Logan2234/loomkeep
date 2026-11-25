@@ -1,4 +1,5 @@
 import type { JobStatus } from "./admin-jobs";
+import type { ImportReportTile } from "./import";
 /** Bucket granularity for the admin trend charts. */
 export const TREND_PERIODS = ["day", "week", "month", "year"] as const;
 
@@ -55,7 +56,9 @@ export interface AdminImportRunDto {
   itemCount: number;
   /** Whether the commit wiped the domain's library first (destructive replace). */
   overwrite: boolean;
-  /** Human summary joined from the report's tiles; null on failure. */
+  /** The committed report's figures; null on failure and on old runs. */
+  tiles: ImportReportTile[] | null;
+  /** Old runs only: their figures as text, from before tiles were kept. */
   summary: string | null;
   /** Present only when `status` is "FAILURE". */
   error: string | null;

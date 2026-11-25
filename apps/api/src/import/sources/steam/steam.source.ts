@@ -31,12 +31,12 @@ import {
 
 export const STEAM_API = "https://api.steampowered.com";
 
-/** Review sections, in display order, with their French headings. */
-const STATUS_GROUPS: { status: GameStatus; label: string }[] = [
-  { status: "PLAYING", label: "En cours" },
-  { status: "BACKLOG", label: "À jouer" },
-  { status: "COMPLETED", label: "Terminé" },
-  { status: "DROPPED", label: "Abandonnés" },
+/** Review sections, in display order: the client labels each status. */
+const STATUS_GROUPS: GameStatus[] = [
+  "PLAYING",
+  "BACKLOG",
+  "COMPLETED",
+  "DROPPED",
 ];
 
 interface SteamOwnedGame {
@@ -121,9 +121,10 @@ export class SteamImportSource implements ImportReq<SteamParsed> {
         parsed.playtimeByKey.set(key, game.playtime_forever);
         unmatchedByApp.set(key, {
           key,
-          title: game.name ?? "Jeu inconnu",
-          sourceTitle: game.name ?? "Jeu inconnu",
-          subtitle: fmtPlaytime(game.playtime_forever),
+          // Steam names nothing for a delisted app: the client shows it as
+          // unknown (`unknownTitle`), the app id still tells it apart.
+          title: game.name ?? `Steam ${game.appid}`,
+          sourceTitle: game.name ?? `Steam ${game.appid}`,
           context: {
             kind: "game",
             playtimeMinutes: game.playtime_forever,
@@ -156,7 +157,6 @@ export class SteamImportSource implements ImportReq<SteamParsed> {
         key,
         title: detail.summary.title,
         sourceTitle: detail.summary.title,
-        subtitle: fmtPlaytime(playtime) + (recent ? " · joué récemment" : ""),
         context: {
           kind: "game",
           playtimeMinutes: playtime,
@@ -189,9 +189,9 @@ export class SteamImportSource implements ImportReq<SteamParsed> {
       );
     }
 
-    const groups: ImportPlanGroup[] = STATUS_GROUPS.flatMap((g) => {
-      const items = byStatus.get(g.status);
-      return items?.length ? [{ id: g.status, label: g.label, items }] : [];
+    const groups: ImportPlanGroup[] = STATUS_GROUPS.flatMap((status) => {
+      const items = byStatus.get(status);
+      return items?.length ? [{ id: status, items }] : [];
     });
 
     const matched = matchedByIgdb.size;
@@ -283,30 +283,13 @@ export class SteamImportSource implements ImportReq<SteamParsed> {
       progress.tick();
     }
 
-    const tiles: ImportReportTile[] = STATUS_GROUPS.flatMap((g) => {
-      const value = tally.get(g.status);
-      return value !== undefined && value > 0
-        ? [{ id: g.status, label: g.label, value, sub: null }]
-        : [];
+    const tiles: ImportReportTile[] = STATUS_GROUPS.flatMap((status) => {
+      const value = tally.get(status);
+      return value !== undefined && value > 0 ? [{ id: status, value }] : [];
     });
-    if (tiles.length === 0)
-      tiles.push({ id: "games", label: "Games", value: 0, sub: null });
-
-    if (notFound > 0) {
-      tiles.push({
-        id: "notFound",
-        label: "Not found",
-        value: notFound,
-        sub: null,
-      });
-    }
-
-    tiles.push({
-      id: "playtime",
-      label: "Playtime",
-      value: Math.round(totalMinutes / 60),
-      sub: "hours imported",
-    });
+    if (tiles.length === 0) tiles.push({ id: "games", value: 0 });
+    if (notFound > 0) tiles.push({ id: "notFound", value: notFound });
+    tiles.push({ id: "playtime", value: Math.round(totalMinutes / 60) });
 
     return { overwrite: false, tiles };
   }
@@ -420,12 +403,6 @@ export class SteamImportSource implements ImportReq<SteamParsed> {
 
     return (await response.json()) as T;
   }
-}
-
-function fmtPlaytime(minutes: number): string {
-  if (minutes === 0) return "jamais joué";
-  const hours = Math.round(minutes / 60);
-  return hours === 0 ? "< 1 h" : `${hours} h`;
 }
 
 function toMatch(

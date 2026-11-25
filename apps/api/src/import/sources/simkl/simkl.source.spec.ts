@@ -170,7 +170,7 @@ describe("SimklImportSource (via ImportJobService)", () => {
     });
     expect(byKey(job.plan!, "tmdb:1396")).toMatchObject({
       title: "Breaking Bad",
-      subtitle: "1 épisode vu",
+      context: { kind: "series", episodesWatched: 1 },
       include: true,
     });
     expect(byKey(job.plan!, "tmdb:238")).toMatchObject({

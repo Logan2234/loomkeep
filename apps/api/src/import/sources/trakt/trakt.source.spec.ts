@@ -147,7 +147,7 @@ describe("TraktImportSource (via ImportJobService)", () => {
     });
     expect(byKey(job.plan!, "tmdb:114868")).toMatchObject({
       title: "Record of Ragnarok",
-      subtitle: "1 épisode vu",
+      context: { kind: "series", episodesWatched: 1 },
     });
     expect(byKey(job.plan!, "tmdb:1083381")).toMatchObject({
       title: "Backrooms",

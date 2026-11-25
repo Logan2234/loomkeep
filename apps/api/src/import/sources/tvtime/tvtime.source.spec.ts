@@ -187,7 +187,7 @@ describe("TvTimeImportSource (via ImportJobService)", () => {
     expect(tracked[0]).toMatchObject({
       key: "tvdb:100",
       title: "My Show",
-      subtitle: "2 épisodes vus",
+      context: { kind: "series", episodesWatched: 2 },
       context: {
         kind: "series",
         episodesWatched: 2,
@@ -316,10 +316,9 @@ describe("TvTimeImportSource (via ImportJobService)", () => {
       "SERIES",
     );
     expect(prisma.episodeWatch.createMany).toHaveBeenCalledTimes(2);
-    const tile = (label: string) =>
-      job.report!.tiles.find((t) => t.label === label);
-    expect(tile("Series")!.value).toBe(1);
-    expect(tile("Episodes")!.value).toBe(2);
+    const tile = (id: string) => job.report!.tiles.find((t) => t.id === id);
+    expect(tile("series")!.value).toBe(1);
+    expect(tile("episodes")!.value).toBe(2);
     expect(job.report!.tiles).toMatchObject([
       { id: "series", watchlistCount: 0 },
       { id: "episodes" },
@@ -525,9 +524,9 @@ describe("TvTimeImportSource (via ImportJobService)", () => {
       "m2",
       "MOVIE",
     );
-    const films = job.report!.tiles.find((t) => t.label === "Movies");
+    const films = job.report!.tiles.find((t) => t.id === "movies");
     expect(films!.value).toBe(0);
-    expect(films!.sub).toBe("1 on the watchlist");
+    expect(films!.watchlistCount).toBe(1);
   });
 
   // Overwrite used to empty the whole library before the first write: one

@@ -224,20 +224,20 @@ describe("SteamImportSource (via ImportJobService)", () => {
     });
     expect(byKey(job.plan!, "g100")).toMatchObject({
       sourceTitle: "Game 100",
-      subtitle: "10 h",
+      context: { kind: "game", recentlyPlayed: false },
       defaultStatus: "BACKLOG",
       include: true,
       match: { source: "IGDB", sourceId: "100" },
     });
     expect(byKey(job.plan!, "g200")).toMatchObject({
-      subtitle: "2 h · joué récemment",
+      context: { kind: "game", recentlyPlayed: true },
       defaultStatus: "PLAYING",
       alreadyInLibrary: true,
       include: false, // already tracked
     });
     expect(byKey(job.plan!, "u40")).toMatchObject({
       match: null,
-      subtitle: "< 1 h",
+      context: { kind: "game" },
     });
     expect(mocks.igdb.matchSteamAppIds).toHaveBeenCalledWith([
       "10",

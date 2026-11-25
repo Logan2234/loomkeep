@@ -1831,25 +1831,28 @@ model SecurityEvent {
 // identifier — unlike SecurityEvent, ImportRun has no account-less write
 // path to justify one), so it reads as null once the account is deleted.
 model ImportRun {
-  id         String    @id @default(cuid())
-  userId     String?
-  sourceId   String
+  id          String    @id @default(cuid())
+  userId      String?
+  sourceId    String
   // Nullable: rows written before this column existed have no domain, and
   // are deliberately left out of the free-import-per-domain check rather
   // than backfilled — see ImportJobService#getQuota.
-  domain     Domain?
-  status     RunStatus
+  domain      Domain?
+  status      RunStatus
   // Items actually written (the user's kept selection), regardless of outcome.
-  itemCount  Int
-  overwrite  Boolean   @default(false)
+  itemCount   Int
+  overwrite   Boolean   @default(false)
   // Selection and structured outcome for imports recorded after this column was added.
-  details    Json?
-  // Human summary joined from the report's tiles; null on failure.
-  summary    String?
+  details     Json?
+  // The committed report's figures (ImportReportTile[]), labelled by the
+  // client from their ids; null on failure.
+  reportTiles Json?
+  // Runs from before reportTiles: their figures as English text.
+  summary     String?
   // Present only when status is "FAILURE".
-  error      String?
-  startedAt  DateTime
-  finishedAt DateTime
+  error       String?
+  startedAt   DateTime
+  finishedAt  DateTime
 
   user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
 

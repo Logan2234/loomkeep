@@ -175,19 +175,10 @@ export abstract class MediaImportSource<
       // A source can state a status without any episode (a rated IMDb
       // series): that is followed, not a watchlist entry.
       const onWatchlist = n === 0 && (show.status ?? "PLANNED") === "PLANNED";
-      const subtitle = [
-        n > 0
-          ? `${n} épisode${n > 1 ? "s" : ""} vu${n > 1 ? "s" : ""}`
-          : onWatchlist
-            ? "Watchlist"
-            : "Suivie",
-        ...extraParts(show.rating, show.favorite, 0),
-      ].join(" · ");
       const item: ImportPlanItem = {
         key: showKey(show),
         title: match?.title ?? show.title,
         sourceTitle: show.title,
-        subtitle,
         context: {
           kind: "series",
           episodesWatched: n,
@@ -219,15 +210,10 @@ export abstract class MediaImportSource<
     parsed.movies.forEach((movie, i) => {
       const match = movieMatches[i];
       if (!match) unresolved++;
-      const subtitleParts = [
-        movie.year ? String(movie.year) : null,
-        ...extraParts(movie.rating, movie.favorite, movie.rewatchedAt.length),
-      ].filter((p): p is string => p !== null);
       const item: ImportPlanItem = {
         key: movieKey(movie),
         title: match?.title ?? movie.title,
         sourceTitle: movie.title,
-        subtitle: subtitleParts.length > 0 ? subtitleParts.join(" · ") : null,
         context: {
           kind: "movie",
           year: movie.year,
@@ -266,7 +252,6 @@ export abstract class MediaImportSource<
         key: listItemKey(film),
         title: match?.title ?? film.title,
         sourceTitle: film.title,
-        subtitle: film.year ? String(film.year) : null,
         context: {
           kind: "movie",
           year: film.year,
@@ -283,19 +268,11 @@ export abstract class MediaImportSource<
     });
 
     const groups: ImportPlanGroup[] = [
-      { id: "seriesTracked", label: "Séries suivies", items: seriesTracked },
-      {
-        id: "seriesWatchlist",
-        label: "Séries — watchlist",
-        items: seriesWatchlist,
-      },
-      { id: "moviesWatched", label: "Films vus", items: moviesWatched },
-      {
-        id: "moviesWatchlist",
-        label: "Films — watchlist",
-        items: moviesWatchlist,
-      },
-      { id: "listFilms", label: "Films de tes listes", items: listFilms },
+      { id: "seriesTracked", items: seriesTracked },
+      { id: "seriesWatchlist", items: seriesWatchlist },
+      { id: "moviesWatched", items: moviesWatched },
+      { id: "moviesWatchlist", items: moviesWatchlist },
+      { id: "listFilms", items: listFilms },
     ].filter((g) => g.items.length > 0);
 
     // Rows the source could not place anywhere have no item to review, but
@@ -447,34 +424,18 @@ export abstract class MediaImportSource<
       overwrite: decisions.overwrite,
       tiles: [
         {
-          label: "Series",
           id: "series",
           watchlistCount: tally.showsWatchlist,
           value: tally.showsImported,
-          sub: `${tally.showsWatchlist} on the watchlist`,
         },
+        { id: "episodes", value: tally.episodesCreated },
         {
-          label: "Episodes",
-          id: "episodes",
-          value: tally.episodesCreated,
-          sub: "viewings created",
-        },
-        {
-          label: "Movies",
           id: "movies",
           watchlistCount: tally.moviesWatchlist,
           value: tally.moviesImported,
-          sub: `${tally.moviesWatchlist} on the watchlist`,
         },
         ...(tally.listsCreated > 0
-          ? [
-              {
-                label: "Lists",
-                id: "lists" as const,
-                value: tally.listsCreated,
-                sub: null,
-              },
-            ]
+          ? [{ id: "lists" as const, value: tally.listsCreated }]
           : []),
       ],
     };
@@ -1018,19 +979,6 @@ function isUnreleased(error: unknown): boolean {
     (error.code === ErrorCode.LibraryMovieNotReleased ||
       error.code === ErrorCode.LibraryAnimeNotAired)
   );
-}
-
-/** Extra badges surfaced in the plan preview: rewatch count, rating, favorite. */
-function extraParts(
-  rating: number | null | undefined,
-  favorite: boolean | undefined,
-  rewatchCount: number,
-): string[] {
-  const parts: string[] = [];
-  if (rewatchCount > 0) parts.push(`revu ${rewatchCount + 1}×`);
-  if (rating !== null && rating !== undefined) parts.push(`★ ${rating}/10`);
-  if (favorite) parts.push("♥ favori");
-  return parts;
 }
 
 /** Stable per-item id carried through analyze → review → commit. */

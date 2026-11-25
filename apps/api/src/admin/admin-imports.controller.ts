@@ -4,6 +4,7 @@ import type {
   AdminImportRunDto,
   AdminImportStatus,
   AdminImportSummaryDto,
+  ImportReportTile,
   PagedResult,
 } from "@loomkeep/shared";
 import { ErrorCode } from "@loomkeep/shared";
@@ -35,6 +36,7 @@ const IMPORT_SELECT = {
   status: true,
   itemCount: true,
   overwrite: true,
+  reportTiles: true,
   summary: true,
   error: true,
   startedAt: true,
@@ -52,6 +54,7 @@ function toRunDto(row: ImportRow): AdminImportRunDto {
     status: row.status as AdminImportStatus,
     itemCount: row.itemCount,
     overwrite: row.overwrite,
+    tiles: row.reportTiles as ImportReportTile[] | null,
     summary: row.summary,
     error: row.error,
     startedAt: row.startedAt.toISOString(),
