@@ -391,4 +391,76 @@ describe("TraktImportSource (via ImportJobService)", () => {
     expect(update.finishedAt).toBeUndefined();
     expect(reviews.setRating).not.toHaveBeenCalled();
   });
+
+  it("a title that fails to write is reported, and the next ones still are written", async () => {
+    const { service, prisma, mediaItemService, tmdb } = makeService();
+    tmdb.getSeriesSummaryByTmdbId.mockResolvedValue({
+      source: "TMDB",
+      sourceId: "114868",
+      type: "SERIES",
+      title: "Record of Ragnarok",
+      year: 2021,
+      posterUrl: null,
+    });
+    tmdb.getMovieSummaryByTmdbId.mockResolvedValue({
+      source: "TMDB",
+      sourceId: "1083381",
+      type: "MOVIE",
+      title: "Backrooms",
+      year: 2026,
+      posterUrl: null,
+    });
+    mediaItemService.upsertFromSource.mockImplementation(
+      async (_source: string, _id: string, type: string) => {
+        if (type === "SERIES") throw new Error("TMDB refused the series");
+        return { id: "movie-1" };
+      },
+    );
+
+    const input = zipBase64([
+      { name: "watched-history.json", content: HISTORY },
+    ]);
+    const analyzed = await service.startAnalyze("u1", "trakt", { input });
+    await runToEnd(service, "u1", analyzed.id);
+    const committed = service.commit("u1", "trakt", analyzed.id, {
+      include: ["tmdb:114868", "tmdb:1083381"],
+    });
+    const job = await runToEnd(service, "u1", committed.id);
+
+    expect(job.status).toBe("completed");
+    expect(prisma.mediaEntry.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { userId_mediaItemId: { userId: "u1", mediaItemId: "movie-1" } },
+      }),
+    );
+    expect(job.report!.tiles).toContainEqual({ id: "failed", value: 1 });
+  });
+
+  it("fails the import when no title could be written at all", async () => {
+    const { service, mediaItemService, tmdb } = makeService();
+    tmdb.getMovieSummaryByTmdbId.mockResolvedValue({
+      source: "TMDB",
+      sourceId: "1083381",
+      type: "MOVIE",
+      title: "Backrooms",
+      year: 2026,
+      posterUrl: null,
+    });
+    mediaItemService.upsertFromSource.mockRejectedValue(new Error("db down"));
+
+    const input = zipBase64([
+      {
+        name: "watched-history.json",
+        content: JSON.stringify([JSON.parse(HISTORY)[1]]),
+      },
+    ]);
+    const analyzed = await service.startAnalyze("u1", "trakt", { input });
+    await runToEnd(service, "u1", analyzed.id);
+    const committed = service.commit("u1", "trakt", analyzed.id, {
+      include: ["tmdb:1083381"],
+    });
+    const job = await runToEnd(service, "u1", committed.id);
+
+    expect(job.status).toBe("failed");
+  });
 });

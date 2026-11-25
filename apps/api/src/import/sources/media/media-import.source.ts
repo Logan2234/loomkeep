@@ -369,16 +369,34 @@ export abstract class MediaImportSource<
       replaced.add(media.id);
     };
 
+    // One title the catalogue or the database refuses is reported and
+    // skipped: the rest of the export still goes in. Only when nothing at all
+    // could be written is the failure taken as systemic, and the job fails.
+    let written = 0;
+    let failed = 0;
+    let firstFailure: Error | null = null;
+
+    const writeTitle = async (
+      title: string,
+      write: () => Promise<void>,
+    ): Promise<void> => {
+      try {
+        await write();
+        written++;
+      } catch (error) {
+        failed++;
+        firstFailure ??= this.contextualize(error, title);
+      }
+    };
+
     for (const show of includedShows) {
       const match = this.resolvedMatch(showKey(show), decisions, matchByKey);
 
       if (match) {
-        try {
+        await writeTitle(show.title, async () => {
           await replaceTitle(match);
           await this.writeShow(userId, show, match, tally);
-        } catch (error) {
-          throw this.contextualize(error, show.title);
-        }
+        });
       }
 
       progress.tick();
@@ -388,16 +406,16 @@ export abstract class MediaImportSource<
       const match = this.resolvedMatch(movieKey(movie), decisions, matchByKey);
 
       if (match) {
-        try {
+        await writeTitle(movie.title, async () => {
           await replaceTitle(match);
           await this.writeMovie(userId, movie, match, tally);
-        } catch (error) {
-          throw this.contextualize(error, movie.title);
-        }
+        });
       }
 
       progress.tick();
     }
+
+    if (firstFailure && written === 0) throw firstFailure;
 
     // Nothing written (every title unresolved) replaces nothing: emptying
     // the library then would be the old failure all over again.
@@ -437,11 +455,12 @@ export abstract class MediaImportSource<
         ...(tally.listsCreated > 0
           ? [{ id: "lists" as const, value: tally.listsCreated }]
           : []),
+        ...(failed > 0 ? [{ id: "failed" as const, value: failed }] : []),
       ],
     };
   }
 
-  /** Logs and re-throws a commit-time failure with the title it happened on. */
+  /** Logs a commit-time failure and names the title it happened on. */
   private contextualize(error: unknown, title: string): Error {
     const message = error instanceof Error ? error.message : String(error);
     this.logger.error(`Failed to import "${title}": ${message}`);
