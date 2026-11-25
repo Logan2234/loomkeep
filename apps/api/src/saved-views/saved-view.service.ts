@@ -74,14 +74,19 @@ export class SavedViewService {
     userId: string,
     body: CreateSavedViewDto,
   ): Promise<SavedViewDto> {
-    await this.assertRoomForOneMore(userId);
-    const row = await this.prisma.savedView.create({
-      data: {
-        userId,
-        name: body.name.trim(),
-        domain: body.domain,
-        filters: understoodFilters(body.domain, body.filters),
-      },
+    // Counted and written under a per-account lock: two creations at the
+    // threshold would otherwise both count below it.
+    const row = await this.prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${userId}::text), hashtext('SavedView'))`;
+      await this.assertRoomForOneMore(tx, userId);
+      return tx.savedView.create({
+        data: {
+          userId,
+          name: body.name.trim(),
+          domain: body.domain,
+          filters: understoodFilters(body.domain, body.filters),
+        },
+      });
     });
     return toDto(row);
   }
@@ -130,8 +135,11 @@ export class SavedViewService {
    * The free quota is a no-op while the `premium-features` flag is off (see
    * `EntitlementService#isEffectivelyPremium`).
    */
-  private async assertRoomForOneMore(userId: string): Promise<void> {
-    const count = await this.prisma.savedView.count({ where: { userId } });
+  private async assertRoomForOneMore(
+    tx: Prisma.TransactionClient,
+    userId: string,
+  ): Promise<void> {
+    const count = await tx.savedView.count({ where: { userId } });
 
     if (count >= SAVED_VIEW_LIMITS.max) {
       throw new AppException(
