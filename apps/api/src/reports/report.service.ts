@@ -25,6 +25,7 @@ import {
   toPagedResult,
   type ParsedPage,
 } from "../common/pagination.util";
+import { isUniqueViolation } from "../common/prisma-error.util";
 import { resolveWorkHref } from "../common/work-href.util";
 import { EventsGateway } from "../events/events.gateway";
 import { JOB_KEYS } from "../jobs/job-keys";
@@ -174,19 +175,26 @@ export class ReportService {
       throw new AppException(HttpStatus.CONFLICT, ErrorCode.ReportAlreadyFiled);
     }
 
-    await this.prisma.report.create({
-      data: {
-        reporterId,
-        targetType,
-        targetId,
-        category,
-        motif: category === "OTHER" ? null : motif,
-        ...(targetType === "USER" && { profilePart }),
-        reason: reason?.trim() || null,
-        // The author, list owner or profile's account — listed first.
-        targetOwnerId: ownerIds[0] ?? null,
-      },
-    });
+    // The read above answers the usual case; two submissions at once both
+    // pass it, and the partial unique index refuses the second.
+    try {
+      await this.prisma.report.create({
+        data: {
+          reporterId,
+          targetType,
+          targetId,
+          category,
+          motif: category === "OTHER" ? null : motif,
+          ...(targetType === "USER" && { profilePart }),
+          reason: reason?.trim() || null,
+          // The author, list owner or profile's account — listed first.
+          targetOwnerId: ownerIds[0] ?? null,
+        },
+      });
+    } catch (err) {
+      if (!isUniqueViolation(err)) throw err;
+      throw new AppException(HttpStatus.CONFLICT, ErrorCode.ReportAlreadyFiled);
+    }
 
     this.events.emitReportsCount();
   }

@@ -1260,6 +1260,9 @@ model Report {
   @@index([category])
   @@index([reporterId, status, createdAt])
   @@index([targetOwnerId])
+  // Plus, in SQL only (Prisma can't declare a partial index): one PENDING
+  // report per (reporterId, targetType, targetId), see
+  // 20261125160000_one_pending_report_per_reporter.
 }
 
 // DSA art. 17 "statement of reasons" record — one row per restrictive measure
