@@ -405,4 +405,49 @@ describe("SteamImportSource (via ImportJobService)", () => {
     );
     expect(mocks.prisma.gameEntry.deleteMany).not.toHaveBeenCalled();
   });
+
+  // The plan proposed PLAYING for a game played lately, but the commit wrote
+  // BACKLOG unless the client sent it back (audit 2026-11-17, BUG-70).
+  it.each([
+    ["no status sent", undefined],
+    ["an unknown status", { g100: "WHATEVER" }],
+  ])(
+    "commit falls back to the plan's proposed status with %s",
+    async (_label, statuses) => {
+      const { service, mocks } = build({
+        igdb: {
+          matchSteamAppIds: vi.fn().mockResolvedValue(new Map([["10", "100"]])),
+          getDetailsByIds: vi.fn().mockResolvedValue([detail("100")]),
+        },
+        gameItemService: {
+          persistDetails: vi.fn().mockResolvedValue({ id: "gi-100" }),
+        },
+      });
+      mockFetchByUrl({
+        GetOwnedGames: {
+          response: {
+            game_count: 1,
+            games: [{ appid: 10, playtime_forever: 600, playtime_2weeks: 30 }],
+          },
+        },
+      });
+
+      const analyzed = await service.startAnalyze("user1", "steam", {
+        input: "76561197960287930",
+      });
+      await runToEnd(service, "user1", analyzed.id);
+      const committed = service.commit("user1", "steam", analyzed.id, {
+        include: ["g100"],
+        statuses,
+      });
+      const job = await runToEnd(service, "user1", committed.id);
+
+      expect(job.status).toBe("completed");
+      expect(mocks.prisma.gameEntry.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          create: expect.objectContaining({ status: "PLAYING" }),
+        }),
+      );
+    },
+  );
 });

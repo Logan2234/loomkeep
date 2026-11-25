@@ -1,5 +1,4 @@
 import type {
-  GameStatus,
   ImportMatch,
   ImportPlan,
   ImportPlanGroup,
@@ -12,6 +11,7 @@ import {
   ErrorCode,
   GameOwnershipStatus,
   GameSource,
+  GameStatus,
 } from "@loomkeep/shared";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
@@ -27,6 +27,8 @@ import {
   type ImportReq,
   type ProgressReporter,
   indexPlanMatches,
+  indexPlanStatuses,
+  pickStatus,
 } from "../../import-source";
 
 export const STEAM_API = "https://api.steampowered.com";
@@ -216,6 +218,7 @@ export class SteamImportSource implements ImportReq<SteamParsed> {
     progress: ProgressReporter,
   ): Promise<ImportReport> {
     const matchByKey = indexPlanMatches(plan);
+    const proposed = indexPlanStatuses(plan);
 
     // Resolve the target ids first, then bulk-fetch their IGDB details.
     const targets: { key: string; sourceId: string }[] = [];
@@ -255,7 +258,12 @@ export class SteamImportSource implements ImportReq<SteamParsed> {
         GameSource.IGDB,
         detail,
       );
-      const status = (decisions.statuses.get(key) ?? "BACKLOG") as GameStatus;
+      const status = pickStatus(
+        GameStatus,
+        GameStatus.BACKLOG,
+        decisions.statuses.get(key),
+        proposed.get(key),
+      );
       const playtimeMinutes = parsed.playtimeByKey.get(key) ?? 0;
       const syncedAt = new Date();
       // Every newly imported game is, by definition, owned digitally on

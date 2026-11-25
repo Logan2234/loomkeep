@@ -1,7 +1,6 @@
 import type {
   BookOwnershipStatus,
   BookSource,
-  BookStatus,
   BookSummaryDto,
   ImportMatch,
   ImportPlan,
@@ -11,7 +10,12 @@ import type {
   ImportReportTile,
   ImportSource,
 } from "@loomkeep/shared";
-import { Domain, ErrorCode, ReviewTargetType } from "@loomkeep/shared";
+import {
+  BookStatus,
+  Domain,
+  ErrorCode,
+  ReviewTargetType,
+} from "@loomkeep/shared";
 import assert from "node:assert/strict";
 import { BookItemService } from "../../../books/book-item.service";
 import { AppException } from "../../../common/app.exception";
@@ -29,6 +33,7 @@ import {
   type ImportReq,
   type ProgressReporter,
   indexPlanMatches,
+  pickStatus,
 } from "../../import-source";
 
 /** writeBook's answer for a book the catalogue no longer knows. */
@@ -189,7 +194,11 @@ export abstract class BookCsvSource<
         continue;
       }
 
-      const status = (decisions.statuses.get(key) ?? row.status) as BookStatus;
+      const status = pickStatus(
+        BookStatus,
+        row.status,
+        decisions.statuses.get(key),
+      );
       const bookItemId = await this.writeBook(
         userId,
         match.source as BookSource,
