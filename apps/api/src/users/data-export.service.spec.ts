@@ -371,6 +371,21 @@ describe("DataExportService.buildExport", () => {
     );
   });
 
+  // Both sides of a conversation are exported, as the reader received them,
+  // but not what the other member or the moderation took back
+  // (audit 2026-11-17, LEG-08).
+  it("exports a conversation's messages both ways, without the other side's deleted ones", async () => {
+    const { service, prisma } = makeService();
+    (prisma.user.findUnique as Mock).mockResolvedValue(makeUser());
+
+    await service.buildExport("user-1");
+
+    const [[query]] = (prisma.conversationMember.findMany as Mock).mock.calls;
+    expect(query.select.conversation.select.messages.where).toEqual({
+      OR: [{ authorId: "user-1" }, { deletedAt: null }],
+    });
+  });
+
   it("includes saved library views, by the id home widgets refer to", async () => {
     const { service, prisma } = makeService();
     (prisma.user.findUnique as Mock).mockResolvedValue(makeUser());

@@ -21,6 +21,11 @@ The complete archive lists your API keys, passkeys and the browsers that get
 your notifications, but never their secrets: no key, no password hash, no
 private link.
 
+Your conversations come with the messages you received too, with their
+author's username: they are half of the exchange. Nothing else about the
+other member is in it, nor the messages they deleted or the moderation
+removed.
+
 The Letterboxd and Goodreads files can include your review texts if you ask:
 they then become public there, even the ones you keep to your friends here.
 Your private notes are never in them.

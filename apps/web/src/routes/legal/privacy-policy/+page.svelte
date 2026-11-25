@@ -16,7 +16,7 @@
   </header>
 
   <article class="legal-document">
-    <p><em>Dernière mise à jour : 28/10/2026</em></p>
+    <p><em>Dernière mise à jour : 25/11/2026</em></p>
     <p>
       La présente politique explique comment Loomkeep traite les données
       personnelles des utilisateurs de l'instance officielle accessible à
@@ -868,6 +868,13 @@
         celui-ci.
       </li>
     </ul>
+    <p>
+      L'export complet des données d'un compte comprend aussi les messages reçus
+      dans ses conversations privées, avec le pseudo de leur auteur : ils font
+      partie de l'échange auquel l'utilisateur a pris part. Aucune autre donnée
+      de l'autre membre n'y figure, ni les messages qu'il a supprimés ou que la
+      modération a retirés.
+    </p>
     <p>
       L'exercice d'un droit peut être soumis aux conditions et exceptions
       prévues par la réglementation.
