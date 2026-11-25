@@ -254,6 +254,11 @@ function makeForWrite(
       }),
     },
   } as unknown as PrismaService;
+  const executeRaw = vi.fn().mockResolvedValue(1);
+  Object.assign(prisma, {
+    $executeRaw: executeRaw,
+    $transaction: vi.fn((fn: (tx: PrismaService) => unknown) => fn(prisma)),
+  });
   const activity = { emit: vi.fn() } as unknown as ActivityService;
   const visibility = {} as unknown as VisibilityService;
   const xp = stubXp();
@@ -267,8 +272,34 @@ function makeForWrite(
     achievements,
     stubNotifications(),
   );
-  return { svc, prisma, revisionCreate, upsert, xp, achievements, activity };
+  return {
+    svc,
+    prisma,
+    revisionCreate,
+    upsert,
+    xp,
+    achievements,
+    activity,
+    executeRaw,
+  };
 }
+
+// Two saves at once both read "no review yet": each recorded a revision and
+// a feed event for the same creation (audit 2026-11-17, BUG-68).
+describe("ReviewService.upsert — concurrent saves", () => {
+  it("reads and writes the review under a lock on its author and target", async () => {
+    const { svc, prisma, executeRaw, upsert } = makeForWrite(null);
+
+    await svc.upsert("u1", "MEDIA" as never, "m1", { rating: 8, text: null });
+
+    expect(prisma.$transaction).toHaveBeenCalled();
+    const lockedAt = executeRaw.mock.invocationCallOrder[0];
+    expect(lockedAt).toBeLessThan(
+      (prisma.review.findUnique as Mock).mock.invocationCallOrder[0],
+    );
+    expect(lockedAt).toBeLessThan(upsert.mock.invocationCallOrder[0]);
+  });
+});
 
 // Nothing checked the target: any targetId made a review that polluted the
 // author's list, the export and moderation (audit 2026-11-17, BUG-67).

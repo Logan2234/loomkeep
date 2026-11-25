@@ -403,40 +403,57 @@ export class ReviewService {
     const visibility = dto.visibility ?? user.defaultReviewVisibility;
     const text = dto.text ?? null;
 
-    const existing = await this.prisma.review.findUnique({
-      where: { userId_targetType_targetId: { userId, targetType, targetId } },
-      select: { rating: true, text: true },
-    });
+    // Read, write and snapshot under a lock on this author and target: two
+    // saves at once (a double tap, two devices) would otherwise both see no
+    // review yet, and each record a revision and a feed event for it.
+    const { row, existing, contentChanged } = await this.prisma.$transaction(
+      async (tx) => {
+        await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${userId}::text), hashtext(${`${targetType}:${targetId}`}::text))`;
+        const existing = await tx.review.findUnique({
+          where: {
+            userId_targetType_targetId: { userId, targetType, targetId },
+          },
+          select: { rating: true, text: true },
+        });
 
-    const row = await this.prisma.review.upsert({
-      where: { userId_targetType_targetId: { userId, targetType, targetId } },
-      update: {
-        rating: dto.rating,
-        text,
-        visibility,
-        spoilerTag: dto.spoilerTag,
-      },
-      create: {
-        userId,
-        targetType,
-        targetId,
-        rating: dto.rating,
-        text,
-        visibility,
-        spoilerTag: dto.spoilerTag ?? false,
-      },
-    });
+        const row = await tx.review.upsert({
+          where: {
+            userId_targetType_targetId: { userId, targetType, targetId },
+          },
+          update: {
+            rating: dto.rating,
+            text,
+            visibility,
+            spoilerTag: dto.spoilerTag,
+          },
+          create: {
+            userId,
+            targetType,
+            targetId,
+            rating: dto.rating,
+            text,
+            visibility,
+            spoilerTag: dto.spoilerTag ?? false,
+          },
+        });
 
-    // A revision only snapshots rating/text — skip it when neither changed
-    // (including when only the visibility changed).
-    const contentChanged =
-      !existing || existing.rating !== dto.rating || existing.text !== text;
+        // A revision only snapshots rating/text — skip it when neither
+        // changed (including when only the visibility changed).
+        const contentChanged =
+          !existing || existing.rating !== dto.rating || existing.text !== text;
+
+        if (contentChanged) {
+          await tx.reviewRevision.create({
+            data: { reviewId: row.id, rating: dto.rating, text },
+          });
+        }
+
+        return { row, existing, contentChanged };
+      },
+    );
 
     // Audience/spoiler-only edits aren't news: no revision, no feed entry.
     if (contentChanged) {
-      await this.prisma.reviewRevision.create({
-        data: { reviewId: row.id, rating: dto.rating, text },
-      });
       await this.emitReviewed(userId, row.id, targetType, targetId, dto.rating);
       await this.awardReviewRatingXp(userId, row.id, text);
     }
