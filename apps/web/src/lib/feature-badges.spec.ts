@@ -42,7 +42,7 @@ describe("feature badge key contract", () => {
     const parameter = checker.getTypeAtLocation(declaration.parameters[0]);
     expect(
       checker.isTypeAssignableTo(
-        checker.getStringLiteralType("sessions"),
+        checker.getStringLiteralType("premieres"),
         parameter,
       ),
     ).toBe(true);

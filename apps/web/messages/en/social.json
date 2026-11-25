@@ -102,7 +102,6 @@
   "list_item_arrange": "Change the order",
   "list_item_arrange_hint": "Drag the works to reorder them.",
   "list_item_arrange_done": "Done",
-  "list_item_note_hint": "Each title can now carry a note: why it ranks there, who it’s for. Use the pencil on a title.",
   "list_item_remove_confirm_title": "Remove this title?",
   "list_item_remove_confirm_message": "It will be removed from the list. You can add it back later.",
   "profile_ghost": "Ghost",
