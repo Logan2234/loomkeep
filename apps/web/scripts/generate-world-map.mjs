@@ -1,6 +1,7 @@
 // Turns Natural Earth's 1:110m countries (public domain) into the SVG paths
 // of the stats page's world map, one per ISO 3166-1 alpha-2 code, in the
-// Equal Earth projection. Run once by hand when the map needs refreshing:
+// Patterson cylindrical projection: straight meridians read as an upright
+// map, where Equal Earth's curved edges looked tilted at this size. Run once by hand when the map needs refreshing:
 //
 //   curl -sSLo /tmp/ne.geojson https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_110m_admin_0_countries.geojson
 //   node scripts/generate-world-map.mjs /tmp/ne.geojson
@@ -20,6 +21,9 @@ const TOLERANCE = 0.35;
 // join the country TMDB would name. Antarctica has no film industry to map.
 const CODE_BY_NAME = { "N. Cyprus": "CY", Somaliland: "SO" };
 const SKIPPED = new Set(["AQ"]);
+// French Guiana is drawn within France's shape: lit up with Paris, it reads
+// as France in South America. It gets its own code instead, as TMDB gives it.
+const OVERSEAS = { FR: { code: "GF", within: ([lon]) => lon < -20 } };
 
 const [input] = process.argv.slice(2);
 
@@ -30,35 +34,15 @@ if (!input) {
   process.exit(1);
 }
 
-// Equal Earth (Šavrič, Patterson, Jenny, 2018).
-const A1 = 1.340264;
-const A2 = -0.081106;
-const A3 = 0.000893;
-const A4 = 0.003796;
-const M = Math.sqrt(3) / 2;
-
+// Patterson, Šavrič, Jenny (2014).
 function project([lon, lat]) {
-  const lambda = (lon * Math.PI) / 180;
-  const theta = Math.asin(M * Math.sin((lat * Math.PI) / 180));
-  const t2 = theta * theta;
-  const t6 = t2 * t2 * t2;
-  const x =
-    (2 * Math.sqrt(3) * lambda * Math.cos(theta)) /
-    (3 * (A1 + 3 * A2 * t2 + t6 * (7 * A3 + 9 * A4 * t2)));
-  const y = theta * (A1 + A2 * t2 + t6 * (A3 + A4 * t2));
-  return [x, y];
+  const phi = (lat * Math.PI) / 180;
+  const p4 = phi ** 4;
+  return [
+    (lon * Math.PI) / 180,
+    phi * (1.0148 + p4 * (0.23185 + p4 * (-0.14499 + p4 * 0.02406))),
+  ];
 }
-
-// The projection's own bounds: lon ±180 at the equator, lat ±90.
-const maxX = project([180, 0])[0];
-const maxY = project([0, 90])[1];
-const scale = WIDTH / (2 * maxX);
-const height = Math.round(2 * maxY * scale);
-
-const toView = (point) => {
-  const [x, y] = project(point);
-  return [(x + maxX) * scale, (maxY - y) * scale];
-};
 
 function distanceToSegment([px, py], [ax, ay], [bx, by]) {
   const dx = bx - ax;
@@ -94,23 +78,13 @@ function simplify(points) {
 
 const round = (n) => Math.round(n * 10) / 10;
 
-function ringPath(ring) {
-  const points = simplify(ring.map(toView)).map(([x, y]) => [
-    round(x),
-    round(y),
-  ]);
-  const unique = points.filter(
-    (p, i) => i === 0 || p[0] !== points[i - 1][0] || p[1] !== points[i - 1][1],
-  );
-  if (unique.length < 4) return "";
-  return `M${unique
-    .slice(0, -1)
-    .map(([x, y]) => `${x} ${y}`)
-    .join("L")}Z`;
-}
+const ringCentroid = (ring) => [
+  ring.reduce((sum, [lon]) => sum + lon, 0) / ring.length,
+  ring.reduce((sum, [, lat]) => sum + lat, 0) / ring.length,
+];
 
 const geojson = JSON.parse(readFileSync(input, "utf8"));
-const paths = {};
+const projected = {};
 
 for (const feature of geojson.features) {
   const props = feature.properties;
@@ -127,19 +101,55 @@ for (const feature of geojson.features) {
     feature.geometry.type === "Polygon"
       ? [feature.geometry.coordinates]
       : feature.geometry.coordinates;
-  const d = polygons
-    .flatMap((polygon) => polygon.map(ringPath))
-    .filter(Boolean)
-    .join("");
-  if (d) paths[code] = (paths[code] ?? "") + d;
+
+  for (const polygon of polygons) {
+    const overseas = OVERSEAS[code];
+    const owner = overseas?.within(ringCentroid(polygon[0]))
+      ? overseas.code
+      : code;
+    projected[owner] = [
+      ...(projected[owner] ?? []),
+      ...polygon.map((ring) => ring.map(project)),
+    ];
+  }
+}
+
+// Cropped to the land actually drawn, so no band of empty ocean is left
+// above Greenland or below Tierra del Fuego.
+const points = Object.values(projected).flat(2);
+const minX = Math.min(...points.map(([x]) => x));
+const maxX = Math.max(...points.map(([x]) => x));
+const minY = Math.min(...points.map(([, y]) => y));
+const maxY = Math.max(...points.map(([, y]) => y));
+const scale = WIDTH / (maxX - minX);
+const height = Math.round((maxY - minY) * scale);
+const toView = ([x, y]) => [(x - minX) * scale, (maxY - y) * scale];
+
+function ringPath(ring) {
+  const points = simplify(ring.map(toView)).map(([x, y]) => [
+    round(x),
+    round(y),
+  ]);
+  const unique = points.filter(
+    (p, i) => i === 0 || p[0] !== points[i - 1][0] || p[1] !== points[i - 1][1],
+  );
+  if (unique.length < 4) return "";
+  return `M${unique
+    .slice(0, -1)
+    .map(([x, y]) => `${x} ${y}`)
+    .join("L")}Z`;
 }
 
 const countries = Object.fromEntries(
-  Object.entries(paths).sort(([a], [b]) => a.localeCompare(b)),
+  Object.entries(projected)
+    .map(([code, rings]) => [code, rings.map(ringPath).join("")])
+    .filter(([, d]) => d)
+    .sort(([a], [b]) => a.localeCompare(b)),
 );
 writeFileSync(
   OUTPUT,
-  `${JSON.stringify({ width: WIDTH, height, countries }, null, 2)}\n`,
+  `${JSON.stringify({ width: WIDTH, height, countries }, null, 2)}
+`,
 );
 process.stdout.write(
   `${Object.keys(countries).length} countries, ${WIDTH}×${height}, written to ${OUTPUT}

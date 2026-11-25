@@ -9,7 +9,9 @@
 
   // Where the films and series someone watched come from: a choropleth next
   // to the full ranking, which also carries the countries too small to draw
-  // (Singapore, Malta) and is what a screen reader reads.
+  // (Singapore, Malta) and is what a screen reader reads. The hovered country
+  // is outlined rather than the others dimmed: dimming washed the whole map
+  // out whenever the hovered country was a pale one.
   let { countries }: { countries: VideoCountryDto[] } = $props();
 
   type Metric = "titles" | "minutes";
@@ -68,28 +70,39 @@
   </div>
 </div>
 
-<div class="grid gap-5 md:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
-  <div class="flex min-w-0 flex-col gap-2">
+<div class="grid gap-5 md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+  <div class="flex min-w-0 flex-col justify-center gap-2">
     {#if map}
       <svg
         viewBox="0 0 {map.width} {map.height}"
         class="h-auto w-full"
         aria-hidden="true"
+        onpointerover={(event) => {
+          const code = (event.target as Element).getAttribute("data-code");
+          hovered = code && byCode.has(code) ? code : null;
+        }}
         onpointerleave={() => (hovered = null)}>
         {#each Object.entries(map.countries) as [code, d] (code)}
           {@const country = byCode.get(code)}
           <path
-            role="presentation"
             {d}
+            data-code={code}
             fill={country
               ? countryShade(country[metric], max)
               : "var(--surface-2)"}
             stroke="var(--surface)"
             stroke-width="0.6"
-            class="transition-opacity duration-150 motion-reduce:transition-none"
-            class:opacity-40={hovered !== null && hovered !== code && !!country}
-            onpointerenter={() => (hovered = country ? code : null)} />
+            stroke-linejoin="round" />
         {/each}
+        {#if hovered}
+          <path
+            d={map.countries[hovered]}
+            fill="none"
+            stroke="var(--fg)"
+            stroke-width="1.6"
+            stroke-linejoin="round"
+            pointer-events="none" />
+        {/if}
       </svg>
     {:else}
       <div class="bg-surface-2 aspect-[2/1] w-full animate-pulse rounded-lg">

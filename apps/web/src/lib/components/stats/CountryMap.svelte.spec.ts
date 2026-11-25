@@ -40,4 +40,20 @@ describe("the map of countries of origin", () => {
     expect(first).toContain(formatRegion("KR"));
     expect(first).toContain(formatHours(1500));
   });
+
+  it("reads out the hovered country, and only while it is hovered", async () => {
+    const { container } = render(CountryMap, { countries: COUNTRIES });
+    const korea = await waitFor(() => {
+      const path = container.querySelector('path[data-code="KR"]');
+      expect(path).toBeTruthy();
+      return path!;
+    });
+    const readout = () => container.querySelector("p.text-dim")?.textContent;
+
+    await fireEvent.pointerOver(korea);
+    expect(readout()).toContain(formatRegion("KR"));
+
+    await fireEvent.pointerOver(container.querySelector("svg")!);
+    expect(readout()).toContain(m.stats_video_countries_hint());
+  });
 });
