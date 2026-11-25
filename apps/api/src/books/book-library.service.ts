@@ -38,12 +38,7 @@ import {
   assertBulkTarget,
   assertBulkUpdate,
 } from "../common/bulk-entries.util";
-import {
-  sinceDaysAgo,
-  toDateOrNull,
-  utcDateKey,
-  utcYearRange,
-} from "../common/date.util";
+import { sinceDaysAgo, toDateOrNull, utcDateKey } from "../common/date.util";
 import type {
   EntryStatusChange,
   ListEntriesFilters,
@@ -62,6 +57,7 @@ import {
   titleContains,
 } from "../common/entry-lifecycle.util";
 import { canonicalExternalId } from "../common/external-id.util";
+import { localYear, localYearRange } from "../common/local-day.util";
 import { compareTitles, timeMs } from "../common/sort.util";
 import { EventsGateway } from "../events/events.gateway";
 import { AchievementService } from "../gamification/achievements/achievement.service";
@@ -261,9 +257,11 @@ export class BookLibraryService {
     bookItemId: string,
     finishedAt: Date | null,
   ): Promise<void> {
+    // The year the reader is in when they finish, as for their session days:
+    // a book closed on New Year's Eve evening in Paris counts for the new one.
     await this.awardReadingGoal(
       userId,
-      (finishedAt ?? new Date()).getUTCFullYear(),
+      localYear(await this.timezoneOf(userId), finishedAt ?? new Date()),
     );
 
     const item = await this.prisma.bookItem.findUnique({
@@ -1049,11 +1047,19 @@ export class BookLibraryService {
     return { year: dto.year, target: dto.target, completed };
   }
 
+  private async timezoneOf(userId: string): Promise<string> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { timezone: true },
+    });
+    return user?.timezone ?? "UTC";
+  }
+
   private async countBooksFinishedInYear(
     userId: string,
     year: number,
   ): Promise<number> {
-    const range = utcYearRange(year);
+    const range = localYearRange(await this.timezoneOf(userId), year);
 
     return this.prisma.bookReading.count({
       where: {
