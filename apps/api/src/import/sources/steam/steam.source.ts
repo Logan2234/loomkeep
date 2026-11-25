@@ -77,7 +77,7 @@ export class SteamImportSource implements ImportReq<SteamParsed> {
   ) {}
 
   parseInput(input: string): SteamParsed {
-    return { rawInput: input.trim(), playtimeByKey: new Map() };
+    return { rawInput: steamProfileRef(input), playtimeByKey: new Map() };
   }
 
   async buildPlan(
@@ -323,19 +323,9 @@ export class SteamImportSource implements ImportReq<SteamParsed> {
     );
   }
 
-  /** SteamID64 / vanity name / profile URL → SteamID64. */
-  private async resolveSteamId(rawInput: string): Promise<string> {
-    const input = rawInput.trim();
-
-    const profileMatch = input.match(/steamcommunity\.com\/profiles\/(\d{17})/);
-    if (profileMatch) return profileMatch[1];
-
-    const vanityUrlMatch = input.match(/steamcommunity\.com\/id\/([^/?#]+)/);
-    const vanity = vanityUrlMatch ? vanityUrlMatch[1] : input;
-
-    if (/^\d{17}$/.test(vanity)) return vanity;
-
-    return this.resolveVanity(vanity);
+  /** SteamID64 or custom URL name (see steamProfileRef) → SteamID64. */
+  private async resolveSteamId(ref: string): Promise<string> {
+    return STEAM_ID.test(ref) ? ref : this.resolveVanity(ref);
   }
 
   private async resolveVanity(name: string): Promise<string> {
@@ -411,6 +401,33 @@ export class SteamImportSource implements ImportReq<SteamParsed> {
 
     return (await response.json()) as T;
   }
+}
+
+const STEAM_ID = /^\d{17}$/;
+// Steam's custom profile URLs: letters, digits, "_" and "-".
+const VANITY_NAME = /^[A-Za-z0-9_-]{2,32}$/;
+const PROFILE_URL =
+  /^(?:https?:\/\/)?(?:www\.)?steamcommunity\.com\/(profiles|id)\/([^/?#]+)\/?(?:[?#].*)?$/i;
+
+/**
+ * The profile the user named: a SteamID64, a custom URL name, or either as a
+ * steamcommunity.com profile URL. Anything else is refused before Steam is
+ * called. Owning the profile is not checked (Steam offers no such proof
+ * without OpenID): a public library can be imported by anyone who names it.
+ */
+function steamProfileRef(input: string): string {
+  const value = input.trim();
+  const url = value.match(PROFILE_URL);
+  const kind = url ? url[1].toLowerCase() : null;
+  const ref = url ? url[2] : value;
+
+  if (kind !== "id" && STEAM_ID.test(ref)) return ref;
+  if (kind !== "profiles" && VANITY_NAME.test(ref)) return ref;
+
+  throw new AppException(
+    HttpStatus.BAD_REQUEST,
+    ErrorCode.ImportSteamProfileNotFound,
+  );
 }
 
 function toMatch(

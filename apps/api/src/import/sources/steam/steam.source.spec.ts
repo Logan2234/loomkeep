@@ -268,6 +268,22 @@ describe("SteamImportSource (via ImportJobService)", () => {
     expect(String(vanityCall?.[0])).toContain("vanityurl=gaben");
   });
 
+  // The input went to Steam's API as is, up to the 24 MB body limit
+  // (audit 2026-11-17, SEC-31).
+  it.each([
+    ["a sentence", "my steam is gaben please"],
+    ["a huge value", "a".repeat(5_000)],
+    ["another site's URL", "https://example.com/id/gaben"],
+  ])("refuses %s before calling Steam", async (_label, input) => {
+    const { service } = build();
+    const fetchMock = mockFetchByUrl({});
+
+    await expect(
+      service.startAnalyze("user1", "steam", { input }),
+    ).rejects.toMatchObject({ code: ErrorCode.ImportSteamProfileNotFound });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it("fails the job with a clear error when the profile is private", async () => {
     const { service } = build();
     mockFetchByUrl({ GetOwnedGames: { response: {} } });
