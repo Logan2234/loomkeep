@@ -14,10 +14,12 @@ music), open-core under AGPL-3.0. pnpm monorepo:
   JSDoc description and `@example`; `generate:openapi` fails on a gap.
 - `apps/mobile` — Capacitor Android shell that loads the instance's `/app`
   rather than bundling the web ([ADR 0009](docs/adr/0009-capacitor-remote-shell.md)).
-- `packages/shared` — DTOs/enums and rules both apps use, consumed from its
-  built `dist/` ([ADR 0007](docs/adr/0007-shared-package-compiled.md)): run
-  `pnpm build:package` after any change there. A type or rule only the API
-  reads lives in `apps/api` (`<subject>.types.ts`).
+- `packages/shared` — DTOs/enums and rules both apps use. The web and the
+  docs read its TypeScript source (the `source` export condition), the API
+  its built `dist/` ([ADR 0007](docs/adr/0007-shared-package-source.md)): run
+  `pnpm build:package` after a change there before typechecking or running
+  the API. A type or rule only the API reads lives in `apps/api`
+  (`<subject>.types.ts`).
 
 Two destinations: Logan's hosted VPS (auto-deployed by `ci.yml`) and
 self-hosting via `docker/`.
@@ -31,7 +33,7 @@ of that size gets its own.
 ```sh
 pnpm dev                                       # api :3000 + web :5173, packages/shared rebuilt on save
 pnpm test                                      # all tests
-pnpm build:package                             # after any change in packages/shared, outside `pnpm dev`
+pnpm build:package                             # for the API, after a change in packages/shared, outside `pnpm dev`
 pnpm dev:docs                                  # docs on :4321 (needs apps/api built + generate:openapi)
 pnpm --filter @loomkeep/api exec vitest <file> # single API test file
 pnpm --filter @loomkeep/api test:e2e           # full API flow, isolated `e2e` schema of the dev Postgres

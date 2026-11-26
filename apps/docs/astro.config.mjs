@@ -22,6 +22,24 @@ const SITE = "https://docs.loomkeep.app";
 
 export default defineConfig({
   site: SITE,
+  // @loomkeep/shared (the alert table) from its source, like the web: no
+  // build of the package needed (docs/adr/0007). The rest is Vite's default
+  // conditions, written out since vite isn't a direct dependency here.
+  vite: {
+    resolve: {
+      conditions: ["source", "module", "browser", "development|production"],
+    },
+    environments: Object.fromEntries(
+      ["ssr", "prerender"].map((name) => [
+        name,
+        {
+          resolve: {
+            conditions: ["source", "module", "node", "development|production"],
+          },
+        },
+      ]),
+    ),
+  },
   // Only SVGs here: nothing to optimise, and no need for Sharp.
   image: { service: passthroughImageService() },
   integrations: [

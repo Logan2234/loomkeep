@@ -114,7 +114,7 @@ services:
       HEALTHCHECKS_SECURITY_PURGE_URL: ${HEALTHCHECKS_SECURITY_PURGE_URL:-}
       HEALTHCHECKS_INVITATIONS_PURGE_URL: ${HEALTHCHECKS_INVITATIONS_PURGE_URL:-}
       HEALTHCHECKS_NOTIFICATIONS_PURGE_URL: ${HEALTHCHECKS_NOTIFICATIONS_PURGE_URL:-}
-      # Homepage dashboard's user-count widget auth — see docker-compose.homepage.yml.
+      # Homepage dashboard's user-count widget auth — see hosted/docker-compose.homepage.yml.
       HOMEPAGE_STATS_API_KEY: ${HOMEPAGE_STATS_API_KEY:-}
       # Prometheus scrape auth for /api/metrics — see docker-compose.observability.yml.
       METRICS_API_KEY: ${METRICS_API_KEY:-}

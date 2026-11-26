@@ -9,7 +9,7 @@ datasources:
     url: http://loki:3100
     isDefault: true
     # Explicit (not auto-generated) so it can be hardcoded in Homepage's
-    # "recent error logs" Explore deep link (docker/homepage/bookmarks.yaml).
+    # "recent error logs" Explore deep link (docker/hosted/homepage/bookmarks.yaml).
     uid: loki
 
   - name: Prometheus

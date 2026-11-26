@@ -15,7 +15,6 @@ its variables, and restart. Remove the file to turn it off.
 | [Error tracking](/self-hosting/optional-services/error-tracking/) | GlitchTip, errors grouped and alerted                        | `docker-compose.glitchtip.yml`     |
 | [Analytics](/self-hosting/optional-services/analytics/)           | Umami, cookie-less stats for the public landing page         | `docker-compose.umami.yml`         |
 | [Feature flags](/self-hosting/optional-services/feature-flags/)   | Unleash: maintenance per domain, a news banner               | `docker-compose.unleash.yml`       |
-| [Dashboard](/self-hosting/optional-services/dashboard/)           | Homepage, a start page for the admin tools                   | `docker-compose.homepage.yml`      |
 
 Services with a web interface get their own subdomain behind Caddy
 (`grafana.<DOMAIN>`, `errors.<DOMAIN>`…), so they need the

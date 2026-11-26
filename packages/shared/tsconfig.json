@@ -3,7 +3,10 @@
   "compilerOptions": {
     "outDir": "dist",
     "rootDir": "src",
-    "declaration": true
+    "declaration": true,
+    // The web typechecks this source under verbatimModuleSyntax
+    // (docs/adr/0007): a type re-exported without `export type` must fail here too.
+    "isolatedModules": true
   },
   "include": ["src"]
 }

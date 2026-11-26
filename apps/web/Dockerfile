@@ -25,13 +25,14 @@ COPY apps/web apps/web
 # root, `pnpm --filter @loomkeep/api build && pnpm --filter @loomkeep/api
 # generate:openapi`.
 COPY apps/api/openapi.json apps/api/openapi.json
-RUN pnpm --filter @loomkeep/shared build && pnpm --filter @loomkeep/web generate:api-types && pnpm --filter @loomkeep/web build
+RUN pnpm --filter @loomkeep/web generate:api-types && pnpm --filter @loomkeep/web build
 
 # adapter-node's SSR build doesn't safely bundle every server-side dependency
-# into build/ — @loomkeep/shared (a linked workspace package, see the
-# ssr.external comment in vite.config.ts) and @sentry/sveltekit (GlitchTip
-# error reporting from src/lib/api/core.ts) both stay real npm imports build/'s
-# server chunks resolve at runtime, so build/ alone isn't self-contained.
+# into build/ — @sentry/sveltekit (GlitchTip error reporting from
+# src/lib/api/core.ts) stays a real npm import build/'s server chunks resolve
+# at runtime, so build/ alone isn't self-contained. @loomkeep/shared is the
+# exception: read from its source and bundled into build/ (vite.config.ts),
+# it needs no build of its own.
 # `pnpm install --prod` alone isn't enough either: this is a pnpm workspace,
 # and the workspace's shared virtual store keeps every package ever resolved
 # for the monorepo's single lockfile. `pnpm deploy` instead materializes only
