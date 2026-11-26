@@ -30,7 +30,10 @@ interface ApiQueryOptions<T> {
   onError?: (err: unknown) => void;
   /** Surface the error as a toast in addition to `error`. Default `false`. */
   errorToast?: boolean;
-  /** Extra side effect on every new successful fetch — mostly for polling. */
+  /**
+   * Extra side effect when a fetch brings different data. A poll whose answer
+   * is unchanged doesn't call it: TanStack keeps the same reference.
+   */
   onSuccess?: (data: T) => void;
 }
 
@@ -57,9 +60,9 @@ export function createApiQuery<T>(optionsFn: () => ApiQueryOptions<T>) {
   // fresh error instance on every failed fetch, so reference identity is
   // enough to detect a new failure without a separate "seen" flag to reset.
   let reportedError: unknown = undefined;
-  // Same identity-based dedup for onSuccess — a fresh fetch always produces
-  // a new response object, so this fires once per completed fetch, including
-  // every tick of a poll.
+  // Same identity-based dedup for onSuccess. TanStack's structural sharing
+  // keeps the previous reference when a refetch returns equal data, so this
+  // fires when the data changes, not on every tick of a poll.
   let reportedData: T | undefined = undefined;
 
   $effect(() => {

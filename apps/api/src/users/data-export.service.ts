@@ -162,7 +162,12 @@ export class DataExportService {
               members: {
                 select: { userId: true, user: { select: { username: true } } },
               },
+              // Both sides, as the person received them: the other member's
+              // messages are part of the exchange (portability guidelines
+              // take a mailbox's received mail as the example). What that
+              // member or the moderation took back stays out.
               messages: {
+                where: { OR: [{ authorId: userId }, { deletedAt: null }] },
                 orderBy: { createdAt: "asc" },
                 include: {
                   embeds: {
@@ -411,6 +416,8 @@ export class DataExportService {
         ageCertifiedAt: user.consent?.certifiedAgeAt?.toISOString() ?? null,
         newsletterOptInAt:
           user.consent?.newsletterOptInAt?.toISOString() ?? null,
+        newsletterOptOutAt:
+          user.consent?.newsletterOptOutAt?.toISOString() ?? null,
         lastActiveAt: user.lastActiveAt?.toISOString() ?? null,
         suspendedUntil: user.suspendedUntil?.toISOString() ?? null,
         equippedBadgeKeys: user.equippedBadgeKeys ?? [],

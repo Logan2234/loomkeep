@@ -7,6 +7,7 @@ import type {
 
 import { ApiProperty } from "@nestjs/swagger";
 import { ImportReportResponseDto } from "../../import/dto/import-report-response.dto";
+import { ImportReportTileResponseDto } from "../../import/dto/import-report-tile-response.dto";
 
 export class AdminImportRunResponseDto implements AdminImportRunDto {
   id!: string;
@@ -21,6 +22,7 @@ export class AdminImportRunResponseDto implements AdminImportRunDto {
 
   itemCount!: number;
   overwrite!: boolean;
+  tiles!: ImportReportTileResponseDto[] | null;
   summary!: string | null;
   error!: string | null;
   startedAt!: string;

@@ -447,6 +447,13 @@ describe("UsersService — updateMe newsletter opt-in timestamp", () => {
               update: { newsletterOptInAt: expect.any(Date) },
             },
           },
+          // Links from the emails received before this consent stop working.
+          urlTokens: {
+            upsert: {
+              create: {},
+              update: { newsletterUnsubscribeToken: null },
+            },
+          },
         }),
       }),
     );
@@ -464,14 +471,22 @@ describe("UsersService — updateMe newsletter opt-in timestamp", () => {
     );
   });
 
-  it("leaves the newsletter opt-in untouched on opt-out", async () => {
+  // The withdrawal of consent went undated (audit 2026-11-17, LEG-09).
+  it("dates the opt-out, leaving the opt-in as it was", async () => {
     makeService(true);
 
     await service.updateMe(userId, { notifyNewsletter: false });
 
     expect(prisma.user.update).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({ consent: undefined }),
+        data: expect.objectContaining({
+          consent: {
+            upsert: {
+              create: { newsletterOptOutAt: expect.any(Date) },
+              update: { newsletterOptOutAt: expect.any(Date) },
+            },
+          },
+        }),
       }),
     );
   });

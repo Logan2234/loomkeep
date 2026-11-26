@@ -21,6 +21,11 @@ The complete archive lists your API keys, passkeys and the browsers that get
 your notifications, but never their secrets: no key, no password hash, no
 private link.
 
+Your conversations come with the messages you received too, with their
+author's username: they are half of the exchange. Nothing else about the
+other member is in it, nor the messages they deleted or the moderation
+removed.
+
 The Letterboxd and Goodreads files can include your review texts if you ask:
 they then become public there, even the ones you keep to your friends here.
 Your private notes are never in them.
@@ -60,7 +65,10 @@ stays:
 - **Kept by the instance**: the security log, stripped of IP addresses and
   of details such as a former email address or a device name, and any
   moderation decision about you — with the copy of a comment it removed —
-  without your identity. An invitation sent to your address forgets it. Backups erase
+  without your identity. Failed sign-in attempts are the exception: they
+  keep the email or username that was typed and the IP address they came
+  from, to spot attacks on accounts, and go after a year like the rest of
+  the log. An invitation sent to your address forgets it. Backups erase
   themselves within 30 days and are never used to bring an account back.
 
 Once the 14 days are over there is no undo: export first if you might want

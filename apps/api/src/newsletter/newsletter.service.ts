@@ -245,11 +245,21 @@ export class NewsletterService {
       );
     }
 
-    await this.prisma.userPreferences.upsert({
-      where: { userId: user.userId },
-      create: { userId: user.userId, notifyNewsletter: false },
-      update: { notifyNewsletter: false },
+    // Only an actual opt-out is dated: following the link again, or after
+    // turning the newsletter off in the settings, keeps the first date.
+    const { count } = await this.prisma.userPreferences.updateMany({
+      where: { userId: user.userId, notifyNewsletter: true },
+      data: { notifyNewsletter: false },
     });
+
+    if (count > 0) {
+      const newsletterOptOutAt = new Date();
+      await this.prisma.userConsent.upsert({
+        where: { userId: user.userId },
+        create: { userId: user.userId, newsletterOptOutAt },
+        update: { newsletterOptOutAt },
+      });
+    }
   }
 }
 

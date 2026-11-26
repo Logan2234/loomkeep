@@ -565,11 +565,12 @@ jobs:
         with:
           sparse-checkout: package.json
           sparse-checkout-cone-mode: false
+      # Both images' digests, one folder per image and platform: a platform
+      # is tagged only when api and web both built it (see the tag step).
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
-          pattern: digest-${{ matrix.name }}-*
+          pattern: digest-*
           path: ${{ runner.temp }}/digests
-          merge-multiple: true
       - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4
       - uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v3
         with:
@@ -604,10 +605,30 @@ jobs:
         working-directory: ${{ runner.temp }}/digests
         env:
           IMAGE: ${{ steps.release.outputs.image }}
+          NAME: ${{ matrix.name }}
+        # A failed arm64 build (continue-on-error) used to leave one image's
+        # tags without arm64 and the other's with it: a self-hoster on ARM
+        # then pulled a web and no api. A platform only one image built is
+        # left out of both, and announced.
         run: |
+          other=$([ "$NAME" = api ] && echo web || echo api)
+          refs=()
+          for platform in amd64 arm64; do
+            mine=$(ls "digest-$NAME-$platform" 2>/dev/null || true)
+            theirs=$(ls "digest-$other-$platform" 2>/dev/null || true)
+            if [ -n "$mine" ] && [ -n "$theirs" ]; then
+              refs+=("$IMAGE@sha256:$mine")
+            elif [ -n "$mine$theirs" ]; then
+              echo "::warning title=$platform left out::Only one of api and web built $platform: neither image is tagged for it."
+            fi
+          done
+          if [ "${#refs[@]}" -eq 0 ]; then
+            echo "::error::No platform built for both api and web."
+            exit 1
+          fi
           docker buildx imagetools create \
             $(jq -cr '.tags | map("--tag " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
-            $(printf "$IMAGE@sha256:%s " *)
+            "${refs[@]}"
           docker buildx imagetools inspect "$IMAGE:${GITHUB_SHA:0:12}"
 
   # Signs each tagged image's provenance with GitHub's OIDC identity

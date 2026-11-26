@@ -78,6 +78,26 @@ history from before it was started.
 
 ### Fixed
 
+- An import keeps going when one title can't be written, and the report
+  counts it as failed.
+- Import reviews, reports and history read in your own language: the
+  server no longer sends French or English labels.
+- A request that never gets an answer gives up after 30 seconds (5 minutes
+  for an upload or an export) with a clear message, instead of spinning.
+- An album MusicBrainz couldn't fully load is fetched again on the next
+  visit, and keeps the tracks it already had.
+- A book finished on New Year's Eve evening counts toward the reading goal
+  of the year it already is where you live.
+- A Steam import writes the status it proposed for a recently played game,
+  and refuses a profile entry that is neither an id, a name nor its URL.
+- Saving a review twice at once, or reporting the same thing twice at once,
+  no longer duplicates it.
+- Voting on or reporting a review you can't see is refused as not found.
+- A free account can no longer go past its saved views quota by creating
+  several at once.
+- The newsletter records when you unsubscribe, and the data export includes
+  it.
+
 - Usernames are saved in lowercase, so two accounts can no longer differ
   only by case and signing in with a passkey ignores case too.
 - Release dates no longer show as the day before in the Americas: album

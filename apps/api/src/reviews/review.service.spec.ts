@@ -254,6 +254,11 @@ function makeForWrite(
       }),
     },
   } as unknown as PrismaService;
+  const executeRaw = vi.fn().mockResolvedValue(1);
+  Object.assign(prisma, {
+    $executeRaw: executeRaw,
+    $transaction: vi.fn((fn: (tx: PrismaService) => unknown) => fn(prisma)),
+  });
   const activity = { emit: vi.fn() } as unknown as ActivityService;
   const visibility = {} as unknown as VisibilityService;
   const xp = stubXp();
@@ -267,8 +272,34 @@ function makeForWrite(
     achievements,
     stubNotifications(),
   );
-  return { svc, prisma, revisionCreate, upsert, xp, achievements, activity };
+  return {
+    svc,
+    prisma,
+    revisionCreate,
+    upsert,
+    xp,
+    achievements,
+    activity,
+    executeRaw,
+  };
 }
+
+// Two saves at once both read "no review yet": each recorded a revision and
+// a feed event for the same creation (audit 2026-11-17, BUG-68).
+describe("ReviewService.upsert — concurrent saves", () => {
+  it("reads and writes the review under a lock on its author and target", async () => {
+    const { svc, prisma, executeRaw, upsert } = makeForWrite(null);
+
+    await svc.upsert("u1", "MEDIA" as never, "m1", { rating: 8, text: null });
+
+    expect(prisma.$transaction).toHaveBeenCalled();
+    const lockedAt = executeRaw.mock.invocationCallOrder[0];
+    expect(lockedAt).toBeLessThan(
+      (prisma.review.findUnique as Mock).mock.invocationCallOrder[0],
+    );
+    expect(lockedAt).toBeLessThan(upsert.mock.invocationCallOrder[0]);
+  });
+});
 
 // Nothing checked the target: any targetId made a review that polluted the
 // author's list, the export and moderation (audit 2026-11-17, BUG-67).
@@ -443,6 +474,8 @@ describe("ReviewService.upsert — revision snapshotting", () => {
 
 function makeForVoting(opts: {
   reviewOwnerId: string;
+  reviewVisibility?: string;
+  viewerRelation?: ViewerRelation;
   grouped?: { reviewId: string; value: string; _count: { _all: number } }[];
   existingVote?: { id: string; value: string } | null;
   upvotes?: number;
@@ -458,7 +491,13 @@ function makeForVoting(opts: {
     );
   const prisma = {
     review: {
-      findUnique: vi.fn().mockResolvedValue({ userId: opts.reviewOwnerId }),
+      findUnique: vi.fn().mockResolvedValue({
+        userId: opts.reviewOwnerId,
+        targetType: "MEDIA",
+        targetId: "m1",
+        visibility: opts.reviewVisibility ?? "PUBLIC",
+        user: { id: opts.reviewOwnerId, profileAccess: "PUBLIC" },
+      }),
     },
     reviewVote: {
       upsert,
@@ -473,9 +512,18 @@ function makeForVoting(opts: {
   const xp = stubXp();
   const achievements = stubAchievements();
   const notifications = stubNotifications();
+  const visibility = {
+    getRelation: vi.fn((viewerId: string, target: { id: string }) =>
+      Promise.resolve(
+        viewerId === target.id
+          ? relation({ isSelf: true, isFriend: true })
+          : (opts.viewerRelation ?? relation({})),
+      ),
+    ),
+  } as unknown as VisibilityService;
   const svc = new ReviewService(
     prisma,
-    {} as unknown as VisibilityService,
+    visibility,
     {} as unknown as ActivityService,
     xp,
     CONFIG,
@@ -486,6 +534,28 @@ function makeForVoting(opts: {
 }
 
 describe("ReviewService.vote", () => {
+  // Voting went through on a review the viewer couldn't see, which confirmed
+  // it existed (audit 2026-11-17, SEC-29).
+  it.each([
+    ["a friends-only review of a stranger", "FRIENDS", relation({})],
+    [
+      "a review of someone who blocked the viewer",
+      "PUBLIC",
+      relation({ blockedByTarget: true }),
+    ],
+  ])("answers 404 on %s", async (_label, reviewVisibility, viewerRelation) => {
+    const { svc, upsert } = makeForVoting({
+      reviewOwnerId: "author",
+      reviewVisibility,
+      viewerRelation,
+    });
+
+    await expect(svc.vote("voter", "r1", "UP" as never)).rejects.toMatchObject({
+      code: "reviews.not_found",
+    });
+    expect(upsert).not.toHaveBeenCalled();
+  });
+
   it("rejects voting on your own review", async () => {
     const { svc } = makeForVoting({ reviewOwnerId: "author" });
     await expect(svc.vote("author", "r1", "UP" as never)).rejects.toThrow(

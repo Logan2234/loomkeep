@@ -33,7 +33,15 @@ interface RequestOptions {
   body?: unknown;
   /** Set to false when a failed request must not trigger token refresh. */
   withAuth?: boolean;
+  /** How long to wait for an answer; defaults to DEFAULT_TIMEOUT_MS. */
+  timeoutMs?: number;
 }
+
+// A server that accepts the connection and never answers would otherwise
+// leave the button that sent the request spinning for good.
+const DEFAULT_TIMEOUT_MS = 30_000;
+/** For an upload or an export, which can take minutes on a slow connection. */
+export const LONG_REQUEST_TIMEOUT_MS = 5 * 60_000;
 
 export async function request<T>(
   path: string,
@@ -58,8 +66,19 @@ export async function request<T>(
       credentials: "include",
       body:
         options.body !== undefined ? JSON.stringify(options.body) : undefined,
+      signal: AbortSignal.timeout(options.timeoutMs ?? DEFAULT_TIMEOUT_MS),
     });
-  } catch {
+  } catch (err) {
+    if (err instanceof DOMException && err.name === "TimeoutError") {
+      const error = new ApiError(
+        0,
+        "Request timed out",
+        ErrorCode.NetworkTimeout,
+      );
+      reportToGlitchTip(error);
+      throw error;
+    }
+
     // The fetch itself failed (offline, DNS failure, VPS down) — there is no
     // HTTP response at all, so this never reaches the !response.ok branch
     // below. Most frequent failure mode on a PWA away from wifi.

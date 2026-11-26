@@ -290,6 +290,7 @@ export const ErrorCode = {
   // client-side only — never emitted by the API, thrown by apps/web's
   // request() when the fetch itself fails (see apps/web/src/lib/api/core.ts)
   NetworkOffline: "network.offline",
+  NetworkTimeout: "network.timeout",
   // client-side only: the person closed the identity confirmation a sensitive
   // action asked for (see apps/web/src/lib/auth/reauth.svelte.ts)
   AuthReauthCancelled: "auth.reauth_cancelled",

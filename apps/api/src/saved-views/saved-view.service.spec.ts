@@ -57,11 +57,34 @@ function makeService({ existing = 0, premium = false } = {}) {
       delete: vi.fn(() => Promise.resolve()),
     },
   } as unknown as PrismaService;
+  // An advisory lock as Postgres keeps it: taken inside a transaction, held
+  // until that transaction ends, the next taker waiting meanwhile.
+  let lockTail: Promise<void> = Promise.resolve();
+  Object.assign(prisma, {
+    $transaction: vi.fn(async (fn: (tx: unknown) => Promise<unknown>) => {
+      let release = () => {};
+
+      const tx = {
+        savedView: prisma.savedView,
+        $executeRaw: vi.fn(async () => {
+          const previous = lockTail;
+          lockTail = new Promise<void>((resolve) => (release = resolve));
+          await previous;
+        }),
+      };
+
+      try {
+        return await fn(tx);
+      } finally {
+        release();
+      }
+    }),
+  });
   const entitlements = {
     isEffectivelyPremium: vi.fn().mockResolvedValue(premium),
   } as unknown as EntitlementService;
 
-  return { service: new SavedViewService(prisma, entitlements), prisma };
+  return { service: new SavedViewService(prisma, entitlements), prisma, rows };
 }
 
 describe("SavedViewService", () => {
@@ -116,6 +139,23 @@ describe("SavedViewService", () => {
       code: ErrorCode.LibrarySavedViewFreeQuotaExceeded,
     });
     expect(prisma.savedView.create).not.toHaveBeenCalled();
+  });
+
+  // Two creations at the threshold both counted below it, and the free
+  // account ended past its quota (audit 2026-11-17, PRM-08).
+  it("lets only one of two simultaneous creations take the last free slot", async () => {
+    const { service, rows } = makeService({
+      existing: SAVED_VIEW_LIMITS.free - 1,
+    });
+    const body = { name: "Late", domain: "BOOKS" as const, filters: {} };
+
+    const outcomes = await Promise.allSettled([
+      service.create("user-1", body),
+      service.create("user-1", body),
+    ]);
+
+    expect(outcomes.filter((o) => o.status === "fulfilled")).toHaveLength(1);
+    expect(rows).toHaveLength(SAVED_VIEW_LIMITS.free);
   });
 
   it("lets a premium account past the free quota, up to the hard cap", async () => {

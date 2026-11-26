@@ -25,7 +25,7 @@ import {
   type ModerationReasonRequestDto,
   type ReportResolution,
 } from "@loomkeep/shared";
-import { request } from "./core";
+import { LONG_REQUEST_TIMEOUT_MS, request } from "./core";
 import { typedRequest } from "./generated/typed-request";
 import { limitParam, pageParam } from "./query-params";
 
@@ -364,7 +364,11 @@ export const deleteAdminOrphanBackupFile = (filename: string): Promise<void> =>
 export const restoreAdminBackup = (
   body: AdminBackupRestoreRequestDto,
 ): Promise<void> =>
-  typedRequest("/admin/backup/restore", { method: "POST", body });
+  typedRequest("/admin/backup/restore", {
+    method: "POST",
+    body,
+    timeoutMs: LONG_REQUEST_TIMEOUT_MS,
+  });
 
 export function getAdminCache(filters: {
   domain: Domain;

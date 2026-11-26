@@ -197,7 +197,10 @@ describe("NewsletterService.handleChangelogPublished", () => {
 describe("NewsletterService.unsubscribe", () => {
   function makeService() {
     const prisma = {
-      userPreferences: { upsert: vi.fn() },
+      userPreferences: {
+        updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+      },
+      userConsent: { upsert: vi.fn() },
       userUrlToken: { findUnique: vi.fn() },
     } as unknown as PrismaService;
     const mail = {} as unknown as MailService;
@@ -217,11 +220,27 @@ describe("NewsletterService.unsubscribe", () => {
       where: { newsletterUnsubscribeToken: "stable-token" },
       select: { userId: true },
     });
-    expect(prisma.userPreferences.upsert).toHaveBeenCalledWith({
-      where: { userId: "user_1" },
-      create: { userId: "user_1", notifyNewsletter: false },
-      update: { notifyNewsletter: false },
+    expect(prisma.userPreferences.updateMany).toHaveBeenCalledWith({
+      where: { userId: "user_1", notifyNewsletter: true },
+      data: { notifyNewsletter: false },
     });
+    expect(prisma.userConsent.upsert).toHaveBeenCalledWith({
+      where: { userId: "user_1" },
+      create: { userId: "user_1", newsletterOptOutAt: expect.any(Date) },
+      update: { newsletterOptOutAt: expect.any(Date) },
+    });
+  });
+
+  it("keeps the first opt-out date when the link is used again", async () => {
+    const { service, prisma } = makeService();
+    (prisma.userUrlToken.findUnique as Mock).mockResolvedValue({
+      userId: "user_1",
+    });
+    (prisma.userPreferences.updateMany as Mock).mockResolvedValue({ count: 0 });
+
+    await service.unsubscribe("stable-token");
+
+    expect(prisma.userConsent.upsert).not.toHaveBeenCalled();
   });
 
   it("rejects an unknown token", async () => {
@@ -231,7 +250,7 @@ describe("NewsletterService.unsubscribe", () => {
     await expect(service.unsubscribe("bogus")).rejects.toThrow(
       "Invalid unsubscribe link",
     );
-    expect(prisma.userPreferences.upsert).not.toHaveBeenCalled();
+    expect(prisma.userPreferences.updateMany).not.toHaveBeenCalled();
   });
 });
 

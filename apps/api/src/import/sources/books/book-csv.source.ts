@@ -1,7 +1,6 @@
 import type {
   BookOwnershipStatus,
   BookSource,
-  BookStatus,
   BookSummaryDto,
   ImportMatch,
   ImportPlan,
@@ -11,7 +10,12 @@ import type {
   ImportReportTile,
   ImportSource,
 } from "@loomkeep/shared";
-import { Domain, ErrorCode, ReviewTargetType } from "@loomkeep/shared";
+import {
+  BookStatus,
+  Domain,
+  ErrorCode,
+  ReviewTargetType,
+} from "@loomkeep/shared";
 import assert from "node:assert/strict";
 import { BookItemService } from "../../../books/book-item.service";
 import { AppException } from "../../../common/app.exception";
@@ -29,6 +33,7 @@ import {
   type ImportReq,
   type ProgressReporter,
   indexPlanMatches,
+  pickStatus,
 } from "../../import-source";
 
 /** writeBook's answer for a book the catalogue no longer knows. */
@@ -38,13 +43,8 @@ const NOT_FOUND = Symbol("not found");
 // typical export while staying polite to the Open Library API.
 const RESOLVE_CONCURRENCY = 5;
 
-/** Review sections, in display order, with their French headings. */
-const STATUS_GROUPS: { status: BookStatus; label: string }[] = [
-  { status: "READING", label: "En lecture" },
-  { status: "TO_READ", label: "À lire" },
-  { status: "READ", label: "Lus" },
-  { status: "DROPPED", label: "Abandonnés" },
-];
+/** Review sections, in display order: the client labels each status. */
+const STATUS_GROUPS: BookStatus[] = ["READING", "TO_READ", "READ", "DROPPED"];
 
 /**
  * The subset of a parsed CSV row every book importer produces. A concrete
@@ -142,7 +142,6 @@ export abstract class BookCsvSource<
         key,
         title: summary?.title ?? row.title,
         sourceTitle: row.title,
-        subtitle: row.rating !== null ? `★ ${row.rating}/10` : null,
         context: { kind: "book", rating: row.rating },
         coverUrl: summary?.coverUrl ?? null,
         match,
@@ -156,9 +155,9 @@ export abstract class BookCsvSource<
       byStatus.set(row.status, bucket);
     }
 
-    const groups: ImportPlanGroup[] = STATUS_GROUPS.flatMap((g) => {
-      const items = byStatus.get(g.status);
-      return items?.length ? [{ id: g.status, label: g.label, items }] : [];
+    const groups: ImportPlanGroup[] = STATUS_GROUPS.flatMap((status) => {
+      const items = byStatus.get(status);
+      return items?.length ? [{ id: status, items }] : [];
     });
 
     return {
@@ -195,7 +194,11 @@ export abstract class BookCsvSource<
         continue;
       }
 
-      const status = (decisions.statuses.get(key) ?? row.status) as BookStatus;
+      const status = pickStatus(
+        BookStatus,
+        row.status,
+        decisions.statuses.get(key),
+      );
       const bookItemId = await this.writeBook(
         userId,
         match.source as BookSource,
@@ -224,25 +227,13 @@ export abstract class BookCsvSource<
       });
     }
 
-    const tiles: ImportReportTile[] = STATUS_GROUPS.flatMap((g) => {
-      const value = tally.get(g.status);
-      return value !== undefined && value > 0
-        ? [{ id: g.status, label: g.label, value, sub: null }]
-        : [];
+    const tiles: ImportReportTile[] = STATUS_GROUPS.flatMap((status) => {
+      const value = tally.get(status);
+      return value !== undefined && value > 0 ? [{ id: status, value }] : [];
     });
 
-    if (tiles.length === 0) {
-      tiles.push({ id: "books", label: "Books", value: 0, sub: null });
-    }
-
-    if (notFound > 0) {
-      tiles.push({
-        id: "notFound",
-        label: "Not found",
-        value: notFound,
-        sub: null,
-      });
-    }
+    if (tiles.length === 0) tiles.push({ id: "books", value: 0 });
+    if (notFound > 0) tiles.push({ id: "notFound", value: notFound });
 
     return { overwrite: decisions.overwrite, tiles };
   }

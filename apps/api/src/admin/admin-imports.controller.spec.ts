@@ -31,6 +31,7 @@ function run(id: string) {
     status: "SUCCESS",
     itemCount: 2,
     overwrite: false,
+    reportTiles: null,
     summary: "Imported 2 items",
     error: null,
     startedAt: new Date("2026-09-01T10:00:00.000Z"),

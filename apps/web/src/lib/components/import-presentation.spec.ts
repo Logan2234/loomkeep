@@ -16,17 +16,19 @@ import {
   importListSubtitle,
   importReportLabel,
   importReportSubtitle,
+  importRunFigures,
 } from "./import-presentation";
 
 const previousLocale = getLocale;
 afterEach(() => overwriteGetLocale(previousLocale));
 
-function item(context?: ImportItemContext): ImportPlanItem {
+function item(
+  context: ImportItemContext = { kind: "book", rating: null },
+): ImportPlanItem {
   return {
     key: "1",
     title: "Dune",
     sourceTitle: "Dune",
-    subtitle: "Texte français hérité",
     context,
     coverUrl: null,
     match: null,
@@ -49,9 +51,7 @@ describe("import presentation", () => {
       expect(importGroupLabel("futureGroup")).toBe(m.common_other());
       const tile: ImportReportTile = {
         id: "series",
-        label: "Séries",
         value: 4,
-        sub: "2 en watchlist",
         watchlistCount: 2,
       };
       expect(importReportLabel(tile)).toBe(m.media_series_plural());
@@ -223,10 +223,32 @@ describe("import presentation", () => {
     );
   });
 
+  it("writes an import's figures in the reader's language, or an old run's stored text", () => {
+    overwriteGetLocale(() => "en");
+    expect(
+      importRunFigures({
+        tiles: [
+          { id: "series", value: 3, watchlistCount: 1 },
+          { id: "failed", value: 1 },
+        ],
+        summary: null,
+      }),
+    ).toBe(`3 ${m.media_series_plural()} · 1 ${m.import_report_failed()}`);
+    expect(importRunFigures({ tiles: null, summary: "3 Series" })).toBe(
+      "3 Series",
+    );
+    expect(importRunFigures({ tiles: null, summary: null })).toBeNull();
+  });
+
   it("never displays unlocalized legacy fields or unknown error diagnostics", () => {
     overwriteGetLocale(() => "en");
     expect(importItemSubtitle(item())).toBeNull();
-    const tile = { label: "Libellé hérité", value: 1, sub: "Détail hérité" };
+    // A tile stored before tiles carried an id.
+    const tile = {
+      label: "Libellé hérité",
+      value: 1,
+      sub: "Détail hérité",
+    } as unknown as ImportReportTile;
     expect(importReportLabel(tile)).toBe(m.common_results());
     expect(importReportSubtitle(tile)).toBeNull();
     expect(

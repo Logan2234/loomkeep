@@ -98,11 +98,12 @@ wording change or a rename.
   lock state) and `ApiRateLimitService.limitFor` (the API quota must not
   rise for everyone before premium ships).
 - A whole premium feature lives in `ee/` (`apps/api/src/ee`,
-  `apps/web/src/lib/ee`) under [LICENSE-EE](LICENSE-EE). The core never
-  imports `ee/` (ESLint enforces it), every `ee/` controller carries
-  `EeLicenseGuard` except the public `EeStatusController` (`GET /ee/status`,
-  which is how the web learns the instance is unlicensed), web screens use
-  `useEeLock()`.
+  `apps/web/src/lib/ee`) under [LICENSE-EE](LICENSE-EE). The API core never
+  imports `ee/` (ESLint enforces it): only `app.module.ts` registers
+  `EeModule`. Every `ee/` controller carries `EeLicenseGuard` except the
+  public `EeStatusController` (`GET /ee/status`, which is how the web learns
+  the instance is unlicensed). The web has no such rule: core screens import
+  `#lib/ee/…` directly and gate it with `useEeLock()`.
 
 ### Web
 

@@ -44,6 +44,11 @@ Watching a film again, replaying a game or rereading a book starts a new
 and the new one is counted separately. For series, each episode keeps every
 time you watched it.
 
+While you rewatch a series, its card shows how far the rewatch has got, but
+the library's **Progress** sort and the **Paused** and **Ghost** filters
+still go by the series as a whole: a series you finished counts as finished
+there, however far the rewatch is.
+
 ## Sessions
 
 For games and books, you can log **sessions**: a date, a length, pages read

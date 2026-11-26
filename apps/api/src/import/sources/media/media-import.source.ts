@@ -175,19 +175,10 @@ export abstract class MediaImportSource<
       // A source can state a status without any episode (a rated IMDb
       // series): that is followed, not a watchlist entry.
       const onWatchlist = n === 0 && (show.status ?? "PLANNED") === "PLANNED";
-      const subtitle = [
-        n > 0
-          ? `${n} épisode${n > 1 ? "s" : ""} vu${n > 1 ? "s" : ""}`
-          : onWatchlist
-            ? "Watchlist"
-            : "Suivie",
-        ...extraParts(show.rating, show.favorite, 0),
-      ].join(" · ");
       const item: ImportPlanItem = {
         key: showKey(show),
         title: match?.title ?? show.title,
         sourceTitle: show.title,
-        subtitle,
         context: {
           kind: "series",
           episodesWatched: n,
@@ -219,15 +210,10 @@ export abstract class MediaImportSource<
     parsed.movies.forEach((movie, i) => {
       const match = movieMatches[i];
       if (!match) unresolved++;
-      const subtitleParts = [
-        movie.year ? String(movie.year) : null,
-        ...extraParts(movie.rating, movie.favorite, movie.rewatchedAt.length),
-      ].filter((p): p is string => p !== null);
       const item: ImportPlanItem = {
         key: movieKey(movie),
         title: match?.title ?? movie.title,
         sourceTitle: movie.title,
-        subtitle: subtitleParts.length > 0 ? subtitleParts.join(" · ") : null,
         context: {
           kind: "movie",
           year: movie.year,
@@ -266,7 +252,6 @@ export abstract class MediaImportSource<
         key: listItemKey(film),
         title: match?.title ?? film.title,
         sourceTitle: film.title,
-        subtitle: film.year ? String(film.year) : null,
         context: {
           kind: "movie",
           year: film.year,
@@ -283,19 +268,11 @@ export abstract class MediaImportSource<
     });
 
     const groups: ImportPlanGroup[] = [
-      { id: "seriesTracked", label: "Séries suivies", items: seriesTracked },
-      {
-        id: "seriesWatchlist",
-        label: "Séries — watchlist",
-        items: seriesWatchlist,
-      },
-      { id: "moviesWatched", label: "Films vus", items: moviesWatched },
-      {
-        id: "moviesWatchlist",
-        label: "Films — watchlist",
-        items: moviesWatchlist,
-      },
-      { id: "listFilms", label: "Films de tes listes", items: listFilms },
+      { id: "seriesTracked", items: seriesTracked },
+      { id: "seriesWatchlist", items: seriesWatchlist },
+      { id: "moviesWatched", items: moviesWatched },
+      { id: "moviesWatchlist", items: moviesWatchlist },
+      { id: "listFilms", items: listFilms },
     ].filter((g) => g.items.length > 0);
 
     // Rows the source could not place anywhere have no item to review, but
@@ -392,16 +369,34 @@ export abstract class MediaImportSource<
       replaced.add(media.id);
     };
 
+    // One title the catalogue or the database refuses is reported and
+    // skipped: the rest of the export still goes in. Only when nothing at all
+    // could be written is the failure taken as systemic, and the job fails.
+    let written = 0;
+    let failed = 0;
+    let firstFailure: Error | null = null;
+
+    const writeTitle = async (
+      title: string,
+      write: () => Promise<void>,
+    ): Promise<void> => {
+      try {
+        await write();
+        written++;
+      } catch (error) {
+        failed++;
+        firstFailure ??= this.contextualize(error, title);
+      }
+    };
+
     for (const show of includedShows) {
       const match = this.resolvedMatch(showKey(show), decisions, matchByKey);
 
       if (match) {
-        try {
+        await writeTitle(show.title, async () => {
           await replaceTitle(match);
           await this.writeShow(userId, show, match, tally);
-        } catch (error) {
-          throw this.contextualize(error, show.title);
-        }
+        });
       }
 
       progress.tick();
@@ -411,16 +406,16 @@ export abstract class MediaImportSource<
       const match = this.resolvedMatch(movieKey(movie), decisions, matchByKey);
 
       if (match) {
-        try {
+        await writeTitle(movie.title, async () => {
           await replaceTitle(match);
           await this.writeMovie(userId, movie, match, tally);
-        } catch (error) {
-          throw this.contextualize(error, movie.title);
-        }
+        });
       }
 
       progress.tick();
     }
+
+    if (firstFailure && written === 0) throw firstFailure;
 
     // Nothing written (every title unresolved) replaces nothing: emptying
     // the library then would be the old failure all over again.
@@ -447,40 +442,25 @@ export abstract class MediaImportSource<
       overwrite: decisions.overwrite,
       tiles: [
         {
-          label: "Series",
           id: "series",
           watchlistCount: tally.showsWatchlist,
           value: tally.showsImported,
-          sub: `${tally.showsWatchlist} on the watchlist`,
         },
+        { id: "episodes", value: tally.episodesCreated },
         {
-          label: "Episodes",
-          id: "episodes",
-          value: tally.episodesCreated,
-          sub: "viewings created",
-        },
-        {
-          label: "Movies",
           id: "movies",
           watchlistCount: tally.moviesWatchlist,
           value: tally.moviesImported,
-          sub: `${tally.moviesWatchlist} on the watchlist`,
         },
         ...(tally.listsCreated > 0
-          ? [
-              {
-                label: "Lists",
-                id: "lists" as const,
-                value: tally.listsCreated,
-                sub: null,
-              },
-            ]
+          ? [{ id: "lists" as const, value: tally.listsCreated }]
           : []),
+        ...(failed > 0 ? [{ id: "failed" as const, value: failed }] : []),
       ],
     };
   }
 
-  /** Logs and re-throws a commit-time failure with the title it happened on. */
+  /** Logs a commit-time failure and names the title it happened on. */
   private contextualize(error: unknown, title: string): Error {
     const message = error instanceof Error ? error.message : String(error);
     this.logger.error(`Failed to import "${title}": ${message}`);
@@ -1018,19 +998,6 @@ function isUnreleased(error: unknown): boolean {
     (error.code === ErrorCode.LibraryMovieNotReleased ||
       error.code === ErrorCode.LibraryAnimeNotAired)
   );
-}
-
-/** Extra badges surfaced in the plan preview: rewatch count, rating, favorite. */
-function extraParts(
-  rating: number | null | undefined,
-  favorite: boolean | undefined,
-  rewatchCount: number,
-): string[] {
-  const parts: string[] = [];
-  if (rewatchCount > 0) parts.push(`revu ${rewatchCount + 1}×`);
-  if (rating !== null && rating !== undefined) parts.push(`★ ${rating}/10`);
-  if (favorite) parts.push("♥ favori");
-  return parts;
 }
 
 /** Stable per-item id carried through analyze → review → commit. */

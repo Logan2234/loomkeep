@@ -1,5 +1,4 @@
 import type {
-  GameStatus,
   ImportMatch,
   ImportPlan,
   ImportPlanGroup,
@@ -12,6 +11,7 @@ import {
   ErrorCode,
   GameOwnershipStatus,
   GameSource,
+  GameStatus,
 } from "@loomkeep/shared";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
@@ -27,16 +27,18 @@ import {
   type ImportReq,
   type ProgressReporter,
   indexPlanMatches,
+  indexPlanStatuses,
+  pickStatus,
 } from "../../import-source";
 
 export const STEAM_API = "https://api.steampowered.com";
 
-/** Review sections, in display order, with their French headings. */
-const STATUS_GROUPS: { status: GameStatus; label: string }[] = [
-  { status: "PLAYING", label: "En cours" },
-  { status: "BACKLOG", label: "À jouer" },
-  { status: "COMPLETED", label: "Terminé" },
-  { status: "DROPPED", label: "Abandonnés" },
+/** Review sections, in display order: the client labels each status. */
+const STATUS_GROUPS: GameStatus[] = [
+  "PLAYING",
+  "BACKLOG",
+  "COMPLETED",
+  "DROPPED",
 ];
 
 interface SteamOwnedGame {
@@ -75,7 +77,7 @@ export class SteamImportSource implements ImportReq<SteamParsed> {
   ) {}
 
   parseInput(input: string): SteamParsed {
-    return { rawInput: input.trim(), playtimeByKey: new Map() };
+    return { rawInput: steamProfileRef(input), playtimeByKey: new Map() };
   }
 
   async buildPlan(
@@ -121,9 +123,10 @@ export class SteamImportSource implements ImportReq<SteamParsed> {
         parsed.playtimeByKey.set(key, game.playtime_forever);
         unmatchedByApp.set(key, {
           key,
-          title: game.name ?? "Jeu inconnu",
-          sourceTitle: game.name ?? "Jeu inconnu",
-          subtitle: fmtPlaytime(game.playtime_forever),
+          // Steam names nothing for a delisted app: the client shows it as
+          // unknown (`unknownTitle`), the app id still tells it apart.
+          title: game.name ?? `Steam ${game.appid}`,
+          sourceTitle: game.name ?? `Steam ${game.appid}`,
           context: {
             kind: "game",
             playtimeMinutes: game.playtime_forever,
@@ -156,7 +159,6 @@ export class SteamImportSource implements ImportReq<SteamParsed> {
         key,
         title: detail.summary.title,
         sourceTitle: detail.summary.title,
-        subtitle: fmtPlaytime(playtime) + (recent ? " · joué récemment" : ""),
         context: {
           kind: "game",
           playtimeMinutes: playtime,
@@ -189,9 +191,9 @@ export class SteamImportSource implements ImportReq<SteamParsed> {
       );
     }
 
-    const groups: ImportPlanGroup[] = STATUS_GROUPS.flatMap((g) => {
-      const items = byStatus.get(g.status);
-      return items?.length ? [{ id: g.status, label: g.label, items }] : [];
+    const groups: ImportPlanGroup[] = STATUS_GROUPS.flatMap((status) => {
+      const items = byStatus.get(status);
+      return items?.length ? [{ id: status, items }] : [];
     });
 
     const matched = matchedByIgdb.size;
@@ -216,6 +218,7 @@ export class SteamImportSource implements ImportReq<SteamParsed> {
     progress: ProgressReporter,
   ): Promise<ImportReport> {
     const matchByKey = indexPlanMatches(plan);
+    const proposed = indexPlanStatuses(plan);
 
     // Resolve the target ids first, then bulk-fetch their IGDB details.
     const targets: { key: string; sourceId: string }[] = [];
@@ -255,7 +258,12 @@ export class SteamImportSource implements ImportReq<SteamParsed> {
         GameSource.IGDB,
         detail,
       );
-      const status = (decisions.statuses.get(key) ?? "BACKLOG") as GameStatus;
+      const status = pickStatus(
+        GameStatus,
+        GameStatus.BACKLOG,
+        decisions.statuses.get(key),
+        proposed.get(key),
+      );
       const playtimeMinutes = parsed.playtimeByKey.get(key) ?? 0;
       const syncedAt = new Date();
       // Every newly imported game is, by definition, owned digitally on
@@ -283,30 +291,13 @@ export class SteamImportSource implements ImportReq<SteamParsed> {
       progress.tick();
     }
 
-    const tiles: ImportReportTile[] = STATUS_GROUPS.flatMap((g) => {
-      const value = tally.get(g.status);
-      return value !== undefined && value > 0
-        ? [{ id: g.status, label: g.label, value, sub: null }]
-        : [];
+    const tiles: ImportReportTile[] = STATUS_GROUPS.flatMap((status) => {
+      const value = tally.get(status);
+      return value !== undefined && value > 0 ? [{ id: status, value }] : [];
     });
-    if (tiles.length === 0)
-      tiles.push({ id: "games", label: "Games", value: 0, sub: null });
-
-    if (notFound > 0) {
-      tiles.push({
-        id: "notFound",
-        label: "Not found",
-        value: notFound,
-        sub: null,
-      });
-    }
-
-    tiles.push({
-      id: "playtime",
-      label: "Playtime",
-      value: Math.round(totalMinutes / 60),
-      sub: "hours imported",
-    });
+    if (tiles.length === 0) tiles.push({ id: "games", value: 0 });
+    if (notFound > 0) tiles.push({ id: "notFound", value: notFound });
+    tiles.push({ id: "playtime", value: Math.round(totalMinutes / 60) });
 
     return { overwrite: false, tiles };
   }
@@ -332,19 +323,9 @@ export class SteamImportSource implements ImportReq<SteamParsed> {
     );
   }
 
-  /** SteamID64 / vanity name / profile URL → SteamID64. */
-  private async resolveSteamId(rawInput: string): Promise<string> {
-    const input = rawInput.trim();
-
-    const profileMatch = input.match(/steamcommunity\.com\/profiles\/(\d{17})/);
-    if (profileMatch) return profileMatch[1];
-
-    const vanityUrlMatch = input.match(/steamcommunity\.com\/id\/([^/?#]+)/);
-    const vanity = vanityUrlMatch ? vanityUrlMatch[1] : input;
-
-    if (/^\d{17}$/.test(vanity)) return vanity;
-
-    return this.resolveVanity(vanity);
+  /** SteamID64 or custom URL name (see steamProfileRef) → SteamID64. */
+  private async resolveSteamId(ref: string): Promise<string> {
+    return STEAM_ID.test(ref) ? ref : this.resolveVanity(ref);
   }
 
   private async resolveVanity(name: string): Promise<string> {
@@ -422,10 +403,31 @@ export class SteamImportSource implements ImportReq<SteamParsed> {
   }
 }
 
-function fmtPlaytime(minutes: number): string {
-  if (minutes === 0) return "jamais joué";
-  const hours = Math.round(minutes / 60);
-  return hours === 0 ? "< 1 h" : `${hours} h`;
+const STEAM_ID = /^\d{17}$/;
+// Steam's custom profile URLs: letters, digits, "_" and "-".
+const VANITY_NAME = /^[A-Za-z0-9_-]{2,32}$/;
+const PROFILE_URL =
+  /^(?:https?:\/\/)?(?:www\.)?steamcommunity\.com\/(profiles|id)\/([^/?#]+)\/?(?:[?#].*)?$/i;
+
+/**
+ * The profile the user named: a SteamID64, a custom URL name, or either as a
+ * steamcommunity.com profile URL. Anything else is refused before Steam is
+ * called. Owning the profile is not checked (Steam offers no such proof
+ * without OpenID): a public library can be imported by anyone who names it.
+ */
+function steamProfileRef(input: string): string {
+  const value = input.trim();
+  const url = value.match(PROFILE_URL);
+  const kind = url ? url[1].toLowerCase() : null;
+  const ref = url ? url[2] : value;
+
+  if (kind !== "id" && STEAM_ID.test(ref)) return ref;
+  if (kind !== "profiles" && VANITY_NAME.test(ref)) return ref;
+
+  throw new AppException(
+    HttpStatus.BAD_REQUEST,
+    ErrorCode.ImportSteamProfileNotFound,
+  );
 }
 
 function toMatch(
