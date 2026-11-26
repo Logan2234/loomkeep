@@ -207,5 +207,7 @@
   "transparency_measure_avatar": "Photo de profil retirée",
   "transparency_measure_bio": "Bio effacée",
   "transparency_measure_display_name": "Nom affiché changé",
-  "transparency_measure_suspended": "Compte désactivé"
+  "transparency_measure_suspended": "Compte désactivé",
+  "landing_comparator_early_access": "accès anticipé",
+  "landing_comparator_early_access_note": "La musique est en accès anticipé : elle peut être lente et il manque encore des fonctionnalités."
 }

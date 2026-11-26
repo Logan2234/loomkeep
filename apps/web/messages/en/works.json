@@ -483,5 +483,6 @@
   "game_languages_interface": "Interface",
   "game_languages_subtitles": "Subtitles",
   "game_languages_audio": "Voices",
-  "game_languages_source": "From IGDB."
+  "game_languages_source": "From IGDB.",
+  "music_early_access_banner": "Music is in early access: it can be slow, and some things are still missing. Thanks for your patience."
 }

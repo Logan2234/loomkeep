@@ -10,10 +10,12 @@
   import { signOutAndRedirect } from "#lib/api/auth.js";
   import { auth } from "#lib/auth.svelte.js";
   import Avatar from "#lib/components/Avatar.svelte";
+  import EarlyAccessBadge from "#lib/components/EarlyAccessBadge.svelte";
   import Icon from "#lib/components/Icon.svelte";
   import NewBadge from "#lib/components/NewBadge.svelte";
   import { appConfig } from "#lib/config.svelte.js";
   import { VISIBLE_ADMIN_NAV_GROUPS } from "#lib/constants/admin-nav.js";
+  import { DOMAINS } from "#lib/constants/domains.js";
   import { isDomainEnabled } from "#lib/domain-availability.js";
   import { isFeatureNew } from "#lib/feature-badges.js";
   import { prefersReducedMotion } from "#lib/motion.js";
@@ -315,6 +317,9 @@
                     {item.label}
                     {#if item.newBadgeKey && isFeatureNew(item.newBadgeKey)}
                       <NewBadge />
+                    {/if}
+                    {#if item.domain && DOMAINS[item.domain].earlyAccess}
+                      <EarlyAccessBadge />
                     {/if}
                   </span>
                 </a>

@@ -64,6 +64,7 @@
   import BrandMark from "../BrandMark.svelte";
   import EditAvatarModal from "../EditAvatarModal.svelte";
   import GhostSwitchModal from "../GhostSwitchModal.svelte";
+  import EarlyAccessBadge from "../EarlyAccessBadge.svelte";
   import Icon from "../Icon.svelte";
   import SegmentedControl from "../SegmentedControl.svelte";
   import Switch from "../Switch.svelte";
@@ -710,6 +711,9 @@
           <span class="font-display text-xl font-extrabold md:text-2xl">
             {DOMAINS[id].label}
           </span>
+          {#if DOMAINS[id].earlyAccess}
+            <EarlyAccessBadge class="self-start" />
+          {/if}
           <span class="text-dim text-xs md:text-sm">{example()}</span>
         </button>
       {/each}

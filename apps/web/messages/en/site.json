@@ -207,5 +207,7 @@
   "transparency_measure_avatar": "Profile picture removed",
   "transparency_measure_bio": "Bio removed",
   "transparency_measure_display_name": "Display name changed",
-  "transparency_measure_suspended": "Account suspended"
+  "transparency_measure_suspended": "Account suspended",
+  "landing_comparator_early_access": "early access",
+  "landing_comparator_early_access_note": "Music is in early access: it can be slow and some features are still missing."
 }

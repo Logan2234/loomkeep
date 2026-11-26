@@ -7,6 +7,7 @@
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
   import { auth } from "#lib/auth.svelte.js";
+  import EarlyAccessBadge from "#lib/components/EarlyAccessBadge.svelte";
   import Icon from "#lib/components/Icon.svelte";
   import PremiumLockBadge from "#lib/components/PremiumLockBadge.svelte";
   import Tooltip from "#lib/components/Tooltip.svelte";
@@ -141,6 +142,10 @@
                 class="btn-icon absolute top-2 right-2 z-10 cursor-grab touch-none active:cursor-grabbing">
                 <Icon name="grip" class="h-3.5 w-3.5" />
               </span>
+              {#if d.earlyAccess && !showLock}
+                <EarlyAccessBadge
+                  class="bg-bg absolute -top-1.5 -right-1.5 z-10" />
+              {/if}
               {#if d.comingSoon && !showLock}
                 <span
                   class="bg-surface-2 text-dim absolute -top-1.5 -right-1.5 z-10 rounded-full px-1.5 py-0.5 text-[0.55rem] font-bold">

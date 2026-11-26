@@ -33,6 +33,9 @@ history from before it was started.
   you follow each other. Offered only while registration is open.
 - Radarr and Sonarr (premium): import lists fed by your pile, from
   Settings › Integrations, or by any of your lists, from its menu.
+- Music is now flagged **Early access**: a badge in the navigation, settings and
+  onboarding, and a dismissible note on the Music page saying it can be slow and
+  incomplete. The landing page and its comparison say so too.
 - Admin: a premium grant can end at a date you set, after which the account
   is back on the free plan.
 - Brand logos for the services Loomkeep talks to: import sources, export
