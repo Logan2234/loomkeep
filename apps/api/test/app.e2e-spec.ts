@@ -2,7 +2,7 @@ import { ErrorCode } from "@loomkeep/shared";
 import { INestApplication } from "@nestjs/common";
 import request from "supertest";
 import { App } from "supertest/types";
-import { ScheduledDeletionService } from "../src/users/scheduled-deletion.service";
+import { ScheduledDeletionService } from "../src/account/scheduled-deletion.service";
 import {
   ANIME_SUMMARY,
   authCookies,
