@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { keys } from "#lib/api/keys.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import { addWorkToLibrary } from "#lib/chat/work-library.js";
   import Banner from "#lib/components/Banner.svelte";
@@ -34,7 +35,7 @@
 
   const addMut = createApiMutation(() => ({
     mutate: (hit: WorkSearchHitDto) => addWorkToLibrary(hit),
-    invalidates: [["search"], ["library"]],
+    invalidates: [keys.search.all(), keys.library.all()],
     errorToast: true,
   }));
 </script>

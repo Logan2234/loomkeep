@@ -35,11 +35,14 @@
   import { appConfig } from "#lib/config.svelte.js";
   import { formatDate, MONTH_YEAR_OPTIONS } from "#lib/format.js";
   import { m } from "#lib/paraglide/messages.js";
-  import { isNativeScanAvailable, scanNatively } from "#lib/native/scan.js";
+  import {
+    BarcodeFormat,
+    isNativeScanAvailable,
+    scanNatively,
+  } from "#lib/native/scan.js";
   import { profileUsernameFromQr } from "#lib/scan-codes.js";
   import { toast } from "#lib/toast.svelte.js";
   import { goto } from "$app/navigation";
-  import { BarcodeFormat } from "@capacitor-mlkit/barcode-scanning";
   import type { RelationshipDto, SocialProfileDto } from "@loomkeep/shared";
   import { useQueryClient } from "@tanstack/svelte-query";
   import LevelCard from "../LevelCard.svelte";

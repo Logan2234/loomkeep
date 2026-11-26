@@ -31,10 +31,13 @@
   import { auth } from "#lib/auth.svelte.js";
   import { layout } from "#lib/layout.svelte.js";
   import { m } from "#lib/paraglide/messages.js";
-  import { isNativeScanAvailable, scanNatively } from "#lib/native/scan.js";
+  import {
+    BarcodeFormat,
+    isNativeScanAvailable,
+    scanNatively,
+  } from "#lib/native/scan.js";
   import { isIsbnBarcode } from "#lib/scan-codes.js";
   import { toast } from "#lib/toast.svelte.js";
-  import { BarcodeFormat } from "@capacitor-mlkit/barcode-scanning";
   import { quickAddTarget } from "#lib/quick-add.js";
   import { isPastedLink } from "#lib/share-link.js";
   import { Domain, type MediaType } from "@loomkeep/shared";

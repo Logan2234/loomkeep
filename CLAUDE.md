@@ -107,7 +107,7 @@ wording change or a rename.
   the `premium-features` flag is off), never `hasPremium()`. Two callers need the
   raw plan and keep `hasPremium()`: `GET /users/me/entitlement` (the web's
   lock state) and `ApiRateLimitService.limitFor` (the API quota must not
-  rise for everyone before premium ships).
+  rise for everyone before premium ships). ESLint flags any other caller.
 - A whole premium feature lives in `ee/` (`apps/api/src/ee`,
   `apps/web/src/lib/ee`) under [LICENSE-EE](LICENSE-EE). The API core never
   imports `ee/` (ESLint enforces it): only `app.module.ts` registers
@@ -126,8 +126,9 @@ wording change or a rename.
   `createApiInfiniteQuery` (TanStack, `src/lib/api/`), which take a getter
   and return a translated `error` — never a hand-rolled `try/catch` +
   `loading` state. `CommentThread.svelte` is the one deliberate exception.
-- Query keys come from `src/lib/api/keys.ts`. `invalidates` lists only what
-  is displayed alongside the mutation.
+- Query keys come from `src/lib/api/keys.ts` (ESLint flags a literal key or
+  `invalidates` entry). `invalidates` lists only what is displayed alongside
+  the mutation.
 - Paginated `GET` lists share one contract: `page`/`limit` params
   (`parsePageQuery`), `PagedResult<T>` response. The reading/play
   sessions of an entry (`GET /books|games/entries/:id/sessions`) are the
@@ -141,7 +142,7 @@ wording change or a rename.
   a plain `.ts` module is tested there first.
 - Test behaviour: query by role/label, expected text from `m.*()`.
 - The API is stubbed with msw (`src/lib/test/msw.ts`) — never `vi.mock`
-  `#lib/api/*`. Render with `renderWithQuery()`.
+  `#lib/api/*` (ESLint). Render with `renderWithQuery()`.
 - Every component test ends with an axe pass. A new route with a parameter
   needs a value or an exclusion in `.github/web-audit/pages.mjs`.
 - No coverage threshold, no snapshot tests.
@@ -192,7 +193,8 @@ wording change or a rename.
   the same file).
 - The installed APK can be several releases behind the web: reach a native
   plugin only once `Capacitor.isPluginAvailable()` says so, never on
-  `isNativeApp()` alone. A new plugin goes in `apps/web` and `apps/mobile`
+  `isNativeApp()` alone: plugins are imported only in `src/lib/native/`
+  (ESLint), whose wrappers check it. A new plugin goes in `apps/web` and `apps/mobile`
   at the same version.
 - Every alert (bell, push, email) is declared once in `ALERTS`
   (`packages/shared/src/alerts.ts`). A new alert starts there.
