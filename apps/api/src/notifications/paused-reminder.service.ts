@@ -12,7 +12,7 @@ import {
 } from "../common/external-id.util";
 import { localDay, localParts } from "../common/local-day.util";
 import { JOB_KEYS } from "../jobs/job-keys";
-import { JobRunService } from "../jobs/job-run.service";
+import { JobRunService, type JobSkipped } from "../jobs/job-run.service";
 import {
   materializedStatus,
   withEpisodeLeftToWatch,
@@ -62,7 +62,7 @@ export class PausedReminderService {
   ) {}
 
   @Cron(CronExpression.EVERY_HOUR, { name: JOB_KEYS.PAUSED_REMINDER })
-  async runReminders(): Promise<number> {
+  async runReminders(): Promise<number | JobSkipped> {
     return this.jobRuns.record(
       JOB_KEYS.PAUSED_REMINDER,
       () => this.run(new Date()),

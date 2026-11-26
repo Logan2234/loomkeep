@@ -29,7 +29,7 @@ import { isUniqueViolation } from "../common/prisma-error.util";
 import { resolveWorkHref } from "../common/work-href.util";
 import { EventsGateway } from "../events/events.gateway";
 import { JOB_KEYS } from "../jobs/job-keys";
-import { JobRunService } from "../jobs/job-run.service";
+import { JobRunService, type JobSkipped } from "../jobs/job-run.service";
 import { MailService } from "../mail/mail.service";
 import { AdminAlertService } from "../notifications/admin-alert.service";
 import { notificationCopy } from "../notifications/notification-copy";
@@ -574,7 +574,7 @@ export class ReportService {
 
   /** Daily 7h admin-only digest of pending reports. Skipped entirely when there's nothing pending. */
   @Cron(CronExpression.EVERY_DAY_AT_7AM, { name: JOB_KEYS.REPORTS_DIGEST })
-  async sendDailyDigest(): Promise<number> {
+  async sendDailyDigest(): Promise<number | JobSkipped> {
     return this.jobRuns.record(
       JOB_KEYS.REPORTS_DIGEST,
       () => this.runDailyDigest(),

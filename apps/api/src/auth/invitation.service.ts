@@ -17,7 +17,7 @@ import { addDays, sinceDaysAgo } from "../common/date.util";
 import { type ParsedPage, toPagedResult } from "../common/pagination.util";
 import { primaryWebOrigin } from "../common/web-origin.util";
 import { JOB_KEYS } from "../jobs/job-keys";
-import { JobRunService } from "../jobs/job-run.service";
+import { JobRunService, type JobSkipped } from "../jobs/job-run.service";
 import { MailService } from "../mail/mail.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { avatarUrl } from "../users/avatar.util";
@@ -324,7 +324,7 @@ export class InvitationService {
    * drawer's "invité par" line reads.
    */
   @Cron(DEAD_INVITATION_PURGE_CRON, { name: JOB_KEYS.INVITATIONS_PURGE })
-  runPurgeJob(): Promise<number> {
+  runPurgeJob(): Promise<number | JobSkipped> {
     return this.jobRuns.record(
       JOB_KEYS.INVITATIONS_PURGE,
       () => this.purgeDead(),

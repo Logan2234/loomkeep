@@ -7,9 +7,18 @@ import { HTTP_TIMEOUT_MS } from "../common/http.util";
 import { PrismaService } from "../prisma/prisma.service";
 import { JobAlertService } from "./job-alert.service";
 import { JOB_HEALTHCHECK_ENV, JOB_KEYS, type JobKey } from "./job-keys";
+import { JobLockService } from "./job-lock.service";
 
 /** Runs kept per job — bounds the table on a self-host instance running for years. */
 const RUNS_KEPT_PER_JOB = 50;
+
+/**
+ * What {@link JobRunService.record} returns instead of the job's result when
+ * another API process is already running that job: nothing ran, nothing was
+ * recorded. A cron tick just ends; "Lancer maintenant" answers 409.
+ */
+export const JOB_SKIPPED = Symbol("job-skipped");
+export type JobSkipped = typeof JOB_SKIPPED;
 
 @Injectable()
 export class JobRunService {
@@ -21,14 +30,31 @@ export class JobRunService {
     private readonly prisma: PrismaService,
     private readonly alerts: JobAlertService,
     private readonly scheduler: SchedulerRegistry,
+    private readonly lock: JobLockService,
   ) {}
 
   /**
    * Runs `fn`, records the outcome (success/failure + a summary), prunes old
    * runs for this job, then returns `fn`'s result (or rethrows its error).
    * The admins are alerted when the outcome differs from the previous run's.
+   * Returns {@link JOB_SKIPPED} without running `fn` when another process
+   * (or another run in this one) holds the job — see JobLockService.
    */
   async record<T>(
+    jobKey: JobKey,
+    fn: () => Promise<T>,
+    summarize: (result: T) => string,
+  ): Promise<T | JobSkipped> {
+    const run = await this.lock.runExclusive(jobKey, () =>
+      this.recordRun(jobKey, fn, summarize),
+    );
+    if (run.ran) return run.value;
+
+    this.logger.log(`Job ${jobKey} skipped: already running elsewhere`);
+    return JOB_SKIPPED;
+  }
+
+  private async recordRun<T>(
     jobKey: JobKey,
     fn: () => Promise<T>,
     summarize: (result: T) => string,

@@ -68,6 +68,10 @@ history from before it was started.
 
 ### Changed
 
+- Scheduled jobs take a lock in the database: a job runs once at a time, even
+  if you run a second API container, and Admin › Jobs says so when you start
+  one that is already running. The self-hosting docs now state that an
+  instance runs a single API container.
 - Landing page: the title, description and opening line now say what Loomkeep
   is (a free, open-source, self-hostable media tracker), in English, French
   and Italian, and the sitemap dates each page.

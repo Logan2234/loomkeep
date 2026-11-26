@@ -105,6 +105,7 @@
   "apierr_admin_email_template_not_found": "Ce modèle d'email est introuvable.",
   "apierr_admin_smtp_not_configured": "L'envoi d'email n'est pas configuré sur ce serveur.",
   "apierr_admin_unknown_job": "Cette tâche est inconnue.",
+  "apierr_admin_job_already_running": "Cette tâche est déjà en cours. Consulte son historique quand elle aura fini.",
   "apierr_admin_account_not_found": "Ce compte est introuvable.",
   "apierr_admin_report_not_found": "Ce signalement est introuvable.",
   "apierr_admin_cannot_self_demote": "Tu ne peux pas retirer tes propres droits d'administrateur.",

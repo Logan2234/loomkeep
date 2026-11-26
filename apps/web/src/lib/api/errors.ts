@@ -142,6 +142,8 @@ const MESSAGES = {
   [ErrorCode.AdminSmtpNotConfigured]: () =>
     m.apierr_admin_smtp_not_configured(),
   [ErrorCode.AdminUnknownJob]: () => m.apierr_admin_unknown_job(),
+  [ErrorCode.AdminJobAlreadyRunning]: () =>
+    m.apierr_admin_job_already_running(),
   [ErrorCode.AdminAccountNotFound]: () => m.apierr_admin_account_not_found(),
   [ErrorCode.AdminSettingLockedByEnv]: () =>
     m.apierr_admin_setting_locked_by_env(),

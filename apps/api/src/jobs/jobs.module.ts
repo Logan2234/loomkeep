@@ -2,12 +2,13 @@ import { Module } from "@nestjs/common";
 import { MailModule } from "../mail/mail.module";
 import { AdminAlertModule } from "../notifications/admin-alert.module";
 import { JobAlertService } from "./job-alert.service";
+import { JobLockService } from "./job-lock.service";
 import { JobRunService } from "./job-run.service";
 
 // PrismaService comes from the global PrismaModule.
 @Module({
   imports: [MailModule, AdminAlertModule],
-  providers: [JobRunService, JobAlertService],
+  providers: [JobRunService, JobAlertService, JobLockService],
   exports: [JobRunService],
 })
 export class JobsModule {}

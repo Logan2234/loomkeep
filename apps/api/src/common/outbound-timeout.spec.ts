@@ -119,7 +119,21 @@ describe("outbound request deadlines", () => {
               findMany: vi.fn().mockResolvedValue([]),
             },
           };
-          request = new JobRunService(prisma as never, null!, null!).record(
+          const lock = {
+            runExclusive: async (
+              _key: unknown,
+              fn: () => Promise<unknown>,
+            ) => ({
+              ran: true,
+              value: await fn(),
+            }),
+          };
+          request = new JobRunService(
+            prisma as never,
+            null!,
+            null!,
+            lock as never,
+          ).record(
             JOB_KEYS.BACKUP,
             async () => "ok",
             () => "summary",

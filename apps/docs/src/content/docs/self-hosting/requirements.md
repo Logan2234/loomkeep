@@ -26,6 +26,16 @@ running a 64-bit system.
 32-bit ARM (`armv7`, older Raspberry Pis or a 32-bit system) isn't
 supported.
 
+### One API container
+
+Run a single `api` container per instance. Imports in progress, rate limits,
+live updates and a short session cache are held in that process's memory, so
+a second replica (`docker compose up --scale api=2`) would split them: an
+import started on one replica can't be followed from the other, and live
+updates reach only half the open tabs. Scheduled jobs are the exception: they
+take a lock in the database, so even two replicas run each one once. To serve
+more people, give the one container more CPU and memory.
+
 ## Systems
 
 Anything that runs Docker Compose works the same way: a Linux

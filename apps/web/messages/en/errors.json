@@ -105,6 +105,7 @@
   "apierr_admin_email_template_not_found": "This email template could not be found.",
   "apierr_admin_smtp_not_configured": "Email sending isn't configured on this server.",
   "apierr_admin_unknown_job": "This job is unknown.",
+  "apierr_admin_job_already_running": "This job is already running. Check its history once it finishes.",
   "apierr_admin_account_not_found": "This account could not be found.",
   "apierr_admin_report_not_found": "This report could not be found.",
   "apierr_admin_cannot_self_demote": "You can't remove your own admin rights.",

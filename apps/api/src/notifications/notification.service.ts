@@ -32,7 +32,7 @@ import { type ParsedPage, toPagedResult } from "../common/pagination.util";
 import { EventsGateway } from "../events/events.gateway";
 import { isDomainOffered } from "../instance-settings/instance-domains";
 import { JOB_KEYS } from "../jobs/job-keys";
-import { JobRunService } from "../jobs/job-run.service";
+import { JobRunService, type JobSkipped } from "../jobs/job-run.service";
 import { MailService } from "../mail/mail.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { preferencesOf } from "../users/preferences.util";
@@ -131,7 +131,7 @@ export class NotificationService {
    * overlapping or missed ticks are harmless.
    */
   @Cron(CronExpression.EVERY_HOUR, { name: JOB_KEYS.NOTIFICATIONS_SCAN })
-  async scanAll(): Promise<number> {
+  async scanAll(): Promise<number | JobSkipped> {
     return this.jobRuns.record(
       JOB_KEYS.NOTIFICATIONS_SCAN,
       () => this.runScanAll(),
@@ -1104,7 +1104,7 @@ export class NotificationService {
    * inactive-account purge bounds them.
    */
   @Cron(NOTIFICATIONS_PURGE_CRON, { name: JOB_KEYS.NOTIFICATIONS_PURGE })
-  runPurgeJob(): Promise<number> {
+  runPurgeJob(): Promise<number | JobSkipped> {
     return this.jobRuns.record(
       JOB_KEYS.NOTIFICATIONS_PURGE,
       () => this.purge(),

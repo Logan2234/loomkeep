@@ -1,7 +1,7 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { Cron, CronExpression } from "@nestjs/schedule";
 import { JOB_KEYS } from "../jobs/job-keys";
-import { JobRunService } from "../jobs/job-run.service";
+import { JobRunService, type JobSkipped } from "../jobs/job-run.service";
 import { MailService } from "../mail/mail.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { AccountDeletionService } from "./account-deletion.service";
@@ -50,7 +50,7 @@ export class InactiveAccountService {
   @Cron(CronExpression.EVERY_DAY_AT_5AM, {
     name: JOB_KEYS.INACTIVE_ACCOUNTS_SCAN,
   })
-  async scan(): Promise<{ warned: number; deleted: number }> {
+  async scan(): Promise<{ warned: number; deleted: number } | JobSkipped> {
     return this.jobRuns.record(
       JOB_KEYS.INACTIVE_ACCOUNTS_SCAN,
       () => this.runScan(),

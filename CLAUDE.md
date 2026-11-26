@@ -145,6 +145,11 @@ wording change or a rename.
   compose file's location. Which overrides the VPS combines comes from its
   own `.env` (`COMPOSE_FILE`). Logs redact auth headers and never log
   request bodies.
+- One API process per instance ([docs/adr/0002](docs/adr/0002-one-api-process.md)):
+  imports, throttling, socket.io and the session cache live in memory. A new
+  in-memory state adds a row to that ADR. A scheduled job goes through
+  `JobRunService.record()`, whose database lock runs it once across replicas
+  and returns `JOB_SKIPPED` when it is already running.
 - Social features are gated by the `socialEnabled` instance setting;
   `SocialFeatureGuard` answers 404 (never 403) when off.
   [apps/api/src/social/README.md](apps/api/src/social/README.md).

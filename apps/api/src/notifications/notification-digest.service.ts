@@ -10,7 +10,7 @@ import { jsonObject } from "../common/json.util";
 import { localParts } from "../common/local-day.util";
 import { EntitlementService } from "../entitlements/entitlement.service";
 import { JOB_KEYS } from "../jobs/job-keys";
-import { JobRunService } from "../jobs/job-run.service";
+import { JobRunService, type JobSkipped } from "../jobs/job-run.service";
 import { MailService } from "../mail/mail.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { preferencesOf } from "../users/preferences.util";
@@ -75,7 +75,7 @@ export class NotificationDigestService {
    * hour on each channel (18h daily, Monday 9h weekly) and sends if so.
    */
   @Cron(CronExpression.EVERY_HOUR, { name: JOB_KEYS.NOTIFICATIONS_DIGEST })
-  async runDigests(): Promise<number> {
+  async runDigests(): Promise<number | JobSkipped> {
     return this.jobRuns.record(
       JOB_KEYS.NOTIFICATIONS_DIGEST,
       () => this.run(),

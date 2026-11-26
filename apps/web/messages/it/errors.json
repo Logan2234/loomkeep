@@ -105,6 +105,7 @@
   "apierr_admin_email_template_not_found": "Impossibile trovare questo modello di email.",
   "apierr_admin_smtp_not_configured": "L'invio di email non è configurato su questo server.",
   "apierr_admin_unknown_job": "Questo job è sconosciuto.",
+  "apierr_admin_job_already_running": "Questo job è già in esecuzione. Controlla la cronologia quando avrà finito.",
   "apierr_admin_account_not_found": "Impossibile trovare questo account.",
   "apierr_admin_report_not_found": "Impossibile trovare questa segnalazione.",
   "apierr_admin_cannot_self_demote": "Non puoi rimuovere i tuoi diritti di amministratore.",
