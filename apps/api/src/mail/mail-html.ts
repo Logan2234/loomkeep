@@ -10,7 +10,7 @@ export function escapeHtml(text: string): string {
     .replace(/"/g, "&quot;");
 }
 
-export const QUACKBACK_EMOJI_ALIASES: Record<string, string> = {
+const QUACKBACK_EMOJI_ALIASES: Record<string, string> = {
   sparkles: "✨",
   wrench: "🔧",
   bug: "🐛",
@@ -26,10 +26,7 @@ export function renderQuackbackEmojiAliases(text: string): string {
   );
 }
 
-export function isAllowedUrl(
-  value: string,
-  attribute: "href" | "src",
-): boolean {
+function isAllowedUrl(value: string, attribute: "href" | "src"): boolean {
   const normalized = value
     .replace(
       /&#(?:x([0-9a-f]+)|([0-9]+));/gi,

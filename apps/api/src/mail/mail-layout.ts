@@ -30,8 +30,8 @@ export const UMAMI_LINK_SLUG_API_KEY_EXPIRING = "secu-api-expiration";
 export const UMAMI_LINK_SLUG_API_KEY_LEAKED = "secu-api-fuite";
 export const UMAMI_LINK_SLUG_SECURITY_ALERT = "secu-alerte";
 export const UMAMI_LINK_SLUG_INACTIVITY = "compte-inactivite";
-export const UMAMI_LINK_SLUG_HEADER_SITE = "header-site";
-export const UMAMI_LINK_SLUG_FOOTER_SITE = "footer-site";
+const UMAMI_LINK_SLUG_HEADER_SITE = "header-site";
+const UMAMI_LINK_SLUG_FOOTER_SITE = "footer-site";
 
 export type MailFooter =
   | { type: "classic" }
