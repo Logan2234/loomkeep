@@ -1,6 +1,6 @@
 import { AlertGroup, type AlertKey, isAlertEnabled } from "@loomkeep/shared";
 import { Injectable, Logger } from "@nestjs/common";
-import type { MailRecipient } from "../mail/mail.service";
+import type { MailRecipient } from "../mail/mail.types";
 import { PrismaService } from "../prisma/prisma.service";
 import { readAlertPrefs } from "./alert-prefs.util";
 import { type NotificationCopy, notificationCopy } from "./notification-copy";
