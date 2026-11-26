@@ -20,6 +20,10 @@ music), open-core under AGPL-3.0. pnpm monorepo:
 Two destinations: Logan's hosted VPS (auto-deployed by `ci.yml`) and
 self-hosting via `docker/`.
 
+Structural decisions and their reasons are ADRs in [docs/adr/](docs/adr/README.md):
+read the one that applies before changing what it decided, and a new decision
+of that size gets its own.
+
 ## Commands
 
 ```sh
