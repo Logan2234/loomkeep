@@ -1,28 +1,28 @@
 import { MODULE_METADATA } from "@nestjs/common/constants";
-import { InactiveAccountService } from "../users/inactive-account.service";
-import { UsersModule } from "../users/users.module";
+import { AccountModule } from "../account/account.module";
+import { InactiveAccountService } from "../account/inactive-account.service";
 import { AdminModule } from "./admin.module";
 
 describe("inactive-account cron registration", () => {
   it("registers one provider shared by the scheduled and admin paths", () => {
-    const usersProviders = Reflect.getMetadata(
+    const accountProviders = Reflect.getMetadata(
       MODULE_METADATA.PROVIDERS,
-      UsersModule,
+      AccountModule,
     ) as unknown[];
     const adminProviders = Reflect.getMetadata(
       MODULE_METADATA.PROVIDERS,
       AdminModule,
     ) as unknown[];
-    const usersExports = Reflect.getMetadata(
+    const accountExports = Reflect.getMetadata(
       MODULE_METADATA.EXPORTS,
-      UsersModule,
+      AccountModule,
     ) as unknown[];
 
     expect(
-      [...usersProviders, ...adminProviders].filter(
+      [...accountProviders, ...adminProviders].filter(
         (provider) => provider === InactiveAccountService,
       ),
     ).toHaveLength(1);
-    expect(usersExports).toContain(InactiveAccountService);
+    expect(accountExports).toContain(InactiveAccountService);
   });
 });

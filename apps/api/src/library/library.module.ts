@@ -4,7 +4,7 @@ import { EventsModule } from "../events/events.module";
 import { GamificationModule } from "../gamification/gamification.module";
 import { ListsModule } from "../lists/lists.module";
 import { ReviewsModule } from "../reviews/reviews.module";
-import { UsersModule } from "../users/users.module";
+import { UserGatesModule } from "../users/user-gates.module";
 import { CalendarService } from "./calendar.service";
 import { LibraryController } from "./library.controller";
 import { LibraryService } from "./library.service";
@@ -14,7 +14,7 @@ import { SagaService } from "./saga.service";
 @Module({
   imports: [
     CatalogModule,
-    UsersModule,
+    UserGatesModule,
     ReviewsModule,
     GamificationModule,
     ListsModule,

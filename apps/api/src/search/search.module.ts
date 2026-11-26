@@ -4,7 +4,7 @@ import { CatalogModule } from "../catalog/catalog.module";
 import { GamesModule } from "../games/games.module";
 import { LibraryModule } from "../library/library.module";
 import { MusicModule } from "../music/music.module";
-import { UsersModule } from "../users/users.module";
+import { UserGatesModule } from "../users/user-gates.module";
 import { WorkSearchController } from "./work-search.controller";
 import { WorkSearchService } from "./work-search.service";
 
@@ -15,7 +15,7 @@ import { WorkSearchService } from "./work-search.service";
     BooksModule,
     MusicModule,
     LibraryModule,
-    UsersModule,
+    UserGatesModule,
   ],
   controllers: [WorkSearchController],
   providers: [WorkSearchService],

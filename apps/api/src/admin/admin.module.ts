@@ -1,10 +1,12 @@
 import { Module } from "@nestjs/common";
+import { AccountModule } from "../account/account.module";
 import { ApiKeysModule } from "../api-keys/api-keys.module";
 import { AuthModule } from "../auth/auth.module";
 import { BooksModule } from "../books/books.module";
 import { CatalogModule } from "../catalog/catalog.module";
 import { ChatModule } from "../chat/chat.module";
 import { CommentsModule } from "../comments/comments.module";
+import { EntitlementsModule } from "../entitlements/entitlements.module";
 import { EventsModule } from "../events/events.module";
 import { GamesModule } from "../games/games.module";
 import { GamificationModule } from "../gamification/gamification.module";
@@ -19,7 +21,7 @@ import { ReportsModule } from "../reports/reports.module";
 import { ReviewsModule } from "../reviews/reviews.module";
 import { SecurityModule } from "../security/security.module";
 import { SocialModule } from "../social/social.module";
-import { UsersModule } from "../users/users.module";
+import { UserGatesModule } from "../users/user-gates.module";
 import { AdminAccountsStatsService } from "./admin-accounts-stats.service";
 import { AdminCacheController } from "./admin-cache.controller";
 import { AdminCacheService } from "./admin-cache.service";
@@ -51,6 +53,7 @@ import { UpdateCheckService } from "./update-check.service";
 
 @Module({
   imports: [
+    EntitlementsModule,
     ApiKeysModule,
     MailModule,
     NotificationsModule,
@@ -63,7 +66,8 @@ import { UpdateCheckService } from "./update-check.service";
     JobsModule,
     ImportModule,
     SecurityModule,
-    UsersModule,
+    AccountModule,
+    UserGatesModule,
     ReportsModule,
     CommentsModule,
     ChatModule,

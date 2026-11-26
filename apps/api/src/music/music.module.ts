@@ -3,7 +3,7 @@ import { EventsModule } from "../events/events.module";
 import { GamificationModule } from "../gamification/gamification.module";
 import { ListsModule } from "../lists/lists.module";
 import { ReviewsModule } from "../reviews/reviews.module";
-import { UsersModule } from "../users/users.module";
+import { UserGatesModule } from "../users/user-gates.module";
 import { MusicItemService } from "./music-item.service";
 import { MusicLibraryService } from "./music-library.service";
 import { MusicController } from "./music.controller";
@@ -11,7 +11,7 @@ import { MusicBrainzProvider } from "./providers/musicbrainz.provider";
 
 @Module({
   imports: [
-    UsersModule,
+    UserGatesModule,
     ReviewsModule,
     GamificationModule,
     ListsModule,

@@ -3,7 +3,7 @@ import { EventsModule } from "../events/events.module";
 import { GamificationModule } from "../gamification/gamification.module";
 import { NotificationsModule } from "../notifications/notifications.module";
 import { ReportsModule } from "../reports/reports.module";
-import { DomainGateModule } from "../users/domain-gate.module";
+import { UserGatesModule } from "../users/user-gates.module";
 import { ActivityService } from "./activity.service";
 import { BlockService } from "./block.service";
 import { FollowService } from "./follow.service";
@@ -26,7 +26,7 @@ import { WorkFriendsService } from "./work-friends.service";
     NotificationsModule,
     GamificationModule,
     EventsModule,
-    DomainGateModule,
+    UserGatesModule,
     ReportsModule,
   ],
   controllers: [SocialController, PrivacyController, LeaderboardController],

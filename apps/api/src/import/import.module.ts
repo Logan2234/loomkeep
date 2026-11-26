@@ -10,7 +10,7 @@ import { MailModule } from "../mail/mail.module";
 import { AdminAlertModule } from "../notifications/admin-alert.module";
 import { NotificationsModule } from "../notifications/notifications.module";
 import { ReviewsModule } from "../reviews/reviews.module";
-import { UsersModule } from "../users/users.module";
+import { UserGatesModule } from "../users/user-gates.module";
 import { ImportAlertService } from "./import-alert.service";
 import { ImportJobService } from "./import-job.service";
 import { IMPORT_SOURCES, type ImportReq } from "./import-source";
@@ -41,7 +41,7 @@ import { TvTimeImportSource } from "./sources/tvtime/tvtime.source";
     CatalogModule,
     BooksModule,
     GamesModule,
-    UsersModule,
+    UserGatesModule,
     ReviewsModule,
     EntitlementsModule,
     GamificationModule,

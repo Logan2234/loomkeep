@@ -4,6 +4,8 @@ import type { ConfigService } from "@nestjs/config";
 import { Prisma } from "@prisma/client";
 import * as bcrypt from "bcryptjs";
 import { vi, type Mock } from "vitest";
+import type { CsvExportService } from "../account/csv-export.service";
+import type { DataExportService } from "../account/data-export.service";
 import type { ApiKeysService } from "../api-keys/api-keys.service";
 import { USER_DTO_INCLUDE } from "../auth/auth.service";
 import { SessionCacheService } from "../auth/session-cache.service";
@@ -17,8 +19,6 @@ import type { MailService } from "../mail/mail.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import type { SecurityEventService } from "../security/security-event.service";
 import type { ProfileService } from "../social/profile.service";
-import type { CsvExportService } from "./csv-export.service";
-import type { DataExportService } from "./data-export.service";
 import { UsersService } from "./users.service";
 
 // Only changePassword reads it; the other suites just satisfy the constructor.

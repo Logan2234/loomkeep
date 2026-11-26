@@ -4,7 +4,7 @@ import { GamificationModule } from "../gamification/gamification.module";
 import { JobsModule } from "../jobs/jobs.module";
 import { ListsModule } from "../lists/lists.module";
 import { ReviewsModule } from "../reviews/reviews.module";
-import { UsersModule } from "../users/users.module";
+import { UserGatesModule } from "../users/user-gates.module";
 import { GameItemService } from "./game-item.service";
 import { GameLibraryService } from "./game-library.service";
 import { GameSagaService } from "./game-saga.service";
@@ -16,7 +16,7 @@ import { IgdbProvider } from "./providers/igdb.provider";
 // GameItemService + IgdbProvider, hence the exports).
 @Module({
   imports: [
-    UsersModule,
+    UserGatesModule,
     ReviewsModule,
     GamificationModule,
     ListsModule,

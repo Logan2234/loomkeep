@@ -1,6 +1,6 @@
 import { Module } from "@nestjs/common";
 import { JobsModule } from "../jobs/jobs.module";
-import { UsersModule } from "../users/users.module";
+import { UserGatesModule } from "../users/user-gates.module";
 import { CatalogController } from "./catalog.controller";
 import { MediaItemService } from "./media-item.service";
 import { OmdbService } from "./omdb.service";
@@ -9,7 +9,7 @@ import { TmdbProvider } from "./providers/tmdb.provider";
 import { SagaSyncService } from "./saga-sync.service";
 
 @Module({
-  imports: [UsersModule, JobsModule],
+  imports: [UserGatesModule, JobsModule],
   controllers: [CatalogController],
   providers: [
     MediaItemService,

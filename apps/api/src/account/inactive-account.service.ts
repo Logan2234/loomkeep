@@ -4,8 +4,8 @@ import { JOB_KEYS } from "../jobs/job-keys";
 import { JobRunService, type JobSkipped } from "../jobs/job-run.service";
 import { MailService } from "../mail/mail.service";
 import { PrismaService } from "../prisma/prisma.service";
+import { notSuspended } from "../users/suspension.util";
 import { AccountDeletionService } from "./account-deletion.service";
-import { notSuspended } from "./suspension.util";
 
 /** Relance à 24 mois d'inactivité, suppression à 36 mois. */
 const WARNING_AFTER_MONTHS = 24;
