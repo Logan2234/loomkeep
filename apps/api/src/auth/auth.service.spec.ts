@@ -1,5 +1,6 @@
 import { ErrorCode, RealtimeEvent } from "@loomkeep/shared";
 import type { ConfigService } from "@nestjs/config";
+import type { EventEmitter2 } from "@nestjs/event-emitter";
 import type { JwtService } from "@nestjs/jwt";
 import { Prisma, type User } from "@prisma/client";
 import * as bcrypt from "bcryptjs";
@@ -15,7 +16,7 @@ import { notificationCopy } from "../notifications/notification-copy";
 import type { NotificationService } from "../notifications/notification.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import type { SecurityEventService } from "../security/security-event.service";
-import type { FollowService } from "../social/follow.service";
+import { PersonalInvitationAcceptedEvent } from "./auth.events";
 import type { AuthResult } from "./auth.service";
 import { AuthService } from "./auth.service";
 import type { InvitationService } from "./invitation.service";
@@ -179,9 +180,9 @@ function makeService(adminEmail?: string, registrationEnabled?: string) {
     findRedeemableFor: vi.fn(),
     claim: vi.fn(),
   } as unknown as InvitationService;
-  const follows = {
-    followEachOther: vi.fn(),
-  } as unknown as FollowService;
+  const eventBus = {
+    emitAsync: vi.fn().mockResolvedValue([]),
+  } as unknown as EventEmitter2;
 
   const apiKeys = {
     reviewAfterPasswordChange: vi.fn().mockResolvedValue(0),
@@ -208,7 +209,7 @@ function makeService(adminEmail?: string, registrationEnabled?: string) {
     sessionCache,
     events,
     invitations,
-    follows,
+    eventBus,
     apiKeys,
     notifications,
     adminAlerts,
@@ -228,7 +229,7 @@ function makeService(adminEmail?: string, registrationEnabled?: string) {
     sessionCache,
     events,
     invitations,
-    follows,
+    eventBus,
     notifications,
     adminAlerts,
   };
@@ -320,12 +321,8 @@ describe("AuthService.register with an invitation", () => {
     );
   });
 
-  it("makes the member and the newcomer follow each other through a personal link", async () => {
-    const { service, prisma, configService, invitations, follows } =
-      makeService();
-    (configService.get as Mock).mockImplementation((key: string) =>
-      key === "SOCIAL_ENABLED" ? "true" : undefined,
-    );
+  it("announces a sign-up through a personal link, for the follow social adds", async () => {
+    const { service, prisma, invitations, eventBus } = makeService();
     (invitations.findRedeemableFor as Mock).mockResolvedValue({
       id: "inv-1",
       email: null,
@@ -336,11 +333,14 @@ describe("AuthService.register with an invitation", () => {
 
     const { user } = await service.register(dto);
 
-    expect(follows.followEachOther).toHaveBeenCalledWith("alice", user.id);
+    expect(eventBus.emitAsync).toHaveBeenCalledWith(
+      PersonalInvitationAcceptedEvent.NAME,
+      new PersonalInvitationAcceptedEvent("alice", user.id),
+    );
   });
 
-  it("adds no follow for an admin invitation", async () => {
-    const { service, prisma, invitations, follows } = makeService();
+  it("announces nothing for an admin invitation", async () => {
+    const { service, prisma, invitations, eventBus } = makeService();
     (invitations.findRedeemableFor as Mock).mockResolvedValue({
       id: "inv-1",
       email: null,
@@ -351,7 +351,7 @@ describe("AuthService.register with an invitation", () => {
 
     await service.register(dto);
 
-    expect(follows.followEachOther).not.toHaveBeenCalled();
+    expect(eventBus.emitAsync).not.toHaveBeenCalled();
   });
 
   it("creates no account when the invitation can't be redeemed", async () => {

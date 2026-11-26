@@ -1,15 +1,16 @@
 import type { PersonalInvitationDto } from "@loomkeep/shared";
 import { Controller, Get, Post, UseGuards } from "@nestjs/common";
 import { ApiCreatedResponse, ApiOkResponse } from "@nestjs/swagger";
-import { SocialFeatureGuard } from "../social/social-feature.guard";
-import type { JwtPayload } from "./decorators/current-user.decorator";
-import { CurrentUser } from "./decorators/current-user.decorator";
-import { PersonalInvitationResponseDto } from "./dto/personal-invitation-response.dto";
-import { InvitationService } from "./invitation.service";
+import type { JwtPayload } from "../auth/decorators/current-user.decorator";
+import { CurrentUser } from "../auth/decorators/current-user.decorator";
+import { PersonalInvitationResponseDto } from "../auth/dto/personal-invitation-response.dto";
+import { InvitationService } from "../auth/invitation.service";
+import { SocialFeatureGuard } from "./social-feature.guard";
 
 /**
  * A member's own sign-up link (SOC-02). Social only: what it adds to an open
- * instance is that the newcomer and the member follow each other.
+ * instance is that the newcomer and the member follow each other
+ * (InvitationFollowListener). The links themselves are the auth module's.
  */
 @UseGuards(SocialFeatureGuard)
 @Controller("users/me/invitation")

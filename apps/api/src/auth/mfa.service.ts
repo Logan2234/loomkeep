@@ -5,17 +5,17 @@ import {
 } from "@loomkeep/shared";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
+import { EventEmitter2 } from "@nestjs/event-emitter";
 import * as bcrypt from "bcryptjs";
 import { randomInt } from "node:crypto";
 import { Secret, TOTP } from "otpauth";
 import { AppException } from "../common/app.exception";
-import { AchievementService } from "../gamification/achievements/achievement.service";
 
 import { EventsGateway } from "../events/events.gateway";
-import { ACHIEVEMENT_KEYS_ON_TOTP_ENABLED } from "../gamification/achievements/triggers";
 import { MailService } from "../mail/mail.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { SecurityEventService } from "../security/security-event.service";
+import { TotpEnabledEvent } from "./auth.events";
 import { BCRYPT_ROUNDS } from "./auth.service";
 import { decryptTotpSecret, encryptTotpSecret } from "./mfa-crypto.util";
 import { SessionCacheService } from "./session-cache.service";
@@ -36,7 +36,7 @@ export class MfaService {
     private readonly prisma: PrismaService,
     private readonly configService: ConfigService,
     private readonly mail: MailService,
-    private readonly achievements: AchievementService,
+    private readonly eventBus: EventEmitter2,
     private readonly security: SecurityEventService,
     private readonly sessionCache: SessionCacheService,
     private readonly events: EventsGateway,
@@ -143,7 +143,10 @@ export class MfaService {
     );
 
     const recoveryCodes = await this.ensureRecoveryCodes(userId);
-    await this.achievements.evaluate(userId, ACHIEVEMENT_KEYS_ON_TOTP_ENABLED);
+    await this.eventBus.emitAsync(
+      TotpEnabledEvent.NAME,
+      new TotpEnabledEvent(userId),
+    );
     await this.security.record({
       type: "MFA_TOTP_ENABLED",
       userId,

@@ -1,14 +1,15 @@
 import type { ConfigService } from "@nestjs/config";
+import type { EventEmitter2 } from "@nestjs/event-emitter";
 import type { User } from "@prisma/client";
 import * as bcrypt from "bcryptjs";
 import { randomBytes } from "node:crypto";
 import { Secret, TOTP } from "otpauth";
 import { vi, type Mock } from "vitest";
 import type { EventsGateway } from "../events/events.gateway";
-import type { AchievementService } from "../gamification/achievements/achievement.service";
 import type { MailService } from "../mail/mail.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import type { SecurityEventService } from "../security/security-event.service";
+import { TotpEnabledEvent } from "./auth.events";
 import { encryptTotpSecret } from "./mfa-crypto.util";
 import { MfaService, RECOVERY_CODE_COUNT } from "./mfa.service";
 import { SessionCacheService } from "./session-cache.service";
@@ -74,9 +75,9 @@ function makeService() {
   } as unknown as ConfigService;
 
   const mail = {} as unknown as MailService;
-  const achievements = {
-    evaluate: vi.fn().mockResolvedValue(undefined),
-  } as unknown as AchievementService;
+  const eventBus = {
+    emitAsync: vi.fn().mockResolvedValue([]),
+  } as unknown as EventEmitter2;
   const security = { record: vi.fn() } as unknown as SecurityEventService;
   const sessionCache = new SessionCacheService();
   const events = { disconnectSession: vi.fn() };
@@ -86,7 +87,7 @@ function makeService() {
       prisma,
       configService,
       mail,
-      achievements,
+      eventBus,
       security,
       sessionCache,
       events as unknown as EventsGateway,
@@ -94,7 +95,7 @@ function makeService() {
     sessionCache,
     events,
     prisma,
-    achievements,
+    eventBus,
     security,
   };
 }
@@ -201,8 +202,8 @@ describe("MfaService.confirmTotp / setEmailMfaEnabled — recovery code generati
     // default 5s under CI coverage instrumentation.
   }, 20_000);
 
-  it("evaluates locked_down right after a TOTP confirmation", async () => {
-    const { service, prisma, achievements } = makeService();
+  it("announces the confirmed authenticator, for the locked_down achievement", async () => {
+    const { service, prisma, eventBus } = makeService();
     const secret = new Secret({ size: 20 });
     const totp = new TOTP({ secret, algorithm: "SHA1", digits: 6, period: 30 });
     const code = totp.generate();
@@ -218,9 +219,10 @@ describe("MfaService.confirmTotp / setEmailMfaEnabled — recovery code generati
 
     await service.confirmTotp("user-1", code, "session-1");
 
-    expect(achievements.evaluate).toHaveBeenCalledWith("user-1", [
-      "locked_down",
-    ]);
+    expect(eventBus.emitAsync).toHaveBeenCalledWith(
+      TotpEnabledEvent.NAME,
+      new TotpEnabledEvent("user-1"),
+    );
     // Same bcrypt cost as the recovery code test above.
   }, 20_000);
 

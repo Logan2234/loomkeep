@@ -19,6 +19,7 @@ import {
 } from "@loomkeep/shared";
 import { HttpStatus, Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
+import { EventEmitter2 } from "@nestjs/event-emitter";
 import { JwtService } from "@nestjs/jwt";
 import type { Prisma, User } from "@prisma/client";
 import type { AuthenticationResponseJSON } from "@simplewebauthn/server";
@@ -39,19 +40,19 @@ import {
   isUniqueViolation,
 } from "../common/prisma-error.util";
 import { EventsGateway } from "../events/events.gateway";
+import { instanceSetting } from "../instance-settings/instance-settings.store";
 import { MailService } from "../mail/mail.service";
 import { AdminAlertService } from "../notifications/admin-alert.service";
 import { readAlertPrefs } from "../notifications/alert-prefs.util";
 import { NotificationService } from "../notifications/notification.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { SecurityEventService } from "../security/security-event.service";
-import { FollowService } from "../social/follow.service";
-import { isSocialEnabled } from "../social/social.config";
 import { avatarUrl } from "../users/avatar.util";
 import { readHomeLayout, readHomePhoneLayout } from "../users/home-layout.util";
 import { preferencesOf } from "../users/preferences.util";
 import { assertNotSuspended, isSuspended } from "../users/suspension.util";
 import { randomUsernameSuffix, slugifyUsername } from "../users/username.util";
+import { PersonalInvitationAcceptedEvent } from "./auth.events";
 import type { JwtPayload } from "./decorators/current-user.decorator";
 import { LoginDto } from "./dto/login.dto";
 import { RegisterDto } from "./dto/register.dto";
@@ -125,7 +126,7 @@ export class AuthService {
     private readonly sessionCache: SessionCacheService,
     private readonly events: EventsGateway,
     private readonly invitations: InvitationService,
-    private readonly follows: FollowService,
+    private readonly eventBus: EventEmitter2,
     private readonly apiKeys: ApiKeysService,
     private readonly notifications: NotificationService,
     private readonly adminAlerts: AdminAlertService,
@@ -246,12 +247,11 @@ export class AuthService {
     await this.recordDevice(user.id, userAgent);
     await this.announceArrival(user, invitation?.createdById ?? null);
 
-    if (
-      invitation?.personal &&
-      invitation.createdById &&
-      isSocialEnabled(this.configService)
-    ) {
-      await this.follows.followEachOther(invitation.createdById, user.id);
+    if (invitation?.personal && invitation.createdById) {
+      await this.eventBus.emitAsync(
+        PersonalInvitationAcceptedEvent.NAME,
+        new PersonalInvitationAcceptedEvent(invitation.createdById, user.id),
+      );
     }
 
     const promoted = await this.ensureAdminRole(user);
@@ -277,7 +277,7 @@ export class AuthService {
           type: NotificationType.INVITATION_ACCEPTED,
           title: user.displayName,
           body: copy.invitationAccepted,
-          url: isSocialEnabled(this.configService)
+          url: instanceSetting(this.configService, "socialEnabled")
             ? `/app/u/${user.username}`
             : null,
           dedupeKey: `invitation-accepted:${user.id}`,
