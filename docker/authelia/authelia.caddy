@@ -1,7 +1,0 @@
-# Mounted only when docker-compose.authelia.yml is in use. The only site
-# here needing a plain reverse_proxy — everything it protects either talks
-# to it via OIDC or uses forward_auth in its own site file (see
-# homepage/homepage.caddy).
-{$AUTHELIA_SITE_ADDRESS} {
-	reverse_proxy authelia:9091
-}

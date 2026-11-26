@@ -4,16 +4,16 @@ set -euo pipefail
 # Clones (or reports the existing checkout of) Quackback as a sibling
 # directory next to this Loomkeep checkout — kept as its own unmodified
 # deployment rather than translated into this repo's compose files, see
-# docker-compose.quackback.yml. Only manages the git checkout: never
+# hosted/docker-compose.quackback.yml. Only manages the git checkout: never
 # touches .env or runs `docker compose up` itself. Re-running is a no-op if
 # the checkout already exists.
 #
-# Usage: docker/quackback-bootstrap.sh [target-dir]
-# Default target-dir: ../../quackback (sibling of this Loomkeep checkout).
+# Usage: docker/hosted/quackback-bootstrap.sh [target-dir]
+# Default target-dir: ../../../quackback (sibling of this Loomkeep checkout).
 
 REPO_URL="https://github.com/QuackbackIO/quackback.git"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-TARGET_DIR="${1:-$SCRIPT_DIR/../../quackback}"
+TARGET_DIR="${1:-$SCRIPT_DIR/../../../quackback}"
 
 if [ -d "$TARGET_DIR/.git" ]; then
   echo "Quackback checkout already exists at $TARGET_DIR — not touching it."
@@ -33,7 +33,7 @@ Next steps (manual — see $TARGET_DIR/README.md for the full self-hosting docs)
 Then, back in this Loomkeep checkout:
   - if Quackback's .env sets APP_PORT to something other than 3000, set
     QUACKBACK_APP_PORT to match in Loomkeep's own .env
-  - add docker/docker-compose.quackback.yml to Loomkeep's COMPOSE_FILE
+  - add docker/hosted/docker-compose.quackback.yml to Loomkeep's COMPOSE_FILE
   - point feedback.<DOMAIN>'s DNS A/AAAA record at this VPS
   - redeploy Loomkeep so Caddy picks up the new site block
 EOF

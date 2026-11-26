@@ -83,29 +83,6 @@
                 - level: danger
                   when: gt
                   value: 0
-    - Portainer:
-        href: https://portainer.loomkeep.app
-        description: Docker management
-        icon: si-portainer
-        widget:
-          type: portainer
-          url: http://portainer:9000
-          env: "{{HOMEPAGE_VAR_PORTAINER_ENV_ID}}"
-          key: "{{HOMEPAGE_VAR_PORTAINER_API_KEY}}"
-          fields: ["running", "stopped", "total"]
-          highlight:
-            running:
-              valueOnly: true
-              numeric:
-                - level: good
-                  when: gt
-                  value: 0
-            stopped:
-              valueOnly: true
-              numeric:
-                - level: danger
-                  when: gt
-                  value: 0
     - VPS:
         href: https://grafana.loomkeep.app
         description: CPU / RAM / disque de l'hôte

@@ -1,0 +1,25 @@
+# loomkeep.app only: its user feedback board (Quackback). See
+# docker/README.md § "User feedback board" for why it's not reimplemented
+# here. This override's only job: wire Caddy to the published host port of
+# Quackback's own, separate deployment (run once via
+# docker/hosted/quackback-bootstrap.sh).
+#
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml -f hosted/docker-compose.quackback.yml up -d
+#
+# Upgrading Quackback: `cd ../quackback && git pull && docker compose
+# -f docker-compose.prod.yml up -d --build` in their own checkout — nothing
+# to touch here unless QUACKBACK_APP_PORT itself changes.
+services:
+  caddy:
+    environment:
+      QUACKBACK_SITE_ADDRESS: feedback.${DOMAIN:?set DOMAIN in .env}
+      # Only needed if Quackback's own .env overrides APP_PORT.
+      QUACKBACK_APP_PORT: ${QUACKBACK_APP_PORT:-3000}
+    # Lets the Caddy container reach a port Quackback's own compose project
+    # published on the VPS host.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      # Relative to docker/, like every path of an override: Compose resolves
+      # them from the first file's folder (docker-compose.yml's).
+      - ./hosted/quackback.caddy:/etc/caddy/sites-enabled/quackback.caddy:ro
