@@ -15,9 +15,11 @@
     LibraryLoadParams,
     PileLoadParams,
   } from "#lib/components/LibraryBrowser.svelte";
+  import EarlyAccessBanner from "#lib/components/EarlyAccessBanner.svelte";
   import LibraryBrowser from "#lib/components/LibraryBrowser.svelte";
   import PosterCard from "#lib/components/PosterCard.svelte";
   import MusicSearchPanel from "#lib/components/search/MusicSearchPanel.svelte";
+  import { STORAGE_KEYS } from "#lib/constants/storage-keys.js";
   import {
     MUSIC_OWNERSHIP_SOURCES,
     MUSIC_OWNERSHIP_STATUS_OPTIONS,
@@ -183,6 +185,13 @@
   columns={COLUMNS}
   bulk={BULK}
   {setFavorite}>
+  {#snippet notice()}
+    <EarlyAccessBanner
+      storageKey={STORAGE_KEYS.musicEarlyAccessDismissed}
+      class="mb-4 md:mb-6">
+      {m.music_early_access_banner()}
+    </EarlyAccessBanner>
+  {/snippet}
   {#snippet catalogPreview(query: string, onResults: (n: number) => void)}
     <MusicSearchPanel {query} limit={EMBEDDED_SEARCH_LIMIT} {onResults} />
   {/snippet}

@@ -22,6 +22,9 @@ history from before it was started.
 
 ### Added
 
+- Music is now flagged **Early access**: a badge in the navigation, settings and
+  onboarding, and a dismissible note on the Music page saying it can be slow and
+  incomplete. The landing page and its comparison say so too.
 - Admin: a premium grant can end at a date you set, after which the account
   is back on the free plan.
 - Brand logos for the services Loomkeep talks to: import sources, export

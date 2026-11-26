@@ -207,5 +207,7 @@
   "transparency_measure_avatar": "Foto profilo rimossa",
   "transparency_measure_bio": "Bio cancellata",
   "transparency_measure_display_name": "Nome visualizzato modificato",
-  "transparency_measure_suspended": "Account disattivato"
+  "transparency_measure_suspended": "Account disattivato",
+  "landing_comparator_early_access": "accesso anticipato",
+  "landing_comparator_early_access_note": "La musica è in accesso anticipato: può essere lenta e mancano ancora alcune funzioni."
 }

@@ -3,8 +3,8 @@ title: About Loomkeep
 description: Who makes Loomkeep, how it is funded, and where to follow and shape it.
 ---
 
-Loomkeep is a tracker for series, films, anime, games, books and music,
-built as a replacement for TV Time you fully own. It is open source, runs on
+Loomkeep is a tracker for series, films, anime, games and books, with music
+in early access (slower, and still missing things), built as a replacement for TV Time you fully own. It is open source, runs on
 [loomkeep.app](https://loomkeep.app) or on your own server, and is made and
 hosted by one person, [@Logan2234](https://github.com/Logan2234), as a side
 project: no investor, nothing to sell your data to.

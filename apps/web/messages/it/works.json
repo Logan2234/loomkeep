@@ -482,5 +482,6 @@
   "game_languages_interface": "Interfaccia",
   "game_languages_subtitles": "Sottotitoli",
   "game_languages_audio": "Voci",
-  "game_languages_source": "Secondo IGDB."
+  "game_languages_source": "Secondo IGDB.",
+  "music_early_access_banner": "La musica è in accesso anticipato: può essere lenta e manca ancora qualcosa. Grazie per la pazienza."
 }

@@ -9,6 +9,12 @@ export const DOMAINS: Record<
     href: string;
     icon: IconName;
     comingSoon?: boolean;
+    /**
+     * Usable but unfinished: slower, with gaps. Flagged with an "Early
+     * access" badge wherever the domain is offered or picked, so nobody
+     * expects the polish of the other domains.
+     */
+    earlyAccess?: boolean;
     /** What a search box looks for: "Chercher {searchHint}…". */
     searchHint: string;
     /**
@@ -57,6 +63,7 @@ export const DOMAINS: Record<
       return m.common_Music();
     },
     icon: "music",
+    earlyAccess: true,
     get searchHint() {
       return m.search_domain_music();
     },

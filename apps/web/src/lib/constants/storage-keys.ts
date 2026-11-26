@@ -16,6 +16,7 @@ export const STORAGE_KEYS = {
   reauthMethod: "lk-reauth-method",
   passkeySuggested: "lk-passkey-suggested",
   openInAppDismissed: "lk-open-in-app-dismissed",
+  musicEarlyAccessDismissed: "lk-music-early-access-dismissed",
   nativePushToken: "lk-native-push-token",
   libraryView: (domain: SavedViewDomain) =>
     `lk-library-view-${domain.toLowerCase()}`,

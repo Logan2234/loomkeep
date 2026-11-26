@@ -5,7 +5,7 @@
 <h1 align="center">Loomkeep</h1>
 
 <p align="center">
-  Track your series, films, anime, games, books and music in one place.<br>
+  Track your series, films, anime, games and books in one place, with music in early access.<br>
   Open source, ad-free, on <a href="https://loomkeep.app">loomkeep.app</a> or on your own server.
 </p>
 

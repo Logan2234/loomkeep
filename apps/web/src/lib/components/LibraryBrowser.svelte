@@ -135,6 +135,7 @@
     columns,
     catalogPreview,
     headerActions,
+    notice,
     bulk,
     setFavorite,
     platformOptions = [],
@@ -173,6 +174,8 @@
     catalogPreview?: Snippet<[string, (count: number) => void]>;
     /** Rendered beside the title, e.g. books' reading-goal chip. */
     headerActions?: Snippet;
+    /** A notice between the header and the filters (e.g. a domain in early access). */
+    notice?: Snippet;
     /** The selection mode's actions (UX-04); without them there's no selection mode. */
     bulk?: LibraryBulkActions;
     /** Saves an entry's favorite flag; the list shows it at once. */
@@ -949,6 +952,8 @@
     subtitle={headerSubtitle}
     actions={pageActions}
     class="mb-4 md:mb-6" />
+
+  {@render notice?.()}
 
   {#if layout.compact && searchOpen}
     <div class="mb-3 flex" transition:slide={{ duration: reduced ? 0 : 180 }}>

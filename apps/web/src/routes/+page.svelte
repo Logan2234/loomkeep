@@ -31,6 +31,8 @@
     catalog: string;
     color: string | null;
     shipped: boolean;
+    /** Usable, but unfinished: shipped, yet never presented as on par. */
+    earlyAccess?: boolean;
   }[] = [
     {
       id: "video",
@@ -63,6 +65,7 @@
       catalog: "MusicBrainz",
       color: "var(--stat-music)",
       shipped: true,
+      earlyAccess: true,
     },
     {
       id: "podcasts",
@@ -258,6 +261,9 @@
 
   const pickedUnshipped = $derived(
     SALLES.filter((s) => picked.includes(s.id) && !s.shipped),
+  );
+  const pickedEarlyAccess = $derived(
+    SALLES.filter((s) => picked.includes(s.id) && s.earlyAccess),
   );
 
   const tabsLabel = $derived(
@@ -634,7 +640,7 @@
                 <span
                   class="timecode text-micro tracking-[0.16em] text-nowrap uppercase md:justify-self-end"
                   style={salle.color ? `color: ${salle.color}` : undefined}>
-                  {salle.catalog}
+                  {salle.catalog}{#if salle.earlyAccess}&nbsp;· {m.landing_comparator_early_access()}{/if}
                 </span>
               </button>
             </li>
@@ -705,6 +711,14 @@
                 {pickedUnshipped.length > 1
                   ? m.landing_comparator_unshipped_plural()
                   : m.landing_comparator_unshipped_singular()}
+              </p>
+            {/if}
+            {#if pickedEarlyAccess.length > 0}
+              <p class="text-dim mt-4 text-sm">
+                <Icon
+                  name="warning"
+                  class="text-accent mr-1 inline h-3.5 w-3.5 shrink-0" />
+                {m.landing_comparator_early_access_note()}
               </p>
             {/if}
             <div class="mt-6">
@@ -800,7 +814,8 @@
                       style={salle.shipped
                         ? `color: ${salle.color}; background: color-mix(in srgb, ${salle.color} 15%, transparent)`
                         : "color: var(--dim); border: 1px dashed var(--border)"}>
-                      {salle.label()}{#if !salle.shipped}&nbsp;· {m.landing_comparator_bientot()}{/if}
+                      {salle.label()}{#if !salle.shipped}&nbsp;· {m.landing_comparator_bientot()}{:else if salle.earlyAccess}&nbsp;·
+                        {m.landing_comparator_early_access()}{/if}
                     </span>
                   {/each}
                 </span>
