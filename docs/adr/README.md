@@ -15,3 +15,4 @@ réécrit pas.
 | [0007](0007-shared-package-compiled.md)      | `packages/shared` consommé compilé, en CommonJS                     |
 | [0008](0008-no-repository-layer.md)          | Pas de couche repository, des requêtes nommées chez le propriétaire |
 | [0009](0009-capacitor-remote-shell.md)       | L'app Android est une coque qui charge l'instance                   |
+| [0010](0010-module-layers.md)                | Des couches de modules, et des événements pour remonter             |

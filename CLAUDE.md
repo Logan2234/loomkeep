@@ -92,6 +92,12 @@ wording change or a rename.
 - MFA has three second factors (TOTP, emailed code, WebAuthn): anything
   that asks "has MFA?" (e.g. `AdminGuard`) must count all three. Sensitive
   actions use `@RequireRecentAuth`.
+- Modules sit in layers (infra, platform, community, domains, cross-domain,
+  features — [ADR 0010](docs/adr/0010-module-layers.md)) and import only
+  their layer or below; `src/module-layers.spec.ts` lists them and a new
+  module goes there. To tell a higher layer something, publish an event:
+  a class in `<module>.events.ts`, `emitAsync()` it, `@OnEvent` in a
+  `*.listener.ts` of the module that reacts (`auth.events.ts`).
 - Errors are typed codes (`packages/shared/src/error-codes.ts`) thrown via
   `AppException`. The web maps each code to an i18n message in
   `apps/web/src/lib/api/errors.ts` — never display API-supplied text; a new
