@@ -1,7 +1,7 @@
 import { XpReason } from "@loomkeep/shared";
 import { vi } from "vitest";
+import { AppException } from "../common/app.exception";
 import { stubAchievements, stubXp } from "../test-utils/stubs";
-import { AppException } from "./app.exception";
 import {
   assertSessionOwnership,
   revokeEntryXp,

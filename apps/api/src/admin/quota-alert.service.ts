@@ -1,11 +1,11 @@
 import { Injectable, Logger, type OnModuleInit } from "@nestjs/common";
 import * as Sentry from "@sentry/node";
+import { MailService } from "../mail/mail.service";
+import { AdminAlertService } from "../notifications/admin-alert.service";
 import {
   type QuotaThresholdReached,
   QuotaTrackerService,
-} from "../common/quota-tracker.service";
-import { MailService } from "../mail/mail.service";
-import { AdminAlertService } from "../notifications/admin-alert.service";
+} from "../quota/quota-tracker.service";
 
 /** How each provider with a daily quota is named in its alert. */
 const PROVIDER_NAMES: Record<string, string> = {

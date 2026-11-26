@@ -1,8 +1,8 @@
-import type { PrismaService } from "../prisma/prisma.service";
 import {
   CANONICAL_EXTERNAL_ID_SELECT,
   canonicalExternalId,
-} from "./external-id.util";
+} from "../common/external-id.util";
+import type { PrismaService } from "../prisma/prisma.service";
 
 /**
  * Client route to a work's detail page from a ReviewTargetType/

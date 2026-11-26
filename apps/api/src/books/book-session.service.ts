@@ -22,11 +22,6 @@ import {
 } from "@prisma/client";
 import { AppException } from "../common/app.exception";
 import { addDays, utcDateKey } from "../common/date.util";
-import {
-  assertEntryOwnership,
-  assertSessionOwnership,
-  syncCycleCompletionXp,
-} from "../common/entry-lifecycle.util";
 import { localDayOrUtc } from "../common/local-day.util";
 import { toPagedResult } from "../common/pagination.util";
 import { retryAfterUniqueRace } from "../common/prisma-error.util";
@@ -39,6 +34,11 @@ import { SessionXpService } from "../gamification/session-xp.service";
 import { XpService } from "../gamification/xp.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { ActivityService } from "../social/activity.service";
+import {
+  assertEntryOwnership,
+  assertSessionOwnership,
+  syncCycleCompletionXp,
+} from "../work/entry-lifecycle.util";
 import { toReadingDto } from "./book-reading.mapper";
 import { CreateBookSessionDto } from "./dto/create-book-session.dto";
 import { UpdateBookSessionDto } from "./dto/update-book-session.dto";

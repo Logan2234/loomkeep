@@ -19,7 +19,6 @@ import { BookSagaService } from "../books/book-saga.service";
 import { MediaItemService } from "../catalog/media-item.service";
 import { resolveWatchRegion } from "../catalog/watch-region.util";
 import { AppException } from "../common/app.exception";
-import { resolveWorkHref } from "../common/work-href.util";
 import { GameSagaService } from "../games/game-saga.service";
 import { SagaService } from "../library/saga.service";
 import { PrismaService } from "../prisma/prisma.service";
@@ -28,6 +27,7 @@ import { WorkFriendsService } from "../social/work-friends.service";
 import { toUserSummaryDto } from "../users/avatar.util";
 import { preferencesOf } from "../users/preferences.util";
 import { USER_SUMMARY_SELECT } from "../users/user.queries";
+import { resolveWorkHref } from "../work/work-href.util";
 import { ChatWorkService, type WorkCard } from "./chat-work.service";
 import { ChatService, type CommandMessage } from "./chat.service";
 

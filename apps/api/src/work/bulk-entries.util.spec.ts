@@ -1,7 +1,7 @@
 import { ErrorCode } from "@loomkeep/shared";
 import { vi } from "vitest";
+import { AppException } from "../common/app.exception";
 import type { ListService } from "../lists/list.service";
-import { AppException } from "./app.exception";
 import {
   addToList,
   applyBulkUpdate,

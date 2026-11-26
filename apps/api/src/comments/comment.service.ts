@@ -26,13 +26,13 @@ import {
   toPagedResult,
   type ParsedPage,
 } from "../common/pagination.util";
+import { EventsGateway } from "../events/events.gateway";
+import { AchievementService } from "../gamification/achievements/achievement.service";
 import {
   resolveWorkHref,
   resolveWorkLink,
   workTargetExists,
-} from "../common/work-href.util";
-import { EventsGateway } from "../events/events.gateway";
-import { AchievementService } from "../gamification/achievements/achievement.service";
+} from "../work/work-href.util";
 
 import { ACHIEVEMENT_KEYS_ON_COMMENT_POSTED } from "../gamification/achievements/triggers";
 import { isGamificationEnabled } from "../gamification/gamification.config";

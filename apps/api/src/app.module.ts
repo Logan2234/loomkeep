@@ -43,6 +43,7 @@ import { NotificationActionsModule } from "./notification-actions/notification-a
 import { NotificationsModule } from "./notifications/notifications.module";
 import { PrismaModule } from "./prisma/prisma.module";
 import { PublicApiModule } from "./public-api/public-api.module";
+import { QuotaModule } from "./quota/quota.module";
 import { ReviewsModule } from "./reviews/reviews.module";
 import { SavedViewsModule } from "./saved-views/saved-views.module";
 import { SearchModule } from "./search/search.module";
@@ -71,6 +72,7 @@ import { UsersModule } from "./users/users.module";
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 60 }]),
     PrismaModule,
     CommonModule,
+    QuotaModule,
     FeatureFlagsModule,
     InstanceSettingsModule,
     SessionCacheModule,

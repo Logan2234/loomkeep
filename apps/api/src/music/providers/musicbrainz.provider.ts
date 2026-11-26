@@ -12,8 +12,8 @@ import {
   HTTP_TIMEOUT_MS,
   identifyingUserAgent,
 } from "../../common/http.util";
-import { QuotaTrackerService } from "../../common/quota-tracker.service";
 import { RequestThrottle } from "../../common/request-throttle";
+import { QuotaTrackerService } from "../../quota/quota-tracker.service";
 import type {
   MusicCatalogProvider,
   ProviderMusicDetails,

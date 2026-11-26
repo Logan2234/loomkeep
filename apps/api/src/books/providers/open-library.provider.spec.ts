@@ -1,6 +1,6 @@
 import { ConfigService } from "@nestjs/config";
 import { vi, type Mock } from "vitest";
-import type { QuotaTrackerService } from "../../common/quota-tracker.service";
+import type { QuotaTrackerService } from "../../quota/quota-tracker.service";
 import { mockFetchByUrl } from "../../test-utils/mock-fetch";
 import { OpenLibraryProvider } from "./open-library.provider";
 

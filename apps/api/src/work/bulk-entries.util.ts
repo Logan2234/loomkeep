@@ -6,8 +6,8 @@ import {
   type ListItemTargetType,
 } from "@loomkeep/shared";
 import { HttpStatus } from "@nestjs/common";
+import { AppException } from "../common/app.exception";
 import type { ListService } from "../lists/list.service";
-import { AppException } from "./app.exception";
 
 /** An entry as a bulk update needs it, whatever its domain. */
 export interface BulkEntryRow {

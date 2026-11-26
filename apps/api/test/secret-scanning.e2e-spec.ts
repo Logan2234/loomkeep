@@ -3,9 +3,9 @@ import { generateKeyPairSync, sign } from "node:crypto";
 import request from "supertest";
 import { App } from "supertest/types";
 import { vi } from "vitest";
-import { generateApiKeySecret } from "./../src/api-keys/api-key-format";
-import { GithubPublicKeysService } from "./../src/api-keys/secret-scanning/github-public-keys.service";
-import type { PrismaService } from "./../src/prisma/prisma.service";
+import { generateApiKeySecret } from "../src/api-keys/api-key-format";
+import { GithubPublicKeysService } from "../src/api-keys/secret-scanning/github-public-keys.service";
+import type { PrismaService } from "../src/prisma/prisma.service";
 import { authCookies, createE2eApp, e2eUser } from "./e2e-app";
 
 /**

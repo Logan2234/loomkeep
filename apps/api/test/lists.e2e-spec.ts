@@ -7,7 +7,7 @@ import { ProfileAccess } from "@loomkeep/shared";
 import { INestApplication } from "@nestjs/common";
 import request from "supertest";
 import { App } from "supertest/types";
-import type { PrismaService } from "./../src/prisma/prisma.service";
+import type { PrismaService } from "../src/prisma/prisma.service";
 import { authCookies, createE2eApp, e2eUser } from "./e2e-app";
 
 /**

@@ -17,10 +17,10 @@ import { HttpStatus, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { AppException } from "../../../common/app.exception";
 import { HTTP_TIMEOUT_MS } from "../../../common/http.util";
-import { QuotaTrackerService } from "../../../common/quota-tracker.service";
 import { GameItemService } from "../../../games/game-item.service";
 import { IgdbProvider } from "../../../games/providers/igdb.provider";
 import { PrismaService } from "../../../prisma/prisma.service";
+import { QuotaTrackerService } from "../../../quota/quota-tracker.service";
 import { AgeGateService } from "../../../users/age-gate.service";
 import {
   type CommitDecisions,

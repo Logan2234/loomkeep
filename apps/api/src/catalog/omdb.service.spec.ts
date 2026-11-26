@@ -1,6 +1,6 @@
 import { ConfigService } from "@nestjs/config";
 import { vi } from "vitest";
-import type { QuotaTrackerService } from "../common/quota-tracker.service";
+import type { QuotaTrackerService } from "../quota/quota-tracker.service";
 import { OmdbService } from "./omdb.service";
 
 const originalFetch = global.fetch;

@@ -10,7 +10,6 @@ import { ErrorCode, ReviewTargetType } from "@loomkeep/shared";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { toUserDto, USER_DTO_INCLUDE } from "../auth/auth.service";
 import { AppException } from "../common/app.exception";
-import { LOAN_INCLUDE, loanFields } from "../common/entry-loan.util";
 import {
   canonicalExternalId,
   toExternalIdDtos,
@@ -18,6 +17,7 @@ import {
 import { jsonObject } from "../common/json.util";
 import { PrismaService } from "../prisma/prisma.service";
 import { ReviewService } from "../reviews/review.service";
+import { LOAN_INCLUDE, loanFields } from "../work/entry-loan.util";
 
 /**
  * Builds the full portable data dump (GDPR "download my data"). Shared by the

@@ -28,9 +28,9 @@ import {
 } from "../common/external-id.util";
 import { isUniqueViolation } from "../common/prisma-error.util";
 import { toRatingStep } from "../common/rating-step.validator";
-import { resolveWorkLink } from "../common/work-href.util";
 import { assertGameReleased } from "../games/game-release.util";
 import { AchievementService } from "../gamification/achievements/achievement.service";
+import { resolveWorkLink } from "../work/work-href.util";
 
 import {
   ACHIEVEMENT_KEYS_ON_REVIEW_VOTE_UP,

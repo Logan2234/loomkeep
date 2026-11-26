@@ -20,14 +20,14 @@ import assert from "node:assert/strict";
 import { BookItemService } from "../../../books/book-item.service";
 import { AppException } from "../../../common/app.exception";
 import { mapWithConcurrency, refKey } from "../../../common/concurrency.util";
+import { PrismaService } from "../../../prisma/prisma.service";
+import { ReviewService } from "../../../reviews/review.service";
+import { AgeGateService } from "../../../users/age-gate.service";
 import {
   LOAN_INCLUDE,
   loanUpdate,
   ownershipSourceUpdate,
-} from "../../../common/entry-loan.util";
-import { PrismaService } from "../../../prisma/prisma.service";
-import { ReviewService } from "../../../reviews/review.service";
-import { AgeGateService } from "../../../users/age-gate.service";
+} from "../../../work/entry-loan.util";
 import {
   type CommitDecisions,
   type ImportReq,

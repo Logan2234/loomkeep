@@ -26,7 +26,6 @@ import {
   type ParsedPage,
 } from "../common/pagination.util";
 import { isUniqueViolation } from "../common/prisma-error.util";
-import { resolveWorkHref } from "../common/work-href.util";
 import { EventsGateway } from "../events/events.gateway";
 import { JOB_KEYS } from "../jobs/job-keys";
 import { JobRunService, type JobSkipped } from "../jobs/job-run.service";
@@ -37,6 +36,7 @@ import { NotificationService } from "../notifications/notification.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { toUserSummaryDto } from "../users/avatar.util";
 import { USER_SUMMARY_SELECT } from "../users/user.queries";
+import { resolveWorkHref } from "../work/work-href.util";
 
 const EXCERPT_LENGTH = 120;
 

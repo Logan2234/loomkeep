@@ -7,13 +7,13 @@ import {
 import { Test, TestingModule } from "@nestjs/testing";
 import { App } from "supertest/types";
 import { vi } from "vitest";
-import { AppModule } from "./../src/app.module";
-import { AnilistProvider } from "./../src/catalog/providers/anilist.provider";
-import type { ProviderMediaDetails } from "./../src/catalog/providers/provider.types";
-import { TmdbProvider } from "./../src/catalog/providers/tmdb.provider";
-import { enableApiVersioning } from "./../src/common/api-versioning";
-import { registerRequestContext } from "./../src/common/request-context";
-import { PrismaService } from "./../src/prisma/prisma.service";
+import { AppModule } from "../src/app.module";
+import { AnilistProvider } from "../src/catalog/providers/anilist.provider";
+import type { ProviderMediaDetails } from "../src/catalog/providers/provider.types";
+import { TmdbProvider } from "../src/catalog/providers/tmdb.provider";
+import { enableApiVersioning } from "../src/common/api-versioning";
+import { registerRequestContext } from "../src/common/request-context";
+import { PrismaService } from "../src/prisma/prisma.service";
 
 /**
  * Shared bootstrap for the e2e specs.

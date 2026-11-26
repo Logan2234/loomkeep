@@ -6,10 +6,11 @@ import {
 } from "@loomkeep/shared";
 import { Prisma } from "@prisma/client";
 import { vi } from "vitest";
+import { AppException } from "../common/app.exception";
+import { DEFAULT_PAGE_SIZE } from "../common/pagination.util";
 import type { XpService } from "../gamification/xp.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import type { ActivityService } from "../social/activity.service";
-import { AppException } from "./app.exception";
 import {
   assertEntryOwnership,
   awardNewEntryXp,
@@ -19,7 +20,6 @@ import {
   polymorphicTargetCleanup,
   titleContains,
 } from "./entry-lifecycle.util";
-import { DEFAULT_PAGE_SIZE } from "./pagination.util";
 
 /**
  * These behaviours used to be copied into the four library services, which is

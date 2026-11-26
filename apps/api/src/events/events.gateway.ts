@@ -29,7 +29,6 @@ import { SessionCacheService } from "../auth/session-cache.service";
 import { isSessionLive } from "../auth/session-live.util";
 import { isChatEnabled } from "../chat/chat.config";
 import { webOrigins } from "../common/web-origin.util";
-import { workTargetExists } from "../common/work-href.util";
 import {
   MetricsService,
   type WsRejectionReason,
@@ -37,6 +36,7 @@ import {
 import { PrismaService } from "../prisma/prisma.service";
 import { isSocialEnabled } from "../social/social.config";
 import { preferencesOf } from "../users/preferences.util";
+import { workTargetExists } from "../work/work-href.util";
 
 const ADMIN_REPORTS_ROOM = "admin:reports";
 // Comment threads one socket can follow at once: a page shows one, a few

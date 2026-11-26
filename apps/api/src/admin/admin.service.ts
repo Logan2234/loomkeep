@@ -16,7 +16,6 @@ import { ANILIST_GRAPHQL_URL } from "../catalog/providers/anilist.provider";
 import { TMDB_API_URL } from "../catalog/providers/tmdb.provider";
 import { startOfUtcDay, startOfUtcMonth } from "../common/date.util";
 import { identifyingUserAgent } from "../common/http.util";
-import { PROVIDER_DAILY_QUOTAS } from "../common/quota-tracker.service";
 import { EntitlementService } from "../entitlements/entitlement.service";
 import { IGDB_OAUTH_URL } from "../games/providers/igdb.provider";
 import { SIMKL_API } from "../import/sources/simkl/simkl.source";
@@ -25,6 +24,7 @@ import { JOB_HEALTHCHECK_ENV } from "../jobs/job-keys";
 import { MailService } from "../mail/mail.service";
 import { MUSICBRAINZ_API_URL } from "../music/providers/musicbrainz.provider";
 import { PrismaService } from "../prisma/prisma.service";
+import { PROVIDER_DAILY_QUOTAS } from "../quota/quota-tracker.service";
 import type { ProviderQuotaSpec } from "./admin-system-stats.util";
 
 // docs/ is gitignored and regenerated locally (`prisma generate` for the ERD,

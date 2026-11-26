@@ -1,5 +1,5 @@
-// Cross-domain tables no single domain module owns: written through
-// apps/api/src/common/ (entry-loan.util.ts) for every domain's entries.
+// Tables the four domains share rather than own: written through
+// apps/api/src/work/ (entry-loan.util.ts) for every domain's entries.
 
 // Which way a Loan goes: the user's copy LENT to someone, or a copy the user
 // BORROWED from someone (the entry's ownershipStatus is then BORROWED).

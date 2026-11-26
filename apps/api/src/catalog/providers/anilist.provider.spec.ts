@@ -2,8 +2,8 @@ import { MediaSource, MediaType } from "@loomkeep/shared";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { vi } from "vitest";
-import type { QuotaTrackerService } from "../../common/quota-tracker.service";
 import { RequestThrottle } from "../../common/request-throttle";
+import type { QuotaTrackerService } from "../../quota/quota-tracker.service";
 import { AnilistProvider } from "./anilist.provider";
 
 const FIXTURES = join(__dirname, "..", "..", "..", "test", "fixtures");
