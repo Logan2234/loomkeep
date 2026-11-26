@@ -15,7 +15,6 @@ import {
   type WatchOfferKind,
 } from "@loomkeep/shared";
 import { HttpStatus, Injectable } from "@nestjs/common";
-import type { Prisma } from "@prisma/client";
 import { BookSagaService } from "../books/book-saga.service";
 import { MediaItemService } from "../catalog/media-item.service";
 import { resolveWatchRegion } from "../catalog/watch-region.util";
@@ -28,16 +27,9 @@ import { FollowService } from "../social/follow.service";
 import { WorkFriendsService } from "../social/work-friends.service";
 import { toUserSummaryDto } from "../users/avatar.util";
 import { preferencesOf } from "../users/preferences.util";
+import { USER_SUMMARY_SELECT } from "../users/user.queries";
 import { ChatWorkService, type WorkCard } from "./chat-work.service";
 import { ChatService, type CommandMessage } from "./chat.service";
-
-const USER_SELECT = {
-  id: true,
-  username: true,
-  displayName: true,
-  profileAccess: true,
-  avatarUpdatedAt: true,
-} satisfies Prisma.UserSelect;
 
 // What a member's status in a saga's work reads as on the card.
 const STEP: Record<SagaDomain, Partial<Record<string, SagaStep>>> = {
@@ -387,7 +379,7 @@ export class ChatCommandsService {
     );
     const viewer = await this.prisma.user.findUniqueOrThrow({
       where: { id: viewerId },
-      select: USER_SELECT,
+      select: USER_SUMMARY_SELECT,
     });
     return [viewer, ...others];
   }
@@ -471,7 +463,7 @@ export class ChatCommandsService {
         preferences: { chatShareWatchProviders: true },
       },
       select: {
-        ...USER_SELECT,
+        ...USER_SUMMARY_SELECT,
         preferences: { select: { watchProviderIds: true } },
       },
     });

@@ -42,17 +42,14 @@ import { BlockService } from "../social/block.service";
 import { toUserSummaryDto } from "../users/avatar.util";
 import { preferencesOf } from "../users/preferences.util";
 import { isSuspended } from "../users/suspension.util";
+import { USER_SUMMARY_SELECT } from "../users/user.queries";
 import type { WorkCard } from "./chat-work.service";
 
 export const CONVERSATION_PAGE_SIZE = 50;
 export const MESSAGE_PAGE_SIZE = 40;
 
 const PEER_SELECT = {
-  id: true,
-  username: true,
-  displayName: true,
-  profileAccess: true,
-  avatarUpdatedAt: true,
+  ...USER_SUMMARY_SELECT,
   preferences: {
     select: { chatShowPresence: true, chatShowReadReceipts: true },
   },
@@ -86,15 +83,7 @@ const MESSAGE_INCLUDE = {
         select: {
           optionId: true,
           userId: true,
-          user: {
-            select: {
-              id: true,
-              username: true,
-              displayName: true,
-              profileAccess: true,
-              avatarUpdatedAt: true,
-            },
-          },
+          user: { select: USER_SUMMARY_SELECT },
         },
       },
     },

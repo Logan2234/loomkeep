@@ -72,6 +72,10 @@ wording change or a rename.
   kept in a constant is written `satisfies Prisma.UserSelect` (or the
   matching `…Include`/`…DefaultArgs`), never `as const`; after moving or
   renaming a column, grep its name across `src` and `test`.
+- No repository layer ([docs/adr/0008](docs/adr/0008-no-repository-layer.md)):
+  services call Prisma directly. A query shape or query that other modules
+  reuse lives in its owner module's `<model>.queries.ts`
+  (`users/user.queries.ts`'s `USER_SUMMARY_SELECT`), never one copy per caller.
 
 ### Auth & errors
 
