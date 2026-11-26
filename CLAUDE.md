@@ -13,8 +13,9 @@ music), open-core under AGPL-3.0. pnpm monorepo:
   the public API's `openapi-v1.json`). Every field of a public DTO needs a
   JSDoc description and `@example`; `generate:openapi` fails on a gap.
 - `apps/mobile` — Capacitor Android shell that loads the instance's `/app`
-  rather than bundling the web ([docs/mobile-app-plan.md](docs/mobile-app-plan.md)).
-- `packages/shared` — DTOs/enums, consumed from its built `dist/`: run
+  rather than bundling the web ([ADR 0009](docs/adr/0009-capacitor-remote-shell.md)).
+- `packages/shared` — DTOs/enums, consumed from its built `dist/`
+  ([ADR 0007](docs/adr/0007-shared-package-compiled.md)): run
   `pnpm build:package` after any change there.
 
 Two destinations: Logan's hosted VPS (auto-deployed by `ci.yml`) and
@@ -49,15 +50,12 @@ wording change or a rename.
 
 ### Data model & catalog
 
-- **On-demand cache, not a mirror.** Catalogs (TMDB + AniList, IGDB, Open
-  Library, MusicBrainz — one provider per domain) are queried live. A
-  `MediaItem`/`GameItem`/`BookItem`/`MusicItem` is created only when a user
-  first tracks it, through its domain's `upsertFromSource()`. Refreshes
-  (24h TTL, 7 days for an ended series) never delete seasons/episodes, so
-  `EpisodeWatch` rows keep a valid target. Media, games and books also
-  re-sync in a 6-hourly `refreshStale` job; music has none, an album only
-  refreshes when someone tracks it again. Behaviour the four domains must
-  share gets a case in `apps/api/src/work/domain-parity.spec.ts`; the code
+- **On-demand cache, not a mirror** ([ADR 0003](docs/adr/0003-on-demand-catalog-cache.md)):
+  a `MediaItem`/`GameItem`/`BookItem`/`MusicItem` is created only when a user
+  first tracks it, through its domain's `upsertFromSource()`, and a refresh
+  never deletes seasons/episodes, so `EpisodeWatch` rows keep a valid target.
+- One table set per domain ([ADR 0004](docs/adr/0004-one-table-set-per-domain.md)).
+  Behaviour the four domains must share gets a case in `apps/api/src/work/domain-parity.spec.ts`; the code
   they share (entry lifecycle, loans, bulk edits, work links) lives in
   `apps/api/src/work/`. `common/` is infrastructure and pure helpers only and
   imports no other module (`common-boundary.spec.ts`).
@@ -69,7 +67,8 @@ wording change or a rename.
   `MediaType`. TVDB ids are captured from TMDB because the TV Time import
   reconciles through them.
 - `MediaEntry.watchedEpisodes`/`lastWatchedAt` and `MediaItem.episodeCount`
-  are maintained by Postgres triggers — never write them from the app.
+  are maintained by Postgres triggers — never write them from the app
+  ([ADR 0006](docs/adr/0006-progress-counters-by-trigger.md)).
 - Import sources share a base class per domain (`MediaImportSource`,
   `BookCsvSource`): a new source only supplies its parsing.
 - Shared enums (`packages/shared/src/enums.ts`) mirror Prisma enums with
