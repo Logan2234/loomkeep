@@ -39,7 +39,7 @@ import { SessionXpService } from "../gamification/session-xp.service";
 import { XpService } from "../gamification/xp.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { ActivityService } from "../social/activity.service";
-import { toReadingDto } from "./book.mappers";
+import { toReadingDto } from "./book-reading.mapper";
 import { CreateBookSessionDto } from "./dto/create-book-session.dto";
 import { UpdateBookSessionDto } from "./dto/update-book-session.dto";
 

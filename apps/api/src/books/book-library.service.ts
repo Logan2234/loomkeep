@@ -86,8 +86,8 @@ import {
 import { AgeGateService } from "../users/age-gate.service";
 import { filterAdultContent } from "../users/age.util";
 import { BookItemService } from "./book-item.service";
+import { toReadingDto } from "./book-reading.mapper";
 import { BookSagaService } from "./book-saga.service";
-import { toReadingDto } from "./book.mappers";
 import type { BulkUpdateBookEntriesBody } from "./dto/bulk-update-book-entries.dto";
 import { UpdateBookEntryDto } from "./dto/update-book-entry.dto";
 import { UpsertBookEntryDto } from "./dto/upsert-book-entry.dto";

@@ -82,9 +82,9 @@ import { UpdateGameEntryDto } from "./dto/update-game-entry.dto";
 import { UpsertGameEntryDto } from "./dto/upsert-game-entry.dto";
 import { toGameItemDto } from "./game-item.mapper";
 import { GameItemService } from "./game-item.service";
+import { toPlaythroughDto } from "./game-playthrough.mapper";
 import { assertGameReleased, isGameItemUpcoming } from "./game-release.util";
 import { GameSagaService } from "./game-saga.service";
-import { toPlaythroughDto } from "./game.mappers";
 
 // Entries always need the game + its external IDs (canonical sourceId), plus
 // its playthrough history, most recent first.

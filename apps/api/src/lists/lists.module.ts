@@ -1,7 +1,7 @@
 import { Module } from "@nestjs/common";
 import { EventsModule } from "../events/events.module";
 import { GamificationModule } from "../gamification/gamification.module";
-import { NotificationModule } from "../notifications/notification.module";
+import { NotificationsModule } from "../notifications/notifications.module";
 import { ReportsModule } from "../reports/reports.module";
 import { SocialModule } from "../social/social.module";
 import { ListController } from "./list.controller";
@@ -13,7 +13,7 @@ import { ListService } from "./list.service";
 @Module({
   imports: [
     SocialModule,
-    NotificationModule,
+    NotificationsModule,
     GamificationModule,
     EventsModule,
     ReportsModule,

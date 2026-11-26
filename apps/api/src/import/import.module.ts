@@ -1,14 +1,14 @@
 import { Module } from "@nestjs/common";
 import { BooksModule } from "../books/books.module";
 import { CatalogModule } from "../catalog/catalog.module";
-import { EntitlementModule } from "../entitlements/entitlement.module";
+import { EntitlementsModule } from "../entitlements/entitlements.module";
 import { EventsModule } from "../events/events.module";
 import { GamesModule } from "../games/games.module";
 import { GamificationModule } from "../gamification/gamification.module";
-import { ListsModule } from "../lists/list.module";
+import { ListsModule } from "../lists/lists.module";
 import { MailModule } from "../mail/mail.module";
 import { AdminAlertModule } from "../notifications/admin-alert.module";
-import { NotificationModule } from "../notifications/notification.module";
+import { NotificationsModule } from "../notifications/notifications.module";
 import { ReviewsModule } from "../reviews/reviews.module";
 import { UsersModule } from "../users/users.module";
 import { ImportAlertService } from "./import-alert.service";
@@ -43,10 +43,10 @@ import { TvTimeImportSource } from "./sources/tvtime/tvtime.source";
     GamesModule,
     UsersModule,
     ReviewsModule,
-    EntitlementModule,
+    EntitlementsModule,
     GamificationModule,
     EventsModule,
-    NotificationModule,
+    NotificationsModule,
     ListsModule,
     MailModule,
     AdminAlertModule,

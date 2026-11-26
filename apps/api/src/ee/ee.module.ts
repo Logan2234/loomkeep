@@ -1,6 +1,6 @@
 import { Module } from "@nestjs/common";
 import { CatalogModule } from "../catalog/catalog.module";
-import { EntitlementModule } from "../entitlements/entitlement.module";
+import { EntitlementsModule } from "../entitlements/entitlements.module";
 import { LibraryModule } from "../library/library.module";
 import { ReviewsModule } from "../reviews/reviews.module";
 import { SocialModule } from "../social/social.module";
@@ -23,7 +23,7 @@ import { AdvancedStatsService } from "./stats/advanced-stats.service";
 @Module({
   imports: [
     CatalogModule,
-    EntitlementModule,
+    EntitlementsModule,
     LibraryModule,
     ReviewsModule,
     StatsModule,

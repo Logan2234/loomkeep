@@ -1,8 +1,8 @@
 import { Module } from "@nestjs/common";
-import { EntitlementModule } from "../entitlements/entitlement.module";
+import { EntitlementsModule } from "../entitlements/entitlements.module";
 import { JobsModule } from "../jobs/jobs.module";
 import { MailModule } from "../mail/mail.module";
-import { NotificationModule } from "../notifications/notification.module";
+import { NotificationsModule } from "../notifications/notifications.module";
 import { SecurityModule } from "../security/security.module";
 import { ApiKeyLifecycleService } from "./api-key-lifecycle.service";
 import { ApiKeysController } from "./api-keys.controller";
@@ -17,8 +17,8 @@ import { SecretScanningController } from "./secret-scanning/secret-scanning.cont
   imports: [
     MailModule,
     SecurityModule,
-    EntitlementModule,
-    NotificationModule,
+    EntitlementsModule,
+    NotificationsModule,
     JobsModule,
   ],
   controllers: [ApiKeysController, SecretScanningController],

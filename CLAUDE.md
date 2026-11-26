@@ -166,6 +166,10 @@ wording change or a rename.
   its own `### Breaking changes` section, worded as what to do.
 - Feedback and roadmap live on Quackback (feedback.loomkeep.app), not
   GitHub Issues — see `.claude/skills/quackback-ticket`.
+- API file names: a module file is named after its folder
+  (`lists/lists.module.ts`, a second module in it names itself:
+  `lists/list-works.module.ts`), and a function turning a row into a DTO
+  lives in `<subject>.mapper.ts` (`games/game-item.mapper.ts`).
 - Reuse `apps/web/src/lib/components/` before writing a new component.
 - Check the mobile viewport on every `apps/web` UI change, and ship its
   transitions (`apps/web/DESIGN.md` › Motion; visual identity "Séance" in

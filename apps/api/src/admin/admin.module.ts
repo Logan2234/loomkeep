@@ -10,11 +10,11 @@ import { GamesModule } from "../games/games.module";
 import { GamificationModule } from "../gamification/gamification.module";
 import { ImportModule } from "../import/import.module";
 import { JobsModule } from "../jobs/jobs.module";
-import { ListsModule } from "../lists/list.module";
+import { ListsModule } from "../lists/lists.module";
 import { MailModule } from "../mail/mail.module";
 import { MusicModule } from "../music/music.module";
 import { AdminAlertModule } from "../notifications/admin-alert.module";
-import { NotificationModule } from "../notifications/notification.module";
+import { NotificationsModule } from "../notifications/notifications.module";
 import { ReportsModule } from "../reports/reports.module";
 import { ReviewsModule } from "../reviews/reviews.module";
 import { SecurityModule } from "../security/security.module";
@@ -53,7 +53,7 @@ import { UpdateCheckService } from "./update-check.service";
   imports: [
     ApiKeysModule,
     MailModule,
-    NotificationModule,
+    NotificationsModule,
     AdminAlertModule,
     AuthModule,
     CatalogModule,

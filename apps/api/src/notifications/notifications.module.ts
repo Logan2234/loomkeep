@@ -1,5 +1,5 @@
 import { Module } from "@nestjs/common";
-import { EntitlementModule } from "../entitlements/entitlement.module";
+import { EntitlementsModule } from "../entitlements/entitlements.module";
 import { EventsModule } from "../events/events.module";
 import { JobsModule } from "../jobs/jobs.module";
 import { MailModule } from "../mail/mail.module";
@@ -14,7 +14,7 @@ import { PushModule } from "./push.module";
   imports: [
     MailModule,
     JobsModule,
-    EntitlementModule,
+    EntitlementsModule,
     EventsModule,
     PushModule,
   ],
@@ -31,4 +31,4 @@ import { PushModule } from "./push.module";
     PausedReminderService,
   ],
 })
-export class NotificationModule {}
+export class NotificationsModule {}

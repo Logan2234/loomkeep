@@ -1,6 +1,6 @@
 import { Module } from "@nestjs/common";
 import { EventsModule } from "../events/events.module";
-import { ListsModule } from "../lists/list.module";
+import { ListsModule } from "../lists/lists.module";
 import { PushModule } from "../notifications/push.module";
 import { ReviewsModule } from "../reviews/reviews.module";
 import { SocialModule } from "../social/social.module";

@@ -6,7 +6,7 @@ import { addDays } from "../common/date.util";
 import { localDayOrUtc, startOfLocalDay } from "../common/local-day.util";
 import { toGameItemDto } from "../games/game-item.mapper";
 import { PrismaService } from "../prisma/prisma.service";
-import { toMediaItemDto } from "./media-item-dto.util";
+import { toMediaItemDto } from "./media-item.mapper";
 
 /** How far ahead the calendar lists episodes: about six months. */
 const EPISODE_WINDOW_DAYS = 183;

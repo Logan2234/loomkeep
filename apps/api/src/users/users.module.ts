@@ -2,11 +2,11 @@ import { Module } from "@nestjs/common";
 import { ApiKeysModule } from "../api-keys/api-keys.module";
 import { AuthModule } from "../auth/auth.module";
 import { ChatModule } from "../chat/chat.module";
-import { EntitlementModule } from "../entitlements/entitlement.module";
+import { EntitlementsModule } from "../entitlements/entitlements.module";
 import { EventsModule } from "../events/events.module";
 import { GamificationModule } from "../gamification/gamification.module";
 import { JobsModule } from "../jobs/jobs.module";
-import { ListsModule } from "../lists/list.module";
+import { ListsModule } from "../lists/lists.module";
 import { MailModule } from "../mail/mail.module";
 import { ReviewsModule } from "../reviews/reviews.module";
 import { SecurityModule } from "../security/security.module";
@@ -31,7 +31,7 @@ import { UsersService } from "./users.service";
     SecurityModule,
     ReviewsModule,
     ListsModule,
-    EntitlementModule,
+    EntitlementsModule,
     DomainGateModule,
     JobsModule,
     SocialModule,
@@ -58,7 +58,7 @@ import { UsersService } from "./users.service";
     AccountDeletionService,
     InactiveAccountService,
     ScheduledDeletionService,
-    EntitlementModule,
+    EntitlementsModule,
   ],
 })
 export class UsersModule {}
