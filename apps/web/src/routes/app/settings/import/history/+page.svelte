@@ -8,6 +8,7 @@
   import CardRowSkeleton from "#lib/components/CardRowSkeleton.svelte";
   import EmptyState from "#lib/components/EmptyState.svelte";
   import Icon from "#lib/components/Icon.svelte";
+  import { importRunFigures } from "#lib/components/import-presentation.js";
   import PageHeader from "#lib/components/PageHeader.svelte";
   import RelativeTime from "#lib/components/RelativeTime.svelte";
   import { DOMAINS } from "#lib/constants/domains.js";
@@ -93,8 +94,8 @@
                     })}
               {/if}
             </p>
-            {#if run.summary}
-              <p class="text-dim mt-1 text-sm">{run.summary}</p>
+            {#if importRunFigures(run)}
+              <p class="text-dim mt-1 text-sm">{importRunFigures(run)}</p>
             {/if}
           </div>
           <span

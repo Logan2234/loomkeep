@@ -9,6 +9,7 @@ import type {
   ImportPlanItem,
   ImportPlanList,
   ImportReportTile,
+  ImportRunDto,
 } from "@loomkeep/shared";
 
 // Functions read the current locale even when a plan was loaded in another one.
@@ -28,6 +29,7 @@ const LABELS = {
   playtime: () => m.game_playtime(),
   lists: () => m.common_lists(),
   notFound: () => m.import_report_not_found(),
+  failed: () => m.import_report_failed(),
   seriesTracked: () => m.import_group_series_tracked(),
   seriesWatchlist: () => m.import_group_series_watchlist(),
   moviesWatched: () => m.import_group_movies_watched(),
@@ -87,6 +89,16 @@ export function importReportSubtitle(tile: ImportReportTile): string | null {
     default:
       return null;
   }
+}
+
+/** An import's figures on one line, e.g. "12 Series · 3 Movies". */
+export function importRunFigures(
+  run: Pick<ImportRunDto, "tiles" | "summary">,
+): string | null {
+  if (!run.tiles) return run.summary;
+  return run.tiles
+    .map((tile) => `${number(tile.value)} ${importReportLabel(tile)}`)
+    .join(" · ");
 }
 
 export function importItemTitle(item: ImportPlanItem): string {

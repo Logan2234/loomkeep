@@ -583,7 +583,6 @@
             {entry.releaseAlertsEnabled
               ? m.media_movie_reminder_active()
               : m.media_movie_reminder_enable()}
-            {#if isFeatureNew("game-releases")}<NewBadge />{/if}
           </p>
           {#if entry.releaseAlertsEnabled && isVagueRelease(detail?.releaseDatePrecision ?? null)}
             <p class="text-dim text-xs">

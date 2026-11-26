@@ -474,6 +474,7 @@
   "ownership_borrowed_from": "Borrowed from",
   "ownership_loan_since": "Since",
   "ownership_loan_person_placeholder": "A friend, or any name",
+  "ownership_loan_use_name": "Use “{name}”",
   "ownership_loan_private": "Private note: nobody is told.",
   "game_language_full": "{language} · text and voices",
   "game_language_text": "{language} · text",

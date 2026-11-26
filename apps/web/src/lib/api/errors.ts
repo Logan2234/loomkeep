@@ -111,7 +111,6 @@ const MESSAGES = {
     m.apierr_library_book_edition_required(),
   [ErrorCode.LibraryReplayNotMovie]: () => m.apierr_library_replay_not_movie(),
   [ErrorCode.LibraryReplayNotFound]: () => m.apierr_library_replay_not_found(),
-  [ErrorCode.LibraryReplayForbidden]: () => m.apierr_library_replay_forbidden(),
   [ErrorCode.LibrarySavedViewNotFound]: () =>
     m.apierr_library_saved_view_not_found(),
   [ErrorCode.LibraryBulkInvalid]: () => m.apierr_library_bulk_invalid(),
@@ -143,6 +142,8 @@ const MESSAGES = {
   [ErrorCode.AdminSmtpNotConfigured]: () =>
     m.apierr_admin_smtp_not_configured(),
   [ErrorCode.AdminUnknownJob]: () => m.apierr_admin_unknown_job(),
+  [ErrorCode.AdminJobAlreadyRunning]: () =>
+    m.apierr_admin_job_already_running(),
   [ErrorCode.AdminAccountNotFound]: () => m.apierr_admin_account_not_found(),
   [ErrorCode.AdminSettingLockedByEnv]: () =>
     m.apierr_admin_setting_locked_by_env(),
@@ -322,6 +323,7 @@ const MESSAGES = {
   [ErrorCode.InternalConflict]: () => m.apierr_internal_conflict(),
   [ErrorCode.InternalRecordGone]: () => m.apierr_internal_record_gone(),
   [ErrorCode.NetworkOffline]: () => m.apierr_network_offline(),
+  [ErrorCode.NetworkTimeout]: () => m.apierr_network_timeout(),
   [ErrorCode.AuthReauthCancelled]: () => m.apierr_auth_reauth_cancelled(),
   [ErrorCode.GamificationAchievementNotFound]: () =>
     m.apierr_gamification_achievement_not_found(),

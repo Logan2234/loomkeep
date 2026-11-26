@@ -27,7 +27,7 @@ export async function checkFirstEpisode(
 
 /**
  * Shared core of the three "cinephile" tiers — only the threshold differs.
- * Movies watched = LibraryEntry rows at status COMPLETED whose MediaItem is
+ * Movies watched = MediaEntry rows at status COMPLETED whose MediaItem is
  * type MOVIE.
  */
 export function checkCinephileTier(target: number) {
@@ -35,7 +35,7 @@ export function checkCinephileTier(target: number) {
     prisma: PrismaService,
     userId: string,
   ): Promise<AchievementCheckResult> => {
-    const current = await prisma.libraryEntry.count({
+    const current = await prisma.mediaEntry.count({
       where: { userId, status: "COMPLETED", mediaItem: { type: "MOVIE" } },
     });
     return { unlocked: current >= target, progress: { current, target } };
@@ -96,13 +96,32 @@ export function checkGenresTier(target: number) {
   };
 }
 
+/**
+ * "world_tour" tiers (GAM-03): distinct countries of origin among finished
+ * films and series. A co-production counts each of its countries.
+ */
+export function checkWorldTourTier(target: number) {
+  return async (
+    prisma: PrismaService,
+    userId: string,
+  ): Promise<AchievementCheckResult> => {
+    const entries = await prisma.mediaEntry.findMany({
+      where: { userId, status: "COMPLETED" },
+      select: { mediaItem: { select: { originCountries: true } } },
+    });
+    const current = new Set(entries.flatMap((e) => e.mediaItem.originCountries))
+      .size;
+    return { unlocked: current >= target, progress: { current, target } };
+  };
+}
+
 /** "omnivore": at least one tracked title (any status) in every one of the 4 tracked domains. */
 export async function checkOmnivore(
   prisma: PrismaService,
   userId: string,
 ): Promise<AchievementCheckResult> {
   const [media, games, books, music] = await Promise.all([
-    prisma.libraryEntry.count({ where: { userId } }),
+    prisma.mediaEntry.count({ where: { userId } }),
     prisma.gameEntry.count({ where: { userId } }),
     prisma.bookEntry.count({ where: { userId } }),
     prisma.musicEntry.count({ where: { userId } }),
@@ -116,7 +135,7 @@ export async function checkBigScreen(
   prisma: PrismaService,
   userId: string,
 ): Promise<AchievementCheckResult> {
-  const entries = await prisma.libraryEntry.findMany({
+  const entries = await prisma.mediaEntry.findMany({
     where: {
       userId,
       status: "COMPLETED",
@@ -142,7 +161,7 @@ export async function checkWellRounded(
   userId: string,
 ): Promise<AchievementCheckResult> {
   const [media, games, books, music] = await Promise.all([
-    prisma.libraryEntry.count({ where: { userId, status: "COMPLETED" } }),
+    prisma.mediaEntry.count({ where: { userId, status: "COMPLETED" } }),
     prisma.gameEntry.count({ where: { userId, status: "COMPLETED" } }),
     prisma.bookEntry.count({ where: { userId, status: "READ" } }),
     prisma.musicEntry.count({ where: { userId, status: "LISTENED" } }),
@@ -163,7 +182,7 @@ export async function checkContemporary(
   if (!user?.birthDate) return { unlocked: false };
 
   const birthYear = user.birthDate.getUTCFullYear();
-  const match = await prisma.libraryEntry.findFirst({
+  const match = await prisma.mediaEntry.findFirst({
     where: {
       userId,
       status: "COMPLETED",
@@ -191,13 +210,13 @@ export async function checkPremiereSeance(
   prisma: PrismaService,
   userId: string,
 ): Promise<AchievementCheckResult> {
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { onboardingSkippedSteps: true },
+  const onboarding = await prisma.userOnboarding.findUnique({
+    where: { userId },
+    select: { skippedSteps: true },
   });
   const doneMap = await computeOnboardingDoneMap(prisma, userId);
   const unlocked = Object.entries(doneMap).every(
-    ([key, done]) => done || (user?.onboardingSkippedSteps ?? []).includes(key),
+    ([key, done]) => done || (onboarding?.skippedSteps ?? []).includes(key),
   );
   return { unlocked };
 }

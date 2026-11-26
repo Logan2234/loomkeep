@@ -344,7 +344,7 @@ export class UsersController {
   /**
    * Live preview of what deleting the account would do, for the confirmation
    * modal — every category is always present, even at 0 rows, so the summary
-   * reads as exhaustive. Mirrors the `onDelete` behaviour in schema.prisma:
+   * reads as exhaustive. Mirrors the `onDelete` behaviour in the Prisma schema:
    * most owned rows cascade away, Review/Comment/Report are detached
    * (SetNull) instead since their content is visible to other users.
    */

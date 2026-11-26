@@ -65,6 +65,7 @@ export const ErrorCode = {
   AdminEmailTemplateNotFound: "admin.email_template_not_found",
   AdminSmtpNotConfigured: "admin.smtp_not_configured",
   AdminUnknownJob: "admin.unknown_job",
+  AdminJobAlreadyRunning: "admin.job_already_running",
   AdminAccountNotFound: "admin.account_not_found",
   AdminReportNotFound: "admin.report_not_found",
   AdminSettingLockedByEnv: "admin.setting_locked_by_env",
@@ -201,7 +202,6 @@ export const ErrorCode = {
   // A platform the game isn't listed on (GameItem.platforms).
   LibraryGamePlatformInvalid: "library.game_platform_invalid",
   LibraryReplayNotFound: "library.replay_not_found",
-  LibraryReplayForbidden: "library.replay_forbidden",
   LibrarySessionNotFound: "library.session_not_found",
   LibrarySessionForbidden: "library.session_forbidden",
   LibrarySessionDateFuture: "library.session_date_future",
@@ -291,6 +291,7 @@ export const ErrorCode = {
   // client-side only — never emitted by the API, thrown by apps/web's
   // request() when the fetch itself fails (see apps/web/src/lib/api/core.ts)
   NetworkOffline: "network.offline",
+  NetworkTimeout: "network.timeout",
   // client-side only: the person closed the identity confirmation a sensitive
   // action asked for (see apps/web/src/lib/auth/reauth.svelte.ts)
   AuthReauthCancelled: "auth.reauth_cancelled",

@@ -2,7 +2,7 @@ import type { RatingDto } from "@loomkeep/shared";
 import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { HTTP_TIMEOUT_MS } from "../common/http.util";
-import { QuotaTrackerService } from "../common/quota-tracker.service";
+import { QuotaTrackerService } from "../quota/quota-tracker.service";
 
 export const OMDB_URL = "https://www.omdbapi.com/";
 

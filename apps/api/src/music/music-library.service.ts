@@ -16,7 +16,7 @@ import {
   ReviewTargetType,
   XpReason,
 } from "@loomkeep/shared";
-import { revokeEntryXp } from "../common/entry-lifecycle.util";
+import { revokeEntryXp } from "../work/entry-lifecycle.util";
 
 import { Injectable } from "@nestjs/common";
 import type {
@@ -25,36 +25,7 @@ import type {
   MusicItem,
   Prisma,
 } from "@prisma/client";
-import {
-  addToList,
-  applyBulkUpdate,
-  applyToEntries,
-  assertBulkTarget,
-  assertBulkUpdate,
-} from "../common/bulk-entries.util";
-import { toDateOrNull } from "../common/date.util";
-import type {
-  EntryStatusChange,
-  ListEntriesFilters,
-} from "../common/entry-lifecycle.util";
-import {
-  assertEntryOwnership,
-  awardNewEntryXp,
-  emitEntryActivity,
-  listEntryPage,
-  polymorphicTargetCleanup,
-  RECENTLY_UPDATED_FIRST,
-  searchTerm,
-  titleContains,
-} from "../common/entry-lifecycle.util";
-import {
-  isLoanActive,
-  LOAN_INCLUDE,
-  loanFields,
-  loanUpdate,
-  loanWhere,
-  ownershipSourceUpdate,
-} from "../common/entry-loan.util";
+import { toDateOrNull, utcDateKey } from "../common/date.util";
 import { canonicalExternalId } from "../common/external-id.util";
 import { retryAfterUniqueRace } from "../common/prisma-error.util";
 import { compareTitles, timeMs } from "../common/sort.util";
@@ -65,6 +36,35 @@ import { PrismaService } from "../prisma/prisma.service";
 import { ReviewService } from "../reviews/review.service";
 import { ActivityService } from "../social/activity.service";
 import { MUSIC_PILE_STATUSES, summarizePile } from "../stats/pile.util";
+import {
+  addToList,
+  applyBulkUpdate,
+  applyToEntries,
+  assertBulkTarget,
+  assertBulkUpdate,
+} from "../work/bulk-entries.util";
+import type {
+  EntryStatusChange,
+  ListEntriesFilters,
+} from "../work/entry-lifecycle.util";
+import {
+  assertEntryOwnership,
+  awardNewEntryXp,
+  emitEntryActivity,
+  listEntryPage,
+  polymorphicTargetCleanup,
+  RECENTLY_UPDATED_FIRST,
+  searchTerm,
+  titleContains,
+} from "../work/entry-lifecycle.util";
+import {
+  isLoanActive,
+  LOAN_INCLUDE,
+  loanFields,
+  loanUpdate,
+  loanWhere,
+  ownershipSourceUpdate,
+} from "../work/entry-loan.util";
 import type { BulkUpdateMusicEntriesBody } from "./dto/bulk-update-music-entries.dto";
 import { UpdateMusicEntryDto } from "./dto/update-music-entry.dto";
 import { UpsertMusicEntryDto } from "./dto/upsert-music-entry.dto";
@@ -585,7 +585,7 @@ export class MusicLibraryService {
       genres: item.genres,
       albumType: item.albumType,
       trackCount: item.trackCount,
-      releaseDate: item.releaseDate?.toISOString() ?? null,
+      releaseDate: item.releaseDate ? utcDateKey(item.releaseDate) : null,
       releaseDatePrecision: null,
       sameArtistAlbums: [],
       tags: [],

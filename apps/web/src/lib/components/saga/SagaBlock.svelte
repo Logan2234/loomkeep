@@ -2,7 +2,6 @@
   import { goto } from "$app/navigation";
   import Icon from "#lib/components/Icon.svelte";
   import SeeMore from "#lib/components/SeeMore.svelte";
-  import NewBadge from "#lib/components/NewBadge.svelte";
   import Poster from "#lib/components/Poster.svelte";
   import TrackingStatusBadge from "#lib/components/TrackingStatusBadge.svelte";
   import { prefersReducedMotion } from "#lib/motion.js";
@@ -24,7 +23,6 @@
     onAdd,
     addButton,
     addLabel,
-    isNew = false,
   }: {
     title: string;
     members: SagaMemberView[];
@@ -36,7 +34,6 @@
     /** The add button's text: the domain's to-do status. */
     addButton: string;
     addLabel: (title: string) => string;
-    isNew?: boolean;
   } = $props();
 
   const reduced = prefersReducedMotion();
@@ -173,9 +170,8 @@
     in:fly={{ y: 12, duration: ms(280), easing: cubicOut }}>
     <div class="flex items-end justify-between gap-4">
       <div class="min-w-0">
-        <p class="timecode flex items-center gap-2 text-xs">
+        <p class="timecode text-xs">
           {m.media_saga_title()}
-          {#if isNew}<NewBadge />{/if}
         </p>
         <h2 class="font-display text-xl font-bold text-balance">
           {title}

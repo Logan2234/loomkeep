@@ -25,18 +25,21 @@ import {
 import { HttpStatus, Injectable } from "@nestjs/common";
 import type { GameStatus as DbGameStatus, Prisma } from "@prisma/client";
 import { AppException } from "../common/app.exception";
+import { toDateOrNull, utcDateKey } from "../common/date.util";
+import { compareTitles, timeMs } from "../common/sort.util";
+import { EventsGateway } from "../events/events.gateway";
+import { AchievementService } from "../gamification/achievements/achievement.service";
 import {
   addToList,
   applyBulkUpdate,
   applyToEntries,
   assertBulkTarget,
   assertBulkUpdate,
-} from "../common/bulk-entries.util";
-import { toDateOrNull } from "../common/date.util";
+} from "../work/bulk-entries.util";
 import type {
   EntryStatusChange,
   ListEntriesFilters,
-} from "../common/entry-lifecycle.util";
+} from "../work/entry-lifecycle.util";
 import {
   assertEntryOwnership,
   awardNewEntryXp,
@@ -49,19 +52,8 @@ import {
   searchTerm,
   syncCycleCompletionXp,
   titleContains,
-} from "../common/entry-lifecycle.util";
-import { compareTitles, timeMs } from "../common/sort.util";
-import { EventsGateway } from "../events/events.gateway";
-import { AchievementService } from "../gamification/achievements/achievement.service";
+} from "../work/entry-lifecycle.util";
 
-import {
-  isLoanActive,
-  LOAN_INCLUDE,
-  loanFields,
-  loanUpdate,
-  loanWhere,
-  ownershipSourceUpdate,
-} from "../common/entry-loan.util";
 import { retryAfterUniqueRace } from "../common/prisma-error.util";
 import { ACHIEVEMENT_KEYS_BY_XP_REASON } from "../gamification/achievements/triggers";
 import { SessionXpService } from "../gamification/session-xp.service";
@@ -77,14 +69,22 @@ import {
 } from "../stats/pile.util";
 import { AgeGateService } from "../users/age-gate.service";
 import { filterAdultContent } from "../users/age.util";
+import {
+  isLoanActive,
+  LOAN_INCLUDE,
+  loanFields,
+  loanUpdate,
+  loanWhere,
+  ownershipSourceUpdate,
+} from "../work/entry-loan.util";
 import type { BulkUpdateGameEntriesBody } from "./dto/bulk-update-game-entries.dto";
 import { UpdateGameEntryDto } from "./dto/update-game-entry.dto";
 import { UpsertGameEntryDto } from "./dto/upsert-game-entry.dto";
 import { toGameItemDto } from "./game-item.mapper";
 import { GameItemService } from "./game-item.service";
+import { toPlaythroughDto } from "./game-playthrough.mapper";
 import { assertGameReleased, isGameItemUpcoming } from "./game-release.util";
 import { GameSagaService } from "./game-saga.service";
-import { toPlaythroughDto } from "./game.mappers";
 
 // Entries always need the game + its external IDs (canonical sourceId), plus
 // its playthrough history, most recent first.
@@ -845,7 +845,7 @@ export class GameLibraryService {
       screenshots: [],
       genres: item.genres,
       platforms: item.platforms,
-      releaseDate: item.releaseDate?.toISOString() ?? null,
+      releaseDate: item.releaseDate ? utcDateKey(item.releaseDate) : null,
       releaseDatePrecision: item.releaseDatePrecision,
       upcoming: isGameItemUpcoming(item),
       website: null,

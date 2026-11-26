@@ -32,6 +32,11 @@ To be alerted when a job stops running, see
 
 ## Worth knowing
 
+**A job runs once at a time.** Each run takes a lock in the database, so a
+job started by hand while it is already running is refused (Admin says so),
+and a second API container, if you started one, skips it rather than running
+it twice.
+
 **Inactive accounts are deleted** three years after their last use, only
 once a warning email has actually gone out. Without
 [SMTP](/self-hosting/email-and-push/), no warning can be sent, so no account

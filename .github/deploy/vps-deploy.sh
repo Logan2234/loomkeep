@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Runs on the VPS, from the checkout ci.yml's deploy job has just reset to the commit
+# Runs on the VPS, from the checkout deploy.yml's deploy job has just reset to the commit
 # CI validated (DEPLOY_SHA). Which compose files run comes from COMPOSE_FILE
 # in the VPS's own .env, not from here.
 #
@@ -46,7 +46,7 @@ if [ -n "$previous_tag" ]; then
 fi
 migrations_before=$(applied_migrations)
 
-# Pins api/web to the images CI pushed for this commit (ci.yml's
+# Pins api/web to the images CI pushed for this commit (images.yml's
 # docker-push), not the floating `latest`. Also feeds the Homepage
 # "Version" widget, which reads GIT_SHA baked into the api image.
 export IMAGE_TAG="${DEPLOY_SHA:0:12}"

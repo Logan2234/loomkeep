@@ -17,7 +17,7 @@ import { GameItemService } from "../games/game-item.service";
 import { AchievementService } from "../gamification/achievements/achievement.service";
 import { XpService } from "../gamification/xp.service";
 import { JOB_KEYS, type JobKey } from "../jobs/job-keys";
-import { JobRunService } from "../jobs/job-run.service";
+import { JOB_SKIPPED, JobRunService } from "../jobs/job-run.service";
 import { NotificationDigestService } from "../notifications/notification-digest.service";
 import { NotificationService } from "../notifications/notification.service";
 import { PausedReminderService } from "../notifications/paused-reminder.service";
@@ -113,6 +113,12 @@ export class AdminJobsController {
       throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.AdminUnknownJob);
     }
 
-    await this.runners[key]();
+    // Already running, here or on another API process: nothing was started.
+    if ((await this.runners[key]()) === JOB_SKIPPED) {
+      throw new AppException(
+        HttpStatus.CONFLICT,
+        ErrorCode.AdminJobAlreadyRunning,
+      );
+    }
   }
 }

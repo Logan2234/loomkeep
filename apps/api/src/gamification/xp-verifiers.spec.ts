@@ -66,10 +66,10 @@ describe("XP_VERIFIERS — batching", () => {
 
 describe("XP_VERIFIERS — status predicates", () => {
   it("drops an entry whose source exists but no longer qualifies", async () => {
-    // A movie un-marked as completed keeps its LibraryEntry row; existence
+    // A movie un-marked as completed keeps its MediaEntry row; existence
     // alone would leave the XP standing.
     const prisma = {
-      libraryEntry: {
+      mediaEntry: {
         findMany: vi.fn().mockResolvedValue([
           { id: "s1", status: "COMPLETED" },
           { id: "s2", status: "WATCHING" },
@@ -169,7 +169,7 @@ describe("XP_VERIFIERS — WORK_ADDED", () => {
   it("looks in all four entry tables, once each", async () => {
     const empty = vi.fn().mockResolvedValue([]);
     const prisma = {
-      libraryEntry: { findMany: empty },
+      mediaEntry: { findMany: empty },
       gameEntry: { findMany: vi.fn().mockResolvedValue([{ id: "s1" }]) },
       bookEntry: { findMany: empty },
       musicEntry: { findMany: empty },

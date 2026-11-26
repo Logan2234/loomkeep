@@ -170,11 +170,12 @@ export class ReviewController {
   @Post(":reviewId/report")
   @UseGuards(SocialFeatureGuard)
   @Throttle(REPORT_THROTTLE)
-  report(
+  async report(
     @CurrentUser() user: JwtPayload,
     @Param("reviewId") reviewId: string,
     @Body() body: CreateReportBody,
   ): Promise<void> {
+    await this.reviews.assertVisibleTo(user.sub, reviewId);
     return this.reports.create(
       user.sub,
       "REVIEW",

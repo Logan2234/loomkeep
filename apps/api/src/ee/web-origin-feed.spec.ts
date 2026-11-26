@@ -18,7 +18,7 @@ describe("feed links with a trailing slash in WEB_ORIGIN", () => {
 
   it("builds calendar release links from the first normalized origin", async () => {
     const prisma = {
-      user: { findUnique: vi.fn().mockResolvedValue(user) },
+      userUrlToken: { findUnique: vi.fn().mockResolvedValue({ user }) },
       episode: {
         findMany: vi.fn().mockResolvedValue([
           {
@@ -38,7 +38,7 @@ describe("feed links with a trailing slash in WEB_ORIGIN", () => {
           },
         ]),
       },
-      libraryEntry: { findMany: vi.fn().mockResolvedValue([]) },
+      mediaEntry: { findMany: vi.fn().mockResolvedValue([]) },
       gameEntry: { findMany: vi.fn().mockResolvedValue([]) },
     };
     const feed = await new CalendarFeedService(
@@ -54,7 +54,9 @@ describe("feed links with a trailing slash in WEB_ORIGIN", () => {
   });
 
   it("builds activity profile and entry links without double slashes", async () => {
-    const prisma = { user: { findUnique: vi.fn().mockResolvedValue(user) } };
+    const prisma = {
+      userUrlToken: { findUnique: vi.fn().mockResolvedValue({ user }) },
+    };
     const activity = {
       profileTimeline: vi.fn().mockResolvedValue({
         items: [

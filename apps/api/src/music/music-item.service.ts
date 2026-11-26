@@ -164,6 +164,8 @@ export class MusicItemService {
     return this.prisma.musicItem.create({
       data: {
         ...this.baseFields(details),
+        // Stale from the start: the next visit fetches the missing tracks.
+        ...(details.partial ? { lastSyncedAt: new Date(0) } : {}),
         canonicalSource: source,
         externalIds: {
           create: details.externalIds.map((ext) => ({
@@ -205,11 +207,17 @@ export class MusicItemService {
       releaseDate: details.releaseDate ? new Date(details.releaseDate) : null,
       genres: details.genres,
       albumType: details.albumType,
-      trackCount: details.trackCount,
-      durationMin: details.totalDurationMs
-        ? Math.round(details.totalDurationMs / 60_000)
-        : null,
-      lastSyncedAt: new Date(),
+      // A partial fetch knows nothing of the tracks: what is stored stays,
+      // and the copy stays stale so the next visit tries again.
+      ...(details.partial
+        ? {}
+        : {
+            trackCount: details.trackCount,
+            durationMin: details.totalDurationMs
+              ? Math.round(details.totalDurationMs / 60_000)
+              : null,
+            lastSyncedAt: new Date(),
+          }),
     };
   }
 }

@@ -28,7 +28,7 @@ import { AppException } from "../../common/app.exception";
 import { mapWithConcurrency } from "../../common/concurrency.util";
 import { utcDateKey } from "../../common/date.util";
 import { fetchJson } from "../../common/http.util";
-import { QuotaTrackerService } from "../../common/quota-tracker.service";
+import { QuotaTrackerService } from "../../quota/quota-tracker.service";
 import { OmdbService } from "../omdb.service";
 import type {
   CatalogProvider,

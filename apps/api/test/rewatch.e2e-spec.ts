@@ -1,8 +1,8 @@
 import { INestApplication } from "@nestjs/common";
 import request from "supertest";
 import { App } from "supertest/types";
-import { LibraryService } from "./../src/library/library.service";
-import type { PrismaService } from "./../src/prisma/prisma.service";
+import { LibraryService } from "../src/library/library.service";
+import type { PrismaService } from "../src/prisma/prisma.service";
 import { authCookies, createE2eApp, e2eUser } from "./e2e-app";
 
 /**
@@ -56,7 +56,7 @@ describe("Rewatch (e2e)", () => {
       }
     }
 
-    const entry = await prisma.libraryEntry.create({
+    const entry = await prisma.mediaEntry.create({
       data: { userId, mediaItemId: item.id, status: "COMPLETED" },
     });
     return { entryId: entry.id, episodeIds };
@@ -123,7 +123,7 @@ describe("Rewatch (e2e)", () => {
       .send({ rewatching: true })
       .expect(200);
 
-    const entry = await prisma.libraryEntry.findUniqueOrThrow({
+    const entry = await prisma.mediaEntry.findUniqueOrThrow({
       where: { id: entryId },
       include: { mediaItem: { include: { externalIds: true } } },
     });

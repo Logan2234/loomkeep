@@ -38,7 +38,6 @@
   import OwnershipField from "#lib/components/OwnershipField.svelte";
   import WorkHero from "#lib/components/work/WorkHero.svelte";
   import ProgressBar from "#lib/components/ProgressBar.svelte";
-  import NewBadge from "#lib/components/NewBadge.svelte";
   import { isFeatureNew } from "#lib/feature-badges.js";
   import CreatorNames from "#lib/components/CreatorNames.svelte";
   import { mediaCompletionEstimate } from "#lib/media-completion-estimate.js";
@@ -521,7 +520,7 @@
         </p>
         {#if estimatedCompletionDate}
           <p
-            class="text-dim mt-2 flex flex-wrap items-center gap-2 text-xs"
+            class="text-dim mt-2 text-xs"
             transition:slide={{ duration: reduced ? 0 : 200 }}>
             {detail.airingFinished
               ? m.completion_estimate_finish({
@@ -530,7 +529,6 @@
               : m.completion_estimate_caught_up({
                   date: formatDate(`${estimatedCompletionDate}T12:00:00`),
                 })}
-            {#if isFeatureNew("completion-estimate")}<NewBadge />{/if}
           </p>
         {/if}
       </div>

@@ -2,7 +2,8 @@ import { MediaSource, MediaType } from "@loomkeep/shared";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { vi } from "vitest";
-import type { QuotaTrackerService } from "../../common/quota-tracker.service";
+import { RequestThrottle } from "../../common/request-throttle";
+import type { QuotaTrackerService } from "../../quota/quota-tracker.service";
 import { AnilistProvider } from "./anilist.provider";
 
 const FIXTURES = join(__dirname, "..", "..", "..", "test", "fixtures");
@@ -265,6 +266,22 @@ describe("AnilistProvider", () => {
     // A single attempt: the 60s Retry-After blows past maxRetryDelayMs, so
     // the call gives up rather than retrying.
     expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("waits for the throttle before each retry, not only the first attempt", async () => {
+    const wait = vi.spyOn(RequestThrottle.prototype, "wait");
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response("{}", { status: 429, headers: { "Retry-After": "0" } }),
+      )
+      .mockResolvedValueOnce(Response.json(fixture("anilist-search.json")));
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    await provider.search("Frieren");
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(wait).toHaveBeenCalledTimes(2);
   });
 
   it("falls back to aired count for ongoing shows without a total episode count", async () => {

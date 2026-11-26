@@ -1155,7 +1155,7 @@
             {#each shown as entry (keyOf(entry))}
               {@const on = selection.has(entry)}
               <div
-                class="has-[:focus-visible]:ring-accent has-[:focus-visible]:ring-offset-bg relative rounded-lg transition-shadow has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-offset-2"
+                class="has-focus-visible:ring-accent has-focus-visible:ring-offset-bg relative rounded-lg transition-shadow has-focus-visible:ring-2 has-focus-visible:ring-offset-2"
                 data-library-item={keyOf(entry)}
                 animate:flip={{ duration: reduced ? 0 : 250 }}
                 in:fade|global={{ duration: reduced ? 0 : 150 }}

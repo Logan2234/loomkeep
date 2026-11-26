@@ -26,13 +26,12 @@ const PLAN: ImportPlan = {
   groups: [
     {
       id: "READ",
-      label: "Read",
       items: [
         {
           key: "dune",
           title: "Dune",
           sourceTitle: "Dune",
-          subtitle: null,
+          context: { kind: "book", rating: null },
           coverUrl: null,
           match: {
             source: "OPEN_LIBRARY",
@@ -49,7 +48,7 @@ const PLAN: ImportPlan = {
           key: "hyperion",
           title: "Hyperion (Cantos)",
           sourceTitle: "Hyperion (Cantos)",
-          subtitle: null,
+          context: { kind: "book", rating: null },
           coverUrl: null,
           match: null,
           include: false,
@@ -98,7 +97,7 @@ function serveImport(analysis: ImportJobDto = job("analysis", { plan: PLAN })) {
         job("commit", {
           report: {
             overwrite: false,
-            tiles: [{ id: "READ", label: "Read", value: 1, sub: null }],
+            tiles: [{ id: "READ", value: 1 }],
           },
         }),
       ),

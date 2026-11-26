@@ -12,8 +12,8 @@ import {
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { AppException } from "../../common/app.exception";
 import { fetchJson, HTTP_TIMEOUT_MS } from "../../common/http.util";
-import { QuotaTrackerService } from "../../common/quota-tracker.service";
 import { RequestThrottle } from "../../common/request-throttle";
+import { QuotaTrackerService } from "../../quota/quota-tracker.service";
 import {
   MAIN_LINE_RELATIONS,
   toCastDetail,
@@ -612,7 +612,6 @@ export class AnilistProvider implements CatalogProvider {
     query: string,
     variables: Record<string, unknown>,
   ): Promise<T> {
-    await this.throttle.wait();
     const body = await fetchJson<{
       data?: T;
       errors?: { message: string }[];
@@ -630,6 +629,7 @@ export class AnilistProvider implements CatalogProvider {
         sourceLabel: "AniList",
         notFoundMessage: "Media not found on AniList",
         maxRetryDelayMs: MAX_RETRY_DELAY_MS,
+        beforeAttempt: () => this.throttle.wait(),
         onAttempt: () => this.quota.record("anilist"),
       },
     );

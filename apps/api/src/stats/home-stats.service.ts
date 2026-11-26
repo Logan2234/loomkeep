@@ -43,7 +43,7 @@ export class HomeStatsService {
       tasks.push(
         (async () => {
           const [movies, replays, episodes] = await Promise.all([
-            this.prisma.libraryEntry.findMany({
+            this.prisma.mediaEntry.findMany({
               where: {
                 userId,
                 finishedAt: within,
@@ -52,9 +52,9 @@ export class HomeStatsService {
               select: { mediaItem: { select: { runtimeMin: true } } },
             }),
             this.prisma.movieReplay.findMany({
-              where: { libraryEntry: { userId }, finishedAt: within },
+              where: { mediaEntry: { userId }, finishedAt: within },
               select: {
-                libraryEntry: {
+                mediaEntry: {
                   select: { mediaItem: { select: { runtimeMin: true } } },
                 },
               },
@@ -68,7 +68,7 @@ export class HomeStatsService {
           const movieMinutes =
             movies.reduce((sum, m) => sum + (m.mediaItem.runtimeMin ?? 0), 0) +
             replays.reduce(
-              (sum, r) => sum + (r.libraryEntry.mediaItem.runtimeMin ?? 0),
+              (sum, r) => sum + (r.mediaEntry.mediaItem.runtimeMin ?? 0),
               0,
             );
           summary.video = {
@@ -208,7 +208,7 @@ export class HomeStatsService {
             push(Domain.MEDIA, mediaWork(item), "watched", at, count);
           }
 
-          const movies = await this.prisma.libraryEntry.findMany({
+          const movies = await this.prisma.mediaEntry.findMany({
             where: {
               userId,
               mediaItem: { type: "MOVIE" },

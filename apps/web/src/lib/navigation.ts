@@ -291,7 +291,6 @@ const MOBILE_DESTINATIONS: Record<MobileNavId, MobileDestination> = {
       return m.common_library();
     },
     icon: "library",
-    newBadgeKey: "phone-navigation",
     match: () => false,
   },
   media: {

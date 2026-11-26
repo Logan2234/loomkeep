@@ -8,7 +8,7 @@ import { ConfigService } from "@nestjs/config";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { vi } from "vitest";
-import type { QuotaTrackerService } from "../../common/quota-tracker.service";
+import type { QuotaTrackerService } from "../../quota/quota-tracker.service";
 import { mockFetchByUrl } from "../../test-utils/mock-fetch";
 import { OmdbService } from "../omdb.service";
 import { TmdbProvider } from "./tmdb.provider";
@@ -155,6 +155,34 @@ describe("TmdbProvider", () => {
       { country: "US", date: "2026-12-15", type: 1 },
       { country: "FR", date: "2026-12-16", type: 3 },
     ]);
+  });
+
+  it("keeps a film's countries of origin, not every co-producer", async () => {
+    mockFetchByUrl({
+      "/movie/27205": {
+        ...(fixture("tmdb-movie-details.json") as Record<string, unknown>),
+        origin_country: ["US"],
+        production_countries: [{ iso_3166_1: "GB" }, { iso_3166_1: "US" }],
+      },
+    });
+
+    const details = await provider.getDetails("27205", MediaType.MOVIE);
+
+    expect(details.originCountries).toEqual(["US"]);
+  });
+
+  it("falls back to the production countries when TMDB names no origin", async () => {
+    mockFetchByUrl({
+      "/movie/27205": {
+        ...(fixture("tmdb-movie-details.json") as Record<string, unknown>),
+        origin_country: [],
+        production_countries: [{ iso_3166_1: "fr" }, { iso_3166_1: "BE" }],
+      },
+    });
+
+    const details = await provider.getDetails("27205", MediaType.MOVIE);
+
+    expect(details.originCountries).toEqual(["FR", "BE"]);
   });
 
   it("resolves a TVDB series id to a TMDB summary via /find", async () => {

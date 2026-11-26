@@ -11,7 +11,7 @@ import { WorkThreadService } from "./work-thread.service";
  * The installed app's icon badge: what the bell's badge counts (new entries
  * and pending follow requests) plus what the Messages tab counts (unread
  * messages and works' discussions). Lives here rather than
- * in NotificationModule, which chat depends on.
+ * in NotificationsModule, which chat depends on.
  */
 @Injectable()
 export class AppBadgeService implements OnModuleInit {

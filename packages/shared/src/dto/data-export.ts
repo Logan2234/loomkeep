@@ -325,6 +325,7 @@ export interface DataExportAccountRecord {
   termsAcceptedAt: string | null;
   ageCertifiedAt: string | null;
   newsletterOptInAt: string | null;
+  newsletterOptOutAt: string | null;
   lastActiveAt: string | null;
   suspendedUntil: string | null;
   equippedBadgeKeys: string[];
@@ -492,7 +493,7 @@ export interface UserDataExportDto {
   follows: { following: DataExportFollow[]; followers: DataExportFollow[] };
   // Users this account blocked. Who blocked *this* account is deliberately
   // excluded — blocking is designed to be silent so the blocked party never
-  // learns of it (see Block model in schema.prisma).
+  // learns of it (see the Block model in prisma/schema/social.prisma).
   blocks: { blocking: DataExportBlock[] };
   reports: DataExportReport[];
   moderationDecisions: DataExportModerationDecision[];

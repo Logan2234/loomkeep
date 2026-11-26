@@ -1,0 +1,41 @@
+// Tables the four domains share rather than own: written through
+// apps/api/src/work/ (entry-loan.util.ts) for every domain's entries.
+
+// Which way a Loan goes: the user's copy LENT to someone, or a copy the user
+// BORROWED from someone (the entry's ownershipStatus is then BORROWED).
+enum LoanDirection {
+  LENT
+  BORROWED
+}
+
+// A copy lent out or borrowed, on an entry of any domain: exactly one of the
+// four entry ids is set (Loan_entry_check, in SQL). Open while `returnedAt`
+// is null — at most one per entry and direction (partial unique indexes, in
+// SQL) — then kept as history once returned. Who and since when are private
+// notes: nobody is told. Written only through entry-loan.util.ts, which keeps
+// it in step with the entry's ownershipStatus: a LENT loan on a PHYSICAL copy
+// lent out; a BORROWED one on a BORROWED entry given a person or a date — a
+// BORROWED entry alone only says the work was borrowed, and has none. Giving
+// it back returns the loan and leaves the status as it is.
+model Loan {
+  id           String        @id @default(cuid())
+  mediaEntryId String?
+  gameEntryId  String?
+  bookEntryId  String?
+  musicEntryId String?
+  direction    LoanDirection
+  person       String?
+  since        DateTime?     @db.Date
+  returnedAt   DateTime?
+  createdAt    DateTime      @default(now())
+
+  mediaEntry MediaEntry? @relation(fields: [mediaEntryId], references: [id], onDelete: Cascade)
+  gameEntry  GameEntry?  @relation(fields: [gameEntryId], references: [id], onDelete: Cascade)
+  bookEntry  BookEntry?  @relation(fields: [bookEntryId], references: [id], onDelete: Cascade)
+  musicEntry MusicEntry? @relation(fields: [musicEntryId], references: [id], onDelete: Cascade)
+
+  @@index([mediaEntryId])
+  @@index([gameEntryId])
+  @@index([bookEntryId])
+  @@index([musicEntryId])
+}

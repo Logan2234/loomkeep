@@ -9,8 +9,8 @@
 import { config } from "dotenv";
 import { resolve } from "node:path";
 
-config({ path: resolve(__dirname, "../.env") });
-config({ path: resolve(__dirname, "../../../.env") });
+config({ path: resolve(__dirname, "../.env"), quiet: true });
+config({ path: resolve(__dirname, "../../../.env"), quiet: true });
 
 import {
   ActivityType,
@@ -66,6 +66,17 @@ function sha256(value: string): string {
   return createHash("sha256").update(value).digest("hex");
 }
 
+// An account past the wizard and on the current terms: an older version
+// opens the re-acceptance modal over every /app page.
+function onboardedOn(date: Date) {
+  return {
+    onboarding: { create: { onboardedAt: date } },
+    consent: {
+      create: { acceptedTermsVersion: LEGAL_VERSION, acceptedTermsAt: date },
+    },
+  };
+}
+
 const connectionString = process.env.DATABASE_URL;
 
 if (!connectionString) {
@@ -92,25 +103,33 @@ async function main() {
       displayName: "Logan",
       username: "logan",
       birthDate: new Date("1998-03-12"),
-      allowAdultContent: true,
-      notifyEmail: DigestCadence.DAILY,
-      notifyPush: DigestCadence.DAILY,
-      notifyNewsletter: true,
-      newsletterOptInAt: new Date("2026-01-05"),
+      preferences: {
+        create: {
+          allowAdultContent: true,
+          notifyEmail: DigestCadence.DAILY,
+          notifyPush: DigestCadence.DAILY,
+          notifyNewsletter: true,
+          defaultReviewVisibility: ReviewVisibility.PUBLIC,
+          defaultListVisibility: ListVisibility.PUBLIC,
+        },
+      },
       emailVerified: true,
       bio: "Créateur de Loomkeep. Séries, jeux, bouquins — un peu de tout.",
       profileAccess: ProfileAccess.PUBLIC,
-      defaultReviewVisibility: ReviewVisibility.PUBLIC,
-      defaultListVisibility: ListVisibility.PUBLIC,
       role: Role.ADMIN,
       enabledDomains: [Domain.MEDIA, Domain.BOOKS, Domain.GAMES, Domain.MUSIC],
       locale: "fr",
-      calendarToken: randomUUID(),
-      onboardedAt: new Date("2026-01-05"),
+      urlTokens: { create: { calendarToken: randomUUID() } },
+      onboarding: { create: { onboardedAt: new Date("2026-01-05") } },
       // On the current terms: an older version opens the re-acceptance
       // modal over every /app page (and web-audit would audit that).
-      acceptedTermsVersion: LEGAL_VERSION,
-      acceptedTermsAt: new Date("2026-01-05"),
+      consent: {
+        create: {
+          acceptedTermsVersion: LEGAL_VERSION,
+          acceptedTermsAt: new Date("2026-01-05"),
+          newsletterOptInAt: new Date("2026-01-05"),
+        },
+      },
     },
   });
 
@@ -121,16 +140,14 @@ async function main() {
       displayName: "Logan (perso)",
       username: "logan-perso",
       birthDate: new Date("1998-03-12"),
-      notifyEmail: DigestCadence.DAILY,
+      preferences: { create: { notifyEmail: DigestCadence.DAILY } },
       emailVerified: true,
       bio: "Compte secondaire.",
       profileAccess: ProfileAccess.PRIVATE,
       role: Role.USER,
       enabledDomains: [Domain.MEDIA, Domain.BOOKS],
       locale: "fr",
-      onboardedAt: new Date("2026-01-06"),
-      acceptedTermsVersion: LEGAL_VERSION,
-      acceptedTermsAt: new Date("2026-01-06"),
+      ...onboardedOn(new Date("2026-01-06")),
     },
   });
 
@@ -141,18 +158,20 @@ async function main() {
       displayName: "Alice Martin",
       username: "alice",
       birthDate: new Date("1995-07-20"),
-      notifyEmail: DigestCadence.DISABLED,
-      notifyPush: DigestCadence.DAILY,
+      preferences: {
+        create: {
+          notifyEmail: DigestCadence.DISABLED,
+          notifyPush: DigestCadence.DAILY,
+          defaultReviewVisibility: ReviewVisibility.PUBLIC,
+        },
+      },
       emailVerified: true,
       bio: "Fan de séries coréennes et de jeux indés.",
       profileAccess: ProfileAccess.PUBLIC,
-      defaultReviewVisibility: ReviewVisibility.PUBLIC,
       role: Role.USER,
       enabledDomains: [Domain.MEDIA, Domain.GAMES, Domain.BOOKS, Domain.MUSIC],
       locale: "fr",
-      onboardedAt: new Date("2026-02-01"),
-      acceptedTermsVersion: LEGAL_VERSION,
-      acceptedTermsAt: new Date("2026-02-01"),
+      ...onboardedOn(new Date("2026-02-01")),
     },
   });
 
@@ -167,9 +186,8 @@ async function main() {
       role: Role.USER,
       enabledDomains: [Domain.MEDIA, Domain.GAMES],
       locale: "fr",
-      onboardedAt: new Date("2026-03-10"),
-      acceptedTermsVersion: LEGAL_VERSION,
-      acceptedTermsAt: new Date("2026-03-10"),
+      preferences: { create: {} },
+      ...onboardedOn(new Date("2026-03-10")),
     },
   });
 
@@ -184,9 +202,8 @@ async function main() {
       role: Role.USER,
       enabledDomains: [Domain.MEDIA, Domain.MUSIC],
       locale: "fr",
-      onboardedAt: new Date("2026-04-02"),
-      acceptedTermsVersion: LEGAL_VERSION,
-      acceptedTermsAt: new Date("2026-04-02"),
+      preferences: { create: {} },
+      ...onboardedOn(new Date("2026-04-02")),
     },
   });
 
@@ -502,7 +519,7 @@ async function main() {
   });
 
   // Library entries
-  await prisma.libraryEntry.create({
+  await prisma.mediaEntry.create({
     data: {
       userId: logan.id,
       mediaItemId: inception.id,
@@ -514,14 +531,14 @@ async function main() {
       ownershipSource: "Netflix",
     },
   });
-  await prisma.libraryEntry.create({
+  await prisma.mediaEntry.create({
     data: {
       userId: logan.id,
       mediaItemId: interstellar.id,
       status: EntryStatus.PLANNED,
     },
   });
-  await prisma.libraryEntry.create({
+  await prisma.mediaEntry.create({
     data: {
       userId: logan.id,
       mediaItemId: breakingBad.id,
@@ -531,7 +548,7 @@ async function main() {
       startedAt: new Date("2026-02-01T19:00:00Z"),
     },
   });
-  await prisma.libraryEntry.create({
+  await prisma.mediaEntry.create({
     data: {
       userId: alice.id,
       mediaItemId: attackOnTitan.id,
@@ -541,7 +558,7 @@ async function main() {
       finishedAt: new Date("2025-12-20T21:00:00Z"),
     },
   });
-  await prisma.libraryEntry.create({
+  await prisma.mediaEntry.create({
     data: {
       userId: alice.id,
       mediaItemId: inception.id,
@@ -549,7 +566,7 @@ async function main() {
       finishedAt: new Date("2024-06-01T22:00:00Z"),
     },
   });
-  await prisma.libraryEntry.create({
+  await prisma.mediaEntry.create({
     data: {
       userId: bob.id,
       mediaItemId: breakingBad.id,
@@ -557,7 +574,7 @@ async function main() {
       notes: "Trop lent au début, jamais repris.",
     },
   });
-  await prisma.libraryEntry.create({
+  await prisma.mediaEntry.create({
     data: {
       userId: chloe.id,
       mediaItemId: interstellar.id,

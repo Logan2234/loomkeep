@@ -79,6 +79,7 @@ type RequestOptions<P extends WebPath, Verb extends keyof ReverseMethodMap> = {
   body?: unknown;
   /** Set to false for auth endpoints. */
   withAuth?: boolean;
+  timeoutMs?: number;
 } & QueryOption<QueryOf<P, Verb>>;
 
 type ParamsOption<P extends WebPath> = keyof PathParams<P> extends never

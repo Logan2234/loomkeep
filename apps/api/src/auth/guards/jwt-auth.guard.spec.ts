@@ -115,10 +115,13 @@ describe("JwtAuthGuard", () => {
       verifyAsync: vi.fn().mockResolvedValue({
         sub: "user-1",
         email: "alice@example.com",
+        sid: "live-session",
       }),
     } as unknown as JwtService;
     const prisma = {
-      refreshToken: { findUnique: vi.fn() },
+      refreshToken: {
+        findUnique: vi.fn().mockResolvedValue({ id: "live-session" }),
+      },
     } as unknown as PrismaService;
     const guard = new JwtAuthGuard(
       jwtService,
@@ -136,8 +139,27 @@ describe("JwtAuthGuard", () => {
       issuer: "loomkeep-api",
       audience: "loomkeep-web",
     });
-    // Payload carries no `sid` (a pre-sid token) — no DB check performed.
-    expect(prisma.refreshToken.findUnique).not.toHaveBeenCalled();
+  });
+
+  it("rejects an access token that names no session", async () => {
+    const jwtService = {
+      verifyAsync: vi.fn().mockResolvedValue({
+        sub: "user-1",
+        email: "alice@example.com",
+      }),
+    } as unknown as JwtService;
+    const guard = new JwtAuthGuard(
+      jwtService,
+      makeConfigService(),
+      makeReflector(),
+      { refreshToken: { findUnique: vi.fn() } } as unknown as PrismaService,
+      new SessionCacheService(),
+      makeApiKeys(),
+    );
+
+    await expect(
+      guard.canActivate(makeContext(makeCookieHeader())),
+    ).rejects.toMatchObject({ status: 401 });
   });
 
   it("does not accept a Bearer token outside the HttpOnly cookie", async () => {
@@ -271,13 +293,18 @@ describe("JwtAuthGuard", () => {
         verifyAsync: vi.fn().mockResolvedValue({
           sub: "user-2",
           email: "bob@example.com",
+          sid: "bob-session",
         }),
       } as unknown as JwtService;
       const guard = new JwtAuthGuard(
         jwtService,
         makeConfigService(),
         makeApiKeyReflector(),
-        { refreshToken: { findUnique: vi.fn() } } as unknown as PrismaService,
+        {
+          refreshToken: {
+            findUnique: vi.fn().mockResolvedValue({ id: "bob-session" }),
+          },
+        } as unknown as PrismaService,
         new SessionCacheService(),
         apiKeys,
       );

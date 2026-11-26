@@ -17,8 +17,8 @@ import { ConfigService } from "@nestjs/config";
 import { AppException } from "../../common/app.exception";
 import { chunk } from "../../common/array.util";
 import { fetchJson } from "../../common/http.util";
-import { QuotaTrackerService } from "../../common/quota-tracker.service";
 import { RequestThrottle } from "../../common/request-throttle";
+import { QuotaTrackerService } from "../../quota/quota-tracker.service";
 import type {
   GameCatalogProvider,
   ProviderGameDetails,

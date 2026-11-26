@@ -176,3 +176,31 @@ describe("fetchAllPages() → runaway guards", { timeout: 20_000 }, () => {
     expect(console.warn).toHaveBeenCalled();
   });
 });
+
+describe("request() → timeout", { timeout: 20_000 }, () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.doUnmock("$app/env/public");
+  });
+
+  it("gives up on a server that never answers, as a timeout rather than offline", async () => {
+    const request = await loadRequest(undefined);
+    // Like the real fetch: pending until its signal aborts.
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(
+        (_url: string, init: RequestInit) =>
+          new Promise((_resolve, reject) =>
+            init.signal?.addEventListener("abort", () =>
+              reject(init.signal?.reason),
+            ),
+          ),
+      ),
+    );
+
+    await expect(request("/slow", { timeoutMs: 20 })).rejects.toMatchObject({
+      status: 0,
+      code: "network.timeout",
+    });
+  });
+});

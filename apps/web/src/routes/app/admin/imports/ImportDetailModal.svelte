@@ -6,7 +6,10 @@
   import Modal from "#lib/components/Modal.svelte";
   import TabPanels from "#lib/components/TabPanels.svelte";
   import Tabs from "#lib/components/Tabs.svelte";
-  import { importReportLabel } from "#lib/components/import-presentation.js";
+  import {
+    importReportLabel,
+    importRunFigures,
+  } from "#lib/components/import-presentation.js";
   import { IMPORTS_DEFINITION } from "#lib/constants/import-sources.js";
   import { formatDateTime, formatDurationMs } from "#lib/format.js";
   import { m } from "#lib/paraglide/messages.js";
@@ -102,7 +105,9 @@
             <p class="text-dim text-sm">{importReportLabel(tile)}</p>
           </li>{/each}
       </ul>
-    {:else if run.summary}<p class="mt-4 text-sm">{run.summary}</p>{/if}
+    {:else if importRunFigures(run)}<p class="mt-4 text-sm">
+        {importRunFigures(run)}
+      </p>{/if}
     {#if run.details}
       <p class="text-dim mt-5 text-sm">{m.admin_imports_selection_help()}</p>
       <Tabs

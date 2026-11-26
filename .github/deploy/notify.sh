@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Pushes the outcome of a main deploy to ntfy (ci.yml's notify job): a CI
+# Pushes the outcome of a main deploy to ntfy (deploy.yml's notify job): a CI
 # that failed or was cancelled (so nothing deployed), a deploy that failed,
 # or a quiet "deployed" to know when the app can be tested.
 #

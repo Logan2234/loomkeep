@@ -25,17 +25,10 @@ import { NotificationService } from "../notifications/notification.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { toUserSummaryDto } from "../users/avatar.util";
 import { isSuspended } from "../users/suspension.util";
+import { USER_SUMMARY_SELECT } from "../users/user.queries";
 import { BlockService } from "./block.service";
 import { VisibilityService } from "./visibility.service";
 import { computeIsFriend } from "./visibility.util";
-
-const USER_SUMMARY_SELECT = {
-  id: true,
-  username: true,
-  displayName: true,
-  profileAccess: true,
-  avatarUpdatedAt: true,
-} as const;
 
 @Injectable()
 export class FollowService {
@@ -55,7 +48,7 @@ export class FollowService {
    */
   private async resolveTarget(viewerId: string, username: string) {
     const target = await this.prisma.user.findUnique({
-      where: { username },
+      where: { username: username.toLowerCase() },
       select: { id: true, profileAccess: true, suspendedUntil: true },
     });
     if (!target || isSuspended(target))
@@ -192,6 +185,30 @@ export class FollowService {
     return this.relationship(viewerId, username);
   }
 
+  /**
+   * A sign-up through a member's personal link: the member and the newcomer
+   * follow each other at once, both ways accepted whatever their privacy.
+   * The link stands for the member's consent, the sign-up for the
+   * newcomer's. No follow notification: the member is told of the sign-up.
+   */
+  async followEachOther(inviterId: string, inviteeId: string): Promise<void> {
+    await this.prisma.follow.createMany({
+      data: [
+        { followerId: inviterId, followeeId: inviteeId, status: "ACCEPTED" },
+        { followerId: inviteeId, followeeId: inviterId, status: "ACCEPTED" },
+      ],
+      skipDuplicates: true,
+    });
+    await this.achievements.evaluate(
+      inviterId,
+      ACHIEVEMENT_KEYS_ON_FOLLOW_ACCEPTED,
+    );
+    await this.achievements.evaluate(
+      inviteeId,
+      ACHIEVEMENT_KEYS_ON_FOLLOW_ACCEPTED,
+    );
+  }
+
   /** Unfollows (or cancels a pending request). Idempotent. */
   async unfollow(viewerId: string, username: string): Promise<RelationshipDto> {
     const target = await this.resolveTarget(viewerId, username);
@@ -323,7 +340,7 @@ export class FollowService {
    */
   async block(viewerId: string, username: string): Promise<RelationshipDto> {
     const target = await this.prisma.user.findUnique({
-      where: { username },
+      where: { username: username.toLowerCase() },
       select: { id: true },
     });
     if (!target)
@@ -387,7 +404,7 @@ export class FollowService {
 
   async unblock(viewerId: string, username: string): Promise<RelationshipDto> {
     const target = await this.prisma.user.findUnique({
-      where: { username },
+      where: { username: username.toLowerCase() },
       select: { id: true },
     });
     if (!target)
@@ -403,7 +420,7 @@ export class FollowService {
     username: string,
   ): Promise<RelationshipDto> {
     const target = await this.prisma.user.findUnique({
-      where: { username },
+      where: { username: username.toLowerCase() },
       select: { id: true, profileAccess: true },
     });
     if (!target)
@@ -459,7 +476,7 @@ export class FollowService {
     username: string,
   ): Promise<RelationshipDto> {
     const follower = await this.prisma.user.findUnique({
-      where: { username },
+      where: { username: username.toLowerCase() },
       select: { id: true },
     });
     if (!follower)

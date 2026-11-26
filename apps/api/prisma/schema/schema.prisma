@@ -1,0 +1,111 @@
+// Entry point of the multi-file schema (prisma.config.ts points at this
+// folder): the generators, the datasource, and the enums several files share.
+// Every other file holds the tables one API module owns, named after it —
+// that module is the one that writes them (see CLAUDE.md, Data model).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Dev-only: renders an entity-relationship diagram of the schema as a Mermaid
+// markdown file (viewable in GitHub/VS Code). Skipped in the Docker build via
+// DISABLE_ERD so it never runs in prod. The .md target avoids the headless
+// Chromium that the SVG/PNG targets require.
+generator erd {
+  provider = "prisma-erd-generator"
+  output   = "../../../../docs/erd.md"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// Top-level content domain a user can compose their app from. MEDIA groups
+// MOVIE/SERIES/ANIME; BOOKS/GAMES/MUSIC each have their own screens (search,
+// library, stats). `User.enabledDomains` drives the nav (see web isDomainEnabled).
+// PODCASTS/BOARDGAMES are planned P3 placeholders — no backing tables yet,
+// surfaced as "coming soon" and kept out of the enabledDomains default (opt-in).
+// A new value also goes into ActivityDomain below.
+enum Domain {
+  MEDIA
+  BOOKS
+  GAMES
+  MUSIC
+  PODCASTS
+  BOARDGAMES
+}
+
+// How a JobRun or an ImportRun ended.
+enum RunStatus {
+  SUCCESS
+  FAILURE
+}
+
+// What a review targets. Works (MEDIA/GAME/BOOK/MUSIC) plus finer media levels.
+enum ReviewTargetType {
+  MEDIA
+  SEASON
+  EPISODE
+  GAME
+  BOOK
+  MUSIC
+}
+
+// A review's audience (no PRIVATE — a review is at least FRIENDS). Only felt
+// when social is enabled.
+enum ReviewVisibility {
+  FRIENDS
+  PUBLIC
+}
+
+// Fixed reaction set for comments and messages (backlog: a full emoji
+// picker). Display glyphs live in web code (COMMENT_EMOTE_DISPLAY) — this
+// enum stores the identifier, not the glyph.
+enum Emote {
+  LIKE
+  LOVE
+  LAUGH
+  WOW
+  SAD
+  DISLIKE
+}
+
+// A list's own explicit audience (mirrors Review's own-scope pattern, not the
+// per-domain VisibilitySetting facets — a list isn't tied to one domain).
+// Unlike ReviewVisibility, PRIVATE exists: a list defaults to it.
+enum ListVisibility {
+  PRIVATE
+  FRIENDS
+  PUBLIC
+}
+
+// How the user holds a work, if at all, in any domain. NONE (default) means
+// unset. Each domain accepts its own subset — MEDIA and MUSIC: PHYSICAL,
+// DIGITAL, STREAMING; GAMES: PHYSICAL, DIGITAL, SUBSCRIPTION; BOOKS:
+// PHYSICAL, DIGITAL, AUDIO; all: NONE, BORROWED — checked by the DTOs (the
+// domain lists in packages/shared/src/enums.ts) and by each entry table's
+// *_ownershipStatus_check. DIGITAL/STREAMING/SUBSCRIPTION/AUDIO carry a
+// free-form `ownershipSource` ("Netflix", "Steam", "Kindle"…); PHYSICAL may
+// carry its format as a code ("BLU_RAY", "PAPERBACK"…, translated by the
+// web); a BORROWED entry's open Loan, if any, says who from.
+enum OwnershipStatus {
+  NONE
+  PHYSICAL
+  DIGITAL
+  STREAMING
+  SUBSCRIPTION
+  AUDIO
+  BORROWED
+}
+
+enum SessionSource {
+  MANUAL
+  TIMER
+  IMPORT
+}
+
+enum TrackingCycleStatus {
+  ACTIVE
+  COMPLETED
+  DROPPED
+}

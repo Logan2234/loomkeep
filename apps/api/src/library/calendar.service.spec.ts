@@ -26,10 +26,12 @@ describe("local movie release calendar", () => {
     };
     const prisma = {
       episode: { findMany: vi.fn().mockResolvedValue([]) },
-      libraryEntry: { findMany: vi.fn().mockResolvedValue([row]) },
+      mediaEntry: { findMany: vi.fn().mockResolvedValue([row]) },
       gameEntry: { findMany: vi.fn().mockResolvedValue([]) },
       user: {
-        findUniqueOrThrow: vi.fn().mockResolvedValue({ watchRegion: "FR" }),
+        findUniqueOrThrow: vi
+          .fn()
+          .mockResolvedValue({ preferences: { watchRegion: "FR" } }),
       },
     };
     const service = new CalendarService(prisma as never);
@@ -69,12 +71,12 @@ describe("local movie release calendar", () => {
     const gameEntryFindMany = vi.fn().mockResolvedValue([game]);
     const prisma = {
       episode: { findMany: vi.fn().mockResolvedValue([]) },
-      libraryEntry: { findMany: vi.fn().mockResolvedValue([]) },
+      mediaEntry: { findMany: vi.fn().mockResolvedValue([]) },
       gameEntry: { findMany: gameEntryFindMany },
       user: {
         findUniqueOrThrow: vi
           .fn()
-          .mockResolvedValue({ watchRegion: null, timezone: "UTC" }),
+          .mockResolvedValue({ timezone: "UTC", preferences: null }),
       },
     };
     const service = new CalendarService(prisma as never);
@@ -113,12 +115,12 @@ describe("local movie release calendar", () => {
     const episodeFindMany = vi.fn().mockResolvedValue([]);
     const prisma = {
       episode: { findMany: episodeFindMany },
-      libraryEntry: { findMany: vi.fn().mockResolvedValue([]) },
+      mediaEntry: { findMany: vi.fn().mockResolvedValue([]) },
       gameEntry: { findMany: vi.fn().mockResolvedValue([]) },
       user: {
         findUniqueOrThrow: vi
           .fn()
-          .mockResolvedValue({ watchRegion: null, timezone: "Europe/Paris" }),
+          .mockResolvedValue({ timezone: "Europe/Paris", preferences: null }),
       },
     };
 
@@ -157,12 +159,12 @@ describe("local movie release calendar", () => {
           .mockResolvedValue([episode(1, "standard"), episode(2, "finale")]),
       },
       $queryRaw: vi.fn().mockResolvedValue([]),
-      libraryEntry: { findMany: vi.fn().mockResolvedValue([]) },
+      mediaEntry: { findMany: vi.fn().mockResolvedValue([]) },
       gameEntry: { findMany: vi.fn().mockResolvedValue([]) },
       user: {
         findUniqueOrThrow: vi
           .fn()
-          .mockResolvedValue({ watchRegion: null, timezone: "UTC" }),
+          .mockResolvedValue({ timezone: "UTC", preferences: null }),
       },
     };
 

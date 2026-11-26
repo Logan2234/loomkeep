@@ -17,7 +17,9 @@ description: How Loomkeep is built, from the catalogues to the browser.
   internal routes and the versioned [public API](/api/) under `/api/v1`, and
   runs the scheduled jobs.
 - **`apps/web`**: a [SvelteKit](https://svelte.dev) app, installable as a
-  PWA. The public pages are prerendered; everything under `/app` runs in the
+  PWA. The landing and legal pages are rendered by its Node server at each
+  request (absolute canonical URLs, language negotiation), so the web
+  container has to keep running; everything under `/app` runs in the
   browser and talks to the API.
 - **`packages/shared`**: the types and enums both sides share, so a change
   in the API's shapes breaks the build rather than the app.

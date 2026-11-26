@@ -1,0 +1,133 @@
+// Where an ActivityEvent belongs: every Domain, plus LISTS for list events
+// (ActivityDomain in packages/shared). Gates the profile timeline against the
+// actor's Activité audience for that domain.
+enum ActivityDomain {
+  MEDIA
+  BOOKS
+  GAMES
+  MUSIC
+  PODCASTS
+  BOARDGAMES
+  LISTS
+}
+
+// The granularity of an ActivityEvent, per the feed matrix.
+enum ActivityLevel {
+  WORK
+  SEASON
+  EPISODE
+}
+
+// Who may see a passive-content facet (the authZ layer). NONE < FRIENDS < PUBLIC.
+enum VisibilityAudience {
+  PUBLIC
+  FRIENDS
+  NONE
+}
+
+// Passive-content facets tuned per domain. Coarse on purpose (splittable later).
+enum VisibilityFacet {
+  LIBRARY // presence + status + progress + favorites
+  ACTIVITY // appearance in the activity feed
+}
+
+// State of a directed follow. A follow of a PUBLIC profile is created ACCEPTED
+// immediately; a follow of a PRIVATE profile starts PENDING until approved.
+enum FollowStatus {
+  PENDING
+  ACCEPTED
+}
+
+// Social (P4): per-user, per-domain, per-facet audience. One row overrides the
+// coded default (FRIENDS) for a (domain, facet) pair; absence = default. Only
+// the two passive-content facets are stored here — reviews carry their own
+// scope and comments are public by nature. Effective visibility is still capped
+// by User.profileAccess at read time.
+model VisibilitySetting {
+  userId   String
+  domain   Domain
+  facet    VisibilityFacet
+  audience VisibilityAudience
+  user     User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, domain, facet])
+}
+
+// Social (P4): directed follow edge. `followerId` follows `followeeId`.
+// Friendship (the "Amis" audience) is a reciprocal pair of ACCEPTED follows.
+// On a PRIVATE followee the edge is PENDING until the followee approves it;
+// an accepted follow of a PRIVATE profile grants friend-level visibility
+// (Instagram-style approval), while on a PUBLIC profile friend-level requires
+// the follow to be mutual. See VisibilityService.
+model Follow {
+  id         String       @id @default(cuid())
+  followerId String
+  followeeId String
+  status     FollowStatus
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+  follower   User         @relation("UserFollowing", fields: [followerId], references: [id], onDelete: Cascade)
+  followee   User         @relation("UserFollowers", fields: [followeeId], references: [id], onDelete: Cascade)
+
+  @@unique([followerId, followeeId])
+  @@index([followeeId, status])
+}
+
+// Social (P4): a hard block. Removes any follow edges between the two, prevents
+// re-following and content access, and neutralizes comments/mentions from the
+// blocked user. Directed: `blockerId` blocked `blockedId`.
+model Block {
+  blockerId String
+  blockedId String
+  createdAt DateTime @default(now())
+  blocker   User     @relation("UserBlocking", fields: [blockerId], references: [id], onDelete: Cascade)
+  blocked   User     @relation("UserBlockedBy", fields: [blockedId], references: [id], onDelete: Cascade)
+
+  @@id([blockerId, blockedId])
+  @@index([blockedId])
+}
+
+// Social (P4): materialised activity feed. Append-only log of a user's actions
+// (started/finished/rated a work…). Two surfaces read from it: the home feed
+// (followed users, `homeFeed = true` milestones only) and a user's profile
+// timeline (everything, gated by their Activité visibility). The target work is
+// denormalised (title/imageUrl/href) so a feed page needn't fan out across the
+// four domain tables on every read. `data` carries kind-specific extras
+// (rating, episode code, aggregation count).
+model ActivityEvent {
+  id         String         @id @default(cuid())
+  // The actor.
+  userId     String
+  // ActivityType: ADDED, STARTED, FINISHED, DROPPED, REWATCHED, PROGRESS,
+  // FAVORITED, REVIEWED. A string so new kinds need no migration.
+  type       String
+  domain     ActivityDomain
+  // Polymorphic work: ReviewTargetType-style ("MEDIA"/"GAME"/"BOOK"/"MUSIC")
+  // + the internal item id.
+  targetType String
+  targetId   String
+  level      ActivityLevel  @default(WORK)
+  // Whether this event surfaces on followers' home feed (matrix milestone).
+  homeFeed   Boolean        @default(false)
+  // Denormalised display snapshot of the target at emit time.
+  title      String
+  imageUrl   String?
+  href       String?
+  // Kind-specific extras: { rating } for REVIEWED, { seasonNumber, episodeNumber }
+  // for PROGRESS, etc.
+  data       Json           @default("{}")
+  // Optional link to the domain record projected into the feed. Session
+  // edits/deletions use it to update or remove their projection explicitly.
+  sourceType String?
+  sourceId   String?
+  createdAt  DateTime       @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Profile timeline: one user's events, newest first. The home feed (followed
+  // users' homeFeed events, newest first) has its own partial index on
+  // (userId, createdAt) WHERE "homeFeed", written in SQL in the migration
+  // (20261124170000_indexes_and_closed_values) — Prisma can't declare it.
+  @@index([userId, createdAt])
+  @@index([sourceType, sourceId])
+}

@@ -149,17 +149,17 @@ export async function isSeasonComplete(
 }
 
 /**
- * Whether the whole series behind `libraryEntryId` is complete for `userId`
+ * Whether the whole series behind `mediaEntryId` is complete for `userId`
  * — see `isSeasonComplete` above for why this is shared rather than
  * reimplemented at the live award site.
  */
 export async function isSeriesComplete(
   prisma: PrismaService,
   userId: string,
-  libraryEntryId: string,
+  mediaEntryId: string,
 ): Promise<boolean> {
-  const entry = await prisma.libraryEntry.findUnique({
-    where: { id: libraryEntryId },
+  const entry = await prisma.mediaEntry.findUnique({
+    where: { id: mediaEntryId },
     select: { mediaItemId: true, mediaItem: { select: { status: true } } },
   });
   if (!entry || !isAiringFinished(entry.mediaItem.status)) return false;
@@ -185,7 +185,7 @@ export const XP_VERIFIERS: Partial<Record<XpReason, XpVerifier>> = {
 
   MOVIE_WATCHED: byExistingRow(
     (prisma, ids) =>
-      prisma.libraryEntry.findMany({
+      prisma.mediaEntry.findMany({
         where: { id: { in: ids } },
         select: { id: true, status: true },
       }),
@@ -256,7 +256,7 @@ export const XP_VERIFIERS: Partial<Record<XpReason, XpVerifier>> = {
     const where = { id: { in: ids } };
     const select = { id: true };
     const found = await Promise.all([
-      prisma.libraryEntry.findMany({ where, select }),
+      prisma.mediaEntry.findMany({ where, select }),
       prisma.gameEntry.findMany({ where, select }),
       prisma.bookEntry.findMany({ where, select }),
       prisma.musicEntry.findMany({ where, select }),

@@ -15,7 +15,7 @@ import {
 } from "../common/pagination.util";
 import { currentRequest } from "../common/request-context";
 import { JOB_KEYS } from "../jobs/job-keys";
-import { JobRunService } from "../jobs/job-run.service";
+import { JobRunService, type JobSkipped } from "../jobs/job-run.service";
 import {
   SECURITY_ALERT_EVENTS,
   type SecurityAlertEvent,
@@ -178,7 +178,7 @@ export class SecurityEventService {
    * fails must show in Admin › Jobs and Healthchecks, not only in a log.
    */
   @Cron(CronExpression.EVERY_DAY_AT_6AM, { name: JOB_KEYS.SECURITY_PURGE })
-  runPurgeJob(): Promise<SecurityPurgeCounts> {
+  runPurgeJob(): Promise<SecurityPurgeCounts | JobSkipped> {
     return this.jobRuns.record(
       JOB_KEYS.SECURITY_PURGE,
       () => this.purgeExpired(),

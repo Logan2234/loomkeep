@@ -182,9 +182,13 @@ export class AdminAccountsStatsService {
       this.prisma.refreshToken.count({ where: { expiresAt: { gt: now } } }),
       this.prisma.user.count({ where: { emailVerified: true } }),
       this.prisma.user.count({ where: { pushSubscriptions: { some: {} } } }),
-      this.prisma.user.count({ where: { notifyNewsletter: true } }),
       this.prisma.user.count({
-        where: { notifyEmail: { not: DigestCadence.DISABLED } },
+        where: { preferences: { notifyNewsletter: true } },
+      }),
+      this.prisma.user.count({
+        where: {
+          preferences: { notifyEmail: { not: DigestCadence.DISABLED } },
+        },
       }),
     ]);
 
@@ -202,7 +206,10 @@ export class AdminAccountsStatsService {
 
   private async ageStats(now: Date): Promise<AdminAccountsSectionDto["age"]> {
     const users = await this.prisma.user.findMany({
-      select: { birthDate: true, allowAdultContent: true },
+      select: {
+        birthDate: true,
+        preferences: { select: { allowAdultContent: true } },
+      },
     });
     const total = users.length;
     const withBirthDate = users
@@ -215,7 +222,7 @@ export class AdminAccountsStatsService {
       distribution: ageDistributionBuckets(withBirthDate, now),
       birthDateSetPercent: percent(withBirthDate.length),
       adultContentPercent: percent(
-        users.filter((u) => u.allowAdultContent).length,
+        users.filter((u) => u.preferences?.allowAdultContent).length,
       ),
     };
   }
@@ -248,14 +255,14 @@ export class AdminAccountsStatsService {
    */
   private async acquisition(): Promise<AdminAccountsSectionDto["acquisition"]> {
     const [rows, recentOther] = await Promise.all([
-      this.prisma.user.groupBy({
+      this.prisma.userOnboarding.groupBy({
         by: ["acquisitionSource"],
         where: { acquisitionSource: { not: null } },
         _count: { _all: true },
       }),
-      this.prisma.user.findMany({
+      this.prisma.userOnboarding.findMany({
         where: { acquisitionSourceOther: { not: null } },
-        orderBy: { createdAt: "desc" },
+        orderBy: { user: { createdAt: "desc" } },
         take: RECENT_OTHER_ACQUISITION_LIMIT,
         select: { acquisitionSourceOther: true },
       }),

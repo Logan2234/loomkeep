@@ -431,12 +431,15 @@ importers:
       '@fontsource/space-mono':
         specifier: ^5.3.0
         version: 5.3.0
+      '@loomkeep/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
       '@scalar/api-reference':
         specifier: ^1.82.1
         version: 1.82.1(@oxc-project/types@0.156.0)(change-case@5.4.4)(esbuild@0.28.2)(lightningcss@1.33.0)(oxc-parser@0.156.0)(qrcode@1.5.4)(rolldown@1.2.19)(supports-color@10.2.2)(tailwindcss@4.3.5)(typescript@6.0.3)(vite@8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))(zod@4.6.7)
       '@scalar/astro':
-        specifier: ^0.4.40
-        version: 0.4.40(astro@7.4.13(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))
+        specifier: ^0.4.41
+        version: 0.4.41(astro@7.4.13(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))
       astro:
         specifier: ^7.4.13
         version: 7.4.13(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1)
@@ -538,8 +541,8 @@ importers:
         specifier: ^14.0.0
         version: 14.0.0
       '@tanstack/svelte-query':
-        specifier: ^6.4.5
-        version: 6.4.5(svelte@5.59.1(@typescript-eslint/types@8.73.0))
+        specifier: ^6.4.6
+        version: 6.4.6(svelte@5.59.1(@typescript-eslint/types@8.73.0))
       qr-scanner:
         specifier: ^1.4.2
         version: 1.4.2
@@ -550,8 +553,8 @@ importers:
         specifier: ^4.8.4
         version: 4.8.4(supports-color@10.2.2)
       svelte-dnd-action:
-        specifier: ^0.9.80
-        version: 0.9.80(svelte@5.59.1(@typescript-eslint/types@8.73.0))
+        specifier: ^0.9.81
+        version: 0.9.81(svelte@5.59.1(@typescript-eslint/types@8.73.0))
       unleash-proxy-client:
         specifier: ^3.8.2
         version: 3.8.2
@@ -3302,8 +3305,8 @@ packages:
     resolution: {integrity: sha512-rvZ3aXSrolQ6gqF8Th8agEAwb5/17ZbvEHQoYgZjPA19X35SRul8OcdWIyXsfjNCdGcDMI0mif2JgHgYJnbedw==}
     engines: {node: '>=22'}
 
-  '@scalar/astro@0.4.40':
-    resolution: {integrity: sha512-JK+I2QMe6C1i9Wxv517BKRISqbdN5VjNxw+rvieuq/2Fl2YPt6QCceWZX19EuVBuV47XvKo6SfKnnqLsiY14fQ==}
+  '@scalar/astro@0.4.41':
+    resolution: {integrity: sha512-ZORB+2gCOtpE2BXfDj1CFMr5xGQuZ67bimmUyNQ6BahIVrytuZeb7iwOAqQUgDOczO6IndQxazMfzGl/J0WagA==}
     engines: {node: '>=22'}
     peerDependencies:
       astro: ^4.0.0 || ^5.0.0 || ^6.0.0 || ^7.0.0
@@ -3320,8 +3323,8 @@ packages:
     resolution: {integrity: sha512-Rw+qwY2Cln8lGC5aAbzrsrRm9jYOMLssd3yM8IS1nUbTcGLawfpIQ2ZD5RREzWJCIss8A7KFDY6FIDf9yrhqgg==}
     engines: {node: '>=22'}
 
-  '@scalar/client-side-rendering@0.4.22':
-    resolution: {integrity: sha512-7neipw+9bwNzHtEChMlFJkTFCKFbRg8W88MsWJBYH+wHhO6za/DzNu+sPdz0d+v85EMBKi/akoXgsZdya8vF7w==}
+  '@scalar/client-side-rendering@0.4.23':
+    resolution: {integrity: sha512-cSEQ20QEVtVeQ4qM3Iihv+vO1xgBDDop5hjT6O28xF3hAUz6bvwcj9aiemgLtS+5xe5hVYJp45obWWONyGuulA==}
     engines: {node: '>=22'}
 
   '@scalar/components@0.35.4':
@@ -3372,6 +3375,10 @@ packages:
     resolution: {integrity: sha512-IZFZMj4HFSDtbZtNSFB896N2GpE5rSpYalXTJowXwX1VD9gyimD7rLBkYLYu+KgK1TF3xTeyyzW6Nn8xpjiuJw==}
     engines: {node: '>=22'}
 
+  '@scalar/schemas@0.20.0':
+    resolution: {integrity: sha512-jINdvWCi6RGFXmBpGIu9ddfGfpTX9MxxzJirHtb3UxX4wEn+nTOJMTjHnTLIsqAC+J3VOHa3BZ9uCETEMF6uiA==}
+    engines: {node: '>=22'}
+
   '@scalar/sidebar@0.13.1':
     resolution: {integrity: sha512-waijDYECBMV7cYd8MeqCTquUxwTybrOfGZEoKVpTm+McSwldGNQJSlNDLAeSUwL19XJo37ac92/vanF9oUmmPA==}
     engines: {node: '>=22'}
@@ -3389,6 +3396,10 @@ packages:
 
   '@scalar/types@0.31.0':
     resolution: {integrity: sha512-PFNIaZymTaisk0OlTEsDzGBX/ilmR43IobsEGKbFReKWCdEpAKN4lnjZ/GuRD9B3iKMHDM52erP/kXkhrihszA==}
+    engines: {node: '>=22'}
+
+  '@scalar/types@0.32.0':
+    resolution: {integrity: sha512-tLJjh8lR4CtZDBzm/9S8W1rwdqOLSAgodrOjF8USwEhMxkM/VeX2YZJHJhvkTPk+yKFqBJySPw5hYjFtuR237g==}
     engines: {node: '>=22'}
 
   '@scalar/use-codemirror@0.14.20':
@@ -3797,11 +3808,11 @@ packages:
     peerDependencies:
       vite: ^5.2.0 || ^6 || ^7 || ^8
 
-  '@tanstack/query-core@5.108.2':
-    resolution: {integrity: sha512-0l+0xDKqn71hfJBKaAvFP/X7WYM0TbscEk6nK1pHaWQUWUEA+WJD0VlT8wF+HIJANMV9B/DouPWwDnX3w/l9BA==}
+  '@tanstack/query-core@5.108.3':
+    resolution: {integrity: sha512-Lh8fyLDlHOdZXfUB+G1M5bKxfQ1Y0/mfydFP+pMjFKweAU4OUiC4MyIBTcW7Ck+Iwt6K3/pzvADrJi2Dc1lwuQ==}
 
-  '@tanstack/svelte-query@6.4.5':
-    resolution: {integrity: sha512-XpBX5fzIJxfNQFD6O/BBZlsty9UrUn+h4Lr7zM/WM+3PBKV/TpPEatJPorLCm0RNoTx0eJwNhPGq90AKN1ykWw==}
+  '@tanstack/svelte-query@6.4.6':
+    resolution: {integrity: sha512-Ke6+l9nkZVTnZVy3YGui4rs1sByMi4NGmdLdrDDHr9oX49oo9FoAHoU3+xOiYjcjYwkoooIMmAgLV3nEGtOxxA==}
     peerDependencies:
       svelte: ^5.25.0
 
@@ -7151,6 +7162,11 @@ packages:
     engines: {node: ^18 || >=20}
     hasBin: true
 
+  nanoid@6.0.2:
+    resolution: {integrity: sha512-hIvVOb9Qr1p/9CNNLOe0OlWvgx/ziTsVwKN/GDSsuArN2K0wDiafP3s0SWmsm7o2BdnyS8Z9Z64NFBUbn6ziBg==}
+    engines: {node: ^22 || ^24 || >=26}
+    hasBin: true
+
   native-run@2.1.0:
     resolution: {integrity: sha512-JhEph/fyMwBHmMLiZ1OZX8X92+N1gt5+/ecLtgeRbyDHIyIW7EDt0A3kBZu594y1P4yKDr1CIHe+DDYQ7ZlKjg==}
     engines: {node: '>=16.0.0'}
@@ -8377,8 +8393,8 @@ packages:
       svelte: ^4.0.0 || ^5.0.0-next.0
       typescript: ^5.0.0 || ^6.0.0
 
-  svelte-dnd-action@0.9.80:
-    resolution: {integrity: sha512-GweBRVBMp0F3T/e3O8EZoukRbbi+NhYlOghn5cE69CFmkDH1AuY0P/FklTlQxAfWw+SUkSm+iZyvYaRljgKUOA==}
+  svelte-dnd-action@0.9.81:
+    resolution: {integrity: sha512-MYRwG5s+G7c+I3VWAkLGbb+X2laHsU+qo2MdNwZd2mCT+PkgReTr9I8yKaF5HVkykRddPWJiUfiTa7jJ3/58pA==}
     peerDependencies:
       svelte: '>=3.23.0 || ^5.0.0-next.0'
 
@@ -11880,9 +11896,9 @@ snapshots:
       - webpack
       - zod
 
-  '@scalar/astro@0.4.40(astro@7.4.13(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))':
+  '@scalar/astro@0.4.41(astro@7.4.13(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))':
     dependencies:
-      '@scalar/client-side-rendering': 0.4.22
+      '@scalar/client-side-rendering': 0.4.23
       astro: 7.4.13(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1)
 
   '@scalar/asyncapi-to-markdown@0.2.13(supports-color@10.2.2)(typescript@6.0.3)':
@@ -11926,11 +11942,11 @@ snapshots:
       - tailwindcss
       - typescript
 
-  '@scalar/client-side-rendering@0.4.22':
+  '@scalar/client-side-rendering@0.4.23':
     dependencies:
       '@scalar/helpers': 0.19.0
-      '@scalar/schemas': 0.19.0
-      '@scalar/types': 0.31.0
+      '@scalar/schemas': 0.20.0
+      '@scalar/types': 0.32.0
       '@scalar/validation': 0.6.9
 
   '@scalar/components@0.35.4(supports-color@10.2.2)(tailwindcss@4.3.5)(typescript@6.0.3)':
@@ -12045,6 +12061,12 @@ snapshots:
       '@scalar/types': 0.31.0
       '@scalar/validation': 0.6.9
 
+  '@scalar/schemas@0.20.0':
+    dependencies:
+      '@scalar/helpers': 0.19.0
+      '@scalar/types': 0.32.0
+      '@scalar/validation': 0.6.9
+
   '@scalar/sidebar@0.13.1(supports-color@10.2.2)(tailwindcss@4.3.5)(typescript@6.0.3)':
     dependencies:
       '@scalar/components': 0.35.4(supports-color@10.2.2)(tailwindcss@4.3.5)(typescript@6.0.3)
@@ -12079,6 +12101,13 @@ snapshots:
     dependencies:
       '@scalar/helpers': 0.19.0
       nanoid: 5.1.16
+      type-fest: 5.10.0
+      zod: 4.6.7
+
+  '@scalar/types@0.32.0':
+    dependencies:
+      '@scalar/helpers': 0.19.0
+      nanoid: 6.0.2
       type-fest: 5.10.0
       zod: 4.6.7
 
@@ -12514,11 +12543,11 @@ snapshots:
       tailwindcss: 4.3.5
       vite: 8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1)
 
-  '@tanstack/query-core@5.108.2': {}
+  '@tanstack/query-core@5.108.3': {}
 
-  '@tanstack/svelte-query@6.4.5(svelte@5.59.1(@typescript-eslint/types@8.73.0))':
+  '@tanstack/svelte-query@6.4.6(svelte@5.59.1(@typescript-eslint/types@8.73.0))':
     dependencies:
-      '@tanstack/query-core': 5.108.2
+      '@tanstack/query-core': 5.108.3
       svelte: 5.59.1(@typescript-eslint/types@8.73.0)
 
   '@tanstack/virtual-core@3.19.13': {}
@@ -16429,6 +16458,8 @@ snapshots:
 
   nanoid@5.1.16: {}
 
+  nanoid@6.0.2: {}
+
   native-run@2.1.0(supports-color@10.2.2):
     dependencies:
       '@ionic/utils-fs': 3.1.7(supports-color@10.2.2)
@@ -17897,7 +17928,7 @@ snapshots:
     transitivePeerDependencies:
       - picomatch
 
-  svelte-dnd-action@0.9.80(svelte@5.59.1(@typescript-eslint/types@8.73.0)):
+  svelte-dnd-action@0.9.81(svelte@5.59.1(@typescript-eslint/types@8.73.0)):
     dependencies:
       svelte: 5.59.1(@typescript-eslint/types@8.73.0)
 

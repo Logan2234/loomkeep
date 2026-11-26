@@ -23,6 +23,8 @@ function makeInvitation(overrides: Partial<Invitation> = {}) {
     expiresAt: new Date(NOW.getTime() + 7 * DAY_MS),
     revokedAt: null,
     emailedAt: null,
+    personal: false,
+    token: null,
     createdAt: NOW,
     createdBy: { displayName: "Logan" },
     redeemedBy: [],
@@ -30,7 +32,10 @@ function makeInvitation(overrides: Partial<Invitation> = {}) {
   };
 }
 
-function makeService({ smtp = true }: { smtp?: boolean } = {}) {
+function makeService({
+  smtp = true,
+  registration = true,
+}: { smtp?: boolean; registration?: boolean } = {}) {
   const prisma = {
     invitation: {
       findMany: vi.fn(),
@@ -60,7 +65,9 @@ function makeService({ smtp = true }: { smtp?: boolean } = {}) {
     get: vi.fn((key: string) =>
       key === "WEB_ORIGIN"
         ? "https://app.example.com/,https://other.example.com"
-        : undefined,
+        : key === "REGISTRATION_ENABLED"
+          ? String(registration)
+          : undefined,
     ),
   } as unknown as ConfigService;
 
@@ -357,7 +364,7 @@ describe("InvitationService.claim", () => {
 });
 
 describe("InvitationService.purgeDead", () => {
-  it("only drops dead invitations nobody used, past the retention window", async () => {
+  it("only drops dead invitations nobody used, never a member's link, past the retention window", async () => {
     const { service, prisma } = makeService();
 
     await service.purgeDead(NOW);
@@ -365,6 +372,7 @@ describe("InvitationService.purgeDead", () => {
     const before = new Date(NOW.getTime() - 30 * DAY_MS);
     expect(prisma.invitation.deleteMany).toHaveBeenCalledWith({
       where: {
+        personal: false,
         useCount: 0,
         OR: [{ expiresAt: { lt: before } }, { revokedAt: { lt: before } }],
       },
@@ -405,4 +413,98 @@ describe("InvitationService.list filters", () => {
       }
     },
   );
+});
+
+describe("InvitationService personal links", () => {
+  it("mints a member's link the first time, then hands back the same one", async () => {
+    const { service, prisma } = makeService();
+
+    const first = await service.personalLink("member-1");
+
+    expect(prisma.invitation.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        createdById: "member-1",
+        personal: true,
+      }),
+    });
+    expect(first.url).toMatch(
+      /^https:\/\/app\.example\.com\/register\?invite=[\w-]{20,}$/,
+    );
+
+    const stored = (prisma.invitation.create as Mock).mock.calls[0][0].data;
+    (prisma.invitation.findFirst as Mock).mockResolvedValue(
+      makeInvitation({ ...stored, useCount: 2 }),
+    );
+    const again = await service.personalLink("member-1");
+
+    expect(again).toEqual({ url: first.url, joinedCount: 2 });
+    expect(prisma.invitation.create).toHaveBeenCalledTimes(1);
+  });
+
+  it("swaps the token on renewal, so the shared link stops working", async () => {
+    const { service, prisma } = makeService();
+    (prisma.invitation.findFirst as Mock).mockResolvedValue(
+      makeInvitation({ id: "inv-9", personal: true, token: "old-token" }),
+    );
+
+    const renewed = await service.renewPersonalLink("member-1");
+
+    const { where, data } = (prisma.invitation.update as Mock).mock.calls[0][0];
+    expect(where).toEqual({ id: "inv-9" });
+    expect(data.token).not.toBe("old-token");
+    expect(data.tokenHash).toBe(
+      createHash("sha256").update(data.token).digest("hex"),
+    );
+    expect(renewed.url).toContain(data.token);
+  });
+
+  it("gives no link while registration is closed", async () => {
+    const { service } = makeService({ registration: false });
+
+    await expect(service.personalLink("member-1")).rejects.toMatchObject({
+      code: ErrorCode.AuthRegistrationDisabled,
+    });
+  });
+
+  it("refuses a personal link once registration closes", async () => {
+    const { service, prisma } = makeService({ registration: false });
+    (prisma.invitation.findUnique as Mock).mockResolvedValue(
+      makeInvitation({ personal: true, token: "tok", maxUses: 2_147_483_647 }),
+    );
+
+    await expect(service.preview("tok")).rejects.toMatchObject({
+      code: ErrorCode.AuthInvalidInvitation,
+    });
+  });
+
+  it("still lets an admin invitation through a closed instance", async () => {
+    const { service, prisma } = makeService({ registration: false });
+    (prisma.invitation.findUnique as Mock).mockResolvedValue(makeInvitation());
+
+    await expect(service.preview("tok")).resolves.toMatchObject({
+      inviterName: "Logan",
+    });
+  });
+
+  it("refuses a personal link whose member deleted their account", async () => {
+    const { service, prisma } = makeService();
+    (prisma.invitation.findUnique as Mock).mockResolvedValue(
+      makeInvitation({ personal: true, token: "tok", createdById: null }),
+    );
+
+    await expect(service.preview("tok")).rejects.toMatchObject({
+      code: ErrorCode.AuthInvalidInvitation,
+    });
+  });
+
+  it("keeps personal links out of the admin list", async () => {
+    const { service, prisma } = makeService();
+    (prisma.invitation.findMany as Mock).mockResolvedValue([]);
+
+    await service.list({ skip: 0, take: 20, limit: 20, page: 1 } as never);
+
+    expect(
+      (prisma.invitation.findMany as Mock).mock.calls[0][0].where,
+    ).toMatchObject({ personal: false });
+  });
 });

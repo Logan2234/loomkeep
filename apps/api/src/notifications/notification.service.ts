@@ -32,9 +32,10 @@ import { type ParsedPage, toPagedResult } from "../common/pagination.util";
 import { EventsGateway } from "../events/events.gateway";
 import { isDomainOffered } from "../instance-settings/instance-domains";
 import { JOB_KEYS } from "../jobs/job-keys";
-import { JobRunService } from "../jobs/job-run.service";
+import { JobRunService, type JobSkipped } from "../jobs/job-run.service";
 import { MailService } from "../mail/mail.service";
 import { PrismaService } from "../prisma/prisma.service";
+import { preferencesOf } from "../users/preferences.util";
 import { isSuspended } from "../users/suspension.util";
 import { readAlertPrefs } from "./alert-prefs.util";
 import { NotificationAction, type PushAction } from "./notification-action";
@@ -130,7 +131,7 @@ export class NotificationService {
    * overlapping or missed ticks are harmless.
    */
   @Cron(CronExpression.EVERY_HOUR, { name: JOB_KEYS.NOTIFICATIONS_SCAN })
-  async scanAll(): Promise<number> {
+  async scanAll(): Promise<number | JobSkipped> {
     return this.jobRuns.record(
       JOB_KEYS.NOTIFICATIONS_SCAN,
       () => this.runScanAll(),
@@ -198,17 +199,19 @@ export class NotificationService {
 
     // Who tracks those media — the digest and domain gates are the same ones
     // `scan` applies per user, pushed into the query.
-    const entries = await this.prisma.libraryEntry.findMany({
+    const entries = await this.prisma.mediaEntry.findMany({
       where: {
         mediaItemId: {
           in: [...new Set(episodes.map((e) => e.season.mediaItemId))],
         },
         status: { not: "DROPPED" },
         user: {
-          OR: [
-            { notifyPush: { not: DigestCadence.DISABLED } },
-            { notifyEmail: { not: DigestCadence.DISABLED } },
-          ],
+          preferences: {
+            OR: [
+              { notifyPush: { not: DigestCadence.DISABLED } },
+              { notifyEmail: { not: DigestCadence.DISABLED } },
+            ],
+          },
           enabledDomains: { has: "MEDIA" },
         },
       },
@@ -316,7 +319,7 @@ export class NotificationService {
       // An 18+ work would need each recipient's age gate: left unannounced.
       const recipients = work.isAdult
         ? []
-        : await this.prisma.libraryEntry.findMany({
+        : await this.prisma.mediaEntry.findMany({
             where: {
               finishedAt: { not: null },
               status: { not: "DROPPED" },
@@ -345,7 +348,7 @@ export class NotificationService {
                   id: true,
                   email: true,
                   locale: true,
-                  alertPrefs: true,
+                  preferences: { select: { alertPrefs: true } },
                   suspendedUntil: true,
                 },
               },
@@ -413,7 +416,7 @@ export class NotificationService {
                   id: true,
                   email: true,
                   locale: true,
-                  alertPrefs: true,
+                  preferences: { select: { alertPrefs: true } },
                   suspendedUntil: true,
                 },
               },
@@ -453,7 +456,7 @@ export class NotificationService {
       id: string;
       email: string;
       locale: string;
-      alertPrefs: unknown;
+      preferences: { alertPrefs: unknown } | null;
       suspendedUntil: Date | null;
     }[],
     url: string,
@@ -482,7 +485,7 @@ export class NotificationService {
       if (
         !isSuspended(user) &&
         isAlertEnabled(
-          readAlertPrefs(user.alertPrefs),
+          readAlertPrefs(user.preferences?.alertPrefs ?? {}),
           NotificationType.SAGA_SEQUEL_ANNOUNCED,
           "email",
         )
@@ -502,7 +505,7 @@ export class NotificationService {
     const now = new Date();
     const since = utcDateKey(sinceDaysAgo(now, WINDOW_DAYS));
     const today = utcDateKey(now);
-    const entries = await this.prisma.libraryEntry.findMany({
+    const entries = await this.prisma.mediaEntry.findMany({
       where: {
         userId,
         movieReleaseReminderAt: { not: null },
@@ -510,21 +513,30 @@ export class NotificationService {
         mediaItem: { type: "MOVIE" },
         user: {
           enabledDomains: { has: "MEDIA" },
-          OR: [
-            { notifyPush: { not: DigestCadence.DISABLED } },
-            { notifyEmail: { not: DigestCadence.DISABLED } },
-          ],
+          preferences: {
+            OR: [
+              { notifyPush: { not: DigestCadence.DISABLED } },
+              { notifyEmail: { not: DigestCadence.DISABLED } },
+            ],
+          },
         },
       },
       include: {
         mediaItem: { include: { externalIds: true } },
-        user: { select: { watchRegion: true, locale: true } },
+        user: {
+          select: {
+            locale: true,
+            preferences: { select: { watchRegion: true } },
+          },
+        },
       },
     });
     const rows: Prisma.NotificationCreateManyInput[] = entries.flatMap(
       (entry) => {
         const region = resolveWatchRegion(
-          entry.user.watchRegion ?? entry.movieReleaseRegion ?? undefined,
+          entry.user.preferences?.watchRegion ??
+            entry.movieReleaseRegion ??
+            undefined,
           undefined,
         );
         const release = movieReleaseInfo(
@@ -591,10 +603,12 @@ export class NotificationService {
         },
         user: {
           enabledDomains: { has: "GAMES" },
-          OR: [
-            { notifyPush: { not: DigestCadence.DISABLED } },
-            { notifyEmail: { not: DigestCadence.DISABLED } },
-          ],
+          preferences: {
+            OR: [
+              { notifyPush: { not: DigestCadence.DISABLED } },
+              { notifyEmail: { not: DigestCadence.DISABLED } },
+            ],
+          },
         },
       },
       include: {
@@ -665,18 +679,18 @@ export class NotificationService {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       select: {
-        notifyPush: true,
-        notifyEmail: true,
         enabledDomains: true,
+        preferences: { select: { notifyPush: true, notifyEmail: true } },
       },
     });
+    const prefs = preferencesOf(user?.preferences);
 
     // Nothing to deliver: episode rows only ever feed the digest, never the
     // in-app bell (see the model comment on Notification).
     if (
       !user ||
-      (user.notifyPush === DigestCadence.DISABLED &&
-        user.notifyEmail === DigestCadence.DISABLED)
+      (prefs.notifyPush === DigestCadence.DISABLED &&
+        prefs.notifyEmail === DigestCadence.DISABLED)
     ) {
       return 0;
     }
@@ -854,13 +868,21 @@ export class NotificationService {
 
     const user = await this.prisma.user.findUnique({
       where: { id: input.userId },
-      select: { locale: true, alertPrefs: true, suspendedUntil: true },
+      select: {
+        locale: true,
+        suspendedUntil: true,
+        preferences: { select: { alertPrefs: true } },
+      },
     });
 
     if (
       !user ||
       isSuspended(user) ||
-      !isAlertEnabled(readAlertPrefs(user.alertPrefs), input.type, "push")
+      !isAlertEnabled(
+        readAlertPrefs(user.preferences?.alertPrefs ?? {}),
+        input.type,
+        "push",
+      )
     ) {
       return;
     }
@@ -1082,7 +1104,7 @@ export class NotificationService {
    * inactive-account purge bounds them.
    */
   @Cron(NOTIFICATIONS_PURGE_CRON, { name: JOB_KEYS.NOTIFICATIONS_PURGE })
-  runPurgeJob(): Promise<number> {
+  runPurgeJob(): Promise<number | JobSkipped> {
     return this.jobRuns.record(
       JOB_KEYS.NOTIFICATIONS_PURGE,
       () => this.purge(),

@@ -12,7 +12,6 @@
     cornerLaunchersHidden,
     feedbackLauncherWanted,
   } from "#lib/corner-launchers.svelte.js";
-  import { isFeatureNew } from "#lib/feature-badges.js";
   import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
   import { scale } from "svelte/transition";
@@ -43,8 +42,8 @@
   <button
     type="button"
     transition:scale={{ duration: reduced ? 0 : 150, start: 0.9 }}
-    class="bg-btn text-btn-fg fixed bottom-[26px] z-40 grid h-12 w-12 place-items-center rounded-full shadow-[0_6px_18px_rgb(0_0_0/0.35)] transition-transform duration-150 hover:-translate-y-0.5 motion-reduce:transition-none
-      {feedbackLauncherWanted() ? 'right-[86px]' : 'right-[26px]'}"
+    class="bg-btn text-btn-fg fixed bottom-6.5 z-40 grid h-12 w-12 place-items-center rounded-full shadow-[0_6px_18px_rgb(0_0_0/0.35)] transition-transform duration-150 hover:-translate-y-0.5 motion-reduce:transition-none
+      {feedbackLauncherWanted() ? 'right-21.5' : 'right-6.5'}"
     aria-label={chat.open
       ? m.chat_close()
       : unread
@@ -58,10 +57,6 @@
         class="bg-danger ring-bg absolute -top-1 -right-1 grid h-5 min-w-5 place-items-center rounded-full px-1 font-mono text-[0.68rem] font-bold text-white ring-2">
         {unread > 99 ? "99+" : unread}
       </span>
-    {:else if !chat.open && isFeatureNew("messages")}
-      <span
-        class="bg-accent ring-bg absolute top-0 right-0 h-2.5 w-2.5 rounded-full ring-2"
-        aria-hidden="true"></span>
     {/if}
   </button>
 {/if}

@@ -64,6 +64,7 @@ function makeService() {
     vi.fn<(args: { data: { episodeId: string }[] }) => void>();
   const prisma = {
     season: { findMany: vi.fn() },
+    review: { findUnique: vi.fn().mockResolvedValue(null) },
     episode: { count: vi.fn() },
     episodeWatch: {
       count: vi.fn().mockResolvedValue(0),
@@ -83,7 +84,7 @@ function makeService() {
     mediaExternalId: { findUnique: vi.fn() },
     // Nothing tracked yet, and every title already out.
     mediaItem: { findUnique: vi.fn().mockResolvedValue(null) },
-    libraryEntry: {
+    mediaEntry: {
       findUnique: vi.fn().mockResolvedValue(null),
       upsert: vi.fn(),
       deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
@@ -186,7 +187,6 @@ describe("TvTimeImportSource (via ImportJobService)", () => {
     expect(tracked[0]).toMatchObject({
       key: "tvdb:100",
       title: "My Show",
-      subtitle: "2 épisodes vus",
       context: {
         kind: "series",
         episodesWatched: 2,
@@ -209,7 +209,7 @@ describe("TvTimeImportSource (via ImportJobService)", () => {
       unresolved: 1,
       apiErrors: 0,
     });
-    expect(prisma.libraryEntry.upsert).not.toHaveBeenCalled();
+    expect(prisma.mediaEntry.upsert).not.toHaveBeenCalled();
     expect(prisma.episodeWatch.createMany).not.toHaveBeenCalled();
   });
 
@@ -315,10 +315,9 @@ describe("TvTimeImportSource (via ImportJobService)", () => {
       "SERIES",
     );
     expect(prisma.episodeWatch.createMany).toHaveBeenCalledTimes(2);
-    const tile = (label: string) =>
-      job.report!.tiles.find((t) => t.label === label);
-    expect(tile("Series")!.value).toBe(1);
-    expect(tile("Episodes")!.value).toBe(2);
+    const tile = (id: string) => job.report!.tiles.find((t) => t.id === id);
+    expect(tile("series")!.value).toBe(1);
+    expect(tile("episodes")!.value).toBe(2);
     expect(job.report!.tiles).toMatchObject([
       { id: "series", watchlistCount: 0 },
       { id: "episodes" },
@@ -524,9 +523,9 @@ describe("TvTimeImportSource (via ImportJobService)", () => {
       "m2",
       "MOVIE",
     );
-    const films = job.report!.tiles.find((t) => t.label === "Movies");
+    const films = job.report!.tiles.find((t) => t.id === "movies");
     expect(films!.value).toBe(0);
-    expect(films!.sub).toBe("1 on the watchlist");
+    expect(films!.watchlistCount).toBe(1);
   });
 
   // Overwrite used to empty the whole library before the first write: one
@@ -564,7 +563,7 @@ describe("TvTimeImportSource (via ImportJobService)", () => {
 
     expect(job.status).toBe("completed");
     expect(job.report!.overwrite).toBe(true);
-    expect(prisma.libraryEntry.deleteMany).toHaveBeenCalledWith({
+    expect(prisma.mediaEntry.deleteMany).toHaveBeenCalledWith({
       where: { userId: "u1", mediaItemId: "media-100" },
     });
     expect(prisma.episodeWatch.deleteMany).toHaveBeenCalledWith({
@@ -575,9 +574,9 @@ describe("TvTimeImportSource (via ImportJobService)", () => {
     });
     // Its old row goes before its new one is written.
     expect(
-      prisma.libraryEntry.deleteMany.mock.invocationCallOrder[0],
-    ).toBeLessThan(prisma.libraryEntry.upsert.mock.invocationCallOrder[0]);
-    expect(prisma.libraryEntry.deleteMany).toHaveBeenLastCalledWith({
+      prisma.mediaEntry.deleteMany.mock.invocationCallOrder[0],
+    ).toBeLessThan(prisma.mediaEntry.upsert.mock.invocationCallOrder[0]);
+    expect(prisma.mediaEntry.deleteMany).toHaveBeenLastCalledWith({
       where: { userId: "u1", mediaItemId: { notIn: ["media-100"] } },
     });
     expect(prisma.episodeWatch.deleteMany).toHaveBeenLastCalledWith({
@@ -620,7 +619,7 @@ describe("TvTimeImportSource (via ImportJobService)", () => {
     const job = await runToEnd(service, "u1", commit.id);
 
     expect(job.status).toBe("failed");
-    expect(prisma.libraryEntry.deleteMany).not.toHaveBeenCalled();
+    expect(prisma.mediaEntry.deleteMany).not.toHaveBeenCalled();
     expect(prisma.episodeWatch.deleteMany).not.toHaveBeenCalled();
   });
 
@@ -641,7 +640,7 @@ describe("TvTimeImportSource (via ImportJobService)", () => {
     const job = await runToEnd(service, "u1", commit.id);
 
     expect(job.status).toBe("completed");
-    expect(prisma.libraryEntry.deleteMany).not.toHaveBeenCalled();
+    expect(prisma.mediaEntry.deleteMany).not.toHaveBeenCalled();
     expect(prisma.episodeWatch.deleteMany).not.toHaveBeenCalled();
   });
 

@@ -11,13 +11,17 @@ function makeService(
   hasPremium: boolean,
 ) {
   const prisma = {
-    user: {
-      findUnique: vi.fn().mockResolvedValue(user),
-      findUniqueOrThrow: vi.fn().mockResolvedValue(user),
-      update: vi.fn().mockResolvedValue({ calendarToken: "fresh-token" }),
+    // Looked up by token (selecting the user) or by user (the token).
+    userUrlToken: {
+      findUnique: vi
+        .fn()
+        .mockResolvedValue(
+          user ? { user, calendarToken: user.calendarToken ?? null } : null,
+        ),
+      upsert: vi.fn().mockResolvedValue({}),
     },
     episode: { findMany: vi.fn().mockResolvedValue([]) },
-    libraryEntry: { findMany: vi.fn().mockResolvedValue([]) },
+    mediaEntry: { findMany: vi.fn().mockResolvedValue([]) },
     gameEntry: { findMany: vi.fn().mockResolvedValue([]) },
   } as unknown as PrismaService;
   const entitlements = {
@@ -106,7 +110,7 @@ describe("CalendarFeedService tokens", () => {
     await expect(service.getToken("user-1")).resolves.toEqual({
       token: "shared-token",
     });
-    expect(prisma.user.update).not.toHaveBeenCalled();
+    expect(prisma.userUrlToken.upsert).not.toHaveBeenCalled();
   });
 
   it("issues a token on first use", async () => {
@@ -117,10 +121,10 @@ describe("CalendarFeedService tokens", () => {
 
     const { token } = await service.getToken("user-1");
     expect(token).toMatch(/^[A-Za-z0-9_-]{32}$/);
-    expect(prisma.user.update).toHaveBeenCalledWith({
-      where: { id: "user-1" },
-      data: { calendarToken: token },
-      select: { calendarToken: true },
+    expect(prisma.userUrlToken.upsert).toHaveBeenCalledWith({
+      where: { userId: "user-1" },
+      create: { userId: "user-1", calendarToken: token },
+      update: { calendarToken: token },
     });
   });
 
@@ -199,7 +203,11 @@ describe("CalendarFeedService.getReleasesFeed", () => {
 
   it("adds the movies and games that came out, newest first", async () => {
     const { service, prisma } = makeService(
-      { id: "user-1", locale: "fr", watchRegion: "FR" } as never,
+      {
+        id: "user-1",
+        locale: "fr",
+        preferences: { watchRegion: "FR" },
+      } as never,
       true,
     );
     (prisma.episode.findMany as ReturnType<typeof vi.fn>).mockResolvedValue([
@@ -219,9 +227,7 @@ describe("CalendarFeedService.getReleasesFeed", () => {
         },
       },
     ]);
-    (
-      prisma.libraryEntry.findMany as ReturnType<typeof vi.fn>
-    ).mockResolvedValue([
+    (prisma.mediaEntry.findMany as ReturnType<typeof vi.fn>).mockResolvedValue([
       {
         movieReleaseRegion: null,
         mediaItem: {

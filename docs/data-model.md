@@ -1,12 +1,13 @@
 # Modèle de données
 
-Vue d'ensemble des tables de `apps/api/prisma/schema.prisma` et de leurs
+Vue d'ensemble des tables de `apps/api/prisma/schema/` (un fichier par module
+propriétaire) et de leurs
 relations. Pour le diagramme visuel, voir [erd.md](./erd.md) (généré
 automatiquement à chaque `prisma generate`, `DISABLE_ERD` en prod).
 
 Cette doc est une vue d'ensemble navigable, pas un remplacement des
 commentaires du schéma — pour le _pourquoi_ d'une table précise, se référer
-aux commentaires dans `schema.prisma`, qui restent la source de vérité.
+aux commentaires du schéma, qui restent la source de vérité.
 
 ## Tables sans relation (aucune FK)
 
@@ -40,7 +41,7 @@ aux commentaires dans `schema.prisma`, qui restent la source de vérité.
 | `SeasonTranslation`  | Titre/synopsis d'une `Season` dans une autre langue que l'anglais.              |
 | `Episode`            | Épisode d'une `Season`.                                                         |
 | `EpisodeTranslation` | Titre/synopsis d'un `Episode` dans une autre langue que l'anglais.              |
-| `LibraryEntry`       | Entrée de bibliothèque reliant un `User` à un `MediaItem` (statut, notes…).     |
+| `MediaEntry`         | Entrée de bibliothèque reliant un `User` à un `MediaItem` (statut, notes…).     |
 | `EpisodeWatch`       | Un visionnage d'un `Episode` par un `User` (une ligne par vue, rewatch inclus). |
 
 ## Jeux vidéo

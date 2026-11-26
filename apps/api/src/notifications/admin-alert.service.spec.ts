@@ -19,12 +19,19 @@ describe("AdminAlertService", () => {
 
   it("emails by default and pushes only those who asked for it", async () => {
     const { service, push } = make([
-      { id: "a1", email: "a@x.com", locale: "fr", alertPrefs: {} },
+      {
+        id: "a1",
+        email: "a@x.com",
+        locale: "fr",
+        preferences: { alertPrefs: {} },
+      },
       {
         id: "a2",
         email: "b@x.com",
         locale: "en",
-        alertPrefs: { ADMIN_JOB_FAILED: { email: false, push: true } },
+        preferences: {
+          alertPrefs: { ADMIN_JOB_FAILED: { email: false, push: true } },
+        },
       },
     ]);
     const channels = send();
@@ -46,9 +53,16 @@ describe("AdminAlertService", () => {
         id: "a1",
         email: "a@x.com",
         locale: "fr",
-        alertPrefs: { ADMIN_JOB_FAILED: { email: true, push: true } },
+        preferences: {
+          alertPrefs: { ADMIN_JOB_FAILED: { email: true, push: true } },
+        },
       },
-      { id: "a2", email: "b@x.com", locale: "en", alertPrefs: {} },
+      {
+        id: "a2",
+        email: "b@x.com",
+        locale: "en",
+        preferences: { alertPrefs: {} },
+      },
     ]);
     const channels = send();
     channels.email.mockRejectedValueOnce(new Error("SMTP down"));

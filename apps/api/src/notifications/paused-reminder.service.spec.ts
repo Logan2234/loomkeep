@@ -17,7 +17,7 @@ function make(
 ) {
   const prisma = {
     user: { findMany: vi.fn().mockResolvedValue([]) },
-    libraryEntry: { findMany: vi.fn().mockResolvedValue(rows.series ?? []) },
+    mediaEntry: { findMany: vi.fn().mockResolvedValue(rows.series ?? []) },
     bookEntry: { findMany: vi.fn().mockResolvedValue(rows.books ?? []) },
     gameEntry: { findMany: vi.fn().mockResolvedValue(rows.games ?? []) },
     episode: { count: vi.fn().mockResolvedValue(4) },
@@ -88,7 +88,7 @@ describe("PausedReminderService.pausedWorks", () => {
 
     await service.pausedWorks("user-1", FIRST_MONDAY_9H_PARIS);
 
-    const [[seriesQuery]] = (prisma.libraryEntry.findMany as Mock).mock.calls;
+    const [[seriesQuery]] = (prisma.mediaEntry.findMany as Mock).mock.calls;
     const window = seriesQuery.where.lastWatchedAt;
     expect(Math.round((+FIRST_MONDAY_9H_PARIS - window.lt) / DAY_MS)).toBe(30);
     expect(Math.round((+FIRST_MONDAY_9H_PARIS - window.gt) / DAY_MS)).toBe(180);
@@ -125,7 +125,7 @@ describe("PausedReminderService.run", () => {
         email: "alice@example.com",
         locale: "fr",
         timezone: "Europe/Paris",
-        alertPrefs: { PAUSED_REMINDER: { push: true } },
+        preferences: { alertPrefs: { PAUSED_REMINDER: { push: true } } },
       },
     ]);
 
@@ -145,7 +145,9 @@ describe("PausedReminderService.run", () => {
       email: `${id}@example.com`,
       locale: "fr",
       timezone: "Europe/Paris",
-      alertPrefs: { PAUSED_REMINDER: { email: true, push: true } },
+      preferences: {
+        alertPrefs: { PAUSED_REMINDER: { email: true, push: true } },
+      },
     });
     (prisma.user.findMany as Mock).mockResolvedValue([
       account("user-1"),
@@ -170,7 +172,9 @@ describe("PausedReminderService.run", () => {
         email: "alice@example.com",
         locale: "fr",
         timezone: "Europe/Paris",
-        alertPrefs: { PAUSED_REMINDER: { email: true, push: true } },
+        preferences: {
+          alertPrefs: { PAUSED_REMINDER: { email: true, push: true } },
+        },
       },
     ]);
 

@@ -18,7 +18,10 @@
       "ignoreDependencies": ["pino-pretty"]
     },
     "apps/web": {
-      "entry": ["project.inlang/paraglide.config.js"]
+      "entry": [
+        "project.inlang/paraglide.config.js",
+        "scripts/generate-world-map.mjs"
+      ]
     },
     "apps/mobile": {
       "entry": ["scripts/*.mjs"],

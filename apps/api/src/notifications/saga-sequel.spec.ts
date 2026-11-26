@@ -33,7 +33,7 @@ function makeService({
       findMany: vi.fn().mockResolvedValue(announced),
       update: vi.fn().mockResolvedValue({}),
     },
-    libraryEntry: {
+    mediaEntry: {
       findMany: vi.fn((args: { where: Record<string, unknown> }) =>
         Promise.resolve(args.where.finishedAt ? recipients : []),
       ),
@@ -55,7 +55,7 @@ function makeService({
     user: {
       findUnique: vi.fn().mockResolvedValue({
         locale: "fr",
-        alertPrefs: {},
+        preferences: { alertPrefs: {} },
         suspendedUntil: null,
       }),
     },
@@ -78,7 +78,7 @@ const fan = (id: string, alertPrefs: object = {}) => ({
     id,
     email: `${id}@example.com`,
     locale: "fr",
-    alertPrefs,
+    preferences: { alertPrefs },
     suspendedUntil: null,
   },
 });
@@ -146,7 +146,7 @@ describe("NotificationService · sequel announcements", () => {
 
     await service.scanAll();
 
-    const query = prisma.libraryEntry.findMany.mock.calls
+    const query = prisma.mediaEntry.findMany.mock.calls
       .map(([args]) => args.where)
       .find((where) => where.finishedAt);
     expect(query).toMatchObject({

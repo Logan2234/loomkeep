@@ -182,7 +182,10 @@ export class AdminUsersController {
       ...(activeFilter === "suspended"
         ? { suspendedUntil: { gt: new Date() } }
         : {}),
-      ...(activeFilter === "onboarding" ? { onboardedAt: null } : {}),
+      // No onboarding row at all counts as not onboarded.
+      ...(activeFilter === "onboarding"
+        ? { NOT: { onboarding: { onboardedAt: { not: null } } } }
+        : {}),
       ...(activeFilter === "inactive"
         ? { lastActiveAt: { lt: new Date(Date.now() - INACTIVE_AFTER_MS) } }
         : {}),
@@ -223,7 +226,7 @@ export class AdminUsersController {
     }
 
     if (newsletter === "yes" || newsletter === "no") {
-      where.notifyNewsletter = newsletter === "yes";
+      where.preferences = { notifyNewsletter: newsletter === "yes" };
     }
 
     if (push === "yes") where.pushSubscriptions = { some: {} };
@@ -431,13 +434,13 @@ export class AdminUsersController {
     @Param("userId") userId: string,
   ): Promise<AdminUserLibraryStatsDto> {
     const [movies, series, anime, games, books, music] = await Promise.all([
-      this.prisma.libraryEntry.count({
+      this.prisma.mediaEntry.count({
         where: { userId, mediaItem: { type: "MOVIE" } },
       }),
-      this.prisma.libraryEntry.count({
+      this.prisma.mediaEntry.count({
         where: { userId, mediaItem: { type: "SERIES" } },
       }),
-      this.prisma.libraryEntry.count({
+      this.prisma.mediaEntry.count({
         where: { userId, mediaItem: { type: "ANIME" } },
       }),
       this.prisma.gameEntry.count({ where: { userId } }),
@@ -545,7 +548,7 @@ export class AdminUsersController {
         anime: { type: "ANIME", route: "anime" },
       } as const;
       const { type, route } = media[kind];
-      const rows = await this.prisma.libraryEntry.findMany({
+      const rows = await this.prisma.mediaEntry.findMany({
         where: { userId, mediaItem: { type } },
         ...paging,
         include: { mediaItem: { select: { ...item, posterUrl: true } } },

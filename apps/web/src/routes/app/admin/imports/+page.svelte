@@ -6,6 +6,7 @@
   import AdminFilterBar from "../AdminFilterBar.svelte";
   import Tooltip from "#lib/components/Tooltip.svelte";
   import ImportDetailModal from "./ImportDetailModal.svelte";
+  import { importRunFigures } from "#lib/components/import-presentation.js";
   import Banner from "#lib/components/Banner.svelte";
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
@@ -358,8 +359,8 @@
                   : m.admin_jobs_running()}
             {:else if run.status === "FAILURE"}
               {run.error}
-            {:else if run.summary}
-              {run.summary}
+            {:else if importRunFigures(run)}
+              {importRunFigures(run)}
             {:else}
               {run.itemCount} {m.admin_imports_items_suffix()}
             {/if}

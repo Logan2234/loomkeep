@@ -20,7 +20,6 @@ import { HttpStatus, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { BookLibraryService } from "../../books/book-library.service";
 import { AppException } from "../../common/app.exception";
-import type { ListEntriesFilters } from "../../common/entry-lifecycle.util";
 import { compareTitles, timeMs } from "../../common/sort.util";
 import { primaryWebOrigin } from "../../common/web-origin.util";
 import { GameLibraryService } from "../../games/game-library.service";
@@ -35,6 +34,7 @@ import {
   bucketizeMusicStatus,
 } from "../../stats/status-bucket.util";
 import { DomainGateService } from "../../users/domain-gate.service";
+import type { ListEntriesFilters } from "../../work/entry-lifecycle.util";
 import {
   fromBookEntry,
   fromGameEntry,
@@ -179,7 +179,7 @@ export class LibraryV1Service {
   async entryDomain(userId: string, id: string): Promise<StatsDomain> {
     const where = { id, userId };
     const [media, game, book, album] = await Promise.all([
-      this.prisma.libraryEntry.findFirst({ where, select: { id: true } }),
+      this.prisma.mediaEntry.findFirst({ where, select: { id: true } }),
       this.prisma.gameEntry.findFirst({ where, select: { id: true } }),
       this.prisma.bookEntry.findFirst({ where, select: { id: true } }),
       this.prisma.musicEntry.findFirst({ where, select: { id: true } }),

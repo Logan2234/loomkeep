@@ -95,7 +95,7 @@ describe("ProfileService.getProfile xp", () => {
           profileAccess: "PUBLIC",
           createdAt: new Date("2024-01-01"),
           avatarUpdatedAt: null,
-          hideProgression: opts.hideProgression ?? false,
+          preferences: { hideProgression: opts.hideProgression ?? false },
           equippedBadgeKeys: [],
         }),
       },
@@ -106,7 +106,7 @@ describe("ProfileService.getProfile xp", () => {
       list: { findMany: vi.fn().mockResolvedValue([]) },
       // resolveFacet always returns true for a self-viewer regardless of the
       // audience setting, so the self-view tests below still hit these.
-      libraryEntry: {
+      mediaEntry: {
         findMany: vi.fn().mockResolvedValue([]),
         count: vi.fn().mockResolvedValue(0),
       },
@@ -219,7 +219,7 @@ describe("ProfileService.getProfile xp", () => {
       list: { findMany: vi.fn().mockResolvedValue([]) },
       // resolveFacet always returns true for a self-viewer regardless of the
       // audience setting, so the self-view tests below still hit these.
-      libraryEntry: {
+      mediaEntry: {
         findMany: vi.fn().mockResolvedValue([]),
         count: vi.fn().mockResolvedValue(0),
       },

@@ -5,15 +5,15 @@ import {
   MusicSource,
   MusicSummaryDto,
 } from "@loomkeep/shared";
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import {
   fetchJson,
   HTTP_TIMEOUT_MS,
   identifyingUserAgent,
 } from "../../common/http.util";
-import { QuotaTrackerService } from "../../common/quota-tracker.service";
 import { RequestThrottle } from "../../common/request-throttle";
+import { QuotaTrackerService } from "../../quota/quota-tracker.service";
 import type {
   MusicCatalogProvider,
   ProviderMusicDetails,
@@ -110,6 +110,7 @@ const EXTERNAL_LINK_LABELS: Record<string, string> = {
  */
 @Injectable()
 export class MusicBrainzProvider implements MusicCatalogProvider {
+  private readonly logger = new Logger(MusicBrainzProvider.name);
   readonly source = MusicSource.MUSICBRAINZ;
 
   private readonly throttle = new RequestThrottle(MIN_REQUEST_INTERVAL_MS);
@@ -145,7 +146,8 @@ export class MusicBrainzProvider implements MusicCatalogProvider {
 
     // Track listing, label and catalog number live on a release (a specific
     // edition), not the release-group — a deluxe edition/reissue can differ.
-    const releases = await this.releases(releaseGroup.id);
+    const fetchedReleases = await this.releases(releaseGroup.id);
+    const releases = fetchedReleases ?? [];
     const release =
       releases.find((r) => r.status === "Official") ?? releases[0] ?? null;
     const tracks = trackListFrom(release);
@@ -185,6 +187,7 @@ export class MusicBrainzProvider implements MusicCatalogProvider {
           ? knownDurations.reduce((a, b) => a + b, 0)
           : null,
       extraCoverImages: await extraCoverImagesPromise,
+      ...(fetchedReleases === null ? { partial: true } : {}),
     };
   }
 
@@ -195,17 +198,25 @@ export class MusicBrainzProvider implements MusicCatalogProvider {
    */
   private async releases(
     releaseGroupId: string,
-  ): Promise<MusicBrainzRelease[]> {
+  ): Promise<MusicBrainzRelease[] | null> {
     const params = new URLSearchParams({
       "release-group": releaseGroupId,
       inc: "labels+recordings+media+url-rels",
       fmt: "json",
       limit: "25",
     });
-    const data = await this.get<MusicBrainzReleaseSearch>(
-      `/release?${params}`,
-    ).catch(() => null);
-    return data?.releases ?? [];
+
+    try {
+      const data = await this.get<MusicBrainzReleaseSearch>(
+        `/release?${params}`,
+      );
+      return data.releases ?? [];
+    } catch (err) {
+      this.logger.warn(
+        `MusicBrainz editions of ${releaseGroupId} unavailable: ${(err as Error).message}`,
+      );
+      return null;
+    }
   }
 
   /** The release group a release belongs to — album pages are keyed by it. */

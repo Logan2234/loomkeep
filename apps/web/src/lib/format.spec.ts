@@ -3,6 +3,7 @@ import { auth } from "./auth.svelte";
 import {
   compareText,
   formatBytes,
+  formatDate,
   formatDurationMs,
   formatHours,
   formatLanguage,
@@ -29,6 +30,20 @@ describe("localized presentation helpers", () => {
   it("caches language names separately for each display locale", () => {
     expect(formatLanguage("fr", "en-US")).toBe("French");
     expect(formatLanguage("fr", "fr-FR")).toBe("français");
+  });
+
+  it("shows a calendar day as that day, whatever the viewer's time zone", () => {
+    const day = { day: "numeric", month: "long", year: "numeric" } as const;
+    // An instant at midnight UTC is still the previous evening in New York…
+    expect(
+      formatDate(
+        "2026-11-25T00:00:00.000Z",
+        { ...day, timeZone: "America/New_York" },
+        "en-US",
+      ),
+    ).toBe("November 24, 2026");
+    // …but a bare release date is a day, not an instant.
+    expect(formatDate("2026-11-25", day, "en-US")).toBe("November 25, 2026");
   });
 
   it("keeps zero-valued metadata while omitting missing parts", () => {

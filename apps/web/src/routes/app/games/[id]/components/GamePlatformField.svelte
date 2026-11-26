@@ -1,8 +1,6 @@
 <script lang="ts">
   import Dropdown from "#lib/components/Dropdown.svelte";
   import Icon from "#lib/components/Icon.svelte";
-  import NewBadge from "#lib/components/NewBadge.svelte";
-  import { isFeatureNew } from "#lib/feature-badges.js";
   import { m } from "#lib/paraglide/messages.js";
 
   // Where the game is played: one of the platforms IGDB lists it on, or
@@ -27,10 +25,8 @@
 {/snippet}
 
 <div class="flex flex-col gap-2">
-  <span
-    class="timecode text-micro flex items-center gap-2 tracking-[0.18em] uppercase">
+  <span class="timecode text-micro tracking-[0.18em] uppercase">
     {m.game_platform_title()}
-    {#if isFeatureNew("game-platform")}<NewBadge />{/if}
   </span>
   <Dropdown placement="bottom-start" role="menu" class="min-w-52">
     {#snippet trigger({ open, toggle, onkeydown })}

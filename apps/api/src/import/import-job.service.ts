@@ -18,6 +18,7 @@ import {
   type ImportProgressEvent,
   type ImportQuotaDto,
   type ImportReport,
+  type ImportReportTile,
   type ImportSource,
   type PagedResult,
 } from "@loomkeep/shared";
@@ -165,6 +166,7 @@ export class ImportJobService {
         domain: true,
         status: true,
         itemCount: true,
+        reportTiles: true,
         summary: true,
         finishedAt: true,
       },
@@ -178,6 +180,7 @@ export class ImportJobService {
         domain: run.domain as Domain | null,
         status: run.status,
         itemCount: run.itemCount,
+        tiles: run.reportTiles as ImportReportTile[] | null,
         summary: run.summary,
         finishedAt: run.finishedAt.toISOString(),
       },
@@ -201,6 +204,7 @@ export class ImportJobService {
         status: true,
         itemCount: true,
         overwrite: true,
+        reportTiles: true,
         summary: true,
         startedAt: true,
         finishedAt: true,
@@ -217,6 +221,7 @@ export class ImportJobService {
         status: run.status,
         itemCount: run.itemCount,
         overwrite: run.overwrite,
+        tiles: run.reportTiles as ImportReportTile[] | null,
         summary: run.summary,
         startedAt: run.startedAt.toISOString(),
         finishedAt: run.finishedAt.toISOString(),
@@ -408,6 +413,7 @@ export class ImportJobService {
         phase: job.kind,
         itemCount: 0,
         overwrite: job.overwrite ?? false,
+        tiles: null,
         summary: null,
         error: null,
         startedAt: new Date(job.startedAt).toISOString(),
@@ -572,12 +578,11 @@ export class ImportJobService {
       userId,
       sourceId: job.sourceId,
       domain,
-      status: job.status === "failed" ? "FAILURE" : "SUCCESS",
+      status:
+        job.status === "failed" ? ("FAILURE" as const) : ("SUCCESS" as const),
       itemCount: job.progress.total,
       overwrite,
-      summary: job.report
-        ? job.report.tiles.map((t) => `${t.value} ${t.label}`).join(" · ")
-        : null,
+      reportTiles: job.report ? toJsonInput(job.report.tiles) : undefined,
       error: job.error,
       details: job.details
         ? toJsonInput({

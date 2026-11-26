@@ -2,23 +2,19 @@
   import { formatRating } from "#lib/format.js";
   import Poster from "#lib/components/Poster.svelte";
   import LoadMoreButton from "#lib/components/LoadMoreButton.svelte";
-
   import { activityTargetHue } from "#lib/constants/review-targets.js";
-
   import { activityPhrase, activityRating } from "#lib/activity-phrase.js";
   import { getUserActivity } from "#lib/api/client.js";
   import { createApiInfiniteQuery } from "#lib/api/infinite-query.svelte.js";
   import { keys } from "#lib/api/keys.js";
   import Avatar from "#lib/components/Avatar.svelte";
   import Icon from "#lib/components/Icon.svelte";
-  import NewBadge from "#lib/components/NewBadge.svelte";
   import PremiumLockBadge from "#lib/components/PremiumLockBadge.svelte";
   import ProfileSectionHeading from "#lib/components/profile/ProfileSectionHeading.svelte";
   import RelativeTime from "#lib/components/RelativeTime.svelte";
   import Tooltip from "#lib/components/Tooltip.svelte";
   import { useEeLock } from "#lib/ee/license.svelte.js";
   import ActivityFeedSubscribeModal from "#lib/ee/social/ActivityFeedSubscribeModal.svelte";
-  import { isFeatureNew } from "#lib/feature-badges.js";
   import { m } from "#lib/paraglide/messages.js";
   import type { ActivityEventDto, PagedResult } from "@loomkeep/shared";
 
@@ -58,7 +54,6 @@
               onclick={() => (showSubscribeModal = true)}>
               <Icon name="rss" class="h-3.5 w-3.5" />
               {m.activity_feed_subscribe_button()}
-              {#if isFeatureNew("activity-feed")}<NewBadge />{/if}
             </button>
           {/snippet}
           {#if feedLocked}

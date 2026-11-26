@@ -19,9 +19,20 @@ history from before it was started.
   An instance in production (or served over https) refuses to start
   otherwise. Generate each with `openssl rand -hex 32`; changing them signs
   everyone out once.
+- **Self-hosting: email on any port but 465 now requires STARTTLS.** If your
+  relay sits on the same host or private network and sends in clear, set
+  `SMTP_REQUIRE_TLS=false`.
 
 ### Added
 
+- Stats (premium): a world map of where the films and series you watched
+  come from, next to the full ranking by titles or watch time.
+- A « Tour du monde » achievement: films and series from 5, 15 and 30
+  countries finished.
+- Messages: invite friends with your own link. Whoever signs up with it and
+  you follow each other. Offered only while registration is open.
+- Radarr and Sonarr (premium): import lists fed by your pile, from
+  Settings › Integrations, or by any of your lists, from its menu.
 - Music is now flagged **Early access**: a badge in the navigation, settings and
   onboarding, and a dismissible note on the Music page saying it can be slow and
   incomplete. The landing page and its comparison say so too.
@@ -60,12 +71,55 @@ history from before it was started.
 
 ### Changed
 
+- Scheduled jobs take a lock in the database: a job runs once at a time, even
+  if you run a second API container, and Admin › Jobs says so when you start
+  one that is already running. The self-hosting docs now state that an
+  instance runs a single API container.
 - Landing page: the title, description and opening line now say what Loomkeep
   is (a free, open-source, self-hostable media tracker), in English, French
   and Italian, and the sitemap dates each page.
 - Docs: a `robots.txt` points search engines to the sitemap.
+- Calendar and activity feed subscriptions show every link in full, each
+  with its own copy button, and « Regenerate » now sits at the bottom.
+- The stats rankings unfold and fold smoothly on « See all ».
 
 ### Fixed
+
+- An import keeps going when one title can't be written, and the report
+  counts it as failed.
+- Import reviews, reports and history read in your own language: the
+  server no longer sends French or English labels.
+- A request that never gets an answer gives up after 30 seconds (5 minutes
+  for an upload or an export) with a clear message, instead of spinning.
+- An album MusicBrainz couldn't fully load is fetched again on the next
+  visit, and keeps the tracks it already had.
+- A book finished on New Year's Eve evening counts toward the reading goal
+  of the year it already is where you live.
+- A Steam import writes the status it proposed for a recently played game,
+  and refuses a profile entry that is neither an id, a name nor its URL.
+- Saving a review twice at once, or reporting the same thing twice at once,
+  no longer duplicates it.
+- Voting on or reporting a review you can't see is refused as not found.
+- A free account can no longer go past its saved views quota by creating
+  several at once.
+- The newsletter records when you unsubscribe, and the data export includes
+  it.
+
+- Usernames are saved in lowercase, so two accounts can no longer differ
+  only by case and signing in with a passkey ignores case too.
+- Release dates no longer show as the day before in the Americas: album
+  pages and saga timelines read them as calendar days.
+- Re-importing over your library keeps the dates and ratings you set in
+  Loomkeep, and only fills in what was missing.
+- Search keeps loading results when a whole page was hidden as 18+.
+- An IMDb episode link opens its series.
+- Finishing a book earns XP by its catalogued length, whatever page count
+  the edition was given.
+- Asking twice at once to delete your account no longer breaks the first
+  cancel link emailed.
+- An account without 18+ content can no longer add an 18+ title to its
+  library.
+- An account keeps push notifications on its 20 latest devices.
 
 - Downloading all your data now asks you to confirm it's you, and that
   confirmation no longer uses up the hourly download.

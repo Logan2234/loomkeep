@@ -19,23 +19,17 @@ import { BookSagaService } from "../books/book-saga.service";
 import { MediaItemService } from "../catalog/media-item.service";
 import { resolveWatchRegion } from "../catalog/watch-region.util";
 import { AppException } from "../common/app.exception";
-import { resolveWorkHref } from "../common/work-href.util";
 import { GameSagaService } from "../games/game-saga.service";
 import { SagaService } from "../library/saga.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { FollowService } from "../social/follow.service";
 import { WorkFriendsService } from "../social/work-friends.service";
 import { toUserSummaryDto } from "../users/avatar.util";
+import { preferencesOf } from "../users/preferences.util";
+import { USER_SUMMARY_SELECT } from "../users/user.queries";
+import { resolveWorkHref } from "../work/work-href.util";
 import { ChatWorkService, type WorkCard } from "./chat-work.service";
 import { ChatService, type CommandMessage } from "./chat.service";
-
-const USER_SELECT = {
-  id: true,
-  username: true,
-  displayName: true,
-  profileAccess: true,
-  avatarUpdatedAt: true,
-} as const;
 
 // What a member's status in a saga's work reads as on the card.
 const STEP: Record<SagaDomain, Partial<Record<string, SagaStep>>> = {
@@ -224,10 +218,12 @@ export class ChatCommandsService {
     const [, kind, sourceId] = path;
     const type = kind.toUpperCase() as MediaType;
     const [viewer, sharing] = await Promise.all([
-      this.prisma.user.findUniqueOrThrow({
-        where: { id: viewerId },
-        select: { watchRegion: true },
-      }),
+      this.prisma.userPreferences
+        .findUnique({
+          where: { userId: viewerId },
+          select: { watchRegion: true },
+        })
+        .then(preferencesOf),
       this.sharingPlatforms(viewerId, message),
     ]);
     const region = resolveWatchRegion(
@@ -295,7 +291,7 @@ export class ChatCommandsService {
   private async pile(userId: string, domain: PickDomain): Promise<Set<string>> {
     switch (domain) {
       case Domain.MEDIA: {
-        const rows = await this.prisma.libraryEntry.findMany({
+        const rows = await this.prisma.mediaEntry.findMany({
           where: { userId, status: "PLANNED", mediaItem: { isAdult: false } },
           select: { mediaItemId: true },
         });
@@ -383,7 +379,7 @@ export class ChatCommandsService {
     );
     const viewer = await this.prisma.user.findUniqueOrThrow({
       where: { id: viewerId },
-      select: USER_SELECT,
+      select: USER_SUMMARY_SELECT,
     });
     return [viewer, ...others];
   }
@@ -462,8 +458,14 @@ export class ChatCommandsService {
     message: CommandMessage,
   ): Promise<{ user: UserSummaryDto; providerIds: number[] }[]> {
     const users = await this.prisma.user.findMany({
-      where: { id: { in: message.memberIds }, chatShareWatchProviders: true },
-      select: { ...USER_SELECT, watchProviderIds: true },
+      where: {
+        id: { in: message.memberIds },
+        preferences: { chatShareWatchProviders: true },
+      },
+      select: {
+        ...USER_SUMMARY_SELECT,
+        preferences: { select: { watchProviderIds: true } },
+      },
     });
     const friendIds = new Set(await this.follow.listFriendIds(viewerId));
     return users
@@ -471,7 +473,7 @@ export class ChatCommandsService {
       .sort((a, b) => Number(b.id === viewerId) - Number(a.id === viewerId))
       .map((u) => ({
         user: toUserSummaryDto(u),
-        providerIds: u.watchProviderIds,
+        providerIds: u.preferences?.watchProviderIds ?? [],
       }));
   }
 }

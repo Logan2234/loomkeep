@@ -25,7 +25,6 @@
     sagasMode,
   } from "#lib/components/saga/SagasModeSwitch.svelte";
   import GameSearchPanel from "#lib/components/search/GameSearchPanel.svelte";
-  import { isFeatureNew } from "#lib/feature-badges.js";
   import GameSagasView from "./components/GameSagasView.svelte";
   import {
     GAME_OWNERSHIP_SOURCES,
@@ -211,7 +210,7 @@
 </script>
 
 {#snippet modeSwitch()}
-  <SagasModeSwitch isNew={isFeatureNew("game-sagas")} />
+  <SagasModeSwitch />
 {/snippet}
 
 {#if mode === "sagas"}

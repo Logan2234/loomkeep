@@ -36,7 +36,6 @@
     mediaFilterLabel,
     LIBRARY_UNPICKED_STATUSES,
   } from "#lib/constants/status-labels.js";
-  import { isFeatureNew } from "#lib/feature-badges.js";
   import {
     DATE_MEDIUM_OPTIONS,
     formatDate,
@@ -218,7 +217,7 @@
 </script>
 
 {#snippet modeSwitch()}
-  <SagasModeSwitch isNew={isFeatureNew("library-sagas")} />
+  <SagasModeSwitch />
 {/snippet}
 
 {#if mode === "sagas"}

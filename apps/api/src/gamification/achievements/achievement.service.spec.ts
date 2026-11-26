@@ -43,7 +43,7 @@ function makeService(configValues: Record<string, string> = {}) {
       groupBy: vi.fn().mockResolvedValue([]),
     },
     episodeWatch: { findFirst: vi.fn().mockResolvedValue(null) },
-    libraryEntry: { count: vi.fn().mockResolvedValue(0) },
+    mediaEntry: { count: vi.fn().mockResolvedValue(0) },
     xpEntry: { findMany: vi.fn().mockResolvedValue([]) },
     user: {
       findMany: vi.fn().mockResolvedValue([]),
@@ -427,9 +427,9 @@ describe("AchievementService rarity snapshot", () => {
     const [[{ where }]] = (prisma.user.count as ReturnType<typeof vi.fn>).mock
       .calls;
     expect(where).toMatchObject({
-      onboardedAt: { not: null },
+      onboarding: { onboardedAt: { not: null } },
       profileAccess: { not: "GHOST" },
-      hideProgression: false,
+      preferences: { hideProgression: false },
     });
     // The window itself is RARITY_ACTIVE_WINDOW_DAYS; a minute of slack
     // covers the time between the query and this line.

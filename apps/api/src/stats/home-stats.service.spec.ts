@@ -37,7 +37,7 @@ describe("HomeStatsService.onThisDay", () => {
             watch(severance, "2025-09-25T21:00:00Z"),
           ]),
       },
-      libraryEntry: { findMany: vi.fn().mockResolvedValue([]) },
+      mediaEntry: { findMany: vi.fn().mockResolvedValue([]) },
     });
 
     const entries = await service.onThisDay("user-1", "2026-09-25");
@@ -92,12 +92,12 @@ describe("HomeStatsService.myYear", () => {
         { mediaItem: { runtimeMin: null } },
       ]);
     const service = makeService(["MEDIA", "BOOKS"], {
-      libraryEntry: { findMany: movieEntries },
+      mediaEntry: { findMany: movieEntries },
       movieReplay: {
         findMany: vi
           .fn()
           .mockResolvedValue([
-            { libraryEntry: { mediaItem: { runtimeMin: 100 } } },
+            { mediaEntry: { mediaItem: { runtimeMin: 100 } } },
           ]),
       },
       $queryRaw: vi.fn().mockResolvedValue([{ count: 12n, minutes: 540n }]),

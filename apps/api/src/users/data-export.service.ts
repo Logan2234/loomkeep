@@ -8,9 +8,8 @@ import type {
 } from "@loomkeep/shared";
 import { ErrorCode, ReviewTargetType } from "@loomkeep/shared";
 import { HttpStatus, Injectable } from "@nestjs/common";
-import { toUserDto } from "../auth/auth.service";
+import { toUserDto, USER_DTO_INCLUDE } from "../auth/auth.service";
 import { AppException } from "../common/app.exception";
-import { LOAN_INCLUDE, loanFields } from "../common/entry-loan.util";
 import {
   canonicalExternalId,
   toExternalIdDtos,
@@ -18,6 +17,7 @@ import {
 import { jsonObject } from "../common/json.util";
 import { PrismaService } from "../prisma/prisma.service";
 import { ReviewService } from "../reviews/review.service";
+import { LOAN_INCLUDE, loanFields } from "../work/entry-loan.util";
 
 /**
  * Builds the full portable data dump (GDPR "download my data"). Shared by the
@@ -35,7 +35,7 @@ export class DataExportService {
   async buildExport(userId: string): Promise<UserDataExportDto> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      include: { avatarImage: true },
+      include: { avatarImage: true, ...USER_DTO_INCLUDE },
     });
 
     if (!user) {
@@ -75,7 +75,7 @@ export class DataExportService {
       importRunRows,
       savedViewRows,
     ] = await Promise.all([
-      this.prisma.libraryEntry.findMany({
+      this.prisma.mediaEntry.findMany({
         where: { userId },
         include: {
           mediaItem: { include: { externalIds: true } },
@@ -162,7 +162,12 @@ export class DataExportService {
               members: {
                 select: { userId: true, user: { select: { username: true } } },
               },
+              // Both sides, as the person received them: the other member's
+              // messages are part of the exchange (portability guidelines
+              // take a mailbox's received mail as the example). What that
+              // member or the moderation took back stays out.
               messages: {
+                where: { OR: [{ authorId: userId }, { deletedAt: null }] },
                 orderBy: { createdAt: "asc" },
                 include: {
                   embeds: {
@@ -407,13 +412,16 @@ export class DataExportService {
       exportedAt: new Date().toISOString(),
       account: toUserDto(user),
       accountRecord: {
-        termsAcceptedAt: user.acceptedTermsAt?.toISOString() ?? null,
-        ageCertifiedAt: user.certifiedAgeAt?.toISOString() ?? null,
-        newsletterOptInAt: user.newsletterOptInAt?.toISOString() ?? null,
+        termsAcceptedAt: user.consent?.acceptedTermsAt?.toISOString() ?? null,
+        ageCertifiedAt: user.consent?.certifiedAgeAt?.toISOString() ?? null,
+        newsletterOptInAt:
+          user.consent?.newsletterOptInAt?.toISOString() ?? null,
+        newsletterOptOutAt:
+          user.consent?.newsletterOptOutAt?.toISOString() ?? null,
         lastActiveAt: user.lastActiveAt?.toISOString() ?? null,
         suspendedUntil: user.suspendedUntil?.toISOString() ?? null,
         equippedBadgeKeys: user.equippedBadgeKeys ?? [],
-        acquisitionSourceOther: user.acquisitionSourceOther,
+        acquisitionSourceOther: user.onboarding?.acquisitionSourceOther ?? null,
         avatar: user.avatarImage
           ? {
               mimeType: user.avatarImage.mimeType,
@@ -620,7 +628,7 @@ export class DataExportService {
         parentId: c.parentId,
         text: c.text,
         spoilerTag: c.spoilerTag,
-        edited: c.edited,
+        edited: c.editedAt !== null,
         deletedAt: c.deletedAt?.toISOString() ?? null,
         createdAt: c.createdAt.toISOString(),
         updatedAt: c.updatedAt.toISOString(),
@@ -639,7 +647,7 @@ export class DataExportService {
           mine: m.authorId === userId,
           text: m.text,
           spoiler: m.spoiler,
-          edited: m.edited,
+          edited: m.editedAt !== null,
           deletedAt: m.deletedAt?.toISOString() ?? null,
           createdAt: m.createdAt.toISOString(),
           forwarded: m.forwarded,

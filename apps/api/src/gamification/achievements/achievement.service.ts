@@ -16,7 +16,7 @@ import { sinceDaysAgo } from "../../common/date.util";
 import { isUniqueViolation } from "../../common/prisma-error.util";
 import { EventsGateway } from "../../events/events.gateway";
 import { JOB_KEYS } from "../../jobs/job-keys";
-import { JobRunService } from "../../jobs/job-run.service";
+import { JobRunService, type JobSkipped } from "../../jobs/job-run.service";
 import { PrismaService } from "../../prisma/prisma.service";
 import { isSocialEnabled } from "../../social/social.config";
 import { isGamificationEnabled } from "../gamification.config";
@@ -404,7 +404,7 @@ export class AchievementService {
   @Cron(CronExpression.EVERY_DAY_AT_5AM, {
     name: JOB_KEYS.GAMIFICATION_ACHIEVEMENTS_SWEEP,
   })
-  async runAchievementsSweepJob(): Promise<string> {
+  async runAchievementsSweepJob(): Promise<string | JobSkipped> {
     return this.jobRuns.record(
       JOB_KEYS.GAMIFICATION_ACHIEVEMENTS_SWEEP,
       () => this.sweepAllUsers(),
@@ -440,10 +440,10 @@ export class AchievementService {
   private async recomputeRarity(): Promise<number> {
     const activeSince = sinceDaysAgo(new Date(), RARITY_ACTIVE_WINDOW_DAYS);
     const eligible: Prisma.UserWhereInput = {
-      onboardedAt: { not: null },
+      onboarding: { onboardedAt: { not: null } },
       lastActiveAt: { gte: activeSince },
       profileAccess: { not: "GHOST" },
-      hideProgression: false,
+      preferences: { hideProgression: false },
     };
     const [eligibleUsers, counts] = await Promise.all([
       this.prisma.user.count({ where: eligible }),

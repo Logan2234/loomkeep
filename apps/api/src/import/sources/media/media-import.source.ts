@@ -24,14 +24,14 @@ import { MediaItemService } from "../../../catalog/media-item.service";
 import { assertMediaReleased } from "../../../catalog/movie-release.util";
 import { AppException } from "../../../common/app.exception";
 import { mapWithConcurrency } from "../../../common/concurrency.util";
+import type { ListService } from "../../../lists/list.service";
+import { PrismaService } from "../../../prisma/prisma.service";
+import { ReviewService } from "../../../reviews/review.service";
 import {
   LOAN_INCLUDE,
   loanUpdate,
   ownershipSourceUpdate,
-} from "../../../common/entry-loan.util";
-import type { ListService } from "../../../lists/list.service";
-import { PrismaService } from "../../../prisma/prisma.service";
-import { ReviewService } from "../../../reviews/review.service";
+} from "../../../work/entry-loan.util";
 import {
   entryStatusFromProgress,
   furthestStatus,
@@ -175,19 +175,10 @@ export abstract class MediaImportSource<
       // A source can state a status without any episode (a rated IMDb
       // series): that is followed, not a watchlist entry.
       const onWatchlist = n === 0 && (show.status ?? "PLANNED") === "PLANNED";
-      const subtitle = [
-        n > 0
-          ? `${n} épisode${n > 1 ? "s" : ""} vu${n > 1 ? "s" : ""}`
-          : onWatchlist
-            ? "Watchlist"
-            : "Suivie",
-        ...extraParts(show.rating, show.favorite, 0),
-      ].join(" · ");
       const item: ImportPlanItem = {
         key: showKey(show),
         title: match?.title ?? show.title,
         sourceTitle: show.title,
-        subtitle,
         context: {
           kind: "series",
           episodesWatched: n,
@@ -219,15 +210,10 @@ export abstract class MediaImportSource<
     parsed.movies.forEach((movie, i) => {
       const match = movieMatches[i];
       if (!match) unresolved++;
-      const subtitleParts = [
-        movie.year ? String(movie.year) : null,
-        ...extraParts(movie.rating, movie.favorite, movie.rewatchedAt.length),
-      ].filter((p): p is string => p !== null);
       const item: ImportPlanItem = {
         key: movieKey(movie),
         title: match?.title ?? movie.title,
         sourceTitle: movie.title,
-        subtitle: subtitleParts.length > 0 ? subtitleParts.join(" · ") : null,
         context: {
           kind: "movie",
           year: movie.year,
@@ -266,7 +252,6 @@ export abstract class MediaImportSource<
         key: listItemKey(film),
         title: match?.title ?? film.title,
         sourceTitle: film.title,
-        subtitle: film.year ? String(film.year) : null,
         context: {
           kind: "movie",
           year: film.year,
@@ -283,19 +268,11 @@ export abstract class MediaImportSource<
     });
 
     const groups: ImportPlanGroup[] = [
-      { id: "seriesTracked", label: "Séries suivies", items: seriesTracked },
-      {
-        id: "seriesWatchlist",
-        label: "Séries — watchlist",
-        items: seriesWatchlist,
-      },
-      { id: "moviesWatched", label: "Films vus", items: moviesWatched },
-      {
-        id: "moviesWatchlist",
-        label: "Films — watchlist",
-        items: moviesWatchlist,
-      },
-      { id: "listFilms", label: "Films de tes listes", items: listFilms },
+      { id: "seriesTracked", items: seriesTracked },
+      { id: "seriesWatchlist", items: seriesWatchlist },
+      { id: "moviesWatched", items: moviesWatched },
+      { id: "moviesWatchlist", items: moviesWatchlist },
+      { id: "listFilms", items: listFilms },
     ].filter((g) => g.items.length > 0);
 
     // Rows the source could not place anywhere have no item to review, but
@@ -385,23 +362,41 @@ export abstract class MediaImportSource<
         this.prisma.episodeWatch.deleteMany({
           where: { userId, episode: { season: { mediaItemId: media.id } } },
         }),
-        this.prisma.libraryEntry.deleteMany({
+        this.prisma.mediaEntry.deleteMany({
           where: { userId, mediaItemId: media.id },
         }),
       ]);
       replaced.add(media.id);
     };
 
+    // One title the catalogue or the database refuses is reported and
+    // skipped: the rest of the export still goes in. Only when nothing at all
+    // could be written is the failure taken as systemic, and the job fails.
+    let written = 0;
+    let failed = 0;
+    let firstFailure: Error | null = null;
+
+    const writeTitle = async (
+      title: string,
+      write: () => Promise<void>,
+    ): Promise<void> => {
+      try {
+        await write();
+        written++;
+      } catch (error) {
+        failed++;
+        firstFailure ??= this.contextualize(error, title);
+      }
+    };
+
     for (const show of includedShows) {
       const match = this.resolvedMatch(showKey(show), decisions, matchByKey);
 
       if (match) {
-        try {
+        await writeTitle(show.title, async () => {
           await replaceTitle(match);
           await this.writeShow(userId, show, match, tally);
-        } catch (error) {
-          throw this.contextualize(error, show.title);
-        }
+        });
       }
 
       progress.tick();
@@ -411,16 +406,16 @@ export abstract class MediaImportSource<
       const match = this.resolvedMatch(movieKey(movie), decisions, matchByKey);
 
       if (match) {
-        try {
+        await writeTitle(movie.title, async () => {
           await replaceTitle(match);
           await this.writeMovie(userId, movie, match, tally);
-        } catch (error) {
-          throw this.contextualize(error, movie.title);
-        }
+        });
       }
 
       progress.tick();
     }
+
+    if (firstFailure && written === 0) throw firstFailure;
 
     // Nothing written (every title unresolved) replaces nothing: emptying
     // the library then would be the old failure all over again.
@@ -433,7 +428,7 @@ export abstract class MediaImportSource<
             episode: { season: { mediaItemId: { notIn: kept } } },
           },
         }),
-        this.prisma.libraryEntry.deleteMany({
+        this.prisma.mediaEntry.deleteMany({
           where: { userId, mediaItemId: { notIn: kept } },
         }),
       ]);
@@ -447,40 +442,25 @@ export abstract class MediaImportSource<
       overwrite: decisions.overwrite,
       tiles: [
         {
-          label: "Series",
           id: "series",
           watchlistCount: tally.showsWatchlist,
           value: tally.showsImported,
-          sub: `${tally.showsWatchlist} on the watchlist`,
         },
+        { id: "episodes", value: tally.episodesCreated },
         {
-          label: "Episodes",
-          id: "episodes",
-          value: tally.episodesCreated,
-          sub: "viewings created",
-        },
-        {
-          label: "Movies",
           id: "movies",
           watchlistCount: tally.moviesWatchlist,
           value: tally.moviesImported,
-          sub: `${tally.moviesWatchlist} on the watchlist`,
         },
         ...(tally.listsCreated > 0
-          ? [
-              {
-                label: "Lists",
-                id: "lists" as const,
-                value: tally.listsCreated,
-                sub: null,
-              },
-            ]
+          ? [{ id: "lists" as const, value: tally.listsCreated }]
           : []),
+        ...(failed > 0 ? [{ id: "failed" as const, value: failed }] : []),
       ],
     };
   }
 
-  /** Logs and re-throws a commit-time failure with the title it happened on. */
+  /** Logs a commit-time failure and names the title it happened on. */
   private contextualize(error: unknown, title: string): Error {
     const message = error instanceof Error ? error.message : String(error);
     this.logger.error(`Failed to import "${title}": ${message}`);
@@ -653,9 +633,9 @@ export abstract class MediaImportSource<
     const watched = movie.watched && (await this.isReleased(media.id));
     // A movie is a single sitting — start and finish share the same instant.
     const watchedAt = watched ? movie.watchedAt : null;
-    const existing = await this.prisma.libraryEntry.findUnique({
+    const existing = await this.prisma.mediaEntry.findUnique({
       where: { userId_mediaItemId: { userId, mediaItemId: media.id } },
-      select: { status: true, notes: true },
+      select: { status: true, notes: true, startedAt: true, finishedAt: true },
     });
     const status = furthestStatus(
       existing?.status ?? null,
@@ -664,15 +644,15 @@ export abstract class MediaImportSource<
     // Only ever turns favorite ON — an importer never has grounds to unset
     // something the user set manually in the app.
     const favorite = movie.favorite === true;
-    const entry = await this.prisma.libraryEntry.upsert({
+    const entry = await this.prisma.mediaEntry.upsert({
       where: { userId_mediaItemId: { userId, mediaItemId: media.id } },
       // Re-importing over an entry adds what the source knows and never
-      // takes anything away: no date erased, no status moved back, no note
-      // of the user's replaced.
+      // takes anything away: no status moved back, and no date or note the
+      // entry already has replaced (the user may have corrected it here).
       update: {
         status,
-        startedAt: watchedAt ?? undefined,
-        finishedAt: watchedAt ?? undefined,
+        startedAt: existing?.startedAt ? undefined : (watchedAt ?? undefined),
+        finishedAt: existing?.finishedAt ? undefined : (watchedAt ?? undefined),
         favorite: favorite ? true : undefined,
         notes: existing?.notes ? undefined : (movie.notes ?? undefined),
       },
@@ -715,8 +695,8 @@ export abstract class MediaImportSource<
    * A review needs a rating to exist at all (`Review.rating` is mandatory), so
    * text without stars — possible on Letterboxd — is dropped rather than
    * invented as a 0. Visibility is left to `upsert`, which applies the user's
-   * own default: an import must not decide who sees their writing. A review
-   * the user already wrote here is theirs: only its rating is updated.
+   * own default: an import must not decide who sees their writing. A rating
+   * or review the user already has here is theirs: the import leaves it.
    *
    * A title that is not out yet refuses a rating; the import skips it rather
    * than failing on one row.
@@ -731,7 +711,9 @@ export abstract class MediaImportSource<
     if (rating === null || rating === undefined) return;
 
     try {
-      if (review && !(await this.hasReviewText(userId, targetType, targetId))) {
+      if (await this.hasRating(userId, targetType, targetId)) return;
+
+      if (review) {
         await this.reviews.upsert(userId, targetType, targetId, {
           rating,
           text: review.slice(0, REVIEW_TEXT_MAX_LENGTH),
@@ -745,16 +727,17 @@ export abstract class MediaImportSource<
     }
   }
 
-  private async hasReviewText(
+  /** A review row always carries a rating (`Review.rating` is mandatory). */
+  private async hasRating(
     userId: string,
     targetType: ReviewTargetType,
     targetId: string,
   ): Promise<boolean> {
     const existing = await this.prisma.review.findUnique({
       where: { userId_targetType_targetId: { userId, targetType, targetId } },
-      select: { text: true },
+      select: { id: true },
     });
-    return Boolean(existing?.text);
+    return existing !== null;
   }
 
   /** Whether the title is out, by the same rule the library enforces. */
@@ -840,16 +823,16 @@ export abstract class MediaImportSource<
   }
 
   private async recordMovieReplays(
-    libraryEntryId: string,
+    mediaEntryId: string,
     dates: Date[],
   ): Promise<void> {
     const existing = await this.prisma.movieReplay.count({
-      where: { libraryEntryId },
+      where: { mediaEntryId },
     });
     if (existing > 0) return; // Idempotent re-run.
 
     await this.prisma.movieReplay.createMany({
-      data: dates.map((finishedAt) => ({ libraryEntryId, finishedAt })),
+      data: dates.map((finishedAt) => ({ mediaEntryId, finishedAt })),
     });
   }
 
@@ -925,11 +908,13 @@ export abstract class MediaImportSource<
     });
     if (!ref) return incoming; // upsertFromSource ran just before, so this always exists.
 
-    const existing = await this.prisma.libraryEntry.findUnique({
+    const existing = await this.prisma.mediaEntry.findUnique({
       where: { userId_mediaItemId: { userId, mediaItemId: ref.mediaItemId } },
       select: {
         status: true,
         notes: true,
+        startedAt: true,
+        finishedAt: true,
         ownershipStatus: true,
         ...LOAN_INCLUDE,
       },
@@ -941,13 +926,16 @@ export abstract class MediaImportSource<
     // Only ever turns favorite ON — an importer never has grounds to unset
     // something the user set manually in the app.
     const favorite = show.favorite === true;
-    await this.prisma.libraryEntry.upsert({
+    await this.prisma.mediaEntry.upsert({
       where: { userId_mediaItemId: { userId, mediaItemId: ref.mediaItemId } },
-      // Same rule as films: dates and status only ever move forward.
+      // Same rule as films: the status only moves forward, and a date is
+      // written only where the entry has none.
       update: {
         status,
-        startedAt: startedAt ?? undefined,
-        finishedAt: finishedAt ?? undefined,
+        startedAt: existing?.startedAt ? undefined : (startedAt ?? undefined),
+        finishedAt: existing?.finishedAt
+          ? undefined
+          : (finishedAt ?? undefined),
         favorite: favorite ? true : undefined,
         notes: existing?.notes ? undefined : (show.notes ?? undefined),
         ownershipStatus: show.ownershipStatus,
@@ -1010,19 +998,6 @@ function isUnreleased(error: unknown): boolean {
     (error.code === ErrorCode.LibraryMovieNotReleased ||
       error.code === ErrorCode.LibraryAnimeNotAired)
   );
-}
-
-/** Extra badges surfaced in the plan preview: rewatch count, rating, favorite. */
-function extraParts(
-  rating: number | null | undefined,
-  favorite: boolean | undefined,
-  rewatchCount: number,
-): string[] {
-  const parts: string[] = [];
-  if (rewatchCount > 0) parts.push(`revu ${rewatchCount + 1}×`);
-  if (rating !== null && rating !== undefined) parts.push(`★ ${rating}/10`);
-  if (favorite) parts.push("♥ favori");
-  return parts;
 }
 
 /** Stable per-item id carried through analyze → review → commit. */

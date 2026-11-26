@@ -1,0 +1,172 @@
+// A private conversation between friends. Members live in their own table
+// rather than two columns, so group conversations need no reshaping later.
+model Conversation {
+  id            String   @id @default(cuid())
+  // Both member ids, sorted and joined by ":" — one conversation per pair of
+  // friends, found again rather than duplicated. Null for a future group.
+  pairKey       String?  @unique
+  createdAt     DateTime @default(now())
+  // The list of conversations is sorted by it.
+  lastMessageAt DateTime @default(now())
+
+  members  ConversationMember[]
+  messages Message[]
+}
+
+model ConversationMember {
+  conversationId String
+  userId         String
+  // Everything sent up to this instant is read: drives the unread count and
+  // the "Vu" the other member sees.
+  lastReadAt     DateTime  @default(now())
+  mutedAt        DateTime?
+  // Pinned atop the member's list, most recently pinned first.
+  pinnedAt       DateTime?
+  // Removed from the member's list, history kept: the next message, from
+  // either member, brings it back.
+  hiddenAt       DateTime?
+  joinedAt       DateTime  @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([conversationId, userId])
+  @@index([userId])
+}
+
+// Never hard-deleted: a deletion is a tombstone, so a later quote-reply can
+// still point at what it answers.
+model Message {
+  id             String    @id @default(cuid())
+  conversationId String
+  // Null once the author's account is gone; its text is erased first (GDPR).
+  authorId       String?
+  // Restricted markdown (bold, italic, strike, code, ||spoiler||, quotes,
+  // lists, code blocks, #work mentions), rendered by the web. Null once
+  // deleted, and for a message that only carries a work.
+  text           String?
+  // Sent with /spoiler: the whole message stays masked until revealed.
+  spoiler        Boolean   @default(false)
+  // Last time the text or spoiler flag changed; null if never edited.
+  editedAt       DateTime?
+  deletedAt      DateTime?
+  // Set only by a moderation takedown, which the tombstone then says.
+  deletedByAdmin Boolean   @default(false)
+  // Pinned in its conversation, by either member; shown to both.
+  pinnedAt       DateTime?
+  // Copied from another conversation by "Transférer": says so, never by whom.
+  forwarded      Boolean   @default(false)
+  // Attached with /review (one of the author's reviews) or /list. Plain ids,
+  // not relations: the card is read live, and once the review or list is gone
+  // the message must still say what it carried.
+  reviewId       String?
+  listId         String?
+  // /saga: a saga (`Saga`, `GameSaga` or an Open Library series key), read
+  // live with each member's progress — see ChatCommandsService.saga.
+  sagaDomain     Domain?
+  sagaKey        String?
+  // /pick: the first card was drawn from the author's pile (with `pickShared`,
+  // only from the works every member has in theirs), out of `pickCount`.
+  pickDomain     Domain?
+  pickShared     Boolean?
+  pickCount      Int?
+  // /where: where the first card's work can be watched, read live for each
+  // viewer with the platforms the members share.
+  whereWork      Boolean   @default(false)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  conversation Conversation      @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  author       User?             @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  reactions    MessageReaction[]
+  embeds       MessageEmbed[]
+  poll         MessagePoll?
+
+  @@index([conversationId, createdAt])
+  @@index([conversationId, pinnedAt])
+  @@index([authorId])
+}
+
+model MessageReaction {
+  messageId String
+  userId    String
+  emote     Emote
+  createdAt DateTime @default(now())
+
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([messageId, userId])
+  // The unique leads with the other key: without this, deleting an account
+  // scans the whole table for its cascade.
+  @@index([userId])
+}
+
+// A work, season or episode attached to a message (a recommendation card).
+// The card is a snapshot of the work as it was sent: the message reads the
+// same later, and showing it costs no catalogue lookup.
+model MessageEmbed {
+  id         String           @id @default(cuid())
+  messageId  String
+  targetType ReviewTargetType
+  targetId   String
+  // MediaType for MEDIA, otherwise the target type itself.
+  kind       String
+  title      String
+  imageUrl   String?
+  href       String
+  year       Int?
+  // 0: the work attached by hand (/reco, "Recommander"); 1 and up: links found
+  // in the text, recomputed when the text is edited.
+  position   Int              @default(0)
+
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@index([messageId])
+}
+
+// /poll: a question and its options, the question standing in for the
+// message's text. Votes stay open: a member changes theirs by voting again.
+model MessagePoll {
+  id        String   @id @default(cuid())
+  messageId String   @unique
+  question  String
+  createdAt DateTime @default(now())
+
+  message Message             @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  options MessagePollOption[]
+  votes   MessagePollVote[]
+}
+
+// An option is text, or a work (snapshot of its card, like MessageEmbed).
+model MessagePollOption {
+  id       String  @id @default(cuid())
+  pollId   String
+  position Int
+  text     String
+  href     String?
+  imageUrl String?
+
+  poll  MessagePoll       @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  votes MessagePollVote[]
+
+  @@index([pollId])
+}
+
+model MessagePollVote {
+  id        String   @id @default(cuid())
+  pollId    String
+  optionId  String
+  userId    String
+  createdAt DateTime @default(now())
+
+  poll   MessagePoll       @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  option MessagePollOption @relation(fields: [optionId], references: [id], onDelete: Cascade)
+  user   User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([pollId, userId])
+  // The unique leads with the other key: without this, deleting an account
+  // scans the whole table for its cascade.
+  @@index([userId])
+  @@index([optionId])
+}

@@ -17,7 +17,6 @@
   import { createApiQuery } from "#lib/api/query.svelte.js";
   import { getFollowRequests } from "#lib/api/social.js";
   import { appConfig } from "#lib/config.svelte.js";
-  import { isFeatureNew } from "#lib/feature-badges.js";
   import { layout } from "#lib/layout.svelte.js";
   import { prefersReducedMotion } from "#lib/motion.js";
   import { notificationActions } from "#lib/notifications/actions.svelte.js";
@@ -34,7 +33,6 @@
   import { useQueryClient } from "@tanstack/svelte-query";
   import { fade, scale } from "svelte/transition";
   import Icon from "./Icon.svelte";
-  import NewBadge from "./NewBadge.svelte";
   import FollowRequests from "./notifications/FollowRequests.svelte";
   import NotificationRow from "./notifications/NotificationRow.svelte";
 
@@ -259,7 +257,6 @@
           onclick={close}
           class="border-border hover:bg-surface-2 hover:text-accent group flex items-center justify-center gap-1.5 border-t px-4 py-2.5 text-sm font-semibold transition-colors duration-150">
           {m.notif_see_all()}
-          {#if isFeatureNew("notification-history")}<NewBadge />{/if}
           <Icon
             name="chevron-right"
             class="h-4 w-4 transition-transform duration-150 group-hover:translate-x-0.5 motion-reduce:transition-none" />

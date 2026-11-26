@@ -1,10 +1,12 @@
 import { Module } from "@nestjs/common";
 import { CatalogModule } from "../catalog/catalog.module";
-import { EntitlementModule } from "../entitlements/entitlement.module";
+import { EntitlementsModule } from "../entitlements/entitlements.module";
 import { LibraryModule } from "../library/library.module";
 import { ReviewsModule } from "../reviews/reviews.module";
 import { SocialModule } from "../social/social.module";
 import { StatsModule } from "../stats/stats.module";
+import { ArrFeedController } from "./arr/arr-feed.controller";
+import { ArrFeedService } from "./arr/arr-feed.service";
 import { CalendarFeedController } from "./calendar/calendar-feed.controller";
 import { CalendarFeedService } from "./calendar/calendar-feed.service";
 import { EeLicenseGuard } from "./licensing/ee-license.guard";
@@ -21,7 +23,7 @@ import { AdvancedStatsService } from "./stats/advanced-stats.service";
 @Module({
   imports: [
     CatalogModule,
-    EntitlementModule,
+    EntitlementsModule,
     LibraryModule,
     ReviewsModule,
     StatsModule,
@@ -30,12 +32,14 @@ import { AdvancedStatsService } from "./stats/advanced-stats.service";
   controllers: [
     EeStatusController,
     CalendarFeedController,
+    ArrFeedController,
     ActivityFeedController,
   ],
   providers: [
     LicenseService,
     EeLicenseGuard,
     CalendarFeedService,
+    ArrFeedService,
     AdvancedStatsService,
     ActivityFeedService,
   ],

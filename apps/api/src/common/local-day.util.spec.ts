@@ -2,6 +2,7 @@ import {
   localDay,
   localDayOrUtc,
   localParts,
+  localYearRange,
   startOfLocalDay,
 } from "./local-day.util";
 
@@ -81,5 +82,21 @@ describe("startOfLocalDay", () => {
     expect(
       startOfLocalDay("Not/AZone", new Date("2026-11-14T22:30:00Z")),
     ).toEqual(new Date("2026-11-14T00:00:00Z"));
+  });
+});
+
+describe("localYearRange", () => {
+  it("runs from the user's own new year to the next", () => {
+    expect(localYearRange("Europe/Paris", 2027)).toEqual({
+      gte: new Date("2026-12-31T23:00:00.000Z"),
+      lt: new Date("2027-12-31T23:00:00.000Z"),
+    });
+  });
+
+  it("falls back to the UTC year for an invalid zone", () => {
+    expect(localYearRange("Not/AZone", 2027)).toEqual({
+      gte: new Date("2027-01-01T00:00:00.000Z"),
+      lt: new Date("2028-01-01T00:00:00.000Z"),
+    });
   });
 });

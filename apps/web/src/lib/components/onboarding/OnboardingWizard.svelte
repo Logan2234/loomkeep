@@ -630,7 +630,7 @@
           class="relative -mx-5 -mt-3 mb-5 h-44 lg:hidden"
           aria-hidden="true">
           <div
-            class="absolute inset-0 overflow-hidden [mask-image:linear-gradient(to_bottom,black_40%,transparent)]">
+            class="absolute inset-0 overflow-hidden mask-[linear-gradient(to_bottom,black_40%,transparent)]">
             {@render posterWall(7, 3, "w-16 h-24", "mt-12")}
           </div>
           <p
@@ -665,7 +665,7 @@
         <div class="md:hidden">{@render youngProject()}</div>
       </div>
       <div
-        class="relative -mt-14 -mr-16 -mb-8 hidden overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_25%,black_80%,transparent),linear-gradient(to_bottom,transparent,black_12%,black_75%,transparent)] [mask-composite:intersect] lg:block"
+        class="relative -mt-14 -mr-16 -mb-8 hidden overflow-hidden mask-[linear-gradient(to_right,transparent,black_25%,black_80%,transparent),linear-gradient(to_bottom,transparent,black_12%,black_75%,transparent)] mask-intersect lg:block"
         aria-hidden="true">
         {@render posterWall(5, 5, "w-26 h-40", "mt-20")}
       </div>

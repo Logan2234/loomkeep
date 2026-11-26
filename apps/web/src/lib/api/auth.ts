@@ -33,7 +33,7 @@ import {
 import { auth } from "../auth.svelte";
 import { removeStorage } from "../local-storage";
 import { getLocale, isLocale, setLocale } from "../paraglide/runtime.js";
-import { ApiError } from "./core";
+import { ApiError, LONG_REQUEST_TIMEOUT_MS } from "./core";
 import { typedRequest } from "./generated/typed-request";
 import { pageParam } from "./query-params";
 
@@ -329,20 +329,26 @@ export async function updateUsername(
   return user;
 }
 
-export const exportMyData = () => typedRequest("/users/me/export");
+export const exportMyData = () =>
+  typedRequest("/users/me/export", { timeoutMs: LONG_REQUEST_TIMEOUT_MS });
 
 // Not gated by `enabledDomains` — a hidden domain is still exportable.
 export const exportMyDataCsv = (domain: Domain) =>
-  typedRequest("/users/me/export.csv", { query: { domain } });
+  typedRequest("/users/me/export.csv", {
+    query: { domain },
+    timeoutMs: LONG_REQUEST_TIMEOUT_MS,
+  });
 
 export const exportForLetterboxd = (withReviews: boolean) =>
   typedRequest("/users/me/export/letterboxd", {
     query: { reviews: String(withReviews) },
+    timeoutMs: LONG_REQUEST_TIMEOUT_MS,
   });
 
 export const exportForGoodreads = (withReviews: boolean) =>
   typedRequest("/users/me/export/goodreads", {
     query: { reviews: String(withReviews) },
+    timeoutMs: LONG_REQUEST_TIMEOUT_MS,
   });
 
 const _getWidgetToken = (): Promise<WidgetTokenDto> =>

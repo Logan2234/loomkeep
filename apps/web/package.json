@@ -54,11 +54,11 @@
     "@loomkeep/shared": "workspace:*",
     "@sentry/sveltekit": "^11.16.0",
     "@simplewebauthn/browser": "^14.0.0",
-    "@tanstack/svelte-query": "^6.4.5",
+    "@tanstack/svelte-query": "^6.4.6",
     "qr-scanner": "^1.4.2",
     "qrcode": "^1.5.4",
     "socket.io-client": "^4.8.4",
-    "svelte-dnd-action": "^0.9.80",
+    "svelte-dnd-action": "^0.9.81",
     "unleash-proxy-client": "^3.8.2"
   },
   "devDependencies": {

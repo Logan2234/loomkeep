@@ -45,7 +45,7 @@ export class CsvExportService {
   }
 
   private async buildMediaCsv(userId: string): Promise<string> {
-    const entries = await this.prisma.libraryEntry.findMany({
+    const entries = await this.prisma.mediaEntry.findMany({
       where: { userId },
       include: { mediaItem: true },
       orderBy: { createdAt: "asc" },

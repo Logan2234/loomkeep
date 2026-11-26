@@ -93,12 +93,15 @@ export class NewsletterService {
       contentHtml,
     );
     const recipients = await this.prisma.user.findMany({
-      where: { notifyNewsletter: true, ...notSuspended() },
+      where: {
+        preferences: { notifyNewsletter: true },
+        ...notSuspended(),
+      },
       select: {
         id: true,
         email: true,
         locale: true,
-        newsletterUnsubscribeToken: true,
+        urlTokens: { select: { newsletterUnsubscribeToken: true } },
       },
     });
 
@@ -106,7 +109,7 @@ export class NewsletterService {
       recipients.map(async (r) => {
         const token = await this.getOrCreateUnsubscribeToken(
           r.id,
-          r.newsletterUnsubscribeToken,
+          r.urlTokens?.newsletterUnsubscribeToken ?? null,
         );
         await this.mail.sendNewsletter(
           { email: r.email, locale: r.locale },
@@ -209,7 +212,7 @@ export class NewsletterService {
    * Stable per-user unsubscribe token, generated once and reused in every
    * newsletter this account ever receives — not one token per send, which
    * would grow the table without bound as the newsletter goes out
-   * repeatedly (see User.newsletterUnsubscribeToken doc comment).
+   * repeatedly (see UserUrlToken.newsletterUnsubscribeToken).
    */
   private async getOrCreateUnsubscribeToken(
     userId: string,
@@ -218,17 +221,19 @@ export class NewsletterService {
     if (existing) return existing;
 
     const token = randomToken(32, "hex");
-    await this.prisma.user.update({
-      where: { id: userId },
-      data: { newsletterUnsubscribeToken: token },
+    await this.prisma.userUrlToken.upsert({
+      where: { userId },
+      create: { userId, newsletterUnsubscribeToken: token },
+      update: { newsletterUnsubscribeToken: token },
     });
     return token;
   }
 
   /** Consumes a one-click unsubscribe link from a newsletter email footer — no login required. */
   async unsubscribe(token: string): Promise<void> {
-    const user = await this.prisma.user.findUnique({
+    const user = await this.prisma.userUrlToken.findUnique({
       where: { newsletterUnsubscribeToken: token },
+      select: { userId: true },
     });
 
     if (!user) {
@@ -240,10 +245,21 @@ export class NewsletterService {
       );
     }
 
-    await this.prisma.user.update({
-      where: { id: user.id },
+    // Only an actual opt-out is dated: following the link again, or after
+    // turning the newsletter off in the settings, keeps the first date.
+    const { count } = await this.prisma.userPreferences.updateMany({
+      where: { userId: user.userId, notifyNewsletter: true },
       data: { notifyNewsletter: false },
     });
+
+    if (count > 0) {
+      const newsletterOptOutAt = new Date();
+      await this.prisma.userConsent.upsert({
+        where: { userId: user.userId },
+        create: { userId: user.userId, newsletterOptOutAt },
+        update: { newsletterOptOutAt },
+      });
+    }
   }
 }
 

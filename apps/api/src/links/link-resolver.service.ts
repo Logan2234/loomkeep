@@ -113,10 +113,15 @@ export class LinkResolverService {
         return { domain: Domain.MEDIA, href: `/app/media/anime/${link.id}` };
 
       case "imdb": {
-        const media =
-          (await this.tmdb.findMovieSummaryByImdbId(link.id)) ??
-          (await this.tmdb.findSeriesSummaryByImdbId(link.id));
-        return media ? mediaHref(media) : null;
+        const found = await this.tmdb.findByImdbId(link.id);
+        const media = found.movie ?? found.series;
+        if (media) return mediaHref(media);
+        return found.episode
+          ? {
+              domain: Domain.MEDIA,
+              href: `/app/media/series/${found.episode.seriesTmdbId}`,
+            }
+          : null;
       }
 
       case "myanimelist": {

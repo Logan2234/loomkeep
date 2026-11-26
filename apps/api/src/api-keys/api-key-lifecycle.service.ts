@@ -6,7 +6,7 @@ import { Injectable } from "@nestjs/common";
 import { Cron, CronExpression } from "@nestjs/schedule";
 import { addDays, sinceDaysAgo } from "../common/date.util";
 import { JOB_KEYS } from "../jobs/job-keys";
-import { JobRunService } from "../jobs/job-run.service";
+import { JobRunService, type JobSkipped } from "../jobs/job-run.service";
 import { MailService } from "../mail/mail.service";
 import { notificationCopy } from "../notifications/notification-copy";
 import { NotificationService } from "../notifications/notification.service";
@@ -38,7 +38,9 @@ export class ApiKeyLifecycleService {
   @Cron(CronExpression.EVERY_DAY_AT_6AM, {
     name: JOB_KEYS.API_KEYS_MAINTENANCE,
   })
-  async runMaintenance(): Promise<{ warned: number; deleted: number }> {
+  async runMaintenance(): Promise<
+    { warned: number; deleted: number } | JobSkipped
+  > {
     return this.jobRuns.record(
       JOB_KEYS.API_KEYS_MAINTENANCE,
       async () => ({

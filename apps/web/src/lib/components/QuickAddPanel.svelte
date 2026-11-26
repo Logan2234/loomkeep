@@ -11,14 +11,12 @@
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
   import { m } from "#lib/paraglide/messages.js";
-  import { isFeatureNew } from "#lib/feature-badges.js";
   import { quickAddDomain, quickAddTarget } from "#lib/quick-add.js";
   import { prefersReducedMotion } from "#lib/motion.js";
   import { scale } from "svelte/transition";
   import Banner from "./Banner.svelte";
   import Combobox from "./Combobox.svelte";
   import Icon from "./Icon.svelte";
-  import NewBadge from "./NewBadge.svelte";
   import Poster from "./Poster.svelte";
   import SegmentedStatusControl from "./SegmentedStatusControl.svelte";
 
@@ -203,7 +201,7 @@
     <a class="btn btn-ghost self-start" {href}>{m.quick_add_open()}</a>
   {:else if !view}
     <div class="flex animate-pulse gap-4" aria-busy="true">
-      <div class="bg-surface-2 aspect-[2/3] w-22 shrink-0 rounded-lg"></div>
+      <div class="bg-surface-2 aspect-2/3 w-22 shrink-0 rounded-lg"></div>
       <div class="flex flex-1 flex-col justify-end gap-2">
         <div class="bg-surface-2 h-5 w-3/4 rounded"></div>
         <div class="bg-surface-2 h-3 w-1/2 rounded"></div>
@@ -220,13 +218,12 @@
           class="rounded-lg shadow-lg" />
       </div>
       <div class="min-w-0">
-        <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
+        <div>
           {#if host}
             <p class="timecode text-micro tracking-wide uppercase">
               {m.quick_add_from_link({ site: host })}
             </p>
           {/if}
-          {#if isFeatureNew("quick-add")}<NewBadge />{/if}
         </div>
         <h2 class="font-display mt-1 text-2xl leading-tight font-bold">
           {view.title}

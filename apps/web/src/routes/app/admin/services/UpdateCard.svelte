@@ -88,7 +88,6 @@
               class="bg-accent text-accent-fg rounded-full px-2 py-0.5 text-[0.6rem] font-bold tracking-wide uppercase">
               {m.admin_update_badge()}
             </span>
-            {#if isFeatureNew("update-check")}<NewBadge />{/if}
             <span class="timecode text-sm">
               v{status.currentVersion} → v{status.latestVersion}
             </span>
@@ -157,7 +156,7 @@
                     <label
                       class="flex cursor-pointer items-start gap-2 text-sm">
                       <input type="checkbox" class="mt-1 shrink-0" />
-                      <span class="min-w-0 break-words">
+                      <span class="min-w-0 wrap-break-word">
                         {#each inlineSegments(item) as segment, i (i)}
                           {#if segment.code}
                             <code

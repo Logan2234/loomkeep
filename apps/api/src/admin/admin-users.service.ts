@@ -17,6 +17,7 @@ import {
 import { effectivePlan } from "../entitlements/entitlement.service";
 import { EventsGateway } from "../events/events.gateway";
 import { PrismaService } from "../prisma/prisma.service";
+import { preferencesOf } from "../users/preferences.util";
 import { ageBracket } from "./admin-accounts-stats.util";
 import {
   ADMIN_USER_INCLUDE,
@@ -206,14 +207,15 @@ export class AdminUsersService {
       this.prisma.block.count({ where: { blockedId: userId } }),
     ]);
 
+    const prefs = preferencesOf(user.preferences);
     return {
       user: row,
       journey: {
-        onboardedAt: user.onboardedAt?.toISOString() ?? null,
-        acquisitionSource: user.acquisitionSource,
-        acquisitionSourceOther: user.acquisitionSourceOther,
-        acceptedTermsVersion: user.acceptedTermsVersion,
-        acceptedTermsAt: user.acceptedTermsAt?.toISOString() ?? null,
+        onboardedAt: user.onboarding?.onboardedAt?.toISOString() ?? null,
+        acquisitionSource: user.onboarding?.acquisitionSource ?? null,
+        acquisitionSourceOther: user.onboarding?.acquisitionSourceOther ?? null,
+        acceptedTermsVersion: user.consent?.acceptedTermsVersion ?? null,
+        acceptedTermsAt: user.consent?.acceptedTermsAt?.toISOString() ?? null,
         ageBracket: user.birthDate ? ageBracket(user.birthDate, now) : null,
       },
       security: {
@@ -241,15 +243,16 @@ export class AdminUsersService {
       preferences: {
         locale: user.locale,
         timezone: user.timezone,
-        watchRegion: user.watchRegion,
-        watchProviderCount: user.watchProviderIds.length,
-        notifyEmail: user.notifyEmail,
-        notifyPush: user.notifyPush,
-        newsletter: user.notifyNewsletter,
-        newsletterOptInAt: user.newsletterOptInAt?.toISOString() ?? null,
+        watchRegion: prefs.watchRegion,
+        watchProviderCount: prefs.watchProviderIds.length,
+        notifyEmail: prefs.notifyEmail,
+        notifyPush: prefs.notifyPush,
+        newsletter: prefs.notifyNewsletter,
+        newsletterOptInAt:
+          user.consent?.newsletterOptInAt?.toISOString() ?? null,
         profileAccess: user.profileAccess,
-        defaultReviewVisibility: user.defaultReviewVisibility,
-        allowAdultContent: user.allowAdultContent,
+        defaultReviewVisibility: prefs.defaultReviewVisibility,
+        allowAdultContent: prefs.allowAdultContent,
       },
       imports: imports.map((i) => ({
         ...i,
@@ -277,7 +280,7 @@ export class AdminUsersService {
   ): Promise<Map<string, AdminUserLibraryCountsDto>> {
     const where = { userId: { in: userIds } };
     const [media, games, books, music] = await Promise.all([
-      this.prisma.libraryEntry.groupBy({ by: ["userId"], where, _count: true }),
+      this.prisma.mediaEntry.groupBy({ by: ["userId"], where, _count: true }),
       this.prisma.gameEntry.groupBy({ by: ["userId"], where, _count: true }),
       this.prisma.bookEntry.groupBy({ by: ["userId"], where, _count: true }),
       this.prisma.musicEntry.groupBy({ by: ["userId"], where, _count: true }),
@@ -324,7 +327,7 @@ export class AdminUsersService {
       select: { title: true, ...CANONICAL_EXTERNAL_ID_SELECT },
     } as const;
     const [media, games, books, music] = await Promise.all([
-      this.prisma.libraryEntry.findMany({
+      this.prisma.mediaEntry.findMany({
         ...recent,
         include: { mediaItem: { select: { ...item.select, type: true } } },
       }),

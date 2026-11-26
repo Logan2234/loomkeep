@@ -1,0 +1,390 @@
+// How often a channel (email/push) delivers the "new episode" digest. See
+// packages/shared/src/enums.ts DigestCadence for the gating rationale.
+enum DigestCadence {
+  DISABLED
+  WEEKLY
+  DAILY
+}
+
+// Operational permission level, orthogonal to UserEntitlement (the paid-tier
+// seam, see docs/adr/0001-open-core-agpl.md). See packages/shared/src/enums.ts
+// Role for the rationale.
+enum Role {
+  USER
+  ADMIN
+}
+
+// Social models are gated behind the runtime SOCIAL_ENABLED flag.
+// Mirror of packages/shared/src/enums.ts; see there for the full rationale.
+
+// How reachable a profile is (the authN layer). Caps the per-facet audience.
+enum ProfileAccess {
+  PUBLIC
+  PRIVATE
+  GHOST // "Figurant": invisible but can participate anonymously.
+}
+
+enum AccountDeletionReason {
+  NOT_USING
+  MISSING_FEATURE
+  OTHER_SERVICE
+  PRIVACY
+  TOO_COMPLEX
+  NEW_ACCOUNT
+  OTHER
+}
+
+// Mirrors AcquisitionSource in packages/shared/src/enums.ts.
+enum AcquisitionSource {
+  FRIEND
+  REDDIT
+  SEARCH_ENGINE
+  YOUTUBE
+  TIKTOK_INSTAGRAM
+  X_BLUESKY_MASTODON
+  DISCORD
+  ALTERNATIVETO_PRODUCTHUNT
+  SELFHOSTED_COMMUNITY
+  ARTICLE_BLOG
+  OTHER
+}
+
+// Overrides the reviews/comments per-context "already finished, so reveal"
+// default. See User.spoilerSensitivity.
+enum SpoilerSensitivity {
+  AUTO
+  ALWAYS_HIDDEN
+  ALWAYS_REVEALED
+}
+
+model User {
+  id                      String                 @id @default(cuid())
+  // Stored lowercase (normalizeEmail; User_email_lowercase_check), so the
+  // unique index is case-insensitive in practice.
+  email                   String                 @unique
+  passwordHash            String
+  // Free-form label shown around the app; not unique. See `username` for the
+  // unique, login-capable handle.
+  displayName             String
+  // Unique login handle (alongside email). Assigned at registration, editable
+  // in Sécurité. Stored lowercase like email (User_username_lowercase_check).
+  username                String                 @unique
+  birthDate               DateTime?              @db.Date
+  // Up to 3 unlocked, non-secret achievement keys shown on the profile.
+  // Equipping a key freezes that tier rather than following the highest tier;
+  // an achievement's tiers are separate keys (cinephile_bronze vs
+  // cinephile_gold), so equipping one just picks a key like any other.
+  equippedBadgeKeys       String[]               @default([])
+  // IANA timezone (e.g. "Europe/Paris"), used to time the digest at a local
+  // hour. Auto-detected client-side at onboarding, editable afterwards.
+  timezone                String                 @default("Europe/Paris")
+  // Last time the bell or the notifications page was opened: what arrived
+  // after it counts toward the badge, the rest is seen but maybe unread.
+  notificationsSeenAt     DateTime?
+  // Set once the verification email's link has been opened. Informational only
+  // in self-host (no feature is gated on it) — see UserToken.
+  emailVerified           Boolean                @default(false)
+  // Free-form public bio shown on the social profile (P4). Null until set.
+  bio                     String?
+  // When the profile picture (UserAvatar) was last set: null exactly when
+  // there is none. Kept here, not on UserAvatar, because every user summary
+  // reads it to build (and cache-bust) the GET /users/:id/avatar URL.
+  avatarUpdatedAt         DateTime?
+  // Social (P4): how reachable this profile is. Default PRIVATE — the safe
+  // default (nothing exposed to the public without an accepted follow). The
+  // per-domain/facet audiences live in VisibilitySetting.
+  profileAccess           ProfileAccess          @default(PRIVATE)
+  // Operational permission level (gates /admin). Separate axis from the paid
+  // tier (see UserEntitlement below): an admin isn't "the highest tier".
+  role                    Role                   @default(USER)
+  // Composition seam: content domains the user enabled. Drives the nav today;
+  // search/notif filtering follow at P3. Empty by default — the onboarding
+  // wizard's domain step is what actually turns these on for a new account.
+  enabledDomains          Domain[]               @default([])
+  // UI language (Paraglide locale code, "fr" or "en"). Set from the
+  // Accept-Language header at registration (see AuthService.register), and
+  // editable from Réglages > Apparence — this is also the sync-across-devices
+  // seam.
+  locale                  String                 @default("fr")
+  createdAt               DateTime               @default(now())
+  updatedAt               DateTime               @updatedAt
+  // last time this account did anything that proves a human is still
+  // behind it — bumped on register, login and refresh-token rotation (not
+  // just login, since a long-lived session never re-enters credentials).
+  // Drives both the admin "last active" column and the inactive-account job
+  // below. Null only for accounts predating this field (backfilled by
+  // migration from the best signal then available).
+  lastActiveAt            DateTime?
+  // Set when the inactivity reminder email is sent (see
+  // InactiveAccountService); cleared back to null the moment lastActiveAt is
+  // next bumped, so a returning user gets the full inactivity window again
+  // instead of being deleted on the strength of a stale warning.
+  inactivityWarningSentAt DateTime?
+  // Moderation suspension: the account is suspended while this is in the
+  // future (login refused, profile unreachable, no email or push), and
+  // active again on its own once it passes. Null means never suspended or
+  // lifted early by an admin.
+  suspendedUntil          DateTime?
+  // Self-requested deletion, carried out by ScheduledDeletionService once
+  // this passes. Nothing else changes in the meantime: the account keeps
+  // working, and signing in is enough to cancel. Null when none is scheduled.
+  deletionScheduledFor    DateTime?
+  // The reason picked when asking, moved to AccountDeletionFeedback (with
+  // no link to the account) at the actual deletion.
+  deletionReason          AccountDeletionReason?
+  // SHA-256 of the token in the "deletion scheduled" email's cancel link.
+  deletionCancelTokenHash String?                @unique
+  // Invitation this account signed up through — null for an open
+  // registration. "Invité par" is read through invitation.createdBy rather
+  // than a second FK. SetNull: purging an invitation never touches accounts.
+  invitationId            String?
+
+  // MFA
+  // Two independently-toggleable methods; admin accounts with neither active
+  // are blocked from /admin by AdminGuard. mfaTotpSecretEnc is cleared (not
+  // just flagged off) when TOTP is disabled, so re-enabling always starts
+  // from a fresh QR scan rather than silently reviving a stale secret.
+  mfaTotpEnabled      Boolean @default(false)
+  mfaTotpSecretEnc    String?
+  // The last 30-second TOTP step a code was accepted for: a code is refused
+  // once its step, or a later one, has served (sign-in or confirmation).
+  mfaTotpLastStep     Int?
+  mfaEmailEnabled     Boolean @default(false)
+  // True only lets login skip the password step outright — enforced in
+  // WebauthnService, not by this column alone: it must never be true while
+  // the user has zero WebauthnCredential rows (checked whenever a credential
+  // is removed).
+  passwordlessEnabled Boolean @default(false)
+
+  entries                    MediaEntry[]
+  episodeWatches             EpisodeWatch[]
+  refreshTokens              RefreshToken[]
+  apiKeys                    ApiKey[]
+  devices                    UserDevice[]
+  mfaRecoveryCodes           MfaRecoveryCode[]
+  mfaLoginChallenges         MfaLoginChallenge[]
+  webauthnCredentials        WebauthnCredential[]
+  webauthnChallenges         WebauthnChallenge[]
+  notifications              Notification[]
+  pushSubscriptions          PushSubscription[]
+  gameEntries                GameEntry[]
+  bookEntries                BookEntry[]
+  readingGoals               ReadingGoal[]
+  musicEntries               MusicEntry[]
+  tokens                     UserToken[]
+  emailChangeRequests        EmailChangeRequest[]
+  securityEvents             SecurityEvent[]
+  importRuns                 ImportRun[]
+  visibilitySettings         VisibilitySetting[]
+  following                  Follow[]               @relation("UserFollowing")
+  followers                  Follow[]               @relation("UserFollowers")
+  blocking                   Block[]                @relation("UserBlocking")
+  blockedBy                  Block[]                @relation("UserBlockedBy")
+  reviews                    Review[]
+  reviewVotes                ReviewVote[]
+  activityEvents             ActivityEvent[]
+  comments                   Comment[]
+  commentReactions           CommentReaction[]
+  commentMentions            CommentMention[]
+  conversationMemberships    ConversationMember[]
+  commentThreadReads         CommentThreadRead[]
+  messages                   Message[]
+  messageReactions           MessageReaction[]
+  reportsFiled               Report[]               @relation("ReportsFiled")
+  reportsResolved            Report[]               @relation("ReportsResolved")
+  reportsReceived            Report[]               @relation("ReportsReceived")
+  lists                      List[]
+  savedViews                 SavedView[]
+  listMemberships            ListMember[]
+  listItemsAdded             ListItem[]
+  listNotificationMutes      ListNotificationMute[]
+  moderationDecisionsAgainst ModerationDecision[]   @relation("ModerationDecisionSubject")
+  moderationDecisionsMade    ModerationDecision[]   @relation("ModerationDecisionAdmin")
+  entitlement                UserEntitlement?
+  subscriptions              Subscription[]
+  pollVotes                  MessagePollVote[]
+  xpEntries                  XpEntry[]
+  score                      UserScore?
+  achievements               UserAchievement[]
+  sessionTimer               SessionTimer?
+  // Read once in an account's life, kept off the User row: see each model.
+  preferences                UserPreferences?
+  consent                    UserConsent?
+  onboarding                 UserOnboarding?
+  urlTokens                  UserUrlToken?
+  avatarImage                UserAvatar?
+  invitation                 Invitation?            @relation("InvitedVia", fields: [invitationId], references: [id], onDelete: SetNull)
+  invitationsCreated         Invitation[]           @relation("InvitationsCreated")
+
+  @@index([lastActiveAt])
+  @@index([invitationId])
+}
+
+// What an account chose in Réglages. Created with the account (and by the
+// migration for older ones); read through preferencesOf(), which falls back
+// to these defaults should a row ever be missing.
+model UserPreferences {
+  userId                  String             @id
+  // Opt-in to 18+ titles; only effective when birthDate proves the account is 18+.
+  allowAdultContent       Boolean            @default(false)
+  // Opt-out from showing gamification progression (level/XP) to OTHER
+  // viewers — the owner always sees their own real progress regardless.
+  // Same gating role as GHOST/anonymized for the streak badge, but a
+  // standing user preference rather than a mode switch.
+  hideProgression         Boolean            @default(false)
+  // Messages: whether friends see this account online (and typing), and when
+  // it read their messages. Reciprocal by design: switched off, the account
+  // no longer sees either from anyone else.
+  chatShowPresence        Boolean            @default(true)
+  chatShowReadReceipts    Boolean            @default(true)
+  // Messages' /where: friends see which of `watchProviderIds` this account
+  // has. Off by default — a subscription list is the account's own business.
+  chatShareWatchProviders Boolean            @default(false)
+  // Shows the feedback (Quackback) launcher. An instance without
+  // PUBLIC_QUACKBACK_URL has no launcher at all, whatever this says.
+  feedbackWidget          Boolean            @default(true)
+  // Communication preferences: cadence at which each channel delivers the
+  // "new episode" digest. See DigestCadence.
+  notifyEmail             DigestCadence      @default(WEEKLY)
+  notifyPush              DigestCadence      @default(WEEKLY)
+  // Per-alert channel choices that differ from the default, keyed like
+  // ALERTS in packages/shared/src/alerts.ts: { COMMENT_REPLY: { push: true } }.
+  alertPrefs              Json               @default("{}")
+  // Opt-in to the release newsletter (sent automatically when a changelog
+  // entry is published on Quackback — see NewsletterService) — separate
+  // from notifyEmail, which is scoped to "new episode" alerts, not marketing.
+  notifyNewsletter        Boolean            @default(false)
+  // Default audience applied to a new review unless overridden at publication.
+  defaultReviewVisibility ReviewVisibility   @default(FRIENDS)
+  // Default audience applied to a new list unless overridden at creation.
+  defaultListVisibility   ListVisibility     @default(PRIVATE)
+  // Overrides the per-context "already finished this, so reveal" default
+  // that reviews and comments otherwise apply on their own.
+  spoilerSensitivity      SpoilerSensitivity @default(AUTO)
+  // Display order for the domain browser (settings tiles, desktop rail's
+  // Library section). Partial and total-safe: a domain missing from it (a
+  // brand-new one, or before this preference ever existed) just keeps its
+  // canonical position at the end — see web domains.ts's orderedDomains().
+  domainOrder             Domain[]           @default([])
+  // Country whose streaming offers the detail pages show (ISO 3166-1, "FR").
+  // Null means automatic: taken from the browser's Accept-Language on each
+  // request — see resolveWatchRegion().
+  watchRegion             String?
+  // TMDB watch provider ids of the services the user has, put first (and in
+  // colour) wherever a title's offers are listed. Not tied to a region: the
+  // ids are global, a region only decides which of them offer a title.
+  watchProviderIds        Int[]              @default([])
+  // ListenService values, put first on an album's page.
+  listenServices          String[]           @default([])
+  // The home page's widget grid (shared HomeLayoutDto). Null means the
+  // default grid, which the web builds from the enabled domains — stored
+  // only once the user edits the page, so the default keeps evolving.
+  homeLayout              Json?
+  // The phone home's widgets in order (shared HomePhoneLayoutDto), apart
+  // from the desktop grid. Null means the phone default, built on the web.
+  homePhoneLayout         Json?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// Proof of consent (GDPR art. 7(1)). Created at sign-up; an older account
+// has one whenever any field was set. Written by upsert: no row reads as
+// "nothing given".
+model UserConsent {
+  userId               String    @id
+  // The LEGAL_VERSION in effect when the user last accepted the CGU, and
+  // when. Null for accounts predating these fields (backfilled by migration
+  // to the version in effect at that time — see
+  // 20260820000000_add_accepted_terms). app/+layout.svelte blocks with a
+  // re-acceptance prompt when acceptedTermsVersion no longer matches the
+  // current LEGAL_VERSION.
+  acceptedTermsAt      DateTime?
+  acceptedTermsVersion String?
+  // When the user self-certified being at least 15 (register.dto.ts
+  // requires it). Null for accounts predating this field.
+  certifiedAgeAt       DateTime?
+  // Set the moment notifyNewsletter flips false → true, left untouched
+  // afterwards — including across a later opt-out — so it always records
+  // when consent was last given.
+  newsletterOptInAt    DateTime?
+  // Its counterpart: when consent was last withdrawn, from the settings or
+  // an email's unsubscribe link (GDPR art. 7(3)).
+  newsletterOptOutAt   DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// First-run onboarding. Written lazily (upsert): no row reads as "nothing
+// done yet".
+model UserOnboarding {
+  userId                 String             @id
+  // Set once the mandatory first-run wizard is completed (see
+  // POST /users/me/complete-onboarding). Null gates app/+layout.svelte into
+  // showing the wizard instead of the app chrome.
+  onboardedAt            DateTime?
+  // "How did you hear of Loomkeep?", asked at the end of onboarding: written
+  // once, never replaced (POST /users/me/acquisition-source). The free text
+  // only goes with OTHER.
+  acquisitionSource      AcquisitionSource?
+  acquisitionSourceOther String?
+  // "Première séance" checklist. Steps explicitly skipped by the user
+  // (one-way — there is no "unskip"); a step's *done* state is never stored
+  // here, always re-derived live from the real data (see OnboardingService)
+  // so completing step 3 out of order still marks it done once the user
+  // reaches it. `gamifiedCompletedAt` is set once and never cleared,
+  // independent of the achievement catalogue, so a future rework of the
+  // checklist's steps never re-proposes it to someone who already finished
+  // the old one.
+  skippedSteps           String[]           @default([])
+  gamifiedCompletedAt    DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Admin stats group accounts by how they heard of Loomkeep.
+  @@index([acquisitionSource])
+}
+
+// Opaque secrets for public URLs that can't send an Authorization header.
+// Not hashed: they are looked up directly. Written lazily (upsert) the first
+// time each is needed.
+model UserUrlToken {
+  userId                     String  @id
+  // The .ics calendar subscription. Null until first requested from
+  // Réglages > Export.
+  calendarToken              String? @unique
+  // The public Atom activity feed (ee/social/activity-feed). Null until
+  // first requested from Réglages > Vie privée.
+  activityFeedToken          String? @unique
+  // The Radarr and Sonarr import lists (ee/arr), pile and lists alike. Its
+  // own token, so revoking one integration leaves the calendar untouched.
+  arrToken                   String? @unique
+  // The newsletter's unsubscribe link, generated on first send and reused
+  // in every later one — not a single-use UserToken, which would grow
+  // without bound with each send. Low-stakes if it leaked (it only turns
+  // this one preference off).
+  newsletterUnsubscribeToken String? @unique
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// The profile picture's bytes, in the database (not on disk) so they ride
+// along with pg_dump backups like everything else. Its own table so the
+// image never travels with a User row read without a `select`. Created and
+// deleted together with User.avatarUpdatedAt.
+model UserAvatar {
+  userId   String @id
+  data     Bytes
+  mimeType String
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// One row per self-requested account deletion actually carried out, with
+// no link to the account: only what Admin › Statistics shows.
+model AccountDeletionFeedback {
+  id        String                 @id @default(cuid())
+  reason    AccountDeletionReason?
+  deletedAt DateTime               @default(now())
+
+  @@index([deletedAt])
+}

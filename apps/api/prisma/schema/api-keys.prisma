@@ -1,0 +1,24 @@
+// A personal API key for the public API (/api/v1). Only the SHA-256 of the
+// secret is stored, like RefreshToken; the secret itself is shown once.
+model ApiKey {
+  id               String    @id @default(cuid())
+  userId           String
+  name             String
+  tokenHash        String    @unique
+  // Last characters of the secret, to tell keys apart in the settings list.
+  suffix           String
+  // `<resource>:read` strings (see API_KEY_SCOPES in @loomkeep/shared).
+  scopes           String[]
+  // Null for a key that never expires.
+  expiresAt        DateTime?
+  lastUsedAt       DateTime?
+  lastUsedIp       String?
+  // Set once the "expires in 7 days" email went out, so it's sent only once.
+  expiryNotifiedAt DateTime?
+  createdAt        DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}

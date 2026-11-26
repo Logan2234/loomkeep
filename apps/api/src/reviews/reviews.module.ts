@@ -1,6 +1,6 @@
 import { Module } from "@nestjs/common";
 import { GamificationModule } from "../gamification/gamification.module";
-import { NotificationModule } from "../notifications/notification.module";
+import { NotificationsModule } from "../notifications/notifications.module";
 import { ReportsModule } from "../reports/reports.module";
 import { SocialModule } from "../social/social.module";
 import { ReviewController } from "./review.controller";
@@ -17,7 +17,7 @@ import { ReviewService } from "./review.service";
     SocialModule,
     GamificationModule,
     ReportsModule,
-    NotificationModule,
+    NotificationsModule,
   ],
   controllers: [ReviewController],
   providers: [ReviewService],

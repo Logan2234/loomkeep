@@ -3,8 +3,8 @@ import { ErrorCode } from "@loomkeep/shared";
 import { ConfigService } from "@nestjs/config";
 import { vi } from "vitest";
 import { MediaItemService } from "../../../catalog/media-item.service";
-import type { QuotaTrackerService } from "../../../common/quota-tracker.service";
 import { PrismaService } from "../../../prisma/prisma.service";
+import type { QuotaTrackerService } from "../../../quota/quota-tracker.service";
 import { mockFetchByUrl } from "../../../test-utils/mock-fetch";
 import { ImportJobService } from "../../import-job.service";
 import { MediaMatchResolver } from "../media/media-match-resolver";
@@ -24,7 +24,7 @@ function makeService(env: Record<string, string> = {}) {
     mediaExternalId: { findUnique: vi.fn() },
     // Nothing tracked yet, and every title already out.
     mediaItem: { findUnique: vi.fn().mockResolvedValue(null) },
-    libraryEntry: {
+    mediaEntry: {
       findUnique: vi.fn().mockResolvedValue(null),
       upsert: vi.fn(),
       deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
@@ -170,7 +170,7 @@ describe("SimklImportSource (via ImportJobService)", () => {
     });
     expect(byKey(job.plan!, "tmdb:1396")).toMatchObject({
       title: "Breaking Bad",
-      subtitle: "1 épisode vu",
+      context: { kind: "series", episodesWatched: 1 },
       include: true,
     });
     expect(byKey(job.plan!, "tmdb:238")).toMatchObject({

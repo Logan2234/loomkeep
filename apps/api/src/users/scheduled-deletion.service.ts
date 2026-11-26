@@ -9,7 +9,7 @@ import { Cron } from "@nestjs/schedule";
 import { AppException } from "../common/app.exception";
 import { randomToken, sha256Hex } from "../common/crypto.util";
 import { JOB_KEYS } from "../jobs/job-keys";
-import { JobRunService } from "../jobs/job-run.service";
+import { JobRunService, type JobSkipped } from "../jobs/job-run.service";
 import { MailService } from "../mail/mail.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { AccountDeletionService } from "./account-deletion.service";
@@ -56,14 +56,30 @@ export class ScheduledDeletionService {
       Date.now() + ACCOUNT_DELETION_GRACE_DAYS * DAY_MS,
     );
     const token = randomToken(32, "hex");
-    await this.prisma.user.update({
-      where: { id: userId },
+    // Conditional: two requests at once would otherwise both write, and the
+    // first emailed link would carry a hash the second already replaced.
+    const { count } = await this.prisma.user.updateMany({
+      where: { id: userId, deletionScheduledFor: null },
       data: {
         deletionScheduledFor: scheduledFor,
         deletionReason: reason ?? null,
         deletionCancelTokenHash: sha256Hex(token),
       },
     });
+
+    if (count === 0) {
+      const current = await this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { deletionScheduledFor: true },
+      });
+
+      if (current?.deletionScheduledFor) {
+        return { scheduledFor: current.deletionScheduledFor.toISOString() };
+      }
+
+      throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.UserNotFound);
+    }
+
     await this.mail.sendAccountDeletionScheduled(
       { email: user.email, locale: user.locale },
       scheduledFor,
@@ -123,7 +139,7 @@ export class ScheduledDeletionService {
   // 5:15, right after the inactive-accounts scan: once a day is enough for a
   // date announced to the day, and a missed run only delays by a day.
   @Cron("15 5 * * *", { name: JOB_KEYS.SCHEDULED_DELETIONS })
-  async scan(): Promise<{ reminded: number; deleted: number }> {
+  async scan(): Promise<{ reminded: number; deleted: number } | JobSkipped> {
     return this.jobRuns.record(
       JOB_KEYS.SCHEDULED_DELETIONS,
       () => this.runScan(),

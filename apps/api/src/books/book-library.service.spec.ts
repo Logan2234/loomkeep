@@ -224,6 +224,7 @@ describe("BookLibraryService — finishedAt sync", () => {
         update: vi.fn().mockResolvedValue({ id: "reading-1", number: 1 }),
       },
       // No goal set, no series: what a finish can also complete.
+      user: { findUnique: vi.fn().mockResolvedValue({ timezone: null }) },
       readingGoal: { findUnique: vi.fn().mockResolvedValue(null) },
       bookItem: { findUnique: vi.fn().mockResolvedValue({ seriesKey: null }) },
     } as unknown as PrismaService;
@@ -294,6 +295,7 @@ describe("BookLibraryService — finishedAt sync", () => {
         update: vi.fn().mockResolvedValue({ id: "reading-1", number: 1 }),
       },
       // No goal set, no series: what a finish can also complete.
+      user: { findUnique: vi.fn().mockResolvedValue({ timezone: null }) },
       readingGoal: { findUnique: vi.fn().mockResolvedValue(null) },
       bookItem: { findUnique: vi.fn().mockResolvedValue({ seriesKey: null }) },
     } as unknown as PrismaService;
@@ -342,6 +344,7 @@ describe("BookLibraryService reading goal", () => {
       .mockResolvedValue(overrides.completedCount ?? 0);
 
     const prisma = {
+      user: { findUnique: vi.fn().mockResolvedValue({ timezone: null }) },
       readingGoal: {
         findUnique: readingGoalFindUnique,
         upsert: readingGoalUpsert,
@@ -576,10 +579,14 @@ describe("BookLibraryService — XP wiring", () => {
   async function finishBook(
     extra: {
       pages?: number | null;
+      /** The edition's page count the reader declared for this reading. */
+      declaredPages?: number | null;
       goal?: { target: number; updatedAt: Date } | null;
       booksThisYear?: number;
       seriesKey?: string | null;
       saga?: { title: string; works: number } | null;
+      finishedAt?: Date;
+      timezone?: string | null;
     } = {},
   ) {
     const findUnique = vi
@@ -608,14 +615,21 @@ describe("BookLibraryService — XP wiring", () => {
         create: vi.fn().mockResolvedValue({
           id: "reading-1",
           number: 1,
-          finishedAt: new Date("2026-10-05T12:00:00Z"),
+          finishedAt: extra.finishedAt ?? new Date("2026-10-05T12:00:00Z"),
+          referencePageCount: extra.declaredPages ?? null,
         }),
         update: vi.fn().mockResolvedValue({
           id: "reading-1",
           number: 1,
-          finishedAt: new Date("2026-10-05T12:00:00Z"),
+          finishedAt: extra.finishedAt ?? new Date("2026-10-05T12:00:00Z"),
+          referencePageCount: extra.declaredPages ?? null,
         }),
         count: vi.fn().mockResolvedValue(extra.booksThisYear ?? 0),
+      },
+      user: {
+        findUnique: vi
+          .fn()
+          .mockResolvedValue({ timezone: extra.timezone ?? null }),
       },
       readingGoal: {
         findUnique: vi
@@ -657,8 +671,33 @@ describe("BookLibraryService — XP wiring", () => {
       sourceId: "ol-1",
       status: "READ",
     } as never);
+    lastPrisma = prisma;
     return xp;
   }
+
+  let lastPrisma: PrismaService;
+
+  it("counts a book finished on New Year's Eve evening toward the year it is already, where the reader lives", async () => {
+    await finishBook({
+      finishedAt: new Date("2026-12-31T23:30:00Z"),
+      timezone: "Europe/Paris",
+      goal: { target: 12, updatedAt: new Date(Date.now() - 40 * 86_400_000) },
+    });
+
+    expect(lastPrisma.readingGoal.findUnique).toHaveBeenCalledWith({
+      where: { userId_year: { userId: "user-1", year: 2027 } },
+    });
+    expect(lastPrisma.bookReading.count).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          finishedAt: {
+            gte: new Date("2026-12-31T23:00:00.000Z"),
+            lt: new Date("2027-12-31T23:00:00.000Z"),
+          },
+        }),
+      }),
+    );
+  });
 
   it("awards BOOK_FINISHED on the TO_READ -> READ transition, not on other updates", async () => {
     const xp = await finishBook();
@@ -674,6 +713,17 @@ describe("BookLibraryService — XP wiring", () => {
 
   it("pays a finished book by its length", async () => {
     const xp = await finishBook({ pages: 48 });
+
+    expect(xp.award).toHaveBeenCalledWith(
+      "user-1",
+      "BOOK_FINISHED",
+      "reading-1",
+      66,
+    );
+  });
+
+  it("pays by the catalogue's length, whatever page count the reader declared", async () => {
+    const xp = await finishBook({ pages: 48, declaredPages: 100_000 });
 
     expect(xp.award).toHaveBeenCalledWith(
       "user-1",

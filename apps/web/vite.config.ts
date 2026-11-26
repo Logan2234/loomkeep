@@ -81,7 +81,7 @@ export default defineConfig(() => ({
   ],
   // @loomkeep/shared is a linked workspace package, so Vite treats it as
   // source and skips its usual CJS→ESM pre-bundling — but it's compiled to
-  // CommonJS (consumed as dist/, see root CLAUDE.md), so named imports break
+  // CommonJS (consumed as dist/, see docs/adr/0007), so named imports break
   // in dev without forcing that conversion explicitly. The pre-bundle isn't
   // rebuilt when dist/ changes, only when the lockfile or this config does:
   // the dev script passes --force so each `pnpm dev`, which rebuilds the

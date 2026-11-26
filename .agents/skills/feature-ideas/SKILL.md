@@ -33,7 +33,7 @@ Three tests, in order. An idea that fails the first two is noise.
 Different reading order from `project-audit` — you're looking for latent capability and gaps,
 not defects:
 
-- **The schema is the idea generator.** Read `apps/api/prisma/schema.prisma` end to end and
+- **The schema is the idea generator.** Read the Prisma schema (`apps/api/prisma/schema/`, one file per module) end to end and
   list every column, table and relation that is populated but under-exploited. Ask of each one:
   who would want to see this, and where? (`SecurityEvent`, `ActivityEvent.domain`, `ListMember`,
   `ReadingGoal`, `*Replay`, `ownershipStatus`, `MediaExternalId` are the kind of rows that carry

@@ -23,6 +23,7 @@ import {
   isStreakSecuredToday,
 } from "../stats/video-temporal.util";
 import { avatarUrl } from "../users/avatar.util";
+import { preferencesOf } from "../users/preferences.util";
 import { isSuspended } from "../users/suspension.util";
 import { FollowService } from "./follow.service";
 import { SOCIAL_DOMAINS } from "./social.constants";
@@ -55,7 +56,7 @@ export class ProfileService {
     username: string,
   ): Promise<SocialProfileDto> {
     const target = await this.prisma.user.findUnique({
-      where: { username },
+      where: { username: username.toLowerCase() },
       select: {
         id: true,
         username: true,
@@ -64,7 +65,7 @@ export class ProfileService {
         profileAccess: true,
         createdAt: true,
         avatarUpdatedAt: true,
-        hideProgression: true,
+        preferences: { select: { hideProgression: true } },
         equippedBadgeKeys: true,
         suspendedUntil: true,
       },
@@ -139,7 +140,8 @@ export class ProfileService {
     // comments. `UserScore` is only read when gamification is actually on, so
     // a self-hoster running with it off never pays that query.
     const gamificationEnabled = isGamificationEnabled(this.config);
-    const xpVisible = relation.isSelf || !target.hideProgression;
+    const xpVisible =
+      relation.isSelf || !preferencesOf(target.preferences).hideProgression;
 
     const [
       activityStats,
@@ -262,7 +264,7 @@ export class ProfileService {
     username: string,
   ): Promise<{ id: string; profileAccess: string } | null> {
     const target = await this.prisma.user.findUnique({
-      where: { username },
+      where: { username: username.toLowerCase() },
       select: { id: true, profileAccess: true, suspendedUntil: true },
     });
     if (!target || isSuspended(target))
@@ -283,7 +285,7 @@ export class ProfileService {
    */
   async reportTargetId(viewerId: string, username: string): Promise<string> {
     const target = await this.prisma.user.findUnique({
-      where: { username },
+      where: { username: username.toLowerCase() },
       select: { id: true, profileAccess: true, suspendedUntil: true },
     });
     if (!target || isSuspended(target))
@@ -329,7 +331,7 @@ export class ProfileService {
     username: string,
   ): Promise<string | null> {
     const target = await this.prisma.user.findUnique({
-      where: { username },
+      where: { username: username.toLowerCase() },
       select: { id: true, profileAccess: true, suspendedUntil: true },
     });
     if (!target || isSuspended(target))
@@ -361,7 +363,7 @@ export class ProfileService {
 
     switch (domain) {
       case Domain.MEDIA:
-        return this.prisma.libraryEntry.count({ where });
+        return this.prisma.mediaEntry.count({ where });
       case Domain.GAMES:
         return this.prisma.gameEntry.count({ where });
       case Domain.BOOKS:

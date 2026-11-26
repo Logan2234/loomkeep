@@ -13,7 +13,7 @@ import type { ChatWorkService, WorkCard } from "./chat-work.service";
 import type { ChatService } from "./chat.service";
 
 // The pile's item ids, straight into a film's page.
-vi.mock("../common/work-href.util", () => ({
+vi.mock("../work/work-href.util", () => ({
   resolveWorkHref: (_prisma: unknown, _type: string, id: string) =>
     Promise.resolve(`/app/media/movie/${id}`),
 }));
@@ -46,17 +46,17 @@ function setup({ leaVisible = true } = {}) {
     [LEA]: ["dune", "perfect-days", "severance"],
   };
   const prisma = {
-    libraryEntry: {
+    mediaEntry: {
       findMany: vi.fn(({ where }: { where: { userId: string } }) =>
         (piles[where.userId] ?? []).map((mediaItemId) => ({ mediaItemId })),
       ),
     },
     user: {
-      findUniqueOrThrow: vi.fn(
-        ({ select }: { select: Record<string, boolean> }) =>
-          select.watchRegion ? { watchRegion: "FR" } : user(ME),
-      ),
+      findUniqueOrThrow: vi.fn(() => user(ME)),
       findMany: vi.fn(),
+    },
+    userPreferences: {
+      findUnique: vi.fn().mockResolvedValue({ watchRegion: "FR" }),
     },
   } as unknown as PrismaService;
   const chat = {
@@ -183,7 +183,7 @@ describe("ChatCommandsService", () => {
       });
       // Léa shares; the viewer doesn't, so isn't asked for.
       (prisma.user.findMany as Mock).mockResolvedValue([
-        { ...user(LEA), watchProviderIds: [381] },
+        { ...user(LEA), preferences: { watchProviderIds: [381] } },
       ]);
       const provider = (id: number, name: string) => ({
         id,
@@ -223,7 +223,10 @@ describe("ChatCommandsService", () => {
       ]);
       expect(prisma.user.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: { id: { in: [ME, LEA] }, chatShareWatchProviders: true },
+          where: {
+            id: { in: [ME, LEA] },
+            preferences: { chatShareWatchProviders: true },
+          },
         }),
       );
     });

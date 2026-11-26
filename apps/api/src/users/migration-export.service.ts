@@ -72,7 +72,7 @@ export class MigrationExportService {
     userId: string,
     withReviews: boolean,
   ): Promise<MigrationExportFileDto[]> {
-    const entries = await this.prisma.libraryEntry.findMany({
+    const entries = await this.prisma.mediaEntry.findMany({
       where: {
         userId,
         status: { in: ["COMPLETED", "PLANNED"] },

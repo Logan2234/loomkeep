@@ -31,18 +31,23 @@ import type {
   BookStatus as DbBookStatus,
   Prisma,
 } from "@prisma/client";
+import { sinceDaysAgo, toDateOrNull, utcDateKey } from "../common/date.util";
+import { canonicalExternalId } from "../common/external-id.util";
+import { localYear, localYearRange } from "../common/local-day.util";
+import { compareTitles, timeMs } from "../common/sort.util";
+import { EventsGateway } from "../events/events.gateway";
+import { AchievementService } from "../gamification/achievements/achievement.service";
 import {
   addToList,
   applyBulkUpdate,
   applyToEntries,
   assertBulkTarget,
   assertBulkUpdate,
-} from "../common/bulk-entries.util";
-import { sinceDaysAgo, toDateOrNull, utcYearRange } from "../common/date.util";
+} from "../work/bulk-entries.util";
 import type {
   EntryStatusChange,
   ListEntriesFilters,
-} from "../common/entry-lifecycle.util";
+} from "../work/entry-lifecycle.util";
 import {
   assertEntryOwnership,
   awardNewEntryXp,
@@ -55,20 +60,8 @@ import {
   searchTerm,
   syncCycleCompletionXp,
   titleContains,
-} from "../common/entry-lifecycle.util";
-import { canonicalExternalId } from "../common/external-id.util";
-import { compareTitles, timeMs } from "../common/sort.util";
-import { EventsGateway } from "../events/events.gateway";
-import { AchievementService } from "../gamification/achievements/achievement.service";
+} from "../work/entry-lifecycle.util";
 
-import {
-  isLoanActive,
-  LOAN_INCLUDE,
-  loanFields,
-  loanUpdate,
-  loanWhere,
-  ownershipSourceUpdate,
-} from "../common/entry-loan.util";
 import { retryAfterUniqueRace } from "../common/prisma-error.util";
 import { ACHIEVEMENT_KEYS_BY_XP_REASON } from "../gamification/achievements/triggers";
 import { SessionXpService } from "../gamification/session-xp.service";
@@ -84,9 +77,17 @@ import {
 } from "../stats/pile.util";
 import { AgeGateService } from "../users/age-gate.service";
 import { filterAdultContent } from "../users/age.util";
+import {
+  isLoanActive,
+  LOAN_INCLUDE,
+  loanFields,
+  loanUpdate,
+  loanWhere,
+  ownershipSourceUpdate,
+} from "../work/entry-loan.util";
 import { BookItemService } from "./book-item.service";
+import { toReadingDto } from "./book-reading.mapper";
 import { BookSagaService } from "./book-saga.service";
-import { toReadingDto } from "./book.mappers";
 import type { BulkUpdateBookEntriesBody } from "./dto/bulk-update-book-entries.dto";
 import { UpdateBookEntryDto } from "./dto/update-book-entry.dto";
 import { UpsertBookEntryDto } from "./dto/upsert-book-entry.dto";
@@ -230,21 +231,19 @@ export class BookLibraryService {
   ) {}
 
   /**
-   * A finish paid by the book's length — the edition read, else the work's
-   * catalogued count — a reread half that.
+   * A finish paid by the work's catalogued length, a reread half that. Not by
+   * the edition's page count: the reader types that one, as games are paid
+   * by IGDB's time to beat and never by the hours logged.
    */
   private async finishXp(
     bookItemId: string,
-    reading: { referencePageCount: number | null },
     reason: XpReason,
   ): Promise<number> {
     const item = await this.prisma.bookItem.findUnique({
       where: { id: bookItemId },
       select: { pageCount: true },
     });
-    const first = bookFinishedXp(
-      reading.referencePageCount ?? item?.pageCount ?? null,
-    );
+    const first = bookFinishedXp(item?.pageCount ?? null);
     return reason === XpReason.BOOK_REPLAYED ? replayXp(first) : first;
   }
 
@@ -258,9 +257,11 @@ export class BookLibraryService {
     bookItemId: string,
     finishedAt: Date | null,
   ): Promise<void> {
+    // The year the reader is in when they finish, as for their session days:
+    // a book closed on New Year's Eve evening in Paris counts for the new one.
     await this.awardReadingGoal(
       userId,
-      (finishedAt ?? new Date()).getUTCFullYear(),
+      localYear(await this.timezoneOf(userId), finishedAt ?? new Date()),
     );
 
     const item = await this.prisma.bookItem.findUnique({
@@ -415,8 +416,7 @@ export class BookLibraryService {
         sourceType: "BookReading",
         firstReason: XpReason.BOOK_FINISHED,
         replayReason: XpReason.BOOK_REPLAYED,
-        amount: (reason) =>
-          this.finishXp(entry.bookItemId, statusReading, reason),
+        amount: (reason) => this.finishXp(entry.bookItemId, reason),
       }))
     ) {
       await this.awardFinishMilestones(
@@ -706,8 +706,7 @@ export class BookLibraryService {
         sourceType: "BookReading",
         firstReason: XpReason.BOOK_FINISHED,
         replayReason: XpReason.BOOK_REPLAYED,
-        amount: (reason) =>
-          this.finishXp(entry.bookItemId, completedReading, reason),
+        amount: (reason) => this.finishXp(entry.bookItemId, reason),
       }))
     ) {
       await this.awardFinishMilestones(
@@ -863,7 +862,7 @@ export class BookLibraryService {
       genres: item.genres,
       pageCount: item.pageCount,
       editionKey: null,
-      releaseDate: item.releaseDate?.toISOString() ?? null,
+      releaseDate: item.releaseDate ? utcDateKey(item.releaseDate) : null,
       website: null,
       sameAuthorBooks: [],
       ratings: [],
@@ -1048,11 +1047,19 @@ export class BookLibraryService {
     return { year: dto.year, target: dto.target, completed };
   }
 
+  private async timezoneOf(userId: string): Promise<string> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { timezone: true },
+    });
+    return user?.timezone ?? "UTC";
+  }
+
   private async countBooksFinishedInYear(
     userId: string,
     year: number,
   ): Promise<number> {
-    const range = utcYearRange(year);
+    const range = localYearRange(await this.timezoneOf(userId), year);
 
     return this.prisma.bookReading.count({
       where: {

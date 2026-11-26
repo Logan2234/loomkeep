@@ -226,6 +226,11 @@ export interface CalendarTokenDto {
   token: string;
 }
 
+/** The opaque token in the Radarr and Sonarr import-list URLs. */
+export interface ArrTokenDto {
+  token: string;
+}
+
 export function episodeCode(
   season: number | null,
   episode: number | null,

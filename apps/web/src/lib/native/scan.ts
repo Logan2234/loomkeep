@@ -1,9 +1,13 @@
 import {
-  type BarcodeFormat,
+  BarcodeFormat,
   BarcodeScanner,
   GoogleBarcodeScannerModuleInstallState,
 } from "@capacitor-mlkit/barcode-scanning";
 import { Capacitor } from "@capacitor/core";
+
+// Re-exported so screens pick a format without importing the plugin package,
+// which only lib/native/ may do (ESLint).
+export { BarcodeFormat };
 
 /** Whether the Android app can scan through Google's own scanner (MOB-07). */
 export const isNativeScanAvailable = (): boolean =>

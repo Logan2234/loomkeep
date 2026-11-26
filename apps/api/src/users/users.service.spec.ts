@@ -5,6 +5,7 @@ import { Prisma } from "@prisma/client";
 import * as bcrypt from "bcryptjs";
 import { vi, type Mock } from "vitest";
 import type { ApiKeysService } from "../api-keys/api-keys.service";
+import { USER_DTO_INCLUDE } from "../auth/auth.service";
 import { SessionCacheService } from "../auth/session-cache.service";
 import { AppException } from "../common/app.exception";
 import { sha256Hex } from "../common/crypto.util";
@@ -188,6 +189,7 @@ describe("UsersService — email change", () => {
 
       expect(prisma.user.update).toHaveBeenCalledWith({
         where: { id: userId },
+        include: USER_DTO_INCLUDE,
         data: { email: "new@example.com" },
       });
       expect(prisma.emailChangeRequest.deleteMany).toHaveBeenCalledWith({
@@ -269,7 +271,9 @@ describe("UsersService — home layout", () => {
         update: vi.fn().mockImplementation(({ data }) => ({
           id: userId,
           createdAt: new Date(),
-          homeLayout: data.homeLayout,
+          preferences: {
+            homeLayout: data.preferences.upsert.update.homeLayout,
+          },
         })),
       },
     } as unknown as PrismaService;
@@ -314,11 +318,25 @@ describe("UsersService — home layout", () => {
 
     expect(prisma.user.update).toHaveBeenCalledWith({
       where: { id: userId },
-      data: { homeLayout: Prisma.DbNull },
+      include: USER_DTO_INCLUDE,
+      data: {
+        preferences: {
+          upsert: {
+            create: { homeLayout: Prisma.DbNull },
+            update: { homeLayout: Prisma.DbNull },
+          },
+        },
+      },
     });
   });
 
   it("keeps the phone home in order and drops a repeated id", async () => {
+    const homePhoneLayout = {
+      widgets: [
+        { id: "a", type: "gamesPlaying", config: { display: "rows" } },
+        { id: "b", type: "toWatch" },
+      ],
+    };
     await service.setHomePhoneLayout(userId, {
       widgets: [
         { id: "a", type: "gamesPlaying", config: { display: "rows" } },
@@ -329,12 +347,13 @@ describe("UsersService — home layout", () => {
 
     expect(prisma.user.update).toHaveBeenCalledWith({
       where: { id: userId },
+      include: USER_DTO_INCLUDE,
       data: {
-        homePhoneLayout: {
-          widgets: [
-            { id: "a", type: "gamesPlaying", config: { display: "rows" } },
-            { id: "b", type: "toWatch" },
-          ],
+        preferences: {
+          upsert: {
+            create: { homePhoneLayout },
+            update: { homePhoneLayout },
+          },
         },
       },
     });
@@ -345,7 +364,15 @@ describe("UsersService — home layout", () => {
 
     expect(prisma.user.update).toHaveBeenCalledWith({
       where: { id: userId },
-      data: { homePhoneLayout: Prisma.DbNull },
+      include: USER_DTO_INCLUDE,
+      data: {
+        preferences: {
+          upsert: {
+            create: { homePhoneLayout: Prisma.DbNull },
+            update: { homePhoneLayout: Prisma.DbNull },
+          },
+        },
+      },
     });
   });
 });
@@ -360,8 +387,10 @@ describe("UsersService — updateMe newsletter opt-in timestamp", () => {
       user: {
         findUnique: vi.fn().mockResolvedValue({
           birthDate: null,
-          allowAdultContent: false,
-          notifyNewsletter: currentNotifyNewsletter,
+          preferences: {
+            allowAdultContent: false,
+            notifyNewsletter: currentNotifyNewsletter,
+          },
         }),
         update: vi.fn().mockResolvedValue({
           id: userId,
@@ -404,38 +433,60 @@ describe("UsersService — updateMe newsletter opt-in timestamp", () => {
     );
   }
 
-  it("stamps newsletterOptInAt on the false → true transition", async () => {
+  it("stamps the newsletter opt-in on the false → true transition", async () => {
     makeService(false);
 
     await service.updateMe(userId, { notifyNewsletter: true });
 
     expect(prisma.user.update).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({ newsletterOptInAt: expect.any(Date) }),
+        data: expect.objectContaining({
+          consent: {
+            upsert: {
+              create: { newsletterOptInAt: expect.any(Date) },
+              update: { newsletterOptInAt: expect.any(Date) },
+            },
+          },
+          // Links from the emails received before this consent stop working.
+          urlTokens: {
+            upsert: {
+              create: {},
+              update: { newsletterUnsubscribeToken: null },
+            },
+          },
+        }),
       }),
     );
   });
 
-  it("leaves newsletterOptInAt untouched when already opted in", async () => {
+  it("leaves the newsletter opt-in untouched when already opted in", async () => {
     makeService(true);
 
     await service.updateMe(userId, { notifyNewsletter: true });
 
     expect(prisma.user.update).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({ newsletterOptInAt: undefined }),
+        data: expect.objectContaining({ consent: undefined }),
       }),
     );
   });
 
-  it("leaves newsletterOptInAt untouched on opt-out", async () => {
+  // The withdrawal of consent went undated (audit 2026-11-17, LEG-09).
+  it("dates the opt-out, leaving the opt-in as it was", async () => {
     makeService(true);
 
     await service.updateMe(userId, { notifyNewsletter: false });
 
     expect(prisma.user.update).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({ newsletterOptInAt: undefined }),
+        data: expect.objectContaining({
+          consent: {
+            upsert: {
+              create: { newsletterOptOutAt: expect.any(Date) },
+              update: { newsletterOptOutAt: expect.any(Date) },
+            },
+          },
+        }),
       }),
     );
   });
@@ -738,7 +789,7 @@ describe("UsersService — deletionSummary", () => {
   beforeEach(() => {
     prisma = {
       refreshToken: { count: vi.fn().mockResolvedValue(0) },
-      libraryEntry: { count: vi.fn().mockResolvedValue(0) },
+      mediaEntry: { count: vi.fn().mockResolvedValue(0) },
       episodeWatch: { count: vi.fn().mockResolvedValue(0) },
       movieReplay: { count: vi.fn().mockResolvedValue(0) },
       gameEntry: { count: vi.fn().mockResolvedValue(0) },
@@ -937,12 +988,17 @@ describe("UsersService.getMyEntitlement", () => {
 
 describe("UsersService — setAcquisitionSource", () => {
   const userId = "user-1";
+  let createMany: Mock;
   let updateMany: Mock;
 
+  // By default the onboarding row already exists, so createMany skips it.
   function makeService(env: Record<string, string>) {
+    createMany = vi.fn().mockResolvedValue({ count: 0 });
     updateMany = vi.fn().mockResolvedValue({ count: 1 });
     const service = new UsersService(
-      { user: { updateMany } } as unknown as PrismaService,
+      {
+        userOnboarding: { createMany, updateMany },
+      } as unknown as PrismaService,
       {} as unknown as MailService,
       {} as unknown as SecurityEventService,
       {} as unknown as DataExportService,
@@ -966,9 +1022,24 @@ describe("UsersService — setAcquisitionSource", () => {
     await service.setAcquisitionSource(userId, { source: "REDDIT" });
 
     expect(updateMany).toHaveBeenCalledWith({
-      where: { id: userId, acquisitionSource: null },
+      where: { userId, acquisitionSource: null },
       data: { acquisitionSource: "REDDIT", acquisitionSourceOther: null },
     });
+  });
+
+  it("creates the onboarding row with the answer when there is none", async () => {
+    const service = makeService({ ASK_ACQUISITION_SOURCE: "true" });
+    createMany.mockResolvedValueOnce({ count: 1 });
+
+    await service.setAcquisitionSource(userId, { source: "REDDIT" });
+
+    expect(createMany).toHaveBeenCalledWith({
+      data: [
+        { userId, acquisitionSource: "REDDIT", acquisitionSourceOther: null },
+      ],
+      skipDuplicates: true,
+    });
+    expect(updateMany).not.toHaveBeenCalled();
   });
 
   it("never replaces an existing answer", async () => {
@@ -1003,7 +1074,7 @@ describe("UsersService — setAcquisitionSource", () => {
     await expect(
       service.setAcquisitionSource(userId, { source: "REDDIT", other: "hi" }),
     ).rejects.toMatchObject({ code: ErrorCode.ValidationFailed });
-    expect(updateMany).not.toHaveBeenCalled();
+    expect(createMany).not.toHaveBeenCalled();
   });
 
   it("refuses when the instance doesn't ask", async () => {
@@ -1012,7 +1083,7 @@ describe("UsersService — setAcquisitionSource", () => {
     await expect(
       service.setAcquisitionSource(userId, { source: "REDDIT" }),
     ).rejects.toMatchObject({ code: ErrorCode.UserAcquisitionSourceDisabled });
-    expect(updateMany).not.toHaveBeenCalled();
+    expect(createMany).not.toHaveBeenCalled();
   });
 });
 

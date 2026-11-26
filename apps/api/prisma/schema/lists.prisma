@@ -1,0 +1,93 @@
+// A list's kind: RANKED shows explicit rank order (drag-to-reorder, "top 10"),
+// COLLECTION is an unordered grid. Same storage (ListItem + position) either way.
+enum ListKind {
+  RANKED
+  COLLECTION
+}
+
+// Social (P4): a cross-domain, user-curated list of works (RANKED "top 10" or
+// an unordered COLLECTION). Own explicit visibility, like Review — never
+// inherited from the per-domain VisibilitySetting facets. Managing your own
+// lists works even with social off (mirrors Review's own-CRUD-ungated split);
+// only reading someone else's shared list is social-gated. Editors
+// (ListMember) can mutate title/description/items but not delete the list,
+// change visibility, or manage members — those stay owner-only. Editors
+// bypass `visibility` for reads (membership itself is the grant).
+model List {
+  id          String         @id @default(cuid())
+  userId      String
+  title       String
+  description String?
+  kind        ListKind
+  visibility  ListVisibility @default(PRIVATE)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  user              User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items             ListItem[]
+  members           ListMember[]
+  notificationMutes ListNotificationMute[]
+
+  @@index([userId])
+}
+
+// Social (P4): grants a user edit access to another user's list (add/remove/
+// reorder items, edit title/description) — added directly by the owner from
+// their friends, no invite/accept step. A block in either direction between
+// owner and editor removes the membership (see FollowService.block). Mirrors Follow/Block's directed
+// join-table shape, but for write access rather than visibility.
+model ListMember {
+  id        String   @id @default(cuid())
+  listId    String
+  userId    String
+  createdAt DateTime @default(now())
+
+  list List @relation(fields: [listId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([listId, userId])
+  @@index([userId])
+}
+
+// One work in a list, work-level only (no season/episode — narrower than
+// ReviewTargetType/CommentTargetType, whose enum is reused as-is; SEASON/
+// EPISODE values are rejected at the DTO layer). `position` is a dense
+// 0..n-1 index rewritten wholesale on reorder. Concurrent editors are
+// possible now (ListMember): reorder/update take an optimistic lock on
+// List.updatedAt (see ListService) rather than real-time sync.
+model ListItem {
+  id         String           @id @default(cuid())
+  listId     String
+  targetType ReviewTargetType
+  targetId   String
+  position   Int
+  addedAt    DateTime         @default(now())
+  // Who added it, shown on collaborative lists. Null once that account is
+  // deleted; items that predate the column were attributed to the owner.
+  addedById  String?
+  // Why it's here: the reason a ranked pick sits where it does, who a
+  // gift is for. Up to LIST_LIMITS.itemNote characters.
+  note       String?
+
+  list    List  @relation(fields: [listId], references: [id], onDelete: Cascade)
+  addedBy User? @relation(fields: [addedById], references: [id], onDelete: SetNull)
+
+  @@unique([listId, targetType, targetId])
+  @@index([listId, position])
+  @@index([addedById])
+}
+
+// A collaborator (owner or editor) who turned off notifications for one list.
+// Its own table rather than a ListMember column because the owner has no
+// ListMember row.
+model ListNotificationMute {
+  listId    String
+  userId    String
+  createdAt DateTime @default(now())
+
+  list List @relation(fields: [listId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([listId, userId])
+  @@index([userId])
+}

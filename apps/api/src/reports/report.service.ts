@@ -25,16 +25,18 @@ import {
   toPagedResult,
   type ParsedPage,
 } from "../common/pagination.util";
-import { resolveWorkHref } from "../common/work-href.util";
+import { isUniqueViolation } from "../common/prisma-error.util";
 import { EventsGateway } from "../events/events.gateway";
 import { JOB_KEYS } from "../jobs/job-keys";
-import { JobRunService } from "../jobs/job-run.service";
+import { JobRunService, type JobSkipped } from "../jobs/job-run.service";
 import { MailService } from "../mail/mail.service";
 import { AdminAlertService } from "../notifications/admin-alert.service";
 import { notificationCopy } from "../notifications/notification-copy";
 import { NotificationService } from "../notifications/notification.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { toUserSummaryDto } from "../users/avatar.util";
+import { USER_SUMMARY_SELECT } from "../users/user.queries";
+import { resolveWorkHref } from "../work/work-href.util";
 
 const EXCERPT_LENGTH = 120;
 
@@ -66,14 +68,6 @@ type ReviewTarget = {
   targetId: string;
   user: { username: string } | null;
 };
-
-const REPORTER_SELECT = {
-  id: true,
-  username: true,
-  displayName: true,
-  profileAccess: true,
-  avatarUpdatedAt: true,
-} as const;
 
 @Injectable()
 export class ReportService {
@@ -174,19 +168,26 @@ export class ReportService {
       throw new AppException(HttpStatus.CONFLICT, ErrorCode.ReportAlreadyFiled);
     }
 
-    await this.prisma.report.create({
-      data: {
-        reporterId,
-        targetType,
-        targetId,
-        category,
-        motif: category === "OTHER" ? null : motif,
-        ...(targetType === "USER" && { profilePart }),
-        reason: reason?.trim() || null,
-        // The author, list owner or profile's account — listed first.
-        targetOwnerId: ownerIds[0] ?? null,
-      },
-    });
+    // The read above answers the usual case; two submissions at once both
+    // pass it, and the partial unique index refuses the second.
+    try {
+      await this.prisma.report.create({
+        data: {
+          reporterId,
+          targetType,
+          targetId,
+          category,
+          motif: category === "OTHER" ? null : motif,
+          ...(targetType === "USER" && { profilePart }),
+          reason: reason?.trim() || null,
+          // The author, list owner or profile's account — listed first.
+          targetOwnerId: ownerIds[0] ?? null,
+        },
+      });
+    } catch (err) {
+      if (!isUniqueViolation(err)) throw err;
+      throw new AppException(HttpStatus.CONFLICT, ErrorCode.ReportAlreadyFiled);
+    }
 
     this.events.emitReportsCount();
   }
@@ -306,7 +307,7 @@ export class ReportService {
       skip,
       take: take + 1,
       include: {
-        reporter: { select: REPORTER_SELECT },
+        reporter: { select: USER_SUMMARY_SELECT },
         targetOwner: { select: { username: true } },
       },
     });
@@ -440,7 +441,7 @@ export class ReportService {
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],
       take: DEFAULT_PAGE_SIZE,
       include: {
-        reporter: { select: REPORTER_SELECT },
+        reporter: { select: USER_SUMMARY_SELECT },
         targetOwner: { select: { username: true } },
       },
     });
@@ -514,7 +515,7 @@ export class ReportService {
       text: true,
       createdAt: true,
       author: { select: { username: true } },
-    } as const;
+    } satisfies Prisma.MessageSelect;
     const [before, after] = await Promise.all([
       this.prisma.message.findMany({
         where: {
@@ -566,7 +567,7 @@ export class ReportService {
 
   /** Daily 7h admin-only digest of pending reports. Skipped entirely when there's nothing pending. */
   @Cron(CronExpression.EVERY_DAY_AT_7AM, { name: JOB_KEYS.REPORTS_DIGEST })
-  async sendDailyDigest(): Promise<number> {
+  async sendDailyDigest(): Promise<number | JobSkipped> {
     return this.jobRuns.record(
       JOB_KEYS.REPORTS_DIGEST,
       () => this.runDailyDigest(),

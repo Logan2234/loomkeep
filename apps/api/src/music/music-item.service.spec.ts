@@ -144,6 +144,28 @@ describe("MusicItemService.persistDetails", () => {
     );
   });
 
+  it("keeps a partial refresh stale, without wiping the tracks it couldn't read", async () => {
+    const { service, prisma } = makeService({
+      musicExternalId: { musicItemId: "existing-1" },
+    });
+
+    await service.persistDetails("MUSICBRAINZ", { ...details, partial: true });
+
+    const [[{ data }]] = (prisma.musicItem.update as Mock).mock.calls;
+    expect(data).not.toHaveProperty("lastSyncedAt");
+    expect(data).not.toHaveProperty("trackCount");
+    expect(data).not.toHaveProperty("durationMin");
+  });
+
+  it("stores a partial first fetch as already stale", async () => {
+    const { service, prisma } = makeService({ musicExternalId: null });
+
+    await service.persistDetails("MUSICBRAINZ", { ...details, partial: true });
+
+    const [[{ data }]] = (prisma.musicItem.create as Mock).mock.calls;
+    expect(data.lastSyncedAt).toEqual(new Date(0));
+  });
+
   it("refreshes the existing music item when an external id reference exists", async () => {
     const { service, prisma } = makeService({
       musicExternalId: { musicItemId: "existing-1" },

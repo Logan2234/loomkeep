@@ -14,6 +14,7 @@ import { deriveStatus, normalizeAiringFinished } from "../library/status.util";
 import { PrismaService } from "../prisma/prisma.service";
 import { toUserSummaryDto } from "../users/avatar.util";
 import { isSuspended } from "../users/suspension.util";
+import { USER_SUMMARY_SELECT } from "../users/user.queries";
 import { FollowService } from "./follow.service";
 import {
   DEFAULT_FACET_AUDIENCE,
@@ -114,14 +115,7 @@ export class WorkFriendsService {
     const [users, settings] = await Promise.all([
       this.prisma.user.findMany({
         where: { id: { in: ids } },
-        select: {
-          id: true,
-          username: true,
-          displayName: true,
-          profileAccess: true,
-          avatarUpdatedAt: true,
-          suspendedUntil: true,
-        },
+        select: { ...USER_SUMMARY_SELECT, suspendedUntil: true },
       }),
       this.prisma.visibilitySetting.findMany({
         where: {
@@ -232,7 +226,7 @@ export class WorkFriendsService {
         where: { id: itemId },
         select: { type: true, status: true },
       }),
-      this.prisma.libraryEntry.findMany({
+      this.prisma.mediaEntry.findMany({
         where: { mediaItemId: itemId, userId: { in: userIds } },
         select: { userId: true, status: true, updatedAt: true },
       }),

@@ -1,7 +1,7 @@
 import { Module } from "@nestjs/common";
 import { EventsModule } from "../events/events.module";
 import { GamificationModule } from "../gamification/gamification.module";
-import { NotificationModule } from "../notifications/notification.module";
+import { NotificationsModule } from "../notifications/notifications.module";
 import { ReportsModule } from "../reports/reports.module";
 import { DomainGateModule } from "../users/domain-gate.module";
 import { ActivityService } from "./activity.service";
@@ -23,7 +23,7 @@ import { WorkFriendsService } from "./work-friends.service";
 // imports Gamification (AchievementService), a real circular dependency.
 @Module({
   imports: [
-    NotificationModule,
+    NotificationsModule,
     GamificationModule,
     EventsModule,
     DomainGateModule,

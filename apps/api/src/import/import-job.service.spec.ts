@@ -349,7 +349,7 @@ describe("ImportJobService.commit — IMPORT_COMPLETED", () => {
     });
     const report = {
       overwrite: false,
-      tiles: [{ id: "movies" as const, label: "Movies", value: 1, sub: null }],
+      tiles: [{ id: "movies" as const, value: 1 }],
     };
     const { service, importRunCreate } = makeCommitService(async () => {
       await pending;
@@ -392,6 +392,8 @@ describe("ImportJobService.commit — IMPORT_COMPLETED", () => {
         where: { id: job.id },
         create: expect.objectContaining({
           id: job.id,
+          // Figures the web labels itself: no English text stored.
+          reportTiles: report.tiles,
           details: {
             items: [
               { title: "Selected", state: "selected" },
@@ -450,7 +452,7 @@ describe("ImportJobService.commit — IMPORT_COMPLETED", () => {
   // 2026-11-14, SEC-06).
   it("keeps the raw failure text out of the job it returns", async () => {
     const { service, importRunCreate } = makeCommitService(async () => {
-      throw new Error('relation "LibraryEntry" does not exist');
+      throw new Error('relation "MediaEntry" does not exist');
     });
     seedAnalyzedJob(service, "analyzed-1");
 
@@ -462,11 +464,11 @@ describe("ImportJobService.commit — IMPORT_COMPLETED", () => {
     const returned = service.getJob("u1", job.id);
     expect(returned.status).toBe("failed");
     expect(returned.errorCode).toBe(ErrorCode.InternalError);
-    expect(JSON.stringify(returned)).not.toContain("LibraryEntry");
+    expect(JSON.stringify(returned)).not.toContain("MediaEntry");
     expect(importRunCreate).toHaveBeenCalledWith(
       expect.objectContaining({
         create: expect.objectContaining({
-          error: 'relation "LibraryEntry" does not exist',
+          error: 'relation "MediaEntry" does not exist',
         }),
       }),
     );
@@ -839,7 +841,7 @@ describe("ImportJobService — retained payloads", () => {
   it("keeps the job record itself, so its report stays readable", async () => {
     const service = makeService(async () => ({
       overwrite: false,
-      tiles: [{ id: "series", label: "Séries", value: 3, sub: null }],
+      tiles: [{ id: "series" as const, value: 3 }],
     }));
     seedAnalyzed(service, "analyzed-1");
 
@@ -881,6 +883,7 @@ describe("ImportJobService.getLastRun", () => {
       domain: Domain.MEDIA,
       status: "FAILURE",
       itemCount: 0,
+      reportTiles: null,
       summary: null,
       finishedAt: new Date("2026-09-12T08:30:00.000Z"),
     });
@@ -891,6 +894,7 @@ describe("ImportJobService.getLastRun", () => {
         domain: Domain.MEDIA,
         status: "FAILURE",
         itemCount: 0,
+        tiles: null,
         summary: null,
         finishedAt: "2026-09-12T08:30:00.000Z",
       },
@@ -914,7 +918,8 @@ describe("ImportJobService.getHistory", () => {
         status: "SUCCESS",
         itemCount: 12,
         overwrite: true,
-        summary: "3 series, 9 episodes",
+        reportTiles: [{ id: "series", value: 3 }],
+        summary: null,
         startedAt: new Date("2026-09-12T08:00:00.000Z"),
         finishedAt: new Date("2026-09-12T08:30:00.000Z"),
       },
@@ -942,7 +947,8 @@ describe("ImportJobService.getHistory", () => {
           status: "SUCCESS",
           itemCount: 12,
           overwrite: true,
-          summary: "3 series, 9 episodes",
+          tiles: [{ id: "series", value: 3 }],
+          summary: null,
           startedAt: "2026-09-12T08:00:00.000Z",
           finishedAt: "2026-09-12T08:30:00.000Z",
         },

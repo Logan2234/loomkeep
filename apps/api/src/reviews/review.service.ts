@@ -28,9 +28,9 @@ import {
 } from "../common/external-id.util";
 import { isUniqueViolation } from "../common/prisma-error.util";
 import { toRatingStep } from "../common/rating-step.validator";
-import { resolveWorkLink } from "../common/work-href.util";
 import { assertGameReleased } from "../games/game-release.util";
 import { AchievementService } from "../gamification/achievements/achievement.service";
+import { resolveWorkLink } from "../work/work-href.util";
 
 import {
   ACHIEVEMENT_KEYS_ON_REVIEW_VOTE_UP,
@@ -48,6 +48,8 @@ import { isSocialEnabled } from "../social/social.config";
 import { VisibilityService } from "../social/visibility.service";
 import { resolveReviewVisibility } from "../social/visibility.util";
 import { toUserSummaryDto } from "../users/avatar.util";
+import { preferencesOf } from "../users/preferences.util";
+import { USER_SUMMARY_SELECT } from "../users/user.queries";
 
 // How far past the threshold a burst of concurrent upvotes may land.
 const VOTE_NOTIFY_WINDOW = 5;
@@ -67,16 +69,12 @@ type ReviewRow = {
 };
 
 const AUTHOR_SELECT = {
-  id: true,
-  username: true,
-  displayName: true,
-  profileAccess: true,
-  avatarUpdatedAt: true,
+  ...USER_SUMMARY_SELECT,
   // Only ever used locally to build the withXp gating map below — never
   // forwarded to toUserSummaryDto/the client (that would leak the setting
   // itself, not just its effect).
-  hideProgression: true,
-} as const;
+  preferences: { select: { hideProgression: true } },
+} satisfies Prisma.UserSelect;
 
 @Injectable()
 export class ReviewService {
@@ -205,12 +203,7 @@ export class ReviewService {
     reviewId: string,
     value: ReviewVoteValue,
   ): Promise<{ score: number; myVote: ReviewVoteValue }> {
-    const review = await this.prisma.review.findUnique({
-      where: { id: reviewId },
-      select: { userId: true, targetType: true, targetId: true },
-    });
-    if (!review)
-      throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.ReviewNotFound);
+    const review = await this.assertVisibleTo(viewerId, reviewId);
 
     if (review.userId === viewerId) {
       throw new AppException(
@@ -393,47 +386,66 @@ export class ReviewService {
       await assertMediaReleased(this.prisma, targetId);
     if (targetType === ReviewTargetType.GAME)
       await assertGameReleased(this.prisma, targetId);
-    const user = await this.prisma.user.findUniqueOrThrow({
-      where: { id: userId },
-      select: { defaultReviewVisibility: true },
-    });
+    const user = preferencesOf(
+      await this.prisma.userPreferences.findUnique({
+        where: { userId: userId },
+        select: { defaultReviewVisibility: true },
+      }),
+    );
     const visibility = dto.visibility ?? user.defaultReviewVisibility;
     const text = dto.text ?? null;
 
-    const existing = await this.prisma.review.findUnique({
-      where: { userId_targetType_targetId: { userId, targetType, targetId } },
-      select: { rating: true, text: true },
-    });
+    // Read, write and snapshot under a lock on this author and target: two
+    // saves at once (a double tap, two devices) would otherwise both see no
+    // review yet, and each record a revision and a feed event for it.
+    const { row, existing, contentChanged } = await this.prisma.$transaction(
+      async (tx) => {
+        await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${userId}::text), hashtext(${`${targetType}:${targetId}`}::text))`;
+        const existing = await tx.review.findUnique({
+          where: {
+            userId_targetType_targetId: { userId, targetType, targetId },
+          },
+          select: { rating: true, text: true },
+        });
 
-    const row = await this.prisma.review.upsert({
-      where: { userId_targetType_targetId: { userId, targetType, targetId } },
-      update: {
-        rating: dto.rating,
-        text,
-        visibility,
-        spoilerTag: dto.spoilerTag,
-      },
-      create: {
-        userId,
-        targetType,
-        targetId,
-        rating: dto.rating,
-        text,
-        visibility,
-        spoilerTag: dto.spoilerTag ?? false,
-      },
-    });
+        const row = await tx.review.upsert({
+          where: {
+            userId_targetType_targetId: { userId, targetType, targetId },
+          },
+          update: {
+            rating: dto.rating,
+            text,
+            visibility,
+            spoilerTag: dto.spoilerTag,
+          },
+          create: {
+            userId,
+            targetType,
+            targetId,
+            rating: dto.rating,
+            text,
+            visibility,
+            spoilerTag: dto.spoilerTag ?? false,
+          },
+        });
 
-    // A revision only snapshots rating/text — skip it when neither changed
-    // (including when only the visibility changed).
-    const contentChanged =
-      !existing || existing.rating !== dto.rating || existing.text !== text;
+        // A revision only snapshots rating/text — skip it when neither
+        // changed (including when only the visibility changed).
+        const contentChanged =
+          !existing || existing.rating !== dto.rating || existing.text !== text;
+
+        if (contentChanged) {
+          await tx.reviewRevision.create({
+            data: { reviewId: row.id, rating: dto.rating, text },
+          });
+        }
+
+        return { row, existing, contentChanged };
+      },
+    );
 
     // Audience/spoiler-only edits aren't news: no revision, no feed entry.
     if (contentChanged) {
-      await this.prisma.reviewRevision.create({
-        data: { reviewId: row.id, rating: dto.rating, text },
-      });
       await this.emitReviewed(userId, row.id, targetType, targetId, dto.rating);
       await this.awardReviewRatingXp(userId, row.id, text);
     }
@@ -813,6 +825,42 @@ export class ReviewService {
    * own audience choice doesn't apply — they have no friends by design) but
    * shown under their derived pseudonym instead of their real identity.
    */
+  /**
+   * The review, when the viewer may see it by the rules of `listForTarget`
+   * (audience, profile access, blocks). One they can't see answers 404, like
+   * one that doesn't exist: voting on or reporting it would confirm it does.
+   */
+  async assertVisibleTo(
+    viewerId: string,
+    reviewId: string,
+  ): Promise<{ userId: string | null; targetType: string; targetId: string }> {
+    const review = await this.prisma.review.findUnique({
+      where: { id: reviewId },
+      select: {
+        userId: true,
+        targetType: true,
+        targetId: true,
+        visibility: true,
+        user: { select: { id: true, profileAccess: true } },
+      },
+    });
+
+    const visible =
+      review !== null &&
+      (!review.user ||
+        resolveReviewVisibility(
+          review.visibility,
+          review.user.profileAccess,
+          await this.visibility.getRelation(viewerId, review.user),
+        ));
+
+    if (!review || !visible) {
+      throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.ReviewNotFound);
+    }
+
+    return review;
+  }
+
   async listForTarget(
     viewerId: string,
     targetType: ReviewTargetType,
@@ -844,7 +892,7 @@ export class ReviewService {
         .filter(
           (r): r is typeof r & { user: NonNullable<typeof r.user> } => !!r.user,
         )
-        .map((r) => [r.user.id, r.user.hideProgression]),
+        .map((r) => [r.user.id, r.user.preferences?.hideProgression ?? false]),
     );
     const votesFor = (id: string) =>
       voteMap.get(id) ?? { score: 0, myVote: null };
@@ -1052,10 +1100,12 @@ export class ReviewService {
       reviewId = row.id;
       text = existing.text;
     } else {
-      const user = await this.prisma.user.findUniqueOrThrow({
-        where: { id: userId },
-        select: { defaultReviewVisibility: true },
-      });
+      const user = preferencesOf(
+        await this.prisma.userPreferences.findUnique({
+          where: { userId: userId },
+          select: { defaultReviewVisibility: true },
+        }),
+      );
       let row;
 
       try {
@@ -1193,7 +1243,7 @@ export class ReviewService {
       userId,
       xpMap,
       isGamificationEnabled(this.config),
-      new Map([[userId, user.hideProgression]]),
+      new Map([[userId, user.preferences?.hideProgression ?? false]]),
     );
   }
 }

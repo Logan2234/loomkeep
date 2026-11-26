@@ -86,6 +86,34 @@ export interface ImportReq<TParsed = unknown> {
   ): Promise<ImportReport>;
 }
 
+/** The status each plan item proposed (`defaultStatus`), by key. */
+export function indexPlanStatuses(plan: ImportPlan): Map<string, string> {
+  const byKey = new Map<string, string>();
+
+  for (const group of plan.groups) {
+    for (const item of group.items) {
+      if (item.defaultStatus) byKey.set(item.key, item.defaultStatus);
+    }
+  }
+
+  return byKey;
+}
+
+/**
+ * The status to write: the user's choice when it is one the domain knows,
+ * else what the plan proposed, else `fallback`. The commit body is free-form,
+ * so a stray value must not reach the database's enum.
+ */
+export function pickStatus<S extends string>(
+  allowed: Record<string, S>,
+  fallback: S,
+  ...candidates: (string | undefined)[]
+): S {
+  const values = Object.values(allowed) as string[];
+  const valid = candidates.find((c) => c !== undefined && values.includes(c));
+  return (valid as S | undefined) ?? fallback;
+}
+
 export function indexPlanMatches(plan: ImportPlan): Map<string, ImportMatch> {
   const byKey = new Map<string, ImportMatch>();
 

@@ -12,12 +12,13 @@ import {
 } from "../common/external-id.util";
 import { localDay, localParts } from "../common/local-day.util";
 import { JOB_KEYS } from "../jobs/job-keys";
-import { JobRunService } from "../jobs/job-run.service";
+import { JobRunService, type JobSkipped } from "../jobs/job-run.service";
 import {
   materializedStatus,
   withEpisodeLeftToWatch,
 } from "../library/status.util";
-import { MailService, type PausedReminderItem } from "../mail/mail.service";
+import { MailService } from "../mail/mail.service";
+import type { PausedReminderItem } from "../mail/mail.types";
 import { PrismaService } from "../prisma/prisma.service";
 import { notSuspended } from "../users/suspension.util";
 import { readAlertPrefs } from "./alert-prefs.util";
@@ -62,7 +63,7 @@ export class PausedReminderService {
   ) {}
 
   @Cron(CronExpression.EVERY_HOUR, { name: JOB_KEYS.PAUSED_REMINDER })
-  async runReminders(): Promise<number> {
+  async runReminders(): Promise<number | JobSkipped> {
     return this.jobRuns.record(
       JOB_KEYS.PAUSED_REMINDER,
       () => this.run(new Date()),
@@ -73,10 +74,16 @@ export class PausedReminderService {
   async run(now: Date): Promise<number> {
     const optedIn = await this.prisma.user.findMany({
       where: {
-        OR: [
-          { alertPrefs: { path: ["PAUSED_REMINDER", "email"], equals: true } },
-          { alertPrefs: { path: ["PAUSED_REMINDER", "push"], equals: true } },
-        ],
+        preferences: {
+          OR: [
+            {
+              alertPrefs: { path: ["PAUSED_REMINDER", "email"], equals: true },
+            },
+            {
+              alertPrefs: { path: ["PAUSED_REMINDER", "push"], equals: true },
+            },
+          ],
+        },
         ...notSuspended(now),
       },
       select: {
@@ -84,7 +91,7 @@ export class PausedReminderService {
         email: true,
         locale: true,
         timezone: true,
-        alertPrefs: true,
+        preferences: { select: { alertPrefs: true } },
       },
     });
 
@@ -99,7 +106,7 @@ export class PausedReminderService {
         const works = await this.pausedWorks(user.id, now);
         if (works.length === 0) continue;
 
-        const prefs = readAlertPrefs(user.alertPrefs);
+        const prefs = readAlertPrefs(user.preferences?.alertPrefs ?? {});
         const items = works.slice(0, MAX_ITEMS);
 
         if (isAlertEnabled(prefs, "PAUSED_REMINDER", "email")) {
@@ -153,7 +160,7 @@ export class PausedReminderService {
     };
 
     const [started, books, games] = await Promise.all([
-      this.prisma.libraryEntry.findMany({
+      this.prisma.mediaEntry.findMany({
         where: {
           userId,
           status: { not: "DROPPED" },

@@ -6,7 +6,8 @@ const dotenv = require("dotenv");
 module.exports = async () => {
   const apiDir = path.join(__dirname, "..");
   const parsed =
-    dotenv.config({ path: path.join(apiDir, ".env") }).parsed ?? {};
+    dotenv.config({ path: path.join(apiDir, ".env"), quiet: true }).parsed ??
+    {};
   const baseUrl = process.env.DATABASE_URL ?? parsed.DATABASE_URL;
   if (!baseUrl) {
     throw new Error("DATABASE_URL is required to run the e2e tests");

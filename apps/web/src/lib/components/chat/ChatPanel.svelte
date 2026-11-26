@@ -5,6 +5,7 @@
   import { createApiQuery } from "#lib/api/query.svelte.js";
   import { chat } from "#lib/chat/chat.svelte.js";
   import Icon from "#lib/components/Icon.svelte";
+  import { appConfig } from "#lib/config.svelte.js";
   import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
   import { fly } from "svelte/transition";
@@ -13,6 +14,7 @@
   import ChatThread from "./ChatThread.svelte";
   import ChatWorksEmpty from "./ChatWorksEmpty.svelte";
   import ChatWorkThread from "./ChatWorkThread.svelte";
+  import InviteFriendModal from "./InviteFriendModal.svelte";
   import {
     conversationStep,
     escapeReaches,
@@ -22,6 +24,9 @@
   } from "./conversation-presentation";
 
   const reduced = prefersReducedMotion();
+
+  let inviting = $state(false);
+  const canInvite = $derived(appConfig.registrationEnabled);
 
   const conversationsQuery = createApiQuery(() => ({
     key: keys.chat.conversations(),
@@ -76,10 +81,20 @@
 
 <svelte:window {onkeydown} />
 
-{#snippet tabHeader(title: string)}
+{#snippet tabHeader(title: string, invite = false)}
   <header
     class="border-border flex shrink-0 items-center gap-2 border-b py-2.5 pr-2.5 pl-4">
     <h2 class="min-w-0 flex-1 font-semibold">{title}</h2>
+    {#if invite}
+      <button
+        type="button"
+        class="btn-icon"
+        aria-label={m.chat_invite()}
+        title={m.chat_invite()}
+        onclick={() => (inviting = true)}>
+        <Icon name="user-plus" class="h-4.5 w-4.5" />
+      </button>
+    {/if}
     <button
       type="button"
       class="btn-icon"
@@ -133,7 +148,7 @@
           onexpand={expand} />
       {/key}
     {:else}
-      {@render tabHeader(m.common_friends())}
+      {@render tabHeader(m.common_friends(), canInvite)}
       <div
         class="text-dim flex flex-1 flex-col items-center justify-center gap-3 p-6 text-center">
         <Icon name="message" class="h-8 w-8" />
@@ -141,13 +156,28 @@
           {m.chat_title()}
         </p>
         <p class="max-w-[32ch] text-sm">{m.chat_pick_conversation()}</p>
-        <button
-          type="button"
-          class="btn btn-primary btn-sm"
-          onclick={() => chat.newMessage()}>
-          {m.chat_new_message()}
-        </button>
+        <div class="flex flex-wrap justify-center gap-2">
+          <button
+            type="button"
+            class="btn btn-primary btn-sm"
+            onclick={() => chat.newMessage()}>
+            {m.chat_new_message()}
+          </button>
+          {#if canInvite}
+            <button
+              type="button"
+              class="btn btn-ghost btn-sm"
+              onclick={() => (inviting = true)}>
+              <Icon name="user-plus" class="h-4 w-4" />
+              {m.chat_invite_title()}
+            </button>
+          {/if}
+        </div>
       </div>
     {/if}
   </div>
 </section>
+
+{#if inviting}
+  <InviteFriendModal onclose={() => (inviting = false)} />
+{/if}

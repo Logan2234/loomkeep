@@ -1,6 +1,7 @@
 /**
- * Default page size for every user-facing list endpoint, unless the caller
- * asks for another `limit`. One value on purpose: each domain used to carry
+ * Default page size of a user-facing list endpoint when the caller asks for
+ * no other `limit`. A list takes another default only for a reason of its
+ * own (an admin table, the security log, a feed): each domain used to carry
  * its own copy, which drifted (40 in the library services, 50 in admin, 20
  * for comments) with nothing behind the difference.
  */

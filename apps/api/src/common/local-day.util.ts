@@ -1,4 +1,4 @@
-import { utcDateKey } from "./date.util";
+import { utcDateKey, utcYearRange } from "./date.util";
 
 /**
  * Local-timezone helpers built on `Intl.DateTimeFormat`, shared by anything
@@ -95,11 +95,35 @@ function offsetMs(timezone: string, at: Date): number {
 export function startOfLocalDay(timezone: string, at: Date): Date {
   const day = localDay(timezone, at);
   if (!day) return new Date(`${utcDateKey(at)}T00:00:00.000Z`);
+  return localMidnight(timezone, day);
+}
 
+/** Midnight of the calendar day `day` ("YYYY-MM-DD") in a valid `timezone`. */
+function localMidnight(timezone: string, day: string): Date {
   const midnightUtc = Date.parse(`${day}T00:00:00.000Z`);
   // Two passes: the offset at UTC midnight can differ from the one at local
   // midnight when a DST change falls in between.
   let start = midnightUtc - offsetMs(timezone, new Date(midnightUtc));
   start = midnightUtc - offsetMs(timezone, new Date(start));
   return new Date(start);
+}
+
+/** The year `date` falls in for someone in `timezone` (UTC for an invalid zone). */
+export function localYear(timezone: string, date: Date): number {
+  return Number(localDayOrUtc(timezone, date).slice(0, 4));
+}
+
+/**
+ * The instants bounding `year` in `timezone`, from its new year's midnight
+ * to the next — the UTC year for an invalid zone.
+ */
+export function localYearRange(
+  timezone: string,
+  year: number,
+): { gte: Date; lt: Date } {
+  if (localDay(timezone, new Date()) === null) return utcYearRange(year);
+  return {
+    gte: localMidnight(timezone, `${year}-01-01`),
+    lt: localMidnight(timezone, `${year + 1}-01-01`),
+  };
 }

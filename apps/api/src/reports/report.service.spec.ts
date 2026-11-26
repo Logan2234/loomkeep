@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import { type Mock, vi } from "vitest";
 import { AppException } from "../common/app.exception";
 import { DEFAULT_PAGE_SIZE, parsePageQuery } from "../common/pagination.util";
@@ -142,6 +143,37 @@ describe("ReportService.create", () => {
         "SPAM_PROMOTIONAL" as never,
       ),
     ).rejects.toThrow();
+  });
+
+  // Two submissions at once both passed the "already filed?" read: the
+  // unique index answers the second (audit 2026-11-17, BUG-74).
+  it("answers a report the index refuses as already filed", async () => {
+    const { svc } = make({
+      comment: {
+        findUnique: vi
+          .fn()
+          .mockResolvedValue({ authorId: "author", deletedAt: null }),
+      },
+      report: {
+        findFirst: vi.fn().mockResolvedValue(null),
+        create: vi.fn().mockRejectedValue(
+          new Prisma.PrismaClientKnownRequestError("Unique constraint failed", {
+            code: "P2002",
+            clientVersion: "test",
+          }),
+        ),
+      },
+    });
+
+    await expect(
+      svc.create(
+        "reporter1",
+        "COMMENT" as never,
+        "c1",
+        "SPAM" as never,
+        "SPAM_PROMOTIONAL" as never,
+      ),
+    ).rejects.toMatchObject({ code: "reports.already_filed" });
   });
 
   it("persists a report with a valid category/motif pair", async () => {

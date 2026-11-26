@@ -2,11 +2,11 @@ import type { ImportPlan, ImportPlanItem } from "@loomkeep/shared";
 import { ErrorCode, GameSource } from "@loomkeep/shared";
 import { ConfigService } from "@nestjs/config";
 import { vi, type Mock } from "vitest";
-import type { QuotaTrackerService } from "../../../common/quota-tracker.service";
 import { GameItemService } from "../../../games/game-item.service";
 import type { ProviderGameDetails } from "../../../games/providers/game-provider.types";
 import { IgdbProvider } from "../../../games/providers/igdb.provider";
 import { PrismaService } from "../../../prisma/prisma.service";
+import type { QuotaTrackerService } from "../../../quota/quota-tracker.service";
 import { mockFetchByUrl } from "../../../test-utils/mock-fetch";
 import { AgeGateService } from "../../../users/age-gate.service";
 import { ImportJobService } from "../../import-job.service";
@@ -224,20 +224,20 @@ describe("SteamImportSource (via ImportJobService)", () => {
     });
     expect(byKey(job.plan!, "g100")).toMatchObject({
       sourceTitle: "Game 100",
-      subtitle: "10 h",
+      context: { kind: "game", recentlyPlayed: false },
       defaultStatus: "BACKLOG",
       include: true,
       match: { source: "IGDB", sourceId: "100" },
     });
     expect(byKey(job.plan!, "g200")).toMatchObject({
-      subtitle: "2 h · joué récemment",
+      context: { kind: "game", recentlyPlayed: true },
       defaultStatus: "PLAYING",
       alreadyInLibrary: true,
       include: false, // already tracked
     });
     expect(byKey(job.plan!, "u40")).toMatchObject({
       match: null,
-      subtitle: "< 1 h",
+      context: { kind: "game" },
     });
     expect(mocks.igdb.matchSteamAppIds).toHaveBeenCalledWith([
       "10",
@@ -266,6 +266,22 @@ describe("SteamImportSource (via ImportJobService)", () => {
       String(u).includes("ResolveVanityURL"),
     );
     expect(String(vanityCall?.[0])).toContain("vanityurl=gaben");
+  });
+
+  // The input went to Steam's API as is, up to the 24 MB body limit
+  // (audit 2026-11-17, SEC-31).
+  it.each([
+    ["a sentence", "my steam is gaben please"],
+    ["a huge value", "a".repeat(5_000)],
+    ["another site's URL", "https://example.com/id/gaben"],
+  ])("refuses %s before calling Steam", async (_label, input) => {
+    const { service } = build();
+    const fetchMock = mockFetchByUrl({});
+
+    await expect(
+      service.startAnalyze("user1", "steam", { input }),
+    ).rejects.toMatchObject({ code: ErrorCode.ImportSteamProfileNotFound });
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it("fails the job with a clear error when the profile is private", async () => {
@@ -405,4 +421,49 @@ describe("SteamImportSource (via ImportJobService)", () => {
     );
     expect(mocks.prisma.gameEntry.deleteMany).not.toHaveBeenCalled();
   });
+
+  // The plan proposed PLAYING for a game played lately, but the commit wrote
+  // BACKLOG unless the client sent it back (audit 2026-11-17, BUG-70).
+  it.each([
+    ["no status sent", undefined],
+    ["an unknown status", { g100: "WHATEVER" }],
+  ])(
+    "commit falls back to the plan's proposed status with %s",
+    async (_label, statuses) => {
+      const { service, mocks } = build({
+        igdb: {
+          matchSteamAppIds: vi.fn().mockResolvedValue(new Map([["10", "100"]])),
+          getDetailsByIds: vi.fn().mockResolvedValue([detail("100")]),
+        },
+        gameItemService: {
+          persistDetails: vi.fn().mockResolvedValue({ id: "gi-100" }),
+        },
+      });
+      mockFetchByUrl({
+        GetOwnedGames: {
+          response: {
+            game_count: 1,
+            games: [{ appid: 10, playtime_forever: 600, playtime_2weeks: 30 }],
+          },
+        },
+      });
+
+      const analyzed = await service.startAnalyze("user1", "steam", {
+        input: "76561197960287930",
+      });
+      await runToEnd(service, "user1", analyzed.id);
+      const committed = service.commit("user1", "steam", analyzed.id, {
+        include: ["g100"],
+        statuses,
+      });
+      const job = await runToEnd(service, "user1", committed.id);
+
+      expect(job.status).toBe("completed");
+      expect(mocks.prisma.gameEntry.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          create: expect.objectContaining({ status: "PLAYING" }),
+        }),
+      );
+    },
+  );
 });

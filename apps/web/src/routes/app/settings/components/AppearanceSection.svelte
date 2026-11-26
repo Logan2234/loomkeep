@@ -13,7 +13,6 @@
   import { auth } from "#lib/auth.svelte.js";
   import Combobox from "#lib/components/Combobox.svelte";
   import Icon from "#lib/components/Icon.svelte";
-  import NewBadge from "#lib/components/NewBadge.svelte";
   import PremiumLockBadge from "#lib/components/PremiumLockBadge.svelte";
   import ThemePreview from "#lib/components/ThemePreview.svelte";
   import Tooltip from "#lib/components/Tooltip.svelte";
@@ -22,7 +21,6 @@
   import { THEME_DEFINITIONS } from "#lib/constants/theme-definitions.js";
   import { isDomainEnabled } from "#lib/domain-availability.js";
   import { useEeLock } from "#lib/ee/license.svelte.js";
-  import { isFeatureNew } from "#lib/feature-badges.js";
   import { layout } from "#lib/layout.svelte.js";
   import { languageOptions } from "#lib/locales.js";
   import type { MobileDestination } from "#lib/navigation.js";
@@ -150,11 +148,8 @@
       id="theme"
       use:flashAnchor={{ anchor: "theme", hash: page.url.hash }}
       class="p-5 md:p-6">
-      <p class="flex items-center gap-2 font-semibold">
+      <p class="font-semibold">
         {m.common_theme()}
-        {#if isFeatureNew("system-theme")}
-          <NewBadge />
-        {/if}
       </p>
       <p class="text-dim mt-1 mb-3 text-sm">
         {m.settings_theme_description()}
@@ -255,11 +250,8 @@
     use:flashAnchor={{ anchor: "home-layout", hash: page.url.hash }}
     class="inset-card flex flex-col gap-4 p-5 sm:flex-row sm:items-center md:p-6">
     <div class="min-w-0 flex-1">
-      <p class="mb-2 flex items-center gap-2 font-semibold">
+      <p class="mb-2 font-semibold">
         {m.settings_home_layout_title()}
-        {#if isFeatureNew("home-layout")}
-          <NewBadge />
-        {/if}
       </p>
       <p class="text-dim text-sm">{m.settings_home_layout_description()}</p>
     </div>

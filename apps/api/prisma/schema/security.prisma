@@ -1,0 +1,54 @@
+enum SecurityEventType {
+  USER_REGISTERED
+  USER_DELETED
+  EMAIL_CHANGED
+  PASSWORD_CHANGED
+  PASSWORD_RESET
+  LOGIN_FAILED
+  NEW_DEVICE_LOGIN
+  MFA_TOTP_ENABLED
+  MFA_TOTP_DISABLED
+  MFA_EMAIL_ENABLED
+  MFA_EMAIL_DISABLED
+  MFA_WEBAUTHN_ADDED
+  MFA_WEBAUTHN_REMOVED
+  MFA_WEBAUTHN_RENAMED
+  MFA_PASSWORDLESS_ENABLED
+  MFA_PASSWORDLESS_DISABLED
+  MFA_RECOVERY_CODES_REGENERATED
+  MFA_RECOVERY_CODE_USED
+  MFA_CHALLENGE_LOCKED
+  REAUTH_LOCKED
+  API_KEY_CREATED
+  API_KEY_REVOKED
+  API_KEY_LEAKED
+}
+
+// One sensitive account action, for the admin "Sécurité" page. userId is
+// nullable + onDelete: SetNull (not Cascade) so the trail survives account
+// deletion — USER_DELETED itself would otherwise vanish the instant it's
+// written. `identifier` is only ever written for LOGIN_FAILED (the string
+// actually typed at a login attempt, independent of any account — see
+// SecurityEventService#record); every other type derives its display email
+// from userId → User.email at read time, so it anonymises itself the moment
+// the account is deleted instead of surviving indefinitely. `ip` is erased on
+// deletion too, except on LOGIN_FAILED (kept for abuse prevention, as the
+// privacy policy states). Rows older than a year are purged
+// (SecurityEventService#purgeExpired). The account owner reads their own
+// trail in the settings.
+model SecurityEvent {
+  id         String            @id @default(cuid())
+  type       SecurityEventType
+  userId     String?
+  identifier String?
+  detail     String?
+  userAgent  String?
+  ip         String?
+  createdAt  DateTime          @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([type, createdAt])
+  @@index([userId, createdAt])
+  @@index([createdAt])
+}

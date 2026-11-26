@@ -15,6 +15,7 @@ import { notificationCopy } from "../notifications/notification-copy";
 import type { NotificationService } from "../notifications/notification.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import type { SecurityEventService } from "../security/security-event.service";
+import type { FollowService } from "../social/follow.service";
 import type { AuthResult } from "./auth.service";
 import { AuthService } from "./auth.service";
 import type { InvitationService } from "./invitation.service";
@@ -71,6 +72,10 @@ function makeService(adminEmail?: string, registrationEnabled?: string) {
     user: {
       findUnique: vi.fn(),
       findFirst: vi.fn(),
+      // The consent and onboarding rows toUserDto reads.
+      findUniqueOrThrow: vi
+        .fn()
+        .mockResolvedValue({ consent: null, onboarding: null }),
       create: vi.fn(),
       update: vi.fn(),
     },
@@ -174,6 +179,9 @@ function makeService(adminEmail?: string, registrationEnabled?: string) {
     findRedeemableFor: vi.fn(),
     claim: vi.fn(),
   } as unknown as InvitationService;
+  const follows = {
+    followEachOther: vi.fn(),
+  } as unknown as FollowService;
 
   const apiKeys = {
     reviewAfterPasswordChange: vi.fn().mockResolvedValue(0),
@@ -200,6 +208,7 @@ function makeService(adminEmail?: string, registrationEnabled?: string) {
     sessionCache,
     events,
     invitations,
+    follows,
     apiKeys,
     notifications,
     adminAlerts,
@@ -219,6 +228,7 @@ function makeService(adminEmail?: string, registrationEnabled?: string) {
     sessionCache,
     events,
     invitations,
+    follows,
     notifications,
     adminAlerts,
   };
@@ -308,6 +318,40 @@ describe("AuthService.register with an invitation", () => {
       "ADMIN_NEW_USER",
       expect.anything(),
     );
+  });
+
+  it("makes the member and the newcomer follow each other through a personal link", async () => {
+    const { service, prisma, configService, invitations, follows } =
+      makeService();
+    (configService.get as Mock).mockImplementation((key: string) =>
+      key === "SOCIAL_ENABLED" ? "true" : undefined,
+    );
+    (invitations.findRedeemableFor as Mock).mockResolvedValue({
+      id: "inv-1",
+      email: null,
+      createdById: "alice",
+      personal: true,
+    });
+    withFreshAccount(prisma);
+
+    const { user } = await service.register(dto);
+
+    expect(follows.followEachOther).toHaveBeenCalledWith("alice", user.id);
+  });
+
+  it("adds no follow for an admin invitation", async () => {
+    const { service, prisma, invitations, follows } = makeService();
+    (invitations.findRedeemableFor as Mock).mockResolvedValue({
+      id: "inv-1",
+      email: null,
+      createdById: "admin-1",
+      personal: false,
+    });
+    withFreshAccount(prisma);
+
+    await service.register(dto);
+
+    expect(follows.followEachOther).not.toHaveBeenCalled();
   });
 
   it("creates no account when the invitation can't be redeemed", async () => {
@@ -485,9 +529,10 @@ describe("AuthService.register", () => {
       await bcrypt.compare("secret1234", createArgs.data.passwordHash),
     ).toBe(true);
     expect(createArgs.data.username).toBe("alice");
-    expect(createArgs.data.acceptedTermsAt).toBeInstanceOf(Date);
-    expect(createArgs.data.acceptedTermsVersion).toBeTruthy();
-    expect(createArgs.data.certifiedAgeAt).toBeInstanceOf(Date);
+    const consent = createArgs.data.consent.create;
+    expect(consent.acceptedTermsAt).toBeInstanceOf(Date);
+    expect(consent.acceptedTermsVersion).toBeTruthy();
+    expect(consent.certifiedAgeAt).toBeInstanceOf(Date);
 
     expect(result.user.email).toBe("alice@example.com");
     expect(result.tokens.accessToken).toBeTruthy();

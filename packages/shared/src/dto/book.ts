@@ -13,6 +13,8 @@ import { SESSION_FILTER_PAUSED } from "./session";
 
 export const READING_GOAL_LIMITS = { min: 1, max: 1000 } as const;
 export const MAX_PAGE_NUMBER = 100000;
+/** Above any printed edition: the bound on the page count a reader declares. */
+export const MAX_REFERENCE_PAGE_COUNT = 5000;
 
 /** A book as returned by a live catalogue search (not persisted). */
 export interface BookSummaryDto {

@@ -41,17 +41,11 @@ import { isSocialEnabled } from "../social/social.config";
 import { VisibilityService } from "../social/visibility.service";
 import { resolveOwnVisibility } from "../social/visibility.util";
 import { toUserSummaryDto } from "../users/avatar.util";
+import { preferencesOf } from "../users/preferences.util";
+import { USER_SUMMARY_SELECT } from "../users/user.queries";
 import type { AddListItemBody } from "./dto/add-list-item.dto";
 import type { CreateListBody } from "./dto/create-list.dto";
 import type { UpdateListBody } from "./dto/update-list.dto";
-
-const AUTHOR_SELECT = {
-  id: true,
-  username: true,
-  displayName: true,
-  profileAccess: true,
-  avatarUpdatedAt: true,
-} as const;
 
 /** How many items feed the collage preview (1 = full cover, 2-4 = quadrants). */
 const PREVIEW_ITEM_COUNT = 4;
@@ -106,7 +100,7 @@ export class ListService {
   private async author(userId: string): Promise<UserSummaryDto> {
     const user = await this.prisma.user.findUniqueOrThrow({
       where: { id: userId },
-      select: AUTHOR_SELECT,
+      select: USER_SUMMARY_SELECT,
     });
     return toUserSummaryDto(user);
   }
@@ -115,9 +109,13 @@ export class ListService {
   async create(userId: string, dto: CreateListBody): Promise<ListDto> {
     const user = await this.prisma.user.findUniqueOrThrow({
       where: { id: userId },
-      select: { defaultListVisibility: true, profileAccess: true },
+      select: {
+        profileAccess: true,
+        preferences: { select: { defaultListVisibility: true } },
+      },
     });
-    const requested = dto.visibility ?? user.defaultListVisibility;
+    const requested =
+      dto.visibility ?? preferencesOf(user.preferences).defaultListVisibility;
     // A Figurant can create lists but never share them — clamp regardless of
     // what was requested or their configured default.
     const visibility = user.profileAccess === "GHOST" ? "PRIVATE" : requested;
@@ -460,7 +458,7 @@ export class ListService {
     const rows = await this.prisma.list.findMany({
       where: { id: { in: ids } },
       include: {
-        user: { select: AUTHOR_SELECT },
+        user: { select: USER_SUMMARY_SELECT },
         members: { where: { userId: viewerId }, select: { userId: true } },
         items: { orderBy: { position: "asc" }, take: MESSAGE_LIST_WORKS },
         _count: { select: { items: true } },
@@ -795,7 +793,7 @@ export class ListService {
     const rows = await this.prisma.listMember.findMany({
       where: { listId: id },
       orderBy: { createdAt: "asc" },
-      include: { user: { select: AUTHOR_SELECT } },
+      include: { user: { select: USER_SUMMARY_SELECT } },
     });
     return rows.map((r) => ({
       user: toUserSummaryDto(r.user),
@@ -822,7 +820,7 @@ export class ListService {
     const editors = new Set(members.map((m) => m.userId));
     const users = await this.prisma.user.findMany({
       where: { id: { in: friendIds.filter((f) => !editors.has(f)) } },
-      select: AUTHOR_SELECT,
+      select: USER_SUMMARY_SELECT,
       orderBy: { displayName: "asc" },
     });
     return users.map(toUserSummaryDto);
@@ -842,7 +840,7 @@ export class ListService {
 
     const target = await this.prisma.user.findUnique({
       where: { username },
-      select: AUTHOR_SELECT,
+      select: USER_SUMMARY_SELECT,
     });
     if (!target)
       throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.UserNotFound);
@@ -1081,7 +1079,7 @@ export class ListService {
       include: {
         items: {
           orderBy: { position: "asc" },
-          include: { addedBy: { select: AUTHOR_SELECT } },
+          include: { addedBy: { select: USER_SUMMARY_SELECT } },
         },
         members: { select: { userId: true } },
       },

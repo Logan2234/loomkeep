@@ -23,7 +23,7 @@ import { join } from "node:path";
 import { pipeline } from "node:stream/promises";
 import { AppException } from "../common/app.exception";
 import { JOB_KEYS } from "../jobs/job-keys";
-import { JobRunService } from "../jobs/job-run.service";
+import { JobRunService, type JobSkipped } from "../jobs/job-run.service";
 import { PrismaService } from "../prisma/prisma.service";
 
 /** How many dumps are kept on disk — older ones are purged after each run. */
@@ -85,7 +85,7 @@ export class BackupService {
 
   /** Daily 3h dump to disk, pruned to the {@link KEEP} most recent. Also the manual "Sauvegarder maintenant" trigger. */
   @Cron(CronExpression.EVERY_DAY_AT_3AM, { name: JOB_KEYS.BACKUP })
-  async runScheduled(): Promise<AdminBackupFileDto> {
+  async runScheduled(): Promise<AdminBackupFileDto | JobSkipped> {
     return this.jobRuns.record(
       JOB_KEYS.BACKUP,
       async () => {

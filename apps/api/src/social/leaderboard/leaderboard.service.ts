@@ -130,7 +130,7 @@ export class LeaderboardService {
       ...(candidateIds ? { userId: { in: candidateIds } } : {}),
       user: {
         profileAccess: { not: ProfileAccess.GHOST },
-        hideProgression: false,
+        preferences: { hideProgression: false },
       },
     };
 

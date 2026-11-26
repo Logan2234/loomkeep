@@ -67,6 +67,7 @@ function makeService(opts: {
       update: vi.fn().mockResolvedValue(undefined),
       delete: vi.fn().mockResolvedValue(undefined),
       deleteMany: vi.fn().mockResolvedValue({ count: 1 }),
+      createMany: vi.fn().mockResolvedValue({ count: 2 }),
     },
   } as unknown as PrismaService;
 
@@ -458,5 +459,24 @@ describe("FollowService.rejectRequest", () => {
     });
     expect(prisma.follow.delete).not.toHaveBeenCalled();
     expect(settleFollowRequest).not.toHaveBeenCalled();
+  });
+});
+
+describe("FollowService.followEachOther", () => {
+  it("follows both ways, accepted even towards a private profile, without a follow notification", async () => {
+    const { service, prisma, create } = makeService({
+      targetAccess: "PRIVATE",
+    });
+
+    await service.followEachOther("alice", "bob");
+
+    expect(prisma.follow.createMany).toHaveBeenCalledWith({
+      data: [
+        { followerId: "alice", followeeId: "bob", status: "ACCEPTED" },
+        { followerId: "bob", followeeId: "alice", status: "ACCEPTED" },
+      ],
+      skipDuplicates: true,
+    });
+    expect(create).not.toHaveBeenCalled();
   });
 });

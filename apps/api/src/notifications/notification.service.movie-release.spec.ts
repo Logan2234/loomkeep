@@ -38,7 +38,7 @@ describe("movie release reminders", () => {
       },
     );
     const prisma = {
-      libraryEntry: { findMany: vi.fn().mockResolvedValue(rows) },
+      mediaEntry: { findMany: vi.fn().mockResolvedValue(rows) },
       episode: { findMany: vi.fn().mockResolvedValue([]) },
       sagaMember: { findMany: vi.fn().mockResolvedValue([]) },
       gameEntry: { findMany: vi.fn().mockResolvedValue([]) },
@@ -76,7 +76,7 @@ describe("movie release reminders", () => {
   it("keeps a reminder pending when its local release is unknown", async () => {
     const createMany = vi.fn();
     const prisma = {
-      libraryEntry: {
+      mediaEntry: {
         findMany: vi.fn().mockResolvedValue([
           {
             userId: "u1",
@@ -111,7 +111,7 @@ describe("movie release reminders", () => {
   });
   it("sends no film or episode alert once the instance stops offering films and series", async () => {
     const prisma = {
-      libraryEntry: { findMany: vi.fn() },
+      mediaEntry: { findMany: vi.fn() },
       episode: { findMany: vi.fn() },
       sagaMember: { findMany: vi.fn() },
       gameEntry: { findMany: vi.fn().mockResolvedValue([]) },
@@ -132,7 +132,7 @@ describe("movie release reminders", () => {
       }),
     );
     expect(await service.scanAll()).toBe(0);
-    expect(prisma.libraryEntry.findMany).not.toHaveBeenCalled();
+    expect(prisma.mediaEntry.findMany).not.toHaveBeenCalled();
     expect(prisma.episode.findMany).not.toHaveBeenCalled();
     expect(prisma.gameEntry.findMany).toHaveBeenCalled();
   });

@@ -23,7 +23,7 @@ const tracked = (
 
 function makeService(games: unknown[]) {
   const prisma = {
-    libraryEntry: { findMany: vi.fn().mockResolvedValue([]) },
+    mediaEntry: { findMany: vi.fn().mockResolvedValue([]) },
     gameEntry: { findMany: vi.fn().mockResolvedValue(games) },
     gameSagaMember: { findMany: vi.fn().mockResolvedValue([]) },
     sagaMember: { findMany: vi.fn().mockResolvedValue([]) },

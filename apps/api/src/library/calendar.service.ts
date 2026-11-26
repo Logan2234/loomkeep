@@ -6,7 +6,7 @@ import { addDays } from "../common/date.util";
 import { localDayOrUtc, startOfLocalDay } from "../common/local-day.util";
 import { toGameItemDto } from "../games/game-item.mapper";
 import { PrismaService } from "../prisma/prisma.service";
-import { toMediaItemDto } from "./media-item-dto.util";
+import { toMediaItemDto } from "./media-item.mapper";
 
 /** How far ahead the calendar lists episodes: about six months. */
 const EPISODE_WINDOW_DAYS = 183;
@@ -40,8 +40,12 @@ export class CalendarService {
   ): Promise<CalendarEntryDto[]> {
     const user = await this.prisma.user.findUniqueOrThrow({
       where: { id: userId },
-      select: { watchRegion: true, timezone: true },
+      select: {
+        timezone: true,
+        preferences: { select: { watchRegion: true } },
+      },
     });
+    const watchRegion = user.preferences?.watchRegion ?? null;
     const now = new Date();
     const today = localDayOrUtc(user.timezone, now);
     const startOfToday = startOfLocalDay(user.timezone, now);
@@ -106,7 +110,7 @@ export class CalendarService {
       // airDate is guaranteed non-null by the `gte` filter above.
       airDate: episode.airDate!.toISOString(),
     }));
-    const movies = await this.prisma.libraryEntry.findMany({
+    const movies = await this.prisma.mediaEntry.findMany({
       where: {
         userId,
         status: { not: "DROPPED" },
@@ -117,7 +121,7 @@ export class CalendarService {
     const gameEntries = await this.calendarGames(userId, today);
     const movieEntries: CalendarEntryDto[] = movies.flatMap((entry) => {
       const region = resolveWatchRegion(
-        user.watchRegion ?? entry.movieReleaseRegion ?? undefined,
+        watchRegion ?? entry.movieReleaseRegion ?? undefined,
         acceptLanguage,
       );
       const release = movieReleaseInfo(

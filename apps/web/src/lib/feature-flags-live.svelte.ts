@@ -54,9 +54,9 @@ class LiveFlags {
     void this.#client.start();
   }
 
-  isEnabled(name: string, fallback: boolean = false): boolean {
+  isEnabled(name: string): boolean {
     void this.#version; // reactivity dependency — bumped on every Unleash update
-    return this.#client?.isEnabled(name) ?? fallback;
+    return this.#client?.isEnabled(name) ?? false;
   }
 
   /**

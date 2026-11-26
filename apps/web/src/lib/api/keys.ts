@@ -148,6 +148,9 @@ export const keys = {
   activityFeedSubscribe: {
     token: () => ["activity-feed-subscribe", "token"] as const,
   },
+  arrSubscribe: {
+    token: () => ["arr-subscribe", "token"] as const,
+  },
   privacy: {
     settings: () => ["privacy", "settings"] as const,
   },
@@ -198,6 +201,7 @@ export const keys = {
   // Outside ["chat"]: a reconnection refetches what's under it, and these
   // are catalogue searches.
   search: {
+    all: () => ["search"] as const,
     works: (query: string, scope: "local" | "all") =>
       ["search", "works", scope, query] as const,
   },
@@ -213,6 +217,7 @@ export const keys = {
   social: {
     followRequests: () => ["social", "follow-requests"] as const,
     blockedUsers: () => ["social", "blocked-users"] as const,
+    invitation: () => ["social", "invitation"] as const,
     workFriends: (targetType: string, targetId: string) =>
       ["social", "work-friends", targetType, targetId] as const,
   },

@@ -11,7 +11,7 @@ Versioning, mechanically, in one pass. `main` takes no direct pushes: work on a 
 (`chore/release-X.Y.Z`) cut from a freshly fetched `origin/main`, and open a PR.
 
 **Merging that PR is the release.** Once CI passes on it, `ci.yml` creates the GitHub release
-`vX.Y.Z` from the CHANGELOG section (its `release` job), tags the images `X.Y.Z`, `X.Y`, `X` and
+`vX.Y.Z` from the CHANGELOG section (`release.yml`'s `release` job), tags the images `X.Y.Z`, `X.Y`, `X` and
 `latest` (`docker-tag`), and attaches the APK (`publish-release-apk`). Nothing to tag or publish
 by hand.
 
@@ -71,7 +71,7 @@ Don't touch anything else in these files.
 ## 5. CHANGELOG.md
 
 - Turn `## [Unreleased]` into `## X.Y.Z — <short title>` (reconciled per step 2), and put a fresh,
-  empty `## [Unreleased]` above it. The heading must start with `## X.Y.Z ` exactly: `ci.yml`'s
+  empty `## [Unreleased]` above it. The heading must start with `## X.Y.Z ` exactly: `release.yml`'s
   `release` job finds the release notes by it and fails without it. The section becomes the GitHub
   release as is: the release is named `X.Y.Z`, and `<short title>` opens its notes as a heading.
 - The section is the release notes, so it must read as one: rewrite `[Unreleased]` rather than

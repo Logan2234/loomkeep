@@ -10,9 +10,10 @@ import { jsonObject } from "../common/json.util";
 import { localParts } from "../common/local-day.util";
 import { EntitlementService } from "../entitlements/entitlement.service";
 import { JOB_KEYS } from "../jobs/job-keys";
-import { JobRunService } from "../jobs/job-run.service";
+import { JobRunService, type JobSkipped } from "../jobs/job-run.service";
 import { MailService } from "../mail/mail.service";
 import { PrismaService } from "../prisma/prisma.service";
+import { preferencesOf } from "../users/preferences.util";
 import { notSuspended } from "../users/suspension.util";
 import { notificationCopy, type DigestPeriod } from "./notification-copy";
 import { PushService } from "./push.service";
@@ -74,7 +75,7 @@ export class NotificationDigestService {
    * hour on each channel (18h daily, Monday 9h weekly) and sends if so.
    */
   @Cron(CronExpression.EVERY_HOUR, { name: JOB_KEYS.NOTIFICATIONS_DIGEST })
-  async runDigests(): Promise<number> {
+  async runDigests(): Promise<number | JobSkipped> {
     return this.jobRuns.record(
       JOB_KEYS.NOTIFICATIONS_DIGEST,
       () => this.run(),
@@ -87,10 +88,12 @@ export class NotificationDigestService {
       where: {
         AND: [
           {
-            OR: [
-              { notifyEmail: { not: DigestCadence.DISABLED } },
-              { notifyPush: { not: DigestCadence.DISABLED } },
-            ],
+            preferences: {
+              OR: [
+                { notifyEmail: { not: DigestCadence.DISABLED } },
+                { notifyPush: { not: DigestCadence.DISABLED } },
+              ],
+            },
           },
           notSuspended(),
         ],
@@ -99,9 +102,8 @@ export class NotificationDigestService {
         id: true,
         email: true,
         locale: true,
-        notifyEmail: true,
-        notifyPush: true,
         timezone: true,
+        preferences: { select: { notifyEmail: true, notifyPush: true } },
       },
     });
 
@@ -110,9 +112,11 @@ export class NotificationDigestService {
     // Each user and each channel fails on its own: a failed email used to
     // skip the same user's push digest too.
     for (const user of users) {
+      const prefs = preferencesOf(user.preferences);
+
       for (const [channel, cadence] of [
-        ["email", user.notifyEmail],
-        ["push", user.notifyPush],
+        ["email", prefs.notifyEmail],
+        ["push", prefs.notifyPush],
       ] as const) {
         try {
           sent += await this.deliverChannel(user, channel, cadence);
@@ -205,7 +209,7 @@ export class NotificationDigestService {
     const activeMovies =
       movieIds.length === 0
         ? []
-        : await this.prisma.libraryEntry.findMany({
+        : await this.prisma.mediaEntry.findMany({
             where: {
               userId: user.id,
               mediaItemId: { in: movieIds },

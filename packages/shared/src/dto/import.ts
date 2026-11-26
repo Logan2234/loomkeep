@@ -109,10 +109,8 @@ export interface ImportPlanItem {
   title: string;
   /** Raw title from the export, shown when the match looks uncertain. */
   sourceTitle: string;
-  /** Legacy French preview for older clients; use context in new clients. */
-  subtitle: string | null;
-  /** Optional on the wire for clients talking to an older API deployment. */
-  context?: ImportItemContext;
+  /** What the client formats as the item's preview line, in its own locale. */
+  context: ImportItemContext;
   coverUrl: string | null;
   /** Auto-resolved match, or null when it needs a manual search. */
   match: ImportMatch | null;
@@ -132,10 +130,8 @@ export interface ImportPlanItem {
 
 /** A named group the review renders as one (optionally collapsible) section. */
 export interface ImportPlanGroup {
-  /** Stable id (e.g. "READ", "seriesTracked"). */
+  /** Stable id the client translates (e.g. "READ", "seriesTracked"). */
   id: string;
-  /** Legacy heading for older clients; new clients translate the stable id. */
-  label: string;
   items: ImportPlanItem[];
 }
 
@@ -167,27 +163,27 @@ export interface ImportPlanList {
   itemCount: number;
 }
 
+export type ImportReportTileId =
+  | BookStatus
+  | GameStatus
+  | "books"
+  | "games"
+  | "series"
+  | "movies"
+  | "episodes"
+  | "playtime"
+  | "lists"
+  /** Selected, but the catalogue no longer knows it: nothing written. */
+  | "notFound"
+  /** Selected, but writing it failed: the rest of the import went on. */
+  | "failed";
+
+/** One figure of a committed import, which the client labels from its id. */
 export interface ImportReportTile {
-  /** Stable identity for localization, absent on older API deployments. */
-  id?:
-    | BookStatus
-    | GameStatus
-    | "books"
-    | "games"
-    | "series"
-    | "movies"
-    | "episodes"
-    | "playtime"
-    | "lists"
-    /** Selected, but the catalogue no longer knows it: nothing written. */
-    | "notFound";
-  /** Legacy heading for older clients and the admin audit log. */
-  label: string;
+  id: ImportReportTileId;
   value: number;
   /** Media tiles only: titles imported without watch history. */
   watchlistCount?: number;
-  /** Legacy secondary line for older clients; new clients use id and counts. */
-  sub: string | null;
 }
 
 /** Outcome of a committed import. */
@@ -244,7 +240,9 @@ export interface ImportRunDto {
   status: string;
   /** Items actually written (the user's kept selection). */
   itemCount: number;
-  /** Human summary joined from the report's tiles; null on failure. */
+  /** The committed report's figures; null on failure and on old runs. */
+  tiles: ImportReportTile[] | null;
+  /** Old runs only: their figures as text, from before tiles were kept. */
   summary: string | null;
   /** ISO-8601 instant. */
   finishedAt: string;

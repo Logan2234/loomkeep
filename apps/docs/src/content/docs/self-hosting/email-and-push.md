@@ -13,14 +13,15 @@ Email carries password resets, email address confirmations, security alerts
 created), new-episode digests and the administrators' alerts. The full list is
 in [Notifications](/guide/notifications/). Fill in the `SMTP_*` variables:
 
-| Variable               | Value                                                                                                                               |
-| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| `SMTP_HOST`            | Your provider's SMTP server.                                                                                                        |
-| `SMTP_PORT`            | Usually `587`.                                                                                                                      |
-| `SMTP_USER`            | The SMTP login.                                                                                                                     |
-| `SMTP_PASS`            | The SMTP password.                                                                                                                  |
-| `SMTP_FROM`            | The sender, e.g. `Loomkeep <noreply@example.com>`. Defaults to `noreply@` followed by your `WEB_ORIGIN` host.                       |
-| `MAIL_SUPPORT_ADDRESS` | Support mailbox used by contact links and `Reply-To`. Unset, contact links use the sender's address and emails carry no `Reply-To`. |
+| Variable               | Value                                                                                                                                                 |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `SMTP_HOST`            | Your provider's SMTP server.                                                                                                                          |
+| `SMTP_PORT`            | Usually `587`.                                                                                                                                        |
+| `SMTP_REQUIRE_TLS`     | On any port but `465`, the connection must switch to TLS (STARTTLS) or no email leaves. `false` only for a relay on the same host or private network. |
+| `SMTP_USER`            | The SMTP login.                                                                                                                                       |
+| `SMTP_PASS`            | The SMTP password.                                                                                                                                    |
+| `SMTP_FROM`            | The sender, e.g. `Loomkeep <noreply@example.com>`. Defaults to `noreply@` followed by your `WEB_ORIGIN` host.                                         |
+| `MAIL_SUPPORT_ADDRESS` | Support mailbox used by contact links and `Reply-To`. Unset, contact links use the sender's address and emails carry no `Reply-To`.                   |
 
 Any SMTP provider works. [Brevo](https://www.brevo.com) has a free relay
 (300 emails a day), open to personal accounts: its **SMTP & API** page gives

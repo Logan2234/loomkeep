@@ -18,10 +18,6 @@ import {
   type GameSession,
   type Prisma,
 } from "@prisma/client";
-import {
-  assertEntryOwnership,
-  assertSessionOwnership,
-} from "../common/entry-lifecycle.util";
 import { toPagedResult } from "../common/pagination.util";
 import { retryAfterUniqueRace } from "../common/prisma-error.util";
 import { sessionPeriodMinutes } from "../common/session-period.util";
@@ -30,10 +26,14 @@ import { GAME_STATUS_BY_CYCLE } from "../common/tracking-cycle-status.util";
 import { SessionXpService } from "../gamification/session-xp.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { ActivityService } from "../social/activity.service";
+import {
+  assertEntryOwnership,
+  assertSessionOwnership,
+} from "../work/entry-lifecycle.util";
 import { CreateGameSessionDto } from "./dto/create-game-session.dto";
 import { UpdateGameSessionDto } from "./dto/update-game-session.dto";
+import { toPlaythroughDto } from "./game-playthrough.mapper";
 import { assertGameReleased } from "./game-release.util";
-import { toPlaythroughDto } from "./game.mappers";
 
 const PAGE_SIZE = 10;
 

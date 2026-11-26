@@ -40,6 +40,7 @@ import {
   computeLongestBinge,
   toRankedList,
 } from "./aggregates.util";
+import { computeCountries } from "./countries.util";
 import { computePossessionBreakdown } from "./possession.util";
 import { computeAverageRatingByGroup } from "./rating-by-group.util";
 import {
@@ -86,7 +87,7 @@ export class AdvancedStatsService implements AdvancedStatsSource {
     const [staleness, moviesRewatchedCount] = await Promise.all([
       this.stats.fetchInProgressStaleness(userId),
       this.prisma.movieReplay.count({
-        where: { libraryEntry: { userId } },
+        where: { mediaEntry: { userId } },
       }),
     ]);
 
@@ -134,6 +135,7 @@ export class AdvancedStatsService implements AdvancedStatsSource {
       pausedCount: staleness.filter((s) => s.staleness === "PAUSED").length,
       ghostCount: staleness.filter((s) => s.staleness === "GHOST").length,
       moviesRewatchedCount,
+      countries: computeCountries(episodeWatches, completedMovies),
       longestBingeCount: computeLongestBinge(
         episodeWatches.flatMap((w) => (w.watchedAt ? [w.watchedAt] : [])),
       ),

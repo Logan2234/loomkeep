@@ -55,7 +55,7 @@ describe("NotificationService.scanAll", () => {
       sagaMember: { findMany: vi.fn().mockResolvedValue([]) },
       gameEntry: { findMany: vi.fn().mockResolvedValue([]) },
       gameSagaMember: { findMany: vi.fn().mockResolvedValue([]) },
-      libraryEntry: {
+      mediaEntry: {
         findMany: vi
           .fn()
           .mockImplementation(
@@ -107,7 +107,7 @@ describe("NotificationService.scanAll", () => {
     const created = await service.scanAll();
 
     expect(created).toBe(0);
-    expect(prisma.libraryEntry.findMany).toHaveBeenCalledOnce();
+    expect(prisma.mediaEntry.findMany).toHaveBeenCalledOnce();
     expect(prisma.notification.createMany).not.toHaveBeenCalled();
   });
 
@@ -116,10 +116,10 @@ describe("NotificationService.scanAll", () => {
 
     await service.scanAll();
 
-    const where = (prisma.libraryEntry.findMany as Mock).mock.calls[1][0].where;
+    const where = (prisma.mediaEntry.findMany as Mock).mock.calls[1][0].where;
     expect(where.status).toEqual({ not: "DROPPED" });
     expect(where.user.enabledDomains).toEqual({ has: "MEDIA" });
-    expect(where.user.OR).toEqual([
+    expect(where.user.preferences.OR).toEqual([
       { notifyPush: { not: DigestCadence.DISABLED } },
       { notifyEmail: { not: DigestCadence.DISABLED } },
     ]);
@@ -226,14 +226,13 @@ describe("NotificationService.scan", () => {
     notifyEmail: DigestCadence = DigestCadence.DISABLED,
   ) {
     const prisma = {
-      libraryEntry: { findMany: vi.fn().mockResolvedValue([]) },
+      mediaEntry: { findMany: vi.fn().mockResolvedValue([]) },
       gameEntry: { findMany: vi.fn().mockResolvedValue([]) },
       gameSagaMember: { findMany: vi.fn().mockResolvedValue([]) },
       user: {
         findUnique: vi.fn().mockResolvedValue({
-          notifyPush,
-          notifyEmail,
           enabledDomains,
+          preferences: { notifyPush, notifyEmail },
         }),
       },
       episode: { findMany: vi.fn().mockResolvedValue([episode]) },
@@ -632,7 +631,9 @@ describe("NotificationService.create — realtime push", () => {
 });
 
 describe("NotificationService push", () => {
-  function makeService(user: { locale: string; alertPrefs: unknown } | null) {
+  function makeService(
+    user: { locale: string; preferences: { alertPrefs: unknown } } | null,
+  ) {
     const prisma = {
       notification: {
         createManyAndReturn: vi.fn().mockResolvedValue([{ id: "n1" }]),
@@ -662,7 +663,7 @@ describe("NotificationService push", () => {
   it("pushes a reply to someone who turned that push on, saying why", async () => {
     const { service, push } = makeService({
       locale: "en",
-      alertPrefs: { COMMENT_REPLY: { push: true } },
+      preferences: { alertPrefs: { COMMENT_REPLY: { push: true } } },
     });
 
     await service.create(reply);
@@ -684,7 +685,7 @@ describe("NotificationService push", () => {
   describe("its picture", () => {
     const wanted = {
       locale: "en",
-      alertPrefs: { COMMENT_REPLY: { push: true } },
+      preferences: { alertPrefs: { COMMENT_REPLY: { push: true } } },
     };
     const sent = (push: PushService) =>
       vi.mocked(push.sendToUser).mock.calls[0][1];
@@ -737,7 +738,10 @@ describe("NotificationService push", () => {
   });
 
   it("keeps it to the bell by default", async () => {
-    const { service, push } = makeService({ locale: "en", alertPrefs: {} });
+    const { service, push } = makeService({
+      locale: "en",
+      preferences: { alertPrefs: {} },
+    });
 
     await service.create(reply);
 
@@ -747,7 +751,7 @@ describe("NotificationService push", () => {
   it("never pushes a kind that has no push", async () => {
     const { service, push } = makeService({
       locale: "en",
-      alertPrefs: { API_KEYS_REVIEW: { push: true } },
+      preferences: { alertPrefs: { API_KEYS_REVIEW: { push: true } } },
     });
 
     await service.create({
@@ -770,7 +774,7 @@ describe("NotificationService.createOrGroup", () => {
       user: {
         findUnique: vi.fn().mockResolvedValue({
           locale: "en",
-          alertPrefs: { LIST_ITEM_ADDED: { push: true } },
+          preferences: { alertPrefs: { LIST_ITEM_ADDED: { push: true } } },
           suspendedUntil: null,
         }),
       },

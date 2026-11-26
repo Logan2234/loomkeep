@@ -164,7 +164,6 @@ describe("BookCsvSource (via StoryGraphImportSource)", () => {
     ]);
     expect(byKey(job.plan!, "b0")).toMatchObject({
       sourceTitle: "Résister",
-      subtitle: "★ 8/10",
       context: { kind: "book", rating: 8 },
       defaultStatus: "READ",
       include: true,

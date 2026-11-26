@@ -1,5 +1,10 @@
 name: CI
 
+# The PR checks, and what a push to main ships. What only main runs lives in
+# the reusable workflows called near the end: images.yml, image-checks.yml,
+# deploy.yml and release.yml. Every job that reports on a PR stays in this
+# file: branch protection requires those checks by name, and a job inside a
+# called workflow reports as "<caller> / <job>" instead.
 on:
   pull_request:
   push:
@@ -462,226 +467,28 @@ jobs:
           needs.openapi-artifact.result == 'cancelled'
         run: exit 1
 
-  # Pushes to GHCR so the deploy job (and self-hosters) can `pull` a pre-built
-  # image instead of building on the target machine. Runs unconditionally
-  # on every push to main (not gated on the `changes` filter like
-  # docker-build-images above) so a SHA-tagged pair of images always exists for
-  # whatever commit the deploy is about to check out — a push that only
-  # touched apps/api must still produce a web image at that SHA, otherwise
-  # `docker compose pull` on the VPS would have nothing to fetch.
-  #
-  # Each image is built once per platform, each on a runner of that
-  # architecture (GitHub's arm64 runners are free for public repositories),
-  # and pushed untagged, by digest; docker-tag below then puts both under
-  # the same tags. No QEMU: emulated arm64 builds crashed in the api's
-  # `prisma generate`, so the api had no arm64 image at all, and a native
-  # build also gets the right binaries for sharp and Prisma's engines.
-  docker-push:
-    # Plain `needs`, not `always()`: both images stay in lockstep (see
-    # above), so a failed artifact should block pushing either.
+  # The api and web images of every main commit, pushed and tagged: see
+  # images.yml. Plain `needs`, not `always()`: both images stay in lockstep,
+  # so a failed OpenAPI artifact blocks pushing either.
+  images:
     needs: openapi-artifact
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    runs-on: ${{ matrix.platform == 'arm64' && 'ubuntu-24.04-arm' || 'ubuntu-latest' }}
-    # arm64 serves Raspberry Pis, ARM NAS models and ARM servers, not the
-    # hosted instance: its failure leaves amd64 tagged and the deploy going.
-    continue-on-error: ${{ matrix.platform == 'arm64' }}
     permissions:
       contents: read
       packages: write
-    strategy:
-      fail-fast: false
-      matrix:
-        name: [api, web]
-        platform: [amd64, arm64]
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - name: Download OpenAPI document
-        if: matrix.name == 'web'
-        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
-        with:
-          name: openapi-json
-          path: apps/api
-      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4
-      - uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - id: vars
-        # GHCR image paths must be lowercase; github.repository_owner
-        # preserves the account's actual casing (Logan2234).
-        run: |
-          echo "short=${GITHUB_SHA:0:12}" >> "$GITHUB_OUTPUT"
-          echo "owner=${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_OUTPUT"
-      - name: build and push the ${{ matrix.platform }} ${{ matrix.name }} image
-        id: build
-        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7
-        with:
-          context: .
-          file: apps/${{ matrix.name }}/Dockerfile
-          platforms: linux/${{ matrix.platform }}
-          # Only the api Dockerfile declares a GIT_SHA ARG (see its
-          # ARG GIT_SHA=unknown) — passing it for web too would just be an
-          # unused build-arg warning.
-          build-args: ${{ matrix.name == 'api' && format('GIT_SHA={0}', steps.vars.outputs.short) || '' }}
-          outputs: type=image,name=ghcr.io/${{ steps.vars.outputs.owner }}/loomkeep-${{ matrix.name }},push-by-digest=true,name-canonical=true,push=true
-          # An SPDX SBOM rides along with the image, next to its provenance:
-          # self-hosters can list what an image contains without pulling it.
-          sbom: true
-          provenance: mode=max
-          cache-from: type=gha,scope=${{ matrix.name }}-${{ matrix.platform }}
-          cache-to: type=gha,mode=max,scope=${{ matrix.name }}-${{ matrix.platform }}
-      - name: Hand the digest to docker-tag
-        env:
-          DIGEST: ${{ steps.build.outputs.digest }}
-        run: |
-          mkdir -p "$RUNNER_TEMP/digests"
-          touch "$RUNNER_TEMP/digests/${DIGEST#sha256:}"
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: digest-${{ matrix.name }}-${{ matrix.platform }}
-          path: ${{ runner.temp }}/digests/*
-          if-no-files-found: error
-          retention-days: 1
+    uses: ./.github/workflows/images.yml
 
-  # Tags each image from its platform digests (amd64 always, arm64 when its
-  # build succeeded):
-  # - every commit: its 12-character SHA (what the deploy pulls) and `edge`;
-  # - the first commit built at a new root package.json version (the bump,
-  #   or the next one if its run never got this far): `1.12.0`, `1.12`, `1`
-  #   and `latest`, so `latest` is the last release, the one self-hosters get
-  #   by default.
-  docker-tag:
-    needs: docker-push
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-    strategy:
-      matrix:
-        name: [api, web]
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with:
-          sparse-checkout: package.json
-          sparse-checkout-cone-mode: false
-      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
-        with:
-          pattern: digest-${{ matrix.name }}-*
-          path: ${{ runner.temp }}/digests
-          merge-multiple: true
-      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4
-      - uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - id: release
-        # GHCR image paths must be lowercase; github.repository_owner
-        # preserves the account's actual casing (Logan2234).
-        run: |
-          image="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/loomkeep-${{ matrix.name }}"
-          echo "image=$image" >> "$GITHUB_OUTPUT"
-          version=$(jq -r .version package.json)
-          if ! docker buildx imagetools inspect "$image:$version" > /dev/null 2>&1; then
-            echo "version=$version" >> "$GITHUB_OUTPUT"
-          fi
-      - id: meta
-        uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
-        env:
-          DOCKER_METADATA_SHORT_SHA_LENGTH: 12
-        with:
-          images: ${{ steps.release.outputs.image }}
-          flavor: latest=false
-          tags: |
-            type=sha,prefix=,format=short
-            type=edge,branch=main
-            type=semver,pattern={{version}},value=${{ steps.release.outputs.version }},enable=${{ steps.release.outputs.version != '' }}
-            type=semver,pattern={{major}}.{{minor}},value=${{ steps.release.outputs.version }},enable=${{ steps.release.outputs.version != '' }}
-            type=semver,pattern={{major}},value=${{ steps.release.outputs.version }},enable=${{ steps.release.outputs.version != '' }}
-            type=raw,value=latest,enable=${{ steps.release.outputs.version != '' }}
-      - name: tag the ${{ matrix.name }} image
-        working-directory: ${{ runner.temp }}/digests
-        env:
-          IMAGE: ${{ steps.release.outputs.image }}
-        run: |
-          docker buildx imagetools create \
-            $(jq -cr '.tags | map("--tag " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
-            $(printf "$IMAGE@sha256:%s " *)
-          docker buildx imagetools inspect "$IMAGE:${GITHUB_SHA:0:12}"
-
-  # Signs each tagged image's provenance with GitHub's OIDC identity
-  # (Sigstore) and stores it in GHCR next to the image, as for the APK:
-  # `gh attestation verify oci://… -R Logan2234/loomkeep` proves an image
-  # was built by this workflow from this repository. Kept out of
+  # Signs and scans the tagged images (image-checks.yml). Kept out of
   # ready-to-ship, so a Sigstore outage never holds a deploy back.
-  attest-images:
-    needs: docker-tag
-    runs-on: ubuntu-latest
+  image-checks:
+    needs: images
     permissions:
       contents: read
       packages: write
       id-token: write
       attestations: write
-    strategy:
-      matrix:
-        name: [api, web]
-    steps:
-      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4
-      - uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - id: image
-        run: |
-          image="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/loomkeep-${{ matrix.name }}"
-          digest=$(docker buildx imagetools inspect "$image:${GITHUB_SHA:0:12}" --format '{{json .Manifest}}' | jq -r .digest)
-          echo "name=$image" >> "$GITHUB_OUTPUT"
-          echo "digest=$digest" >> "$GITHUB_OUTPUT"
-      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
-        with:
-          subject-name: ${{ steps.image.outputs.name }}
-          subject-digest: ${{ steps.image.outputs.digest }}
-          push-to-registry: true
-
-  # The SHA-tagged images the deploy pulls, scanned once pushed; trivy.yml
-  # rescans `edge` weekly, for new CVEs in an unchanged base image. PRs are
-  # scanned by docker-build-images, on the image it builds anyway: both upload
-  # to the same trivy-api/trivy-web categories, so code scanning's PR check
-  # compares a PR's alerts with main's. Advisory only (exit-code 0).
-  scan-images:
-    needs: docker-tag
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: read
       security-events: write
-    strategy:
-      matrix:
-        name: [api, web]
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      # Trivy pulls the image with the credentials docker login stores.
-      - uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - id: vars
-        run: echo "image=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/loomkeep-${{ matrix.name }}:${GITHUB_SHA:0:12}" >> "$GITHUB_OUTPUT"
-      - name: scan ${{ matrix.name }} image
-        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
-        with:
-          image-ref: ${{ steps.vars.outputs.image }}
-          format: sarif
-          output: trivy-${{ matrix.name }}.sarif
-          severity: CRITICAL,HIGH
-          exit-code: "0"
-      - uses: github/codeql-action/upload-sarif@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
-        with:
-          sarif_file: trivy-${{ matrix.name }}.sarif
-          category: trivy-${{ matrix.name }}
+    uses: ./.github/workflows/image-checks.yml
 
   # What everything shipped from main waits for: every check that ran passed
   # and both images are tagged. Skipped checks (nothing of theirs changed)
@@ -695,7 +502,7 @@ jobs:
         lint-test-api,
         e2e,
         knip,
-        docker-tag,
+        images,
       ]
     if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
@@ -703,190 +510,37 @@ jobs:
       - if: |
           contains(needs.*.result, 'failure') ||
           contains(needs.*.result, 'cancelled') ||
-          needs.docker-tag.result != 'success'
+          needs.images.result != 'success'
         run: exit 1
 
+  # Redeploys the VPS and reports on ntfy (deploy.yml). Runs whatever
+  # ready-to-ship's result, so a failed check still sends its alert.
   deploy:
     needs: ready-to-ship
-    # A job's default success() also requires every job further up its
-    # needs chain to have succeeded, so a check skipped for want of changes
-    # (lint-test-api on a web-only commit) would skip it: ready-to-ship's own
-    # result is what counts.
-    if: ${{ !cancelled() && needs.ready-to-ship.result == 'success' }}
-    runs-on: ubuntu-latest
-    # The VPS_* secrets live in this environment, limited to main, so no
-    # other branch's workflow can read them; it also records each deploy.
-    environment: production
-    # One deploy at a time; a newer commit's replaces one still queued.
-    concurrency:
-      group: deploy-production
-      cancel-in-progress: false
-    outputs:
-      superseded: ${{ steps.head.outputs.superseded }}
-    steps:
-      # Runs no longer cancel each other on main, so an older commit's run can
-      # finish after a newer one's: deploying it then would roll production
-      # back. The newer commit's own run deploys instead.
-      - name: Is this still main's head?
-        id: head
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          head=$(gh api "repos/$GITHUB_REPOSITORY/commits/main" --jq .sha)
-          if [ "$head" != "$GITHUB_SHA" ]; then
-            echo "::notice::main has moved on to ${head::7}, whose run deploys instead."
-            echo "superseded=true" >> "$GITHUB_OUTPUT"
-          fi
-      - name: Deploy over SSH
-        if: steps.head.outputs.superseded != 'true'
-        env:
-          DEPLOY_SHA: ${{ github.sha }}
-        uses: appleboy/ssh-action@0ff4204d59e8e51228ff73bce53f80d53301dee2 # v1
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          # The host key the runner must find (`SHA256:…`, from
-          # `ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub` on the VPS):
-          # without it, a hijacked DNS or route gets the key and the script.
-          fingerprint: ${{ secrets.VPS_SSH_FINGERPRINT }}
-          envs: DEPLOY_SHA
-          # Deploys the exact commit CI validated. The rest (pre-deploy dump,
-          # start, health wait, rollback) is the checked-out commit's own
-          # .github/deploy/vps-deploy.sh.
-          script: |
-            set -e
-            cd ${{ secrets.VPS_DEPLOY_PATH }}
-            git fetch origin main
-            git reset --hard "$DEPLOY_SHA"
-            DEPLOY_SHA="$DEPLOY_SHA" bash .github/deploy/vps-deploy.sh
-      # The healthchecks above run inside the containers: a broken Caddy
-      # route, certificate or Cloudflare rule would still pass them. This
-      # goes through the same path as a visitor; a failure fails the job,
-      # so the ntfy alert below fires.
-      - name: Check the public site
-        if: steps.head.outputs.superseded != 'true'
-        run: |
-          for url in https://loomkeep.app/ https://loomkeep.app/api/health; do
-            curl --fail --silent --show-error --output /dev/null \
-              --retry 5 --retry-delay 6 --retry-all-errors --max-time 15 "$url"
-            echo "$url answers"
-          done
-
-  # Says how it went on ntfy (NTFY_TOPIC_URL: the topic's full URL, e.g.
-  # https://ntfy.sh/<unguessable name>, which is all it takes to post or
-  # read): a skipped deploy otherwise goes unnoticed, as #433 and #438 did.
-  notify:
-    needs: [ready-to-ship, deploy]
     if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with:
-          sparse-checkout: .github/deploy
-      - name: Notify on ntfy
-        env:
-          NTFY_TOPIC_URL: ${{ secrets.NTFY_TOPIC_URL }}
-          CI_RESULT: ${{ needs.ready-to-ship.result }}
-          DEPLOY_RESULT: ${{ needs.deploy.result }}
-          SUPERSEDED: ${{ needs.deploy.outputs.superseded }}
-          SHA: ${{ github.sha }}
-          COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
-          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          MAIN_SHA=$(gh api "repos/$GITHUB_REPOSITORY/commits/main" --jq .sha)
-          export MAIN_SHA
-          bash .github/deploy/notify.sh
+    permissions:
+      contents: read
+    uses: ./.github/workflows/deploy.yml
+    with:
+      ci-result: ${{ needs.ready-to-ship.result }}
+    secrets: inherit
 
-  # One GitHub release per version, `v1.12.0`, notes from that version's
-  # CHANGELOG.md section, created by the first commit that passes on main at
-  # a version with no release yet: the version-bump skill's PR, or the next
-  # commit if its run never got this far. docker-tag above tagged the images
-  # in the same run. It starts as a draft: the repository's releases are
-  # immutable, so a published one takes no more assets (1.12.0 got no APK
-  # that way). publish-release-apk attaches the APK, then publishes it as
-  # the latest one. The notes end with each image pinned by digest: a tag
-  # like `1.12.0` can be moved, a digest names one image only.
+  # The version's GitHub release with its APK, and the dev APK pre-release
+  # (release.yml).
   release:
-    needs: ready-to-ship
-    # See deploy.
-    if: ${{ !cancelled() && needs.ready-to-ship.result == 'success' }}
-    runs-on: ubuntu-latest
-    # Unlike published ones, two drafts can share a tag: one run at a time
-    # sees the other's.
-    concurrency:
-      group: github-release
-      cancel-in-progress: false
+    needs: [ready-to-ship, android-debug]
+    if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main'
     permissions:
       contents: write
       packages: read
-    outputs:
-      tag: ${{ steps.release.outputs.tag }}
-      draft: ${{ steps.release.outputs.draft }}
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with:
-          sparse-checkout: |
-            package.json
-            CHANGELOG.md
-          sparse-checkout-cone-mode: false
-      - uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Create the version's draft release if it doesn't exist yet
-        id: release
-        env:
-          GH_TOKEN: ${{ github.token }}
-          GH_REPO: ${{ github.repository }}
-        run: |
-          tag="v$(jq -r .version package.json)"
-          echo "tag=$tag" >> "$GITHUB_OUTPUT"
-          if draft=$(gh release view "$tag" --json isDraft --jq .isDraft 2> /dev/null); then
-            echo "$tag already exists (draft: $draft)."
-            echo "draft=$draft" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          heading=$(grep -m1 "^## ${tag#v} " CHANGELOG.md || true)
-          if [ -z "$heading" ]; then
-            echo "::error::CHANGELOG.md has no '## ${tag#v} …' section."
-            exit 1
-          fi
-          # The release is named after the version alone; the heading's
-          # subtitle, after " — ", opens the notes instead.
-          subtitle=$(printf '%s' "$heading" | sed -n 's/^## [^ ]* — //p')
-          {
-            if [ -n "$subtitle" ]; then printf '# %s\n' "$subtitle"; fi
-            awk -v h="$heading" '$0 == h {f=1; next} f && /^## / {exit} f' CHANGELOG.md
-          } > notes.md
-          # Published releases are immutable: a digest that can't be read
-          # leaves the section out rather than print a broken reference.
-          pinned=""
-          for name in api web; do
-            image="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/loomkeep-$name"
-            digest=$(docker buildx imagetools inspect "$image:${tag#v}" --format '{{json .Manifest}}' | jq -r '.digest // empty' || true)
-            if [[ "$digest" != sha256:* ]]; then
-              echo "::warning::No digest for $image:${tag#v}; the notes go out without the Images section."
-              pinned=""
-              break
-            fi
-            pinned+="$image:${tag#v}@$digest"$'\n'
-          done
-          if [ -n "$pinned" ]; then
-            {
-              printf '\n## Images\n\nThe exact images of this release, signed by this workflow:\n\n```\n%s```\n\n' "$pinned"
-              printf 'Check one with `gh attestation verify oci://<image> -R %s`.\n' "$GITHUB_REPOSITORY"
-            } >> notes.md
-          fi
-          # The tag only exists once publish-release-apk publishes it.
-          gh release create "$tag" \
-            --target "$GITHUB_SHA" \
-            --title "${tag#v}" \
-            --notes-file notes.md \
-            --draft
-          echo "draft=true" >> "$GITHUB_OUTPUT"
+      id-token: write
+      attestations: write
+    uses: ./.github/workflows/release.yml
+    with:
+      ci-result: ${{ needs.ready-to-ship.result }}
+      android-result: ${{ needs.android-debug.result }}
+      release-apk: ${{ needs.android-debug.outputs.release-apk }}
+    secrets: inherit
 
   # Debug build of the Android shell (docs/mobile-app-plan.md, MOB-01). The
   # APK is kept as a run artifact so it can be sideloaded on a phone, then
@@ -1006,123 +660,3 @@ jobs:
           # One retry: a deploy restarting the site mid-test (both follow a
           # push to main) showed the app's offline page instead of the login.
           script: bash apps/mobile/scripts/smoke-test.sh || (echo "Retrying once" && bash apps/mobile/scripts/smoke-test.sh)
-
-  # Main's APK as a GitHub pre-release, for Obtainium on the phone to notice
-  # and install over the previous one (same debug key, so the session
-  # stays). One release per build, since Obtainium spots an update by a new
-  # tag; only the three latest are kept. Main only, once the smoke test
-  # passed: a PR's APK stays a run artifact.
-  publish-dev-apk:
-    needs: android-debug
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      # Signing the build's provenance with GitHub's OIDC identity (Sigstore).
-      id-token: write
-      attestations: write
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with:
-          sparse-checkout: apps/mobile/package.json
-          sparse-checkout-cone-mode: false
-      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
-        with:
-          name: loomkeep-android-debug
-      - run: mv app-debug.apk loomkeep-dev.apk
-      # Proves the APK came from this workflow at this commit; the bundle is
-      # attached so `gh attestation verify` works offline too.
-      - id: attest
-        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
-        with:
-          subject-path: loomkeep-dev.apk
-      - name: Publish the dev pre-release
-        env:
-          GH_TOKEN: ${{ github.token }}
-          GH_REPO: ${{ github.repository }}
-          TAG: android-dev-${{ github.run_number }}
-          BUNDLE: ${{ steps.attest.outputs.bundle-path }}
-        # The title reads like the stable releases', with the version this
-        # build leads to and its build number, so the list sorts and scans.
-        run: |
-          version=$(jq -r .version apps/mobile/package.json)
-          cp "$BUNDLE" loomkeep-dev.apk.sigstore.json
-          gh release create "$TAG" loomkeep-dev.apk loomkeep-dev.apk.sigstore.json \
-            --prerelease \
-            --target "$GITHUB_SHA" \
-            --title "Loomkeep Android $version-dev.${{ github.run_number }}" \
-            --notes "Debug build of main at ${GITHUB_SHA::7} (\"Loomkeep Dev\", app.loomkeep.debug), for testing: not a supported release."
-          gh release list --limit 100 --json tagName --jq '.[].tagName' \
-            | grep '^android-dev-' | tail -n +4 \
-            | xargs -r -n1 gh release delete --cleanup-tag --yes
-
-  # The app users install (MOB-23), attached to its version's draft release
-  # (`v1.12.0`, created by the release job) by the first main build that
-  # finds it still a draft, usually the bump commit's own, which then
-  # publishes it. The asset keeps one name, so
-  # releases/latest/download/loomkeep-android.apk (the landing's and the
-  # docs' link) always serves the newest.
-  publish-release-apk:
-    needs: [android-debug, release]
-    # See deploy.
-    if: >-
-      !cancelled() && needs.release.result == 'success'
-      && needs.release.outputs.draft == 'true'
-      && needs.android-debug.outputs.release-apk == 'success'
-    runs-on: ubuntu-latest
-    concurrency:
-      group: github-release-apk
-      cancel-in-progress: false
-    permissions:
-      contents: write
-      id-token: write
-      attestations: write
-    env:
-      GH_TOKEN: ${{ github.token }}
-      GH_REPO: ${{ github.repository }}
-      TAG: ${{ needs.release.outputs.tag }}
-    steps:
-      # Another run may have published it while this one waited its turn.
-      - name: Is the release still a draft?
-        id: draft
-        run: |
-          if [ "$(gh release view "$TAG" --json isDraft --jq .isDraft)" = true ]; then
-            echo "draft=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "$TAG is already published."
-          fi
-      - if: steps.draft.outputs.draft
-        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
-        with:
-          name: loomkeep-android-release
-      # The artifact keeps the build tree's paths below its common root.
-      - if: steps.draft.outputs.draft
-        run: |
-          mv apk/release/app-release.apk loomkeep-android.apk
-          mv bundle/release/app-release.aab loomkeep-android-play.aab
-      - id: attest
-        if: steps.draft.outputs.draft
-        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
-        with:
-          subject-path: loomkeep-android.apk
-      - id: attest-bundle
-        if: steps.draft.outputs.draft
-        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
-        with:
-          subject-path: loomkeep-android-play.aab
-      # The bundle rides along for Google Play (MOB-10), uploaded by hand
-      # from here; Obtainium only looks at APKs.
-      - name: Attach the APK and the Play bundle, then publish the release
-        if: steps.draft.outputs.draft
-        env:
-          BUNDLE: ${{ steps.attest.outputs.bundle-path }}
-          AAB_BUNDLE: ${{ steps.attest-bundle.outputs.bundle-path }}
-        run: |
-          cp "$BUNDLE" loomkeep-android.apk.sigstore.json
-          cp "$AAB_BUNDLE" loomkeep-android-play.aab.sigstore.json
-          gh release upload "$TAG" loomkeep-android.apk loomkeep-android.apk.sigstore.json \
-            loomkeep-android-play.aab loomkeep-android-play.aab.sigstore.json --clobber
-          # Publishing makes the release immutable, and `latest` only now: a
-          # latest release without its APK would answer the download link
-          # above with a 404.
-          gh release edit "$TAG" --draft=false --latest

@@ -14,7 +14,7 @@ function makeService(user: Record<string, unknown> | null) {
   const prisma = {
     user: { findUnique: vi.fn().mockResolvedValue(user) },
     userEntitlement: list(),
-    libraryEntry: entries(),
+    mediaEntry: entries(),
     gameEntry: entries(),
     bookEntry: entries(),
     musicEntry: entries(),
@@ -70,15 +70,17 @@ const USER = {
   acceptedTermsAt: new Date("2026-03-14T00:00:00.000Z"),
   locale: "fr",
   timezone: "Europe/Paris",
-  watchRegion: "FR",
-  watchProviderIds: [8, 337],
-  notifyEmail: "WEEKLY",
-  notifyPush: "DAILY",
-  notifyNewsletter: false,
+  preferences: {
+    watchRegion: "FR",
+    watchProviderIds: [8, 337],
+    notifyEmail: "WEEKLY",
+    notifyPush: "DAILY",
+    notifyNewsletter: false,
+    defaultReviewVisibility: "FRIENDS",
+    allowAdultContent: false,
+  },
   newsletterOptInAt: null,
   profileAccess: "FRIENDS",
-  defaultReviewVisibility: "FRIENDS",
-  allowAdultContent: false,
 };
 
 describe("AdminUsersService.detail", () => {

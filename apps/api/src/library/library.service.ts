@@ -43,7 +43,7 @@ import {
   type TrackedMediaDto,
   XpReason,
 } from "@loomkeep/shared";
-import { revokeEntryXp } from "../common/entry-lifecycle.util";
+import { revokeEntryXp } from "../work/entry-lifecycle.util";
 
 import { HttpStatus, Injectable } from "@nestjs/common";
 import type {
@@ -56,18 +56,22 @@ import { MediaItemService } from "../catalog/media-item.service";
 import { assertMediaReleased } from "../catalog/movie-release.util";
 import { resolveWatchRegion } from "../catalog/watch-region.util";
 import { AppException } from "../common/app.exception";
+import { toDateOrNull, utcDateKey } from "../common/date.util";
+import { canonicalExternalId } from "../common/external-id.util";
+import { compareTitles, timeMs } from "../common/sort.util";
+import { EventsGateway } from "../events/events.gateway";
+import { AchievementService } from "../gamification/achievements/achievement.service";
 import {
   addToList,
   applyBulkUpdate,
   applyToEntries,
   assertBulkTarget,
   assertBulkUpdate,
-} from "../common/bulk-entries.util";
-import { toDateOrNull, utcDateKey } from "../common/date.util";
+} from "../work/bulk-entries.util";
 import type {
   EntryStatusChange,
   ListEntriesFilters as SharedListEntriesFilters,
-} from "../common/entry-lifecycle.util";
+} from "../work/entry-lifecycle.util";
 import {
   assertEntryOwnership,
   awardNewEntryXp,
@@ -77,20 +81,8 @@ import {
   polymorphicTargetCleanup,
   RECENTLY_UPDATED_FIRST,
   searchTerm,
-} from "../common/entry-lifecycle.util";
-import { canonicalExternalId } from "../common/external-id.util";
-import { compareTitles, timeMs } from "../common/sort.util";
-import { EventsGateway } from "../events/events.gateway";
-import { AchievementService } from "../gamification/achievements/achievement.service";
+} from "../work/entry-lifecycle.util";
 
-import {
-  isLoanActive,
-  LOAN_INCLUDE,
-  loanFields,
-  loanUpdate,
-  loanWhere,
-  ownershipSourceUpdate,
-} from "../common/entry-loan.util";
 import { retryAfterUniqueRace } from "../common/prisma-error.util";
 import { ACHIEVEMENT_KEYS_BY_XP_REASON } from "../gamification/achievements/triggers";
 import {
@@ -104,12 +96,21 @@ import { ReviewService } from "../reviews/review.service";
 import { ActivityService } from "../social/activity.service";
 import { summarizePile } from "../stats/pile.util";
 import { AgeGateService } from "../users/age-gate.service";
+import { preferencesOf } from "../users/preferences.util";
+import {
+  isLoanActive,
+  LOAN_INCLUDE,
+  loanFields,
+  loanUpdate,
+  loanWhere,
+  ownershipSourceUpdate,
+} from "../work/entry-loan.util";
 import { AddMovieReplayDto } from "./dto/add-movie-replay.dto";
 import type { BulkUpdateEntriesBody } from "./dto/bulk-update-entries.dto";
 import { UpdateEntryDto } from "./dto/update-entry.dto";
 import { UpsertEntryDto } from "./dto/upsert-entry.dto";
 import { WatchEpisodeDto } from "./dto/watch-episode.dto";
-import { toMediaItemDto } from "./media-item-dto.util";
+import { toMediaItemDto } from "./media-item.mapper";
 import { completedSagaWorks, MEDIA_SAGA_STATUS } from "./saga-progress.util";
 import { deriveStatus, normalizeAiringFinished } from "./status.util";
 
@@ -119,10 +120,10 @@ const ENTRY_INCLUDE = {
   mediaItem: { include: { externalIds: true } },
   ...LOAN_INCLUDE,
   replays: { orderBy: { finishedAt: "desc" } },
-} satisfies Prisma.LibraryEntryInclude;
+} satisfies Prisma.MediaEntryInclude;
 
-/** LibraryEntry joined with its media and the media's external IDs. */
-type EntryWithMedia = Prisma.LibraryEntryGetPayload<{
+/** MediaEntry joined with its media and the media's external IDs. */
+type EntryWithMedia = Prisma.MediaEntryGetPayload<{
   include: typeof ENTRY_INCLUDE;
 }>;
 
@@ -173,11 +174,11 @@ const MEDIA_ROW_SELECT = {
   mediaItem: {
     select: { type: true, status: true, title: true, episodeCount: true },
   },
-} satisfies Prisma.LibraryEntrySelect;
+} satisfies Prisma.MediaEntrySelect;
 
 /**
  * An entry's progress from its materialized counts (kept by the database,
- * see LibraryEntry.watchedEpisodes) — null for a work with no regular
+ * see MediaEntry.watchedEpisodes) — null for a work with no regular
  * episode, as computeProgress has it. No next episode: only the page gets one.
  */
 function materializedProgress(entry: {
@@ -262,6 +263,9 @@ export function compareMediaEntries(
     case "rating":
       return (b.rating ?? -1) - (a.rating ?? -1);
     case "progress":
+      // The whole series' progress (the triggers' watchedEpisodes), even
+      // during a rewatch whose card shows its own: accepted and documented
+      // in the guide rather than materialising a second count.
       return progressPercent(b.progress) - progressPercent(a.progress);
     case "finished":
       return timeMs(b.finishedAt) - timeMs(a.finishedAt);
@@ -309,11 +313,25 @@ export class LibraryService {
     userId: string,
     dto: UpsertEntryDto,
   ): Promise<LibraryEntryDto> {
+    // AniList holds the anime, TMDB everything else: any other pair would
+    // store an item under a type its source never gave it.
+    if ((dto.source === "ANILIST") !== (dto.type === "ANIME")) {
+      throw new AppException(
+        HttpStatus.BAD_REQUEST,
+        ErrorCode.ValidationFailed,
+      );
+    }
+
     const mediaItem = await this.mediaItemService.upsertFromSource(
       dto.source,
       dto.sourceId,
       dto.type,
     );
+
+    if (mediaItem.isAdult) {
+      const allowAdult = await this.ageGate.allowsAdultContent(userId);
+      this.ageGate.assertAdultAllowed(true, allowAdult);
+    }
 
     if (
       dto.status === "COMPLETED" ||
@@ -322,7 +340,7 @@ export class LibraryService {
       await assertMediaReleased(this.prisma, mediaItem.id);
     }
 
-    const before = await this.prisma.libraryEntry.findUnique({
+    const before = await this.prisma.mediaEntry.findUnique({
       where: { userId_mediaItemId: { userId, mediaItemId: mediaItem.id } },
       select: { status: true, favorite: true },
     });
@@ -333,7 +351,7 @@ export class LibraryService {
       favorite: dto.favorite,
     };
     const entry = await retryAfterUniqueRace(() =>
-      this.prisma.libraryEntry.upsert({
+      this.prisma.mediaEntry.upsert({
         where: { userId_mediaItemId: { userId, mediaItemId: mediaItem.id } },
         update: changes,
         create: { userId, mediaItemId: mediaItem.id, ...changes },
@@ -359,8 +377,7 @@ export class LibraryService {
         userId,
         entryId: entry.id,
         domain: Domain.MEDIA,
-        countEntries: () =>
-          this.prisma.libraryEntry.count({ where: { userId } }),
+        countEntries: () => this.prisma.mediaEntry.count({ where: { userId } }),
       });
     }
 
@@ -414,7 +431,7 @@ export class LibraryService {
    */
   async getDomainCounts(userId: string): Promise<LibraryDomainCountsDto> {
     const [media, games, books, music] = await Promise.all([
-      this.prisma.libraryEntry.count({ where: { userId } }),
+      this.prisma.mediaEntry.count({ where: { userId } }),
       this.prisma.gameEntry.count({ where: { userId } }),
       this.prisma.bookEntry.count({ where: { userId } }),
       this.prisma.musicEntry.count({ where: { userId } }),
@@ -448,7 +465,7 @@ export class LibraryService {
       rows,
       keep,
       load: async (ids) => {
-        const entries = await this.prisma.libraryEntry.findMany({
+        const entries = await this.prisma.mediaEntry.findMany({
           where: { id: { in: ids } },
           include: ENTRY_INCLUDE,
         });
@@ -500,7 +517,7 @@ export class LibraryService {
             row.status === EntryStatus.WATCHING),
       )
       .map((row) => row.id);
-    const entries = await this.prisma.libraryEntry.findMany({
+    const entries = await this.prisma.mediaEntry.findMany({
       where: { id: { in: pileIds } },
       select: {
         mediaItemId: true,
@@ -565,7 +582,7 @@ export class LibraryService {
     dto: BulkUpdateEntriesBody,
   ): Promise<BulkEntriesResultDto> {
     assertBulkUpdate(dto);
-    const entries = await this.prisma.libraryEntry.findMany({
+    const entries = await this.prisma.mediaEntry.findMany({
       where: { userId, id: { in: await this.bulkTargetIds(userId, dto) } },
       orderBy: RECENTLY_UPDATED_FIRST,
       select: {
@@ -640,7 +657,7 @@ export class LibraryService {
     target: BulkEntriesTargetDto,
   ): Promise<string[]> {
     if (!target.filters) {
-      const owned = await this.prisma.libraryEntry.findMany({
+      const owned = await this.prisma.mediaEntry.findMany({
         where: { userId, id: { in: target.ids ?? [] } },
         select: { id: true },
       });
@@ -704,7 +721,7 @@ export class LibraryService {
    */
   private filteredRows(userId: string, filters: ListEntriesFilters) {
     const q = searchTerm(filters)?.toLowerCase();
-    const where: Prisma.LibraryEntryWhereInput = {
+    const where: Prisma.MediaEntryWhereInput = {
       userId,
       favorite: filters.favorite ? true : undefined,
       ...loanWhere(filters.loan),
@@ -716,7 +733,7 @@ export class LibraryService {
     const statuses = filters.statuses ?? [];
 
     const rows = async (sort: MediaSortKey): Promise<MediaRow[]> => {
-      const entries = await this.prisma.libraryEntry.findMany({
+      const entries = await this.prisma.mediaEntry.findMany({
         where,
         orderBy: RECENTLY_UPDATED_FIRST,
         select: MEDIA_ROW_SELECT,
@@ -782,7 +799,7 @@ export class LibraryService {
 
   async getEntry(userId: string, entryId: string): Promise<LibraryEntryDto> {
     const entry = await assertEntryOwnership(userId, () =>
-      this.prisma.libraryEntry.findUnique({
+      this.prisma.mediaEntry.findUnique({
         where: { id: entryId },
         include: ENTRY_INCLUDE,
       }),
@@ -837,7 +854,7 @@ export class LibraryService {
 
     const before = owned;
 
-    const entry = await this.prisma.libraryEntry.update({
+    const entry = await this.prisma.mediaEntry.update({
       where: { id: entryId },
       data: {
         status: dto.status,
@@ -964,7 +981,7 @@ export class LibraryService {
     // Same again for a movie's rewatches: they cascade with the entry, and
     // MOVIE_REPLAYED is anchored to each one, not to the entry.
     const replays = await this.prisma.movieReplay.findMany({
-      where: { libraryEntryId: entryId },
+      where: { mediaEntryId: entryId },
       select: { id: true },
     });
 
@@ -982,7 +999,7 @@ export class LibraryService {
         ],
         targetIds,
       ),
-      this.prisma.libraryEntry.delete({ where: { id: entryId } }),
+      this.prisma.mediaEntry.delete({ where: { id: entryId } }),
     ]);
 
     await this.xp.revokeBySource(
@@ -991,10 +1008,10 @@ export class LibraryService {
       watches.map((w) => w.id),
     );
     // Cleans MOVIE_WATCHED and SERIES_COMPLETED (both sourceType
-    // "LibraryEntry") in one call — intentional: deleting a whole entry
+    // "MediaEntry") in one call — intentional: deleting a whole entry
     // must wipe every reason anchored to it, unlike unwatching a single
     // season/episode, which only ever revokes its own reason.
-    await this.xp.revokeBySource(userId, "LibraryEntry", [entryId]);
+    await this.xp.revokeBySource(userId, "MediaEntry", [entryId]);
     await revokeEntryXp(this.xp, userId, [
       { sourceType: "Entry", ids: [entryId] },
       { sourceType: "Season", ids: seasons.map((s) => s.id) },
@@ -1035,7 +1052,7 @@ export class LibraryService {
     mediaItemId: string,
     type: MediaType,
   ): Promise<Date | null> {
-    const entry = await this.prisma.libraryEntry.findUnique({
+    const entry = await this.prisma.mediaEntry.findUnique({
       where: { userId_mediaItemId: { userId, mediaItemId } },
       select: { status: true, finishedAt: true },
     });
@@ -1056,7 +1073,7 @@ export class LibraryService {
     if (finished === !!entry.finishedAt) return entry.finishedAt;
 
     const finishedAt = finished ? new Date() : null;
-    await this.prisma.libraryEntry.update({
+    await this.prisma.mediaEntry.update({
       where: { userId_mediaItemId: { userId, mediaItemId } },
       data: { finishedAt },
     });
@@ -1531,7 +1548,7 @@ export class LibraryService {
     }
 
     const mediaItemIds = [...new Set(seasons.map((s) => s.mediaItemId))];
-    const entries = await this.prisma.libraryEntry.findMany({
+    const entries = await this.prisma.mediaEntry.findMany({
       where: { userId, mediaItemId: { in: mediaItemIds } },
       select: { id: true, mediaItemId: true },
     });
@@ -1555,7 +1572,7 @@ export class LibraryService {
         );
         await this.awardSagaIfCompleted(userId, entry.mediaItemId);
       } else {
-        await this.xp.revokeBySource(userId, "LibraryEntry", [entry.id]);
+        await this.xp.revokeBySource(userId, "MediaEntry", [entry.id]);
       }
     }
   }
@@ -1620,7 +1637,7 @@ export class LibraryService {
     const episodes = await this.ownedEpisodes(userId, ids);
     const rewatches = new Map(
       (
-        await this.prisma.libraryEntry.findMany({
+        await this.prisma.mediaEntry.findMany({
           where: {
             userId,
             mediaItemId: {
@@ -1870,7 +1887,7 @@ export class LibraryService {
     userId: string,
     mediaItemId: string,
   ): Promise<Date | null> {
-    const entry = await this.prisma.libraryEntry.findUnique({
+    const entry = await this.prisma.mediaEntry.findUnique({
       where: { userId_mediaItemId: { userId, mediaItemId } },
       select: { rewatchStartedAt: true },
     });
@@ -1882,7 +1899,7 @@ export class LibraryService {
     userId: string,
     mediaItemIds: string[],
   ): Promise<void> {
-    const entries = await this.prisma.libraryEntry.findMany({
+    const entries = await this.prisma.mediaEntry.findMany({
       where: {
         userId,
         mediaItemId: { in: mediaItemIds },
@@ -1900,7 +1917,7 @@ export class LibraryService {
       );
 
       if (progress && !progress.nextEpisode) {
-        await this.prisma.libraryEntry.update({
+        await this.prisma.mediaEntry.update({
           where: { id: entry.id },
           data: { rewatchStartedAt: null },
         });
@@ -1973,7 +1990,7 @@ export class LibraryService {
 
   private assertEntryOwnership(userId: string, entryId: string) {
     return assertEntryOwnership(userId, () =>
-      this.prisma.libraryEntry.findUnique({
+      this.prisma.mediaEntry.findUnique({
         where: { id: entryId },
         include: LOAN_INCLUDE,
       }),
@@ -1991,7 +2008,7 @@ export class LibraryService {
     userId: string,
     mediaItemId: string,
   ): Promise<void> {
-    const entry = await this.prisma.libraryEntry.findUnique({
+    const entry = await this.prisma.mediaEntry.findUnique({
       where: { userId_mediaItemId: { userId, mediaItemId } },
       select: { id: true },
     });
@@ -2067,7 +2084,7 @@ export class LibraryService {
    * entry. See LibraryController.listTracked.
    */
   async trackedStatuses(userId: string): Promise<TrackedMediaDto[]> {
-    const entries = await this.prisma.libraryEntry.findMany({
+    const entries = await this.prisma.mediaEntry.findMany({
       where: { userId },
       select: {
         status: true,
@@ -2120,7 +2137,7 @@ export class LibraryService {
       type,
       externalId: { in: sourceIds },
     };
-    const entries = await this.prisma.libraryEntry.findMany({
+    const entries = await this.prisma.mediaEntry.findMany({
       where: { userId, mediaItem: { externalIds: { some: externalId } } },
       select: {
         status: true,
@@ -2415,14 +2432,14 @@ export class LibraryService {
 
     const replay = await this.prisma.movieReplay.create({
       data: {
-        libraryEntryId: entryId,
+        mediaEntryId: entryId,
         finishedAt: dto.finishedAt ? new Date(dto.finishedAt) : undefined,
       },
     });
     await this.xp.award(userId, XpReason.MOVIE_REPLAYED, replay.id);
 
     if (entry.rewatchStartedAt) {
-      await this.prisma.libraryEntry.update({
+      await this.prisma.mediaEntry.update({
         where: { id: entryId },
         data: { rewatchStartedAt: null },
       });
@@ -2449,9 +2466,9 @@ export class LibraryService {
         (
           await this.prisma.movieReplay.findUnique({
             where: { id: replayId },
-            select: { libraryEntry: { select: { userId: true } } },
+            select: { mediaEntry: { select: { userId: true } } },
           })
-        )?.libraryEntry.userId ?? null,
+        )?.mediaEntry.userId ?? null,
       remove: () => this.prisma.movieReplay.delete({ where: { id: replayId } }),
     });
   }
@@ -2628,7 +2645,7 @@ export class LibraryService {
       episodeComments.map((row) => [row.targetId, row._count._all]),
     );
 
-    const entryRow = await this.prisma.libraryEntry.findUnique({
+    const entryRow = await this.prisma.mediaEntry.findUnique({
       where: { userId_mediaItemId: { userId, mediaItemId: media.id } },
       include: ENTRY_INCLUDE,
     });
@@ -2717,10 +2734,12 @@ export class LibraryService {
     userId: string,
     acceptLanguage?: string,
   ): Promise<string> {
-    const user = await this.prisma.user.findUniqueOrThrow({
-      where: { id: userId },
-      select: { watchRegion: true },
-    });
+    const user = preferencesOf(
+      await this.prisma.userPreferences.findUnique({
+        where: { userId: userId },
+        select: { watchRegion: true },
+      }),
+    );
     return resolveWatchRegion(user.watchRegion ?? undefined, acceptLanguage);
   }
 }

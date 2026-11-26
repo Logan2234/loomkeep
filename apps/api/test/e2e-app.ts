@@ -7,13 +7,13 @@ import {
 import { Test, TestingModule } from "@nestjs/testing";
 import { App } from "supertest/types";
 import { vi } from "vitest";
-import { AppModule } from "./../src/app.module";
-import { AnilistProvider } from "./../src/catalog/providers/anilist.provider";
-import type { ProviderMediaDetails } from "./../src/catalog/providers/provider.types";
-import { TmdbProvider } from "./../src/catalog/providers/tmdb.provider";
-import { enableApiVersioning } from "./../src/common/api-versioning";
-import { registerRequestContext } from "./../src/common/request-context";
-import { PrismaService } from "./../src/prisma/prisma.service";
+import { AppModule } from "../src/app.module";
+import { AnilistProvider } from "../src/catalog/providers/anilist.provider";
+import type { ProviderMediaDetails } from "../src/catalog/providers/provider.types";
+import { TmdbProvider } from "../src/catalog/providers/tmdb.provider";
+import { enableApiVersioning } from "../src/common/api-versioning";
+import { registerRequestContext } from "../src/common/request-context";
+import { PrismaService } from "../src/prisma/prisma.service";
 
 /**
  * Shared bootstrap for the e2e specs.
@@ -49,6 +49,7 @@ const ANIME_DETAILS: ProviderMediaDetails = {
   format: "TV",
   releaseDate: "2024-01-05",
   runtimeMin: null,
+  originCountries: [],
   externalIds: [{ source: MediaSource.ANILIST, externalId: "4242" }],
   seasons: [
     {
@@ -207,7 +208,7 @@ export async function createE2eApp(): Promise<E2eApp> {
 
 /**
  * Rows whose materialized progress (kept by database triggers, see
- * LibraryEntry.watchedEpisodes) differs from what the watches and episodes
+ * MediaEntry.watchedEpisodes) differs from what the watches and episodes
  * say — 0 and 0 when the triggers covered every write the test made.
  */
 export async function progressDrift(
@@ -217,7 +218,7 @@ export async function progressDrift(
     { entries: bigint; media: bigint; watchedEntries: bigint }[]
   >`
     SELECT
-      (SELECT COUNT(*) FROM "LibraryEntry" le
+      (SELECT COUNT(*) FROM "MediaEntry" le
         WHERE le."watchedEpisodes" <> (
             SELECT COUNT(DISTINCT w."episodeId")
             FROM "EpisodeWatch" w
@@ -241,7 +242,7 @@ export async function progressDrift(
           JOIN "Season" s ON s."id" = e."seasonId"
           WHERE s."mediaItemId" = m."id" AND s."number" > 0)
       ) AS media,
-      (SELECT COUNT(*) FROM "LibraryEntry" WHERE "watchedEpisodes" > 0)
+      (SELECT COUNT(*) FROM "MediaEntry" WHERE "watchedEpisodes" > 0)
         AS "watchedEntries"
   `;
   return {

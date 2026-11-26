@@ -1,4 +1,5 @@
 import { chat } from "#lib/chat/chat.svelte.js";
+import { appConfig } from "#lib/config.svelte.js";
 import { m } from "#lib/paraglide/messages.js";
 import { apiUrl, server } from "#lib/test/msw.js";
 import { renderWithQuery } from "#lib/test/render.js";
@@ -101,6 +102,7 @@ beforeEach(() => {
 afterEach(() => {
   chat.close();
   chat.activeId = null;
+  appConfig.registrationEnabled = false;
 });
 
 describe("ChatPanel", () => {
@@ -119,5 +121,28 @@ describe("ChatPanel", () => {
 
     expect(screen.queryAllByRole("menuitem")).toEqual([]);
     expect(chat.open).toBe(true);
+  });
+
+  it("offers the invitation link from the widget when sign-ups are open", async () => {
+    appConfig.registrationEnabled = true;
+    server.use(
+      http.get(apiUrl("/users/me/invitation"), () =>
+        HttpResponse.json({
+          url: "https://loomkeep.test/register?invite=abc",
+          joinedCount: 0,
+        }),
+      ),
+    );
+    chat.show();
+    const user = userEvent.setup();
+    renderWithQuery(ChatPanel, {});
+
+    await user.click(
+      await screen.findByRole("button", { name: m.chat_invite() }),
+    );
+
+    expect(
+      await screen.findByText("https://loomkeep.test/register?invite=abc"),
+    ).toBeTruthy();
   });
 });

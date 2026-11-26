@@ -40,21 +40,20 @@ import { PrismaService } from "../prisma/prisma.service";
 import { ReviewService } from "../reviews/review.service";
 import { BlockService } from "../social/block.service";
 import { toUserSummaryDto } from "../users/avatar.util";
+import { preferencesOf } from "../users/preferences.util";
 import { isSuspended } from "../users/suspension.util";
+import { USER_SUMMARY_SELECT } from "../users/user.queries";
 import type { WorkCard } from "./chat-work.service";
 
 export const CONVERSATION_PAGE_SIZE = 50;
 export const MESSAGE_PAGE_SIZE = 40;
 
 const PEER_SELECT = {
-  id: true,
-  username: true,
-  displayName: true,
-  profileAccess: true,
-  avatarUpdatedAt: true,
-  chatShowPresence: true,
-  chatShowReadReceipts: true,
-} as const;
+  ...USER_SUMMARY_SELECT,
+  preferences: {
+    select: { chatShowPresence: true, chatShowReadReceipts: true },
+  },
+} satisfies Prisma.UserSelect;
 
 type Peer = Prisma.UserGetPayload<{ select: typeof PEER_SELECT }>;
 
@@ -84,20 +83,12 @@ const MESSAGE_INCLUDE = {
         select: {
           optionId: true,
           userId: true,
-          user: {
-            select: {
-              id: true,
-              username: true,
-              displayName: true,
-              profileAccess: true,
-              avatarUpdatedAt: true,
-            },
-          },
+          user: { select: USER_SUMMARY_SELECT },
         },
       },
     },
   },
-} as const satisfies Prisma.MessageInclude;
+} satisfies Prisma.MessageInclude satisfies Prisma.MessageInclude;
 
 type MessageRow = Prisma.MessageGetPayload<{
   include: typeof MESSAGE_INCLUDE;
@@ -181,7 +172,7 @@ const MEMBERSHIP_SELECT = {
       },
     },
   },
-} as const;
+} satisfies Prisma.ConversationMemberSelect;
 
 /**
  * Private conversations between friends. Two accounts can write to each other
@@ -466,10 +457,9 @@ export class ChatService {
       data: {
         text,
         spoiler,
-        edited:
-          message.edited ||
-          message.text !== text ||
-          message.spoiler !== spoiler,
+        ...(message.text !== text || message.spoiler !== spoiler
+          ? { editedAt: new Date() }
+          : {}),
       },
       include: MESSAGE_INCLUDE,
     });
@@ -836,7 +826,14 @@ export class ChatService {
       (m) => m.userId === userId,
     );
 
-    if (peer && reader && showsReadReceipts(reader.user, peer.user)) {
+    if (
+      peer &&
+      reader &&
+      showsReadReceipts(
+        preferencesOf(reader.user.preferences),
+        preferencesOf(peer.user.preferences),
+      )
+    ) {
       this.events.emitToUser(peer.userId, RealtimeEvent.CHAT_READ, event);
     }
   }
@@ -1064,7 +1061,7 @@ export class ChatService {
 
     const [mediaRows, gameRows, bookRows, musicRows] = await Promise.all([
       media.length > 0
-        ? this.prisma.libraryEntry.findMany({
+        ? this.prisma.mediaEntry.findMany({
             where: { userId, mediaItemId: { in: media } },
             select: { mediaItemId: true },
           })
@@ -1097,10 +1094,16 @@ export class ChatService {
   }
 
   private async viewer(userId: string): Promise<Viewer> {
-    return this.prisma.user.findUniqueOrThrow({
+    const user = await this.prisma.user.findUniqueOrThrow({
       where: { id: userId },
-      select: { id: true, chatShowPresence: true, chatShowReadReceipts: true },
+      select: { id: true, preferences: PEER_SELECT.preferences },
     });
+    const prefs = preferencesOf(user.preferences);
+    return {
+      id: user.id,
+      chatShowPresence: prefs.chatShowPresence,
+      chatShowReadReceipts: prefs.chatShowReadReceipts,
+    };
   }
 
   /** The viewer's membership, 404 when they aren't in it or were blocked by the other member. */
@@ -1140,7 +1143,6 @@ export class ChatService {
         createdAt: true,
         text: true,
         spoiler: true,
-        edited: true,
       },
     });
 
@@ -1267,7 +1269,9 @@ export class ChatService {
         const peer = peerOf(m, viewer.id);
         const last = lastByConversation.get(m.conversationId);
         const presenceShared =
-          !!peer && viewer.chatShowPresence && peer.user.chatShowPresence;
+          !!peer &&
+          viewer.chatShowPresence &&
+          preferencesOf(peer.user.preferences).chatShowPresence;
         return {
           id: m.conversationId,
           peer: peer ? toUserSummaryDto(peer.user) : null,
@@ -1276,7 +1280,8 @@ export class ChatService {
             ? await this.events.isOnline(peer.userId)
             : null,
           peerLastReadAt:
-            peer && showsReadReceipts(viewer, peer.user)
+            peer &&
+            showsReadReceipts(viewer, preferencesOf(peer.user.preferences))
               ? peer.lastReadAt.toISOString()
               : null,
           lastMessage: last ? toMessageDto(last, viewer.id, cards) : null,
@@ -1382,7 +1387,11 @@ export class ChatService {
     const [recipient, author, member] = await Promise.all([
       this.prisma.user.findUnique({
         where: { id: recipientId },
-        select: { locale: true, alertPrefs: true, suspendedUntil: true },
+        select: {
+          locale: true,
+          suspendedUntil: true,
+          preferences: { select: { alertPrefs: true } },
+        },
       }),
       this.prisma.user.findUnique({
         where: { id: authorId },
@@ -1402,7 +1411,7 @@ export class ChatService {
       member?.mutedAt ||
       isSuspended(recipient) ||
       !isAlertEnabled(
-        readAlertPrefs(recipient.alertPrefs),
+        readAlertPrefs(recipient.preferences?.alertPrefs ?? {}),
         "CHAT_MESSAGE",
         "push",
       )
@@ -1489,7 +1498,7 @@ function toMessageDto(
     mine: row.authorId === viewerId,
     text: row.deletedAt ? null : row.text,
     spoiler: row.spoiler,
-    edited: row.edited,
+    edited: row.editedAt !== null,
     deleted: row.deletedAt !== null,
     deletedByAdmin: row.deletedByAdmin,
     reactions,

@@ -61,7 +61,7 @@ const MEDIA_ITEM = {
     runtimeMin: true,
     externalIds: EXTERNAL_IDS,
   },
-} as const;
+} satisfies Prisma.MediaItemDefaultArgs;
 const GAME_ITEM = {
   select: {
     id: true,
@@ -70,7 +70,7 @@ const GAME_ITEM = {
     canonicalSource: true,
     externalIds: EXTERNAL_IDS,
   },
-} as const;
+} satisfies Prisma.GameItemDefaultArgs;
 const BOOK_ITEM = {
   select: {
     id: true,
@@ -80,7 +80,7 @@ const BOOK_ITEM = {
     canonicalSource: true,
     externalIds: EXTERNAL_IDS,
   },
-} as const;
+} satisfies Prisma.BookItemDefaultArgs;
 const MUSIC_ITEM = {
   select: {
     id: true,
@@ -91,7 +91,7 @@ const MUSIC_ITEM = {
     durationMin: true,
     externalIds: EXTERNAL_IDS,
   },
-} as const;
+} satisfies Prisma.MusicItemDefaultArgs;
 
 /**
  * The account's consumption history: episodes and films seen, game and
@@ -255,7 +255,7 @@ export class HistoryV1Service {
 
   /** A film's first viewing is its completed library entry itself. */
   private firstViewings(): HistorySource {
-    const where = (scope: Scope): Prisma.LibraryEntryWhereInput => ({
+    const where = (scope: Scope): Prisma.MediaEntryWhereInput => ({
       id: scope.entryId,
       userId: scope.userId,
       status: "COMPLETED",
@@ -264,9 +264,9 @@ export class HistoryV1Service {
     });
 
     return {
-      count: (scope) => this.prisma.libraryEntry.count({ where: where(scope) }),
+      count: (scope) => this.prisma.mediaEntry.count({ where: where(scope) }),
       find: async (scope, take) => {
-        const entries = await this.prisma.libraryEntry.findMany({
+        const entries = await this.prisma.mediaEntry.findMany({
           where: where(scope),
           orderBy: [
             { finishedAt: { sort: "desc", nulls: "last" } },
@@ -293,8 +293,8 @@ export class HistoryV1Service {
   /** Rewatches come after the first viewing, in the order they happened. */
   private movieRewatches(): HistorySource {
     const where = (scope: Scope): Prisma.MovieReplayWhereInput => ({
-      libraryEntryId: scope.entryId,
-      libraryEntry: { userId: scope.userId },
+      mediaEntryId: scope.entryId,
+      mediaEntry: { userId: scope.userId },
       finishedAt: scope.range && { gte: scope.range.gte, lt: scope.range.lt },
     });
 
@@ -308,34 +308,34 @@ export class HistoryV1Service {
           select: {
             id: true,
             finishedAt: true,
-            libraryEntryId: true,
-            libraryEntry: { select: { mediaItem: MEDIA_ITEM } },
+            mediaEntryId: true,
+            mediaEntry: { select: { mediaItem: MEDIA_ITEM } },
           },
         });
         const order = await this.prisma.movieReplay.findMany({
           where: {
-            libraryEntryId: {
-              in: [...new Set(replays.map((r) => r.libraryEntryId))],
+            mediaEntryId: {
+              in: [...new Set(replays.map((r) => r.mediaEntryId))],
             },
           },
           orderBy: [{ finishedAt: "asc" }, { id: "asc" }],
-          select: { id: true, libraryEntryId: true },
+          select: { id: true, mediaEntryId: true },
         });
         const rank = new Map<string, number>();
         const seen = new Map<string, number>();
 
-        for (const { id, libraryEntryId } of order) {
-          const n = (seen.get(libraryEntryId) ?? 0) + 1;
-          seen.set(libraryEntryId, n);
+        for (const { id, mediaEntryId } of order) {
+          const n = (seen.get(mediaEntryId) ?? 0) + 1;
+          seen.set(mediaEntryId, n);
           rank.set(id, n);
         }
 
         return replays.map((replay) => {
-          const media = replay.libraryEntry.mediaItem;
+          const media = replay.mediaEntry.mediaItem;
           return this.event("MOVIE_WATCHED", {
             id: replay.id,
             date: replay.finishedAt,
-            entryId: replay.libraryEntryId,
+            entryId: replay.mediaEntryId,
             work: this.mediaWorkOf(media),
             cycle: (rank.get(replay.id) ?? 0) + 1,
             durationMinutes: media.runtimeMin,

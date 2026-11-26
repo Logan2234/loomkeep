@@ -11,7 +11,9 @@ decisions and dev conventions shared with the web app, see the root
 
 - **NestJS** on **Fastify** (`@nestjs/platform-fastify`), global prefix
   `/api`, global JWT guard (`@Public()` to opt out).
-- **Prisma** + **PostgreSQL**, schema in `prisma/schema.prisma`. An `erd`
+- **Prisma** + **PostgreSQL**, schema in `prisma/schema/`: one file per
+  module that owns those tables (`users.prisma`, `games.prisma`…), and the
+  generators, datasource and shared enums in `schema.prisma`. An `erd`
   generator (`prisma-erd-generator`) is configured alongside the client
   generator — run `pnpm exec prisma generate` to also emit an ERD diagram.
 - **Auth**: access JWT (15 min) + rotating refresh tokens (one row per
@@ -25,36 +27,20 @@ decisions and dev conventions shared with the web app, see the root
 - **Swagger UI** on `/swagger`, dev-only (`NODE_ENV=development`) — the
   `@nestjs/swagger` import is dynamic so it's never bundled in production.
 
-## Modules (`src/`)
+## Layout (`src/`)
 
-Domain modules, one per bounded concern:
+One folder per NestJS module, named after what it owns: its controller,
+services, DTOs and, for the tables it writes, its file in `prisma/schema/`.
+Three folders are not domains:
 
-- `catalog/` — the `CatalogProvider` interface + TMDB/AniList/IGDB/Open
-  Library/MusicBrainz providers, and `MediaItemService.upsertFromSource()`
-  (the single entry point that persists a catalogue item on-demand).
-- `library/` — a user's tracked items, watch/read/listen progress.
-- `import/` — interactive import pipelines (TV Time, Trakt, Simkl, IMDb,
-  Letterboxd, AniList, MyAnimeList, Steam, Goodreads, StoryGraph, Babelio)
-  under `sources/`,
-  behind a shared analyze → review → commit flow.
-- `reviews/`, `comments/`, `social/`, `reports/` — the social feature set,
-  gated behind `SOCIAL_ENABLED` (see
-  [social/README.md](src/social/README.md) for the full design).
-- `lists/` — user-curated, optionally shared collections.
-- `notifications/`, `jobs/` — in-app notifications, Web Push, and the
-  scheduled jobs (`@nestjs/schedule`) that scan tracked shows for new
-  episodes. `JobRunService` records every run for the admin "Jobs" page and
-  optionally pings Healthchecks.io per job — see
-  [Scheduled jobs](https://docs.loomkeep.app/self-hosting/scheduled-jobs/).
-- `stats/` — per-domain and admin aggregate statistics.
-- `admin/` — moderation queue, ops summaries.
-- `auth/`, `users/`, `security/` — auth flows, account management,
-  login-failure tracking.
-- `mail/` — SMTP sending (password reset, verification, alerts) via
-  `nodemailer`; silently disabled when `SMTP_*` is unset.
-- `health/` — `/health` endpoint used by Docker healthchecks and the
-  Homepage dashboard widget.
-- `common/`, `config/` — cross-cutting utilities and env/config loading.
+- `common/` — infrastructure and pure helpers (HTTP, logging, CORS,
+  pagination, errors). It imports no other module (`common-boundary.spec.ts`).
+- `work/` — what the four domains (media, games, books, music) share: entry
+  lifecycle, loans, bulk edits, work links, and `domain-parity.spec.ts`.
+- `ee/` — premium features under LICENSE-EE, registered only by
+  `app.module.ts`.
+
+The decisions behind this shape are in [docs/adr/](../../docs/adr/README.md).
 
 ## Commands
 
@@ -64,7 +50,7 @@ Setting up the whole repository is in the
 ```sh
 pnpm --filter @loomkeep/api test           # unit tests, offline (HTTP calls are stubbed)
 pnpm --filter @loomkeep/api test:e2e       # full API flow against the dev Postgres, isolated "e2e" schema
-pnpm --filter @loomkeep/api exec prisma migrate dev --name <name>   # after editing schema.prisma
+pnpm --filter @loomkeep/api exec prisma migrate dev --name <name>   # after editing prisma/schema/
 pnpm --filter @loomkeep/api generate:openapi   # the public API's openapi-v1.json, after `build`
 ```
 

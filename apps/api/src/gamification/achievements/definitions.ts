@@ -18,6 +18,7 @@ import {
   checkOmnivore,
   checkPremiereSeance,
   checkWellRounded,
+  checkWorldTourTier,
 } from "./checks/media";
 import {
   checkFreshStart,
@@ -284,8 +285,30 @@ export const ACHIEVEMENTS: Record<string, AchievementDefinition> = {
     check: checkStreakTier(365),
   },
 
-  // Country achievements are omitted because no catalogue model persists a
-  // country-of-origin field.
+  world_tour_bronze: {
+    key: "world_tour_bronze",
+    family: "exploration",
+    tierOf: "world_tour",
+    tier: "bronze",
+    xpAward: 15,
+    check: checkWorldTourTier(5),
+  },
+  world_tour_silver: {
+    key: "world_tour_silver",
+    family: "exploration",
+    tierOf: "world_tour",
+    tier: "silver",
+    xpAward: 50,
+    check: checkWorldTourTier(15),
+  },
+  world_tour_gold: {
+    key: "world_tour_gold",
+    family: "exploration",
+    tierOf: "world_tour",
+    tier: "gold",
+    xpAward: 150,
+    check: checkWorldTourTier(30),
+  },
   decades_bronze: {
     key: "decades_bronze",
     family: "exploration",

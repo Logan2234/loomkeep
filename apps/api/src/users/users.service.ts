@@ -21,7 +21,11 @@ import { ConfigService } from "@nestjs/config";
 import { Prisma, type User } from "@prisma/client";
 import * as bcrypt from "bcryptjs";
 import { ApiKeysService } from "../api-keys/api-keys.service";
-import { BCRYPT_ROUNDS, toUserDto } from "../auth/auth.service";
+import {
+  BCRYPT_ROUNDS,
+  toUserDto,
+  USER_DTO_INCLUDE,
+} from "../auth/auth.service";
 import { SessionCacheService } from "../auth/session-cache.service";
 import { revokeSessionsWith } from "../auth/session-revocation.util";
 import { AppException } from "../common/app.exception";
@@ -61,6 +65,7 @@ import type { UpdateUserDto } from "./dto/update-user.dto";
 import type { UpdateUsernameDto } from "./dto/update-username.dto";
 import type { UploadAvatarDto } from "./dto/upload-avatar.dto";
 import { toHomeLayoutJson } from "./home-layout.util";
+import { preferencesOf, upsertPreferences } from "./preferences.util";
 import { signWidgetToken } from "./widget-token.util";
 
 const FULL_EXPORT_INTERVAL_MS = 60 * 60 * 1000;
@@ -104,7 +109,10 @@ export class UsersService {
   }
 
   async getMe(userId: string): Promise<UserDto> {
-    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: USER_DTO_INCLUDE,
+    });
 
     if (!user) {
       throw new AppException(
@@ -225,6 +233,7 @@ export class UsersService {
 
     const user = await this.prisma.user.update({
       where: { id: userId },
+      include: USER_DTO_INCLUDE,
       data: {
         avatarUpdatedAt: new Date(),
         avatarImage: {
@@ -244,6 +253,7 @@ export class UsersService {
       this.prisma.userAvatar.deleteMany({ where: { userId } }),
       this.prisma.user.update({
         where: { id: userId },
+        include: USER_DTO_INCLUDE,
         data: { avatarUpdatedAt: null },
       }),
     ]);
@@ -322,13 +332,23 @@ export class UsersService {
       );
     }
 
-    const { count } = await this.prisma.user.updateMany({
-      where: { id: userId, acquisitionSource: null },
-      data: {
-        acquisitionSource: source,
-        acquisitionSourceOther: other?.trim() || null,
-      },
+    // Written once. The row may not exist yet: creating it takes the answer;
+    // an existing one only takes it while it has none.
+    const answer = {
+      acquisitionSource: source,
+      acquisitionSourceOther: other?.trim() || null,
+    };
+    const created = await this.prisma.userOnboarding.createMany({
+      data: [{ userId, ...answer }],
+      skipDuplicates: true,
     });
+    const { count } =
+      created.count > 0
+        ? created
+        : await this.prisma.userOnboarding.updateMany({
+            where: { userId, acquisitionSource: null },
+            data: answer,
+          });
 
     if (count === 0) {
       throw new AppException(
@@ -343,7 +363,15 @@ export class UsersService {
   async completeOnboarding(userId: string): Promise<UserDto> {
     const user = await this.prisma.user.update({
       where: { id: userId },
-      data: { onboardedAt: new Date() },
+      include: USER_DTO_INCLUDE,
+      data: {
+        onboarding: {
+          upsert: {
+            create: { onboardedAt: new Date() },
+            update: { onboardedAt: new Date() },
+          },
+        },
+      },
     });
     return toUserDto(user);
   }
@@ -356,9 +384,20 @@ export class UsersService {
   async acceptTerms(userId: string): Promise<UserDto> {
     const user = await this.prisma.user.update({
       where: { id: userId },
+      include: USER_DTO_INCLUDE,
       data: {
-        acceptedTermsAt: new Date(),
-        acceptedTermsVersion: LEGAL_VERSION,
+        consent: {
+          upsert: {
+            create: {
+              acceptedTermsAt: new Date(),
+              acceptedTermsVersion: LEGAL_VERSION,
+            },
+            update: {
+              acceptedTermsAt: new Date(),
+              acceptedTermsVersion: LEGAL_VERSION,
+            },
+          },
+        },
       },
     });
     return toUserDto(user);
@@ -383,7 +422,12 @@ export class UsersService {
       }));
     const user = await this.prisma.user.update({
       where: { id: userId },
-      data: { homeLayout: toHomeLayoutJson({ widgets }) },
+      include: USER_DTO_INCLUDE,
+      data: {
+        preferences: upsertPreferences({
+          homeLayout: toHomeLayoutJson({ widgets }),
+        }),
+      },
     });
     return toUserDto(user);
   }
@@ -401,7 +445,12 @@ export class UsersService {
     });
     const user = await this.prisma.user.update({
       where: { id: userId },
-      data: { homePhoneLayout: toHomeLayoutJson({ widgets }) },
+      include: USER_DTO_INCLUDE,
+      data: {
+        preferences: upsertPreferences({
+          homePhoneLayout: toHomeLayoutJson({ widgets }),
+        }),
+      },
     });
     return toUserDto(user);
   }
@@ -410,7 +459,10 @@ export class UsersService {
   async resetHomePhoneLayout(userId: string): Promise<UserDto> {
     const user = await this.prisma.user.update({
       where: { id: userId },
-      data: { homePhoneLayout: Prisma.DbNull },
+      include: USER_DTO_INCLUDE,
+      data: {
+        preferences: upsertPreferences({ homePhoneLayout: Prisma.DbNull }),
+      },
     });
     return toUserDto(user);
   }
@@ -419,7 +471,8 @@ export class UsersService {
   async resetHomeLayout(userId: string): Promise<UserDto> {
     const user = await this.prisma.user.update({
       where: { id: userId },
-      data: { homeLayout: Prisma.DbNull },
+      include: USER_DTO_INCLUDE,
+      data: { preferences: upsertPreferences({ homeLayout: Prisma.DbNull }) },
     });
     return toUserDto(user);
   }
@@ -438,9 +491,13 @@ export class UsersService {
       where: { id: userId },
       select: {
         birthDate: true,
-        allowAdultContent: true,
-        notifyNewsletter: true,
-        alertPrefs: true,
+        preferences: {
+          select: {
+            allowAdultContent: true,
+            notifyNewsletter: true,
+            alertPrefs: true,
+          },
+        },
       },
     });
 
@@ -453,12 +510,20 @@ export class UsersService {
       );
     }
 
+    const currentPrefs = preferencesOf(current.preferences);
+
     // Proof-of-consent timestamp (GDPR art. 7(1)): only stamped on the
     // false → true transition, never overwritten afterwards (a later opt-out
     // leaves it as the historical record of when consent was last given).
-    const newsletterOptInAt =
-      dto.notifyNewsletter === true && !current.notifyNewsletter
-        ? new Date()
+    const optingIn =
+      dto.notifyNewsletter === true && !currentPrefs.notifyNewsletter;
+    // Withdrawing consent is dated too (art. 7(3)), separately.
+    const optingOut =
+      dto.notifyNewsletter === false && currentPrefs.notifyNewsletter;
+    const consentStamp = optingIn
+      ? { newsletterOptInAt: new Date() }
+      : optingOut
+        ? { newsletterOptOutAt: new Date() }
         : undefined;
 
     const nextBirthDate =
@@ -469,7 +534,7 @@ export class UsersService {
           : new Date(dto.birthDate);
 
     let nextAllowAdultContent =
-      dto.allowAdultContent ?? current.allowAdultContent;
+      dto.allowAdultContent ?? currentPrefs.allowAdultContent;
 
     if (nextAllowAdultContent && !isAdult(nextBirthDate)) {
       if (dto.allowAdultContent === true) {
@@ -486,7 +551,7 @@ export class UsersService {
     }
 
     const alertPrefs = dto.alertPrefs
-      ? mergeAlertPrefs(readAlertPrefs(current.alertPrefs), dto.alertPrefs)
+      ? mergeAlertPrefs(readAlertPrefs(currentPrefs.alertPrefs), dto.alertPrefs)
       : undefined;
 
     if (alertPrefs === null) {
@@ -500,32 +565,47 @@ export class UsersService {
 
     const user = await this.prisma.user.update({
       where: { id: userId },
+      include: USER_DTO_INCLUDE,
       data: {
         displayName: dto.displayName,
         birthDate: nextBirthDate,
-        allowAdultContent: nextAllowAdultContent,
-        notifyEmail: dto.notifyEmail,
-        notifyPush: dto.notifyPush,
-        notifyNewsletter: dto.notifyNewsletter,
-        alertPrefs,
-        newsletterOptInAt,
+        preferences: upsertPreferences({
+          allowAdultContent: nextAllowAdultContent,
+          notifyEmail: dto.notifyEmail,
+          notifyPush: dto.notifyPush,
+          notifyNewsletter: dto.notifyNewsletter,
+          alertPrefs,
+          defaultReviewVisibility: dto.defaultReviewVisibility,
+          defaultListVisibility: dto.defaultListVisibility,
+          hideProgression: dto.hideProgression,
+          chatShowPresence: dto.chatShowPresence,
+          chatShowReadReceipts: dto.chatShowReadReceipts,
+          chatShareWatchProviders: dto.chatShareWatchProviders,
+          feedbackWidget: dto.feedbackWidget,
+          spoilerSensitivity: dto.spoilerSensitivity,
+          domainOrder: dto.domainOrder,
+          watchRegion: dto.watchRegion,
+          watchProviderIds: dto.watchProviderIds,
+          listenServices: dto.listenServices,
+        }),
+        consent: consentStamp
+          ? { upsert: { create: consentStamp, update: consentStamp } }
+          : undefined,
+        // A new consent gets a new unsubscribe link (minted at the next
+        // send): the ones in emails from before it stop working.
+        urlTokens: optingIn
+          ? {
+              upsert: {
+                create: {},
+                update: { newsletterUnsubscribeToken: null },
+              },
+            }
+          : undefined,
         timezone: dto.timezone,
         enabledDomains: dto.enabledDomains,
         // Empty string clears the bio back to null.
         bio: dto.bio === undefined ? undefined : dto.bio || null,
-        defaultReviewVisibility: dto.defaultReviewVisibility,
-        defaultListVisibility: dto.defaultListVisibility,
         locale: dto.locale as string,
-        hideProgression: dto.hideProgression,
-        chatShowPresence: dto.chatShowPresence,
-        chatShowReadReceipts: dto.chatShowReadReceipts,
-        chatShareWatchProviders: dto.chatShareWatchProviders,
-        feedbackWidget: dto.feedbackWidget,
-        spoilerSensitivity: dto.spoilerSensitivity,
-        domainOrder: dto.domainOrder,
-        watchRegion: dto.watchRegion,
-        watchProviderIds: dto.watchProviderIds,
-        listenServices: dto.listenServices,
       },
     });
     await this.maybeAwardProfileCompleted(userId, user);
@@ -657,6 +737,7 @@ export class UsersService {
       .$transaction([
         this.prisma.user.update({
           where: { id: userId },
+          include: USER_DTO_INCLUDE,
           data: { email: stored.newEmail },
         }),
         this.prisma.emailChangeRequest.deleteMany({ where: { userId } }),
@@ -711,6 +792,7 @@ export class UsersService {
     await revokeSessionsWith(this.sessionDeps, { userId }, [
       this.prisma.user.update({
         where: { id: userId },
+        include: USER_DTO_INCLUDE,
         data: {
           passwordHash: await bcrypt.hash(dto.newPassword, BCRYPT_ROUNDS),
         },
@@ -731,7 +813,7 @@ export class UsersService {
   /**
    * Live preview of what deleting the account would do, for the confirmation
    * modal — every category is always present, even at 0 rows, so the summary
-   * reads as exhaustive. Mirrors the `onDelete` behaviour in schema.prisma and
+   * reads as exhaustive. Mirrors the `onDelete` behaviour in the Prisma schema and
    * AccountDeletionService: owned rows cascade away; what other members can
    * see (reviews, comments, items added to their lists) is detached
    * (SetNull) instead; lists with editors change hands.
@@ -790,9 +872,9 @@ export class UsersService {
         where: { id: userId },
         select: { mfaTotpEnabled: true, mfaEmailEnabled: true },
       }),
-      this.prisma.libraryEntry.count({ where: own }),
+      this.prisma.mediaEntry.count({ where: own }),
       this.prisma.episodeWatch.count({ where: own }),
-      this.prisma.movieReplay.count({ where: { libraryEntry: own } }),
+      this.prisma.movieReplay.count({ where: { mediaEntry: own } }),
       this.prisma.gameEntry.count({ where: own }),
       this.prisma.gamePlaythrough.count({ where: { gameEntry: own } }),
       this.prisma.gameSession.count({ where: { gameEntry: own } }),
@@ -941,7 +1023,7 @@ export class UsersService {
     }
 
     const existing = await this.prisma.user.findUnique({
-      where: { username: value },
+      where: { username: value.trim().toLowerCase() },
       select: { id: true },
     });
     return { available: !existing || existing.id === userId };
@@ -968,6 +1050,7 @@ export class UsersService {
 
     const user = await this.prisma.user.update({
       where: { id: userId },
+      include: USER_DTO_INCLUDE,
       data: { username: dto.username },
     });
     return toUserDto(user);
@@ -981,7 +1064,10 @@ export class UsersService {
     userId: string,
     currentPassword: string,
   ): Promise<User> {
-    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: USER_DTO_INCLUDE,
+    });
 
     if (!user) {
       throw new AppException(

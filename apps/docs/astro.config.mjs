@@ -68,7 +68,10 @@ export default defineConfig({
           href: "https://github.com/Logan2234/loomkeep",
         },
       ],
-      components: { SocialIcons: "./src/components/SocialIcons.astro" },
+      components: {
+        SocialIcons: "./src/components/SocialIcons.astro",
+        Footer: "./src/components/Footer.astro",
+      },
       editLink: {
         baseUrl: "https://github.com/Logan2234/loomkeep/edit/main/apps/docs/",
       },

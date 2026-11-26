@@ -5,6 +5,9 @@
   import { m } from "#lib/paraglide/messages.js";
   import { formatNumber } from "#lib/format.js";
   import ProgressBar from "#lib/components/ProgressBar.svelte";
+  import { prefersReducedMotion } from "#lib/motion.js";
+  import { cubicOut } from "svelte/easing";
+  import { slide } from "svelte/transition";
 
   let {
     items,
@@ -23,47 +26,62 @@
 
   let expanded = $state(false);
 
-  const visible = $derived(expanded ? items : items.slice(0, initialCount));
+  const reduced = prefersReducedMotion();
+
+  const first = $derived(items.slice(0, initialCount));
+  const rest = $derived(items.slice(initialCount));
   const max = $derived(Math.max(1, ...items.map((i) => i.value)));
-  const hasMore = $derived(items.length > initialCount);
 </script>
+
+{#snippet row(item: (typeof items)[number])}
+  <li>
+    <div class="mb-1 flex items-center justify-between gap-2 text-sm">
+      <span class="flex min-w-0 items-center gap-1.5">
+        <span class="truncate">{item.label}</span>
+        {#if item.badge}
+          <span
+            class="shrink-0 rounded px-1.5 py-0.5 font-mono text-[0.625rem] {item
+              .badge.tone === 'warn'
+              ? 'bg-accent/15 text-accent'
+              : 'bg-surface-2 text-dim'}">
+            {item.badge.text}
+          </span>
+        {/if}
+      </span>
+      <span class="timecode shrink-0">
+        {item.display ?? formatNumber(item.value)}
+      </span>
+    </div>
+    <ProgressBar
+      value={(item.value / max) * 100}
+      label={m.common_selection_summary({
+        label: item.label,
+        selection: item.display ?? formatNumber(item.value),
+      })}
+      height="h-2"
+      fillClass=""
+      fillStyle="background:{item.color ?? 'var(--accent)'}" />
+  </li>
+{/snippet}
 
 {#if items.length === 0}
   <p class="text-dim text-sm">{m.common_nothing_yet()}</p>
 {:else}
   <ul class="flex flex-col gap-3">
-    {#each visible as item (item.label)}
-      <li>
-        <div class="mb-1 flex items-center justify-between gap-2 text-sm">
-          <span class="flex min-w-0 items-center gap-1.5">
-            <span class="truncate">{item.label}</span>
-            {#if item.badge}
-              <span
-                class="shrink-0 rounded px-1.5 py-0.5 font-mono text-[0.625rem] {item
-                  .badge.tone === 'warn'
-                  ? 'bg-accent/15 text-accent'
-                  : 'bg-surface-2 text-dim'}">
-                {item.badge.text}
-              </span>
-            {/if}
-          </span>
-          <span class="timecode shrink-0">
-            {item.display ?? formatNumber(item.value)}
-          </span>
-        </div>
-        <ProgressBar
-          value={(item.value / max) * 100}
-          label={m.common_selection_summary({
-            label: item.label,
-            selection: item.display ?? formatNumber(item.value),
-          })}
-          height="h-2"
-          fillClass=""
-          fillStyle="background:{item.color ?? 'var(--accent)'}" />
-      </li>
+    {#each first as item (item.label)}
+      {@render row(item)}
     {/each}
   </ul>
-  {#if hasMore}
+  {#if expanded && rest.length > 0}
+    <div transition:slide={{ duration: reduced ? 0 : 260, easing: cubicOut }}>
+      <ul class="flex flex-col gap-3 pt-3">
+        {#each rest as item (item.label)}
+          {@render row(item)}
+        {/each}
+      </ul>
+    </div>
+  {/if}
+  {#if rest.length > 0}
     <SeeMore
       {expanded}
       onclick={() => (expanded = !expanded)}

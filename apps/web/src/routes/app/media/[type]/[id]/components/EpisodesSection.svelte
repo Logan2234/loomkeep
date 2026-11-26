@@ -714,7 +714,6 @@
 <h2
   class="font-display mt-10 mb-4 flex flex-wrap items-baseline gap-x-3 gap-y-1 text-xl font-bold">
   {m.media_episodes()}
-  {#if isFeatureNew("episode-details") || (entry && isFeatureNew("episode-selection"))}<NewBadge />{/if}
   {#if entry}
     <span class="text-dim font-sans text-sm font-medium">{progressLabel}</span>
   {/if}
@@ -934,7 +933,7 @@
       bind:clientHeight={floatingHeight}
       class={layout.compact
         ? "fixed inset-x-2 bottom-[calc(var(--bottom-bar-space)+0.5rem)] z-30"
-        : "sticky bottom-4 z-20 mx-auto mt-4 w-full max-w-[480px]"}
+        : "sticky bottom-4 z-20 mx-auto mt-4 w-full max-w-120"}
       transition:fly={{ y: reduced ? 0 : 12, duration: reduced ? 0 : 200 }}>
       {#if selecting}
         <div bind:this={selectionBarEl}>

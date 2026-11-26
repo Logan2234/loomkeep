@@ -90,7 +90,7 @@
 
 <SettingsSection slug="import">
   {#if lastRunQuery.loading}
-    <div class="skeleton mb-8 h-[4.5rem] rounded-xl"></div>
+    <div class="skeleton mb-8 h-18 rounded-xl"></div>
   {:else if lastRun}
     <div
       class="inset-card mb-8 flex flex-wrap items-center gap-3 p-4 {lastRunOk

@@ -26,13 +26,13 @@ import {
   toPagedResult,
   type ParsedPage,
 } from "../common/pagination.util";
+import { EventsGateway } from "../events/events.gateway";
+import { AchievementService } from "../gamification/achievements/achievement.service";
 import {
   resolveWorkHref,
   resolveWorkLink,
   workTargetExists,
-} from "../common/work-href.util";
-import { EventsGateway } from "../events/events.gateway";
-import { AchievementService } from "../gamification/achievements/achievement.service";
+} from "../work/work-href.util";
 
 import { ACHIEVEMENT_KEYS_ON_COMMENT_POSTED } from "../gamification/achievements/triggers";
 import { isGamificationEnabled } from "../gamification/gamification.config";
@@ -45,6 +45,7 @@ import { BlockService } from "../social/block.service";
 import { anonymizeAuthor } from "../social/pseudonym.util";
 import { VisibilityService } from "../social/visibility.service";
 import { toUserSummaryDto } from "../users/avatar.util";
+import { USER_SUMMARY_SELECT } from "../users/user.queries";
 import type { CreateCommentBody } from "./dto/create-comment.dto";
 import type { UpdateCommentBody } from "./dto/update-comment.dto";
 
@@ -64,16 +65,12 @@ export const REPLY_PREVIEW_LIMIT = 3;
 const COMMENT_SEARCH_LIMIT = 20;
 
 const AUTHOR_SELECT = {
-  id: true,
-  username: true,
-  displayName: true,
-  profileAccess: true,
-  avatarUpdatedAt: true,
+  ...USER_SUMMARY_SELECT,
   // Only ever used locally to build the withXp gating map below — never
   // forwarded to toUserSummaryDto/the client (that would leak the setting
   // itself, not just its effect).
-  hideProgression: true,
-} as const;
+  preferences: { select: { hideProgression: true } },
+} satisfies Prisma.UserSelect;
 
 type CommentAuthor = {
   id: string;
@@ -81,7 +78,7 @@ type CommentAuthor = {
   displayName: string;
   profileAccess: ProfileAccess;
   avatarUpdatedAt: Date | null;
-  hideProgression: boolean;
+  preferences: { hideProgression: boolean } | null;
 };
 
 type CommentRow = {
@@ -92,7 +89,7 @@ type CommentRow = {
   authorId: string | null;
   text: string | null;
   spoilerTag: boolean;
-  edited: boolean;
+  editedAt: Date | null;
   deletedAt: Date | null;
   deletedByAdmin: boolean;
   createdAt: Date;
@@ -115,7 +112,7 @@ const MENTION_SELECT = {
   userId: true,
   start: true,
   user: { select: { id: true, username: true } },
-} as const;
+} satisfies Prisma.CommentMentionSelect;
 
 @Injectable()
 export class CommentService {
@@ -295,7 +292,10 @@ export class CommentService {
           (c): c is typeof c & { author: NonNullable<typeof c.author> } =>
             !!c.author,
         )
-        .map((c) => [c.author.id, c.author.hideProgression]),
+        .map((c) => [
+          c.author.id,
+          c.author.preferences?.hideProgression ?? false,
+        ]),
     );
 
     return (row) =>
@@ -518,7 +518,9 @@ export class CommentService {
       fetchXpByUser(this.prisma, [authorId]),
     ]);
     const hideProgressionByUser = new Map(
-      row.author ? [[row.author.id, row.author.hideProgression]] : [],
+      row.author
+        ? [[row.author.id, row.author.preferences?.hideProgression ?? false]]
+        : [],
     );
     const dto = await this.toDto(
       row,
@@ -559,10 +561,9 @@ export class CommentService {
         text: body.text,
         spoilerTag,
         // Saved unchanged, it isn't "modifié".
-        edited:
-          existing.edited ||
-          existing.text !== body.text ||
-          existing.spoilerTag !== spoilerTag,
+        ...(existing.text !== body.text || existing.spoilerTag !== spoilerTag
+          ? { editedAt: new Date() }
+          : {}),
         mentions: {
           deleteMany: {},
           create: mentions,
@@ -584,7 +585,9 @@ export class CommentService {
       fetchXpByUser(this.prisma, [authorId]),
     ]);
     const hideProgressionByUser = new Map(
-      row.author ? [[row.author.id, row.author.hideProgression]] : [],
+      row.author
+        ? [[row.author.id, row.author.preferences?.hideProgression ?? false]]
+        : [],
     );
     const dto = await this.toDto(
       row,
@@ -778,7 +781,7 @@ export class CommentService {
 
     switch (targetType) {
       case "MEDIA":
-        entry = await this.prisma.libraryEntry.findUnique({
+        entry = await this.prisma.mediaEntry.findUnique({
           where: { userId_mediaItemId: { userId, mediaItemId: targetId } },
           select: { id: true },
         });
@@ -809,7 +812,7 @@ export class CommentService {
         });
 
         if (season) {
-          entry = await this.prisma.libraryEntry.findUnique({
+          entry = await this.prisma.mediaEntry.findUnique({
             where: {
               userId_mediaItemId: { userId, mediaItemId: season.mediaItemId },
             },
@@ -827,7 +830,7 @@ export class CommentService {
         });
 
         if (episode) {
-          entry = await this.prisma.libraryEntry.findUnique({
+          entry = await this.prisma.mediaEntry.findUnique({
             where: {
               userId_mediaItemId: {
                 userId,
@@ -929,7 +932,7 @@ export class CommentService {
       text: row.deletedAt ? null : row.text,
       deleted: !!row.deletedAt,
       deletedByAdmin: row.deletedByAdmin,
-      edited: row.edited,
+      edited: row.editedAt !== null,
       spoilerTag: row.spoilerTag,
       masked,
       createdAt: row.createdAt.toISOString(),

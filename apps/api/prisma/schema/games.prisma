@@ -1,0 +1,194 @@
+// Source a game's catalogue data comes from. IGDB is the only one today.
+enum GameSource {
+  IGDB
+}
+
+// A game's library status. Unlike EntryStatus it is entirely user-set: games
+// have no per-episode progress to derive "playing"/"completed" from.
+enum GameStatus {
+  BACKLOG
+  PLAYING
+  COMPLETED
+  DROPPED
+}
+
+// How precisely a game's release date is known (IGDB's `date_format`).
+enum ReleaseDatePrecision {
+  DAY
+  MONTH
+  QUARTER
+  YEAR
+  TBD
+}
+
+// A game series (IGDB collection) one of whose main games a user tracks:
+// saved so the refresh job can tell a newly announced game from the rest,
+// like Saga for films and anime.
+model GameSaga {
+  // "IGDB:<collection id>".
+  key       String           @id
+  title     String
+  syncedAt  DateTime         @default(now())
+  createdAt DateTime         @default(now())
+  members   GameSagaMember[]
+}
+
+model GameSagaMember {
+  id                   String                @id @default(cuid())
+  sagaKey              String
+  // The IGDB game id.
+  sourceId             String
+  // Release order within the series.
+  position             Int
+  title                String
+  coverUrl             String?
+  releaseDate          String?
+  releaseDatePrecision ReleaseDatePrecision?
+  isAdult              Boolean               @default(false)
+  upcoming             Boolean               @default(false)
+  // Set when the game joined a series already known — never on a series'
+  // first read. What the sequel alert looks for.
+  announcedAt          DateTime?
+  notifiedAt           DateTime?
+  createdAt            DateTime              @default(now())
+
+  saga GameSaga @relation(fields: [sagaKey], references: [key], onDelete: Cascade)
+
+  @@unique([sagaKey, sourceId])
+  @@index([announcedAt, notifiedAt])
+}
+
+// On-demand cache for games, mirroring MediaItem: a game exists here only once
+// at least one user references it. Games have no seasons/episodes, so there is
+// no progress model — the library entry's status is user-set.
+model GameItem {
+  id                      String                @id @default(cuid())
+  canonicalSource         GameSource
+  title                   String
+  coverUrl                String?
+  backdropUrl             String?
+  overview                String?
+  // The first day of the announced period unless the precision is DAY:
+  // IGDB's own timestamp for "2028" is December 31st, not a real date.
+  releaseDate             DateTime?             @db.Date
+  releaseDatePrecision    ReleaseDatePrecision?
+  genres                  String[]
+  platforms               String[]
+  // IGDB's average time to beat, in minutes: to the credits without the
+  // extras, a normal playthrough, and to 100 %. All four stay null when IGDB
+  // has too few player submissions for the averages to mean anything (see
+  // MIN_TIME_TO_BEAT_SUBMISSIONS); a single one can be null on its own.
+  // Typed columns rather than `metadata`, so the library can sum them in SQL.
+  timeToBeatHastilyMin    Int?
+  timeToBeatNormallyMin   Int?
+  timeToBeatCompletelyMin Int?
+  timeToBeatSubmissions   Int?
+  // 18+ title (IGDB "Erotic" theme). Restricted per-account, like MediaItem.
+  isAdult                 Boolean               @default(false)
+  // The saga it belongs to (its IGDB series, e.g. "IGDB:18"), set when its
+  // saga is first read (see GameSagaService).
+  sagaKey                 String?
+  metadata                Json                  @default("{}")
+  lastSyncedAt            DateTime              @default(now())
+  // Last failed background refresh: keeps the item out of the refresh
+  // job for one cycle (see notFailedSince), cleared by the next sync.
+  syncFailedAt            DateTime?
+  createdAt               DateTime              @default(now())
+  updatedAt               DateTime              @updatedAt
+
+  externalIds GameExternalId[]
+  entries     GameEntry[]
+
+  // refreshStale filters and sorts on it, as MediaItem's does.
+  @@index([lastSyncedAt])
+  @@index([sagaKey])
+}
+
+model GameExternalId {
+  gameItemId String
+  source     GameSource
+  externalId String
+
+  gameItem GameItem @relation(fields: [gameItemId], references: [id], onDelete: Cascade)
+
+  @@id([source, externalId])
+  @@index([gameItemId])
+}
+
+model GameEntry {
+  id                     String          @id @default(cuid())
+  userId                 String
+  gameItemId             String
+  status                 GameStatus      @default(BACKLOG)
+  notes                  String?
+  favorite               Boolean         @default(false)
+  // Total time played, in minutes. Imported from Steam (playtime_forever);
+  // manually editable. No session history yet — this is the running total.
+  playtimeMinutes        Int             @default(0)
+  // Dated Loomkeep sessions and Steam's external counter intentionally stay
+  // separate because the same play time can be present in both.
+  trackedPlaytimeMinutes Int             @default(0)
+  steamPlaytimeMinutes   Int?
+  steamSyncedAt          DateTime?
+  startedAt              DateTime?
+  finishedAt             DateTime?
+  ownershipStatus        OwnershipStatus @default(NONE)
+  // Free-form detail for DIGITAL/SUBSCRIPTION (e.g. "Steam"); null otherwise.
+  ownershipSource        String?
+  // The platform it's played on, one of GameItem.platforms (IGDB's names).
+  platform               String?
+  // Set when the user asked to be told of the release; a release dated
+  // before it never alerts.
+  releaseReminderAt      DateTime?
+  createdAt              DateTime        @default(now())
+  updatedAt              DateTime        @updatedAt
+
+  user          User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  gameItem      GameItem          @relation(fields: [gameItemId], references: [id], onDelete: Cascade)
+  playthroughs  GamePlaythrough[]
+  sessions      GameSession[]
+  sessionTimers SessionTimer[]
+  loans         Loan[]
+
+  @@unique([userId, gameItemId])
+  // "Who tracks this work" (see MediaEntry).
+  @@index([gameItemId])
+}
+
+model GameSession {
+  id              String        @id @default(cuid())
+  gameEntryId     String
+  playthroughId   String?
+  durationMinutes Int
+  notes           String?
+  occurredAt      DateTime
+  source          SessionSource @default(MANUAL)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  gameEntry   GameEntry        @relation(fields: [gameEntryId], references: [id], onDelete: Cascade)
+  playthrough GamePlaythrough? @relation(fields: [playthroughId], references: [id], onDelete: SetNull)
+
+  @@index([gameEntryId, occurredAt])
+  @@index([playthroughId, occurredAt])
+  @@index([createdAt])
+}
+
+model GamePlaythrough {
+  id               String              @id @default(cuid())
+  gameEntryId      String
+  number           Int
+  status           TrackingCycleStatus
+  startedAt        DateTime?
+  finishedAt       DateTime?
+  trackedMinutes   Int                 @default(0)
+  legacyIncomplete Boolean             @default(false)
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+
+  gameEntry GameEntry     @relation(fields: [gameEntryId], references: [id], onDelete: Cascade)
+  sessions  GameSession[]
+
+  @@unique([gameEntryId, number])
+  @@index([gameEntryId, status])
+}

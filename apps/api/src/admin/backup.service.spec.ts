@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { PassThrough } from "node:stream";
 import { vi, type Mock } from "vitest";
-import type { JobRunService } from "../jobs/job-run.service";
+import { JOB_SKIPPED, type JobRunService } from "../jobs/job-run.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import { BackupService } from "./backup.service";
 
@@ -162,6 +162,7 @@ describe("BackupService file consistency", () => {
     age.stdin.on("data", (chunk: Buffer) => piped.push(chunk.toString()));
 
     const file = await service.runScheduled();
+    if (file === JOB_SKIPPED) throw new Error("the backup was skipped");
 
     expect(spawnMock.mock.calls.map((call) => call[0])).toEqual([
       "pg_dump",

@@ -23,7 +23,6 @@
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
   import { DATETIME_NUMERIC_OPTIONS, formatDate } from "#lib/format.js";
-  import { isFeatureNew } from "#lib/feature-badges.js";
   import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
   import {
@@ -40,7 +39,6 @@
   import ConfirmationModal from "./ConfirmationModal.svelte";
   import Icon from "./Icon.svelte";
   import Modal from "./Modal.svelte";
-  import NewBadge from "./NewBadge.svelte";
   import ProgressBar from "./ProgressBar.svelte";
   import ProviderMark from "./ProviderMark.svelte";
   import SessionDurationPicker from "./SessionDurationPicker.svelte";
@@ -387,12 +385,11 @@
       {/if}
       {#if entry.status === "PLAYING" && summary?.estimatedCompletionDate}
         <p
-          class="text-dim flex flex-wrap items-center gap-2 text-xs"
+          class="text-dim text-xs"
           transition:fade={{ duration: reduced ? 0 : 200 }}>
           {m.completion_estimate_finish({
             date: formatDate(`${summary.estimatedCompletionDate}T12:00:00`),
           })}
-          {#if isFeatureNew("completion-estimate")}<NewBadge />{/if}
         </p>
       {/if}
     </div>

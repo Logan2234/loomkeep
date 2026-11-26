@@ -4,12 +4,13 @@ import type {
   AdminImportRunDto,
   AdminImportStatus,
   AdminImportSummaryDto,
+  ImportReportTile,
   PagedResult,
 } from "@loomkeep/shared";
 import { ErrorCode } from "@loomkeep/shared";
 import { Controller, Get, HttpStatus, Param, Query } from "@nestjs/common";
 import { ApiOkResponse } from "@nestjs/swagger";
-import type { Prisma } from "@prisma/client";
+import type { Prisma, RunStatus } from "@prisma/client";
 import { AppException } from "../common/app.exception";
 import { PagedResponseDto } from "../common/dto/paged-response.dto";
 import {
@@ -35,12 +36,13 @@ const IMPORT_SELECT = {
   status: true,
   itemCount: true,
   overwrite: true,
+  reportTiles: true,
   summary: true,
   error: true,
   startedAt: true,
   finishedAt: true,
   user: { select: { email: true } },
-} as const;
+} satisfies Prisma.ImportRunSelect;
 type ImportRow = Prisma.ImportRunGetPayload<{ select: typeof IMPORT_SELECT }>;
 
 function toRunDto(row: ImportRow): AdminImportRunDto {
@@ -52,6 +54,7 @@ function toRunDto(row: ImportRow): AdminImportRunDto {
     status: row.status as AdminImportStatus,
     itemCount: row.itemCount,
     overwrite: row.overwrite,
+    tiles: row.reportTiles as ImportReportTile[] | null,
     summary: row.summary,
     error: row.error,
     startedAt: row.startedAt.toISOString(),
@@ -175,6 +178,8 @@ export class AdminImportsController {
             // record (see INTERRUPTED_IMPORT_ERROR): listed once, as running.
             where: {
               ...where,
+              // RUNNING never gets here: it only lists live jobs.
+              status: where.status as RunStatus | undefined,
               id: { notIn: this.imports.listRunningImports().map((r) => r.id) },
             },
             select: IMPORT_SELECT,

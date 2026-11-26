@@ -5,7 +5,7 @@ import { GamesModule } from "../games/games.module";
 import { LibraryModule } from "../library/library.module";
 import { LinksModule } from "../links/links.module";
 import { MusicModule } from "../music/music.module";
-import { NotificationModule } from "../notifications/notification.module";
+import { NotificationsModule } from "../notifications/notifications.module";
 import { ReportsModule } from "../reports/reports.module";
 import { SocialModule } from "../social/social.module";
 import { DomainGateModule } from "../users/domain-gate.module";
@@ -32,7 +32,7 @@ import { WorkThreadService } from "./work-thread.service";
     DomainGateModule,
     LibraryModule,
     SocialModule,
-    NotificationModule,
+    NotificationsModule,
   ],
   controllers: [ChatController],
   providers: [

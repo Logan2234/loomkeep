@@ -51,6 +51,7 @@ function details(
     releaseDate: null,
     movieReleaseDates: [],
     runtimeMin: 50,
+    originCountries: [],
     externalIds: [{ source: MediaSource.TMDB, externalId: base.sourceId }],
     seasons:
       episodes === 0
@@ -135,7 +136,7 @@ describe("IMDb import (e2e)", () => {
     const ref = await prisma.mediaExternalId.findFirstOrThrow({
       where: { source: "TMDB", externalId: sourceId },
     });
-    return prisma.libraryEntry.findUnique({
+    return prisma.mediaEntry.findUnique({
       where: {
         userId_mediaItemId: { userId, mediaItemId: ref.mediaItemId },
       },
@@ -194,7 +195,7 @@ describe("IMDb import (e2e)", () => {
     );
     const heat = await entryOf("949");
     const finishedAt = new Date("2020-05-01T00:00:00Z");
-    await prisma.libraryEntry.update({
+    await prisma.mediaEntry.update({
       where: { id: heat!.id },
       data: { startedAt: finishedAt, finishedAt },
     });
