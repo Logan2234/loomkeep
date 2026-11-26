@@ -189,5 +189,8 @@ wording change or a rename.
   at the same version.
 - Every alert (bell, push, email) is declared once in `ALERTS`
   (`packages/shared/src/alerts.ts`). A new alert starts there.
+- An email is a `build…()` function in `apps/api/src/mail/templates/<theme>.ts`
+  drawn with `MailLayout`, an entry in `mail-gallery.ts` (Admin's preview),
+  and a `send…()` on `MailService`, which keeps only transport and sending.
 - A shipped user-facing feature gets a `"Nouveau"` badge entry in
   `apps/web/src/lib/feature-badges.ts` at its point of discovery.

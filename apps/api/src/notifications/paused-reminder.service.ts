@@ -17,7 +17,8 @@ import {
   materializedStatus,
   withEpisodeLeftToWatch,
 } from "../library/status.util";
-import { MailService, type PausedReminderItem } from "../mail/mail.service";
+import { MailService } from "../mail/mail.service";
+import type { PausedReminderItem } from "../mail/mail.types";
 import { PrismaService } from "../prisma/prisma.service";
 import { notSuspended } from "../users/suspension.util";
 import { readAlertPrefs } from "./alert-prefs.util";
