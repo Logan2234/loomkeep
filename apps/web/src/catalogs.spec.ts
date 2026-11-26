@@ -36,6 +36,7 @@ const prefixHomes: [string, (typeof names)[number]][] = [
   ["settings_", "settings"],
   ["landing_", "site"],
   ["transparency_", "site"],
+  ["accessibility_", "site"],
   ["gamification_", "gamification"],
   ["admin_", "admin"],
   ["media_", "works"],

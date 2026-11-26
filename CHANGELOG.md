@@ -25,6 +25,8 @@ history from before it was started.
 
 ### Added
 
+- An accessibility statement, linked from the footer: what is tested, what
+  isn't yet, and where to report a barrier.
 - Stats (premium): a world map of where the films and series you watched
   come from, next to the full ranking by titles or watch time.
 - A « Tour du monde » achievement: films and series from 5, 15 and 30
