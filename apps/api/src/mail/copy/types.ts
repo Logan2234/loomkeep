@@ -291,4 +291,12 @@ export interface MailCopy {
     intro: (name: string) => string;
     button: string;
   };
+  accessibilityReport: {
+    subject: string;
+    heading: string;
+    intro: string;
+    page: (where: string) => string;
+    replyTo: string;
+    anonymous: string;
+  };
 }

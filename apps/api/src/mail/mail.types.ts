@@ -22,6 +22,15 @@ export interface ImportAlert {
   error: string;
 }
 
+/** A barrier reported through the accessibility statement's form. */
+export interface AccessibilityReport {
+  message: string;
+  /** Where the barrier is, as the visitor wrote it. */
+  page?: string;
+  /** The visitor's address, set as Reply-To: never the sender. */
+  email?: string;
+}
+
 export interface JobAlert {
   jobKey: string;
   /** First line of the error message; null once the job has recovered. */

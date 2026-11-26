@@ -151,6 +151,8 @@ export const ErrorCode = {
   HomeScreenWidgetTokenInvalid: "home_screen_widgets.token_invalid",
 
   // reports
+  ContactUnavailable: "contact.unavailable",
+  ContactSendFailed: "contact.send_failed",
   ReportReasonRequired: "reports.reason_required",
   ReportInvalidMotif: "reports.invalid_motif",
   ReportNotFound: "reports.not_found",

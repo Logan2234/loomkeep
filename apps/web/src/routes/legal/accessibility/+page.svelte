@@ -1,11 +1,12 @@
 <script lang="ts">
+  import { appConfig } from "#lib/config.svelte.js";
   import { FEEDBACK_URL } from "#lib/constants/external-links.js";
   import { formatDate } from "#lib/format.js";
   import { m } from "#lib/paraglide/messages.js";
+  import AccessibilityReportForm from "./AccessibilityReportForm.svelte";
 
   // Unlike the other legal documents, written through the catalogs: it is
   // read above all by the people it concerns, in their own language.
-  const CONTACT_EMAIL = "contact@loomkeep.app";
   const UPDATED_ON = "2026-11-26";
 </script>
 
@@ -51,20 +52,20 @@
 
     <h2>{m.accessibility_report_heading()}</h2>
     <p>{m.accessibility_report_body()}</p>
-    <ul>
-      <li>
-        <a href="mailto:{CONTACT_EMAIL}" class="link-accent">{CONTACT_EMAIL}</a>
-      </li>
-      <li>
-        <a
-          href={FEEDBACK_URL}
-          class="link-accent"
-          target="_blank"
-          rel="noopener noreferrer">
-          {FEEDBACK_URL.replace("https://", "")}
-        </a>
-      </li>
-    </ul>
-    <p>{m.accessibility_report_self_hosted()}</p>
+    <p>
+      {m.accessibility_report_ticket()}
+      <a
+        href={FEEDBACK_URL}
+        class="link-accent"
+        target="_blank"
+        rel="noopener noreferrer">
+        {FEEDBACK_URL.replace("https://", "")}
+      </a>.
+    </p>
+    {#if appConfig.contactFormEnabled}
+      <p>{m.accessibility_report_form_intro()}</p>
+      <AccessibilityReportForm />
+    {/if}
+    <p class="mt-6">{m.accessibility_report_self_hosted()}</p>
   </article>
 </main>

@@ -1,18 +1,25 @@
 import type { ConfigService } from "@nestjs/config";
 import { vi } from "vitest";
+import type { MailService } from "../mail/mail.service";
 import { PublicConfigController } from "./public-config.controller";
 
 vi.mock("node:fs/promises", () => ({
   readFile: vi.fn().mockResolvedValue(JSON.stringify({ version: "9.9.9" })),
 }));
 
-function makeController(env: Record<string, string | undefined>) {
+function makeController(
+  env: Record<string, string | undefined>,
+  { contact = false } = {},
+) {
   const config = {
     get: vi.fn((key: string) => env[key]),
   } as unknown as ConfigService;
+  const mail = {
+    canReceiveContact: () => contact,
+  } as unknown as MailService;
 
   return {
-    controller: new PublicConfigController(config),
+    controller: new PublicConfigController(config, mail),
     config,
   };
 }
@@ -60,6 +67,7 @@ describe("PublicConfigController", () => {
       socialEnabled: true,
       chatEnabled: false,
       gamificationEnabled: false,
+      contactFormEnabled: false,
       registrationEnabled: true,
       publicApiEnabled: true,
       askAcquisitionSource: false,
@@ -79,6 +87,7 @@ describe("PublicConfigController", () => {
       socialEnabled: false,
       chatEnabled: false,
       gamificationEnabled: true,
+      contactFormEnabled: false,
       registrationEnabled: true,
       publicApiEnabled: true,
       askAcquisitionSource: false,
@@ -98,6 +107,7 @@ describe("PublicConfigController", () => {
       socialEnabled: false,
       chatEnabled: false,
       gamificationEnabled: false,
+      contactFormEnabled: false,
       registrationEnabled: true,
       publicApiEnabled: true,
       askAcquisitionSource: false,
@@ -117,6 +127,7 @@ describe("PublicConfigController", () => {
       socialEnabled: false,
       chatEnabled: false,
       gamificationEnabled: false,
+      contactFormEnabled: false,
       registrationEnabled: true,
       publicApiEnabled: true,
       askAcquisitionSource: false,
@@ -136,6 +147,7 @@ describe("PublicConfigController", () => {
       socialEnabled: false,
       chatEnabled: false,
       gamificationEnabled: false,
+      contactFormEnabled: false,
       registrationEnabled: false,
       publicApiEnabled: true,
       askAcquisitionSource: false,
@@ -155,6 +167,7 @@ describe("PublicConfigController", () => {
       socialEnabled: false,
       chatEnabled: false,
       gamificationEnabled: false,
+      contactFormEnabled: false,
       registrationEnabled: true,
       publicApiEnabled: true,
       askAcquisitionSource: false,
@@ -174,6 +187,7 @@ describe("PublicConfigController", () => {
       socialEnabled: false,
       chatEnabled: false,
       gamificationEnabled: false,
+      contactFormEnabled: false,
       registrationEnabled: true,
       publicApiEnabled: true,
       askAcquisitionSource: false,
@@ -193,6 +207,7 @@ describe("PublicConfigController", () => {
       socialEnabled: false,
       chatEnabled: false,
       gamificationEnabled: false,
+      contactFormEnabled: false,
       registrationEnabled: true,
       publicApiEnabled: true,
       askAcquisitionSource: false,
@@ -230,6 +245,7 @@ describe("PublicConfigController", () => {
       socialEnabled: false,
       chatEnabled: false,
       gamificationEnabled: false,
+      contactFormEnabled: false,
       registrationEnabled: true,
       publicApiEnabled: true,
       askAcquisitionSource: false,
@@ -239,6 +255,15 @@ describe("PublicConfigController", () => {
       version: "9.9.9",
       gitSha: "a1b2c3d",
       supportEmail: "",
+    });
+  });
+
+  it("offers the contact form only when the mail service can reach a support mailbox", async () => {
+    await expect(
+      makeController({}, { contact: true }).controller.get(),
+    ).resolves.toMatchObject({ contactFormEnabled: true });
+    await expect(makeController({}).controller.get()).resolves.toMatchObject({
+      contactFormEnabled: false,
     });
   });
 });

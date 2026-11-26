@@ -229,6 +229,14 @@
   "accessibility_settings_heading": "Ce que tu peux régler",
   "accessibility_settings_body": "Dans Réglages › Apparence › Accessibilité, tu peux réduire les animations, renforcer les contrastes et choisir la densité de l'affichage. Loomkeep suit aussi le réglage « réduire les animations » de ton appareil.",
   "accessibility_report_heading": "Signaler un obstacle",
-  "accessibility_report_body": "Si quelque chose t'empêche d'utiliser Loomkeep (un bouton qu'on n'atteint pas au clavier, un texte illisible, une information que le lecteur d'écran ne lit pas), écris ou ouvre un ticket. Précise la page, l'appareil et l'outil utilisé (navigateur, lecteur d'écran) : ça suffit pour reproduire le problème.",
-  "accessibility_report_self_hosted": "Sur une instance auto-hébergée, un obstacle vient en général du logiciel lui-même : le signalement va au projet Loomkeep, aux mêmes adresses."
+  "accessibility_report_body": "Si quelque chose t'empêche d'utiliser Loomkeep (un bouton qu'on n'atteint pas au clavier, un texte illisible, une information que le lecteur d'écran ne lit pas), signale-le. Précise la page, l'appareil et l'outil utilisé (navigateur, lecteur d'écran) : ça suffit pour reproduire le problème.",
+  "accessibility_report_self_hosted": "Sur une instance auto-hébergée, le formulaire écrit à l'administrateur de l'instance. Un obstacle qui vient du logiciel lui-même peut aussi aller sur le ticket du projet.",
+  "accessibility_report_ticket": "Tu peux ouvrir un ticket sur",
+  "accessibility_report_form_intro": "Ou remplis ce formulaire : il arrive directement par e-mail.",
+  "accessibility_form_message": "Ce qui t'empêche d'avancer",
+  "accessibility_form_message_hint": "Au moins 20 caractères.",
+  "accessibility_form_page": "Page concernée (facultatif)",
+  "accessibility_form_email": "Ton e-mail (facultatif)",
+  "accessibility_form_email_hint": "Seulement pour te répondre. Sans adresse, le signalement reste anonyme.",
+  "accessibility_form_sent": "Merci, ton signalement est envoyé. S'il comporte ton adresse, tu recevras une réponse par e-mail."
 }

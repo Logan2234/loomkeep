@@ -8,6 +8,7 @@ import { mailGallery } from "./mail-gallery";
 import { MailLayout } from "./mail-layout";
 import type { SecurityAlertEvent } from "./mail.i18n";
 import type {
+  AccessibilityReport,
   DigestMailItem,
   GalleryTemplate,
   ImportAlert,
@@ -40,6 +41,7 @@ import {
   buildWelcome,
 } from "./templates/account";
 import {
+  buildAccessibilityReport,
   buildAdminNewUser,
   buildImportAlert,
   buildJobAlert,
@@ -426,6 +428,32 @@ export class MailService {
     await this.send({
       to: recipient.email,
       ...buildAdminNewUser(this.layout, locale, displayName),
+    });
+  }
+
+  /** Whether the instance has a mailbox for visitors to write to, and a relay to reach it. */
+  canReceiveContact(): boolean {
+    return this.transporter !== null && this.replyTo !== undefined;
+  }
+
+  /**
+   * Forwards a barrier reported on the accessibility statement to the
+   * instance's support mailbox. The visitor's address only goes in Reply-To:
+   * the sender stays the instance's own, so nobody can mail as someone else.
+   */
+  async sendAccessibilityReport(
+    report: AccessibilityReport,
+    locale: string,
+  ): Promise<boolean> {
+    if (!this.replyTo) return false;
+    return this.send({
+      to: this.replyTo,
+      replyTo: report.email,
+      ...buildAccessibilityReport(
+        this.layout,
+        resolveCopyLocale(locale),
+        report,
+      ),
     });
   }
 

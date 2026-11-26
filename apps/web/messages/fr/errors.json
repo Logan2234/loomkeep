@@ -248,5 +248,7 @@
   "apierr_user_deletion_not_scheduled": "Aucune suppression n'est programmée pour ce compte.",
   "apierr_user_acquisition_source_already_set": "Tu as déjà répondu à cette question.",
   "apierr_user_acquisition_source_disabled": "Cette instance ne pose pas cette question.",
-  "apierr_newsletter_send_not_found": "Cet envoi n'existe plus."
+  "apierr_newsletter_send_not_found": "Cet envoi n'existe plus.",
+  "apierr_contact_unavailable": "Cette instance ne reçoit pas de messages. Ouvre plutôt un ticket sur feedback.loomkeep.app.",
+  "apierr_contact_send_failed": "Le message n'est pas parti. Réessaie dans un moment."
 }

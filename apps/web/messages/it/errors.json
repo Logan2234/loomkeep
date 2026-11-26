@@ -248,5 +248,7 @@
   "apierr_user_deletion_not_scheduled": "Nessuna eliminazione è programmata per questo account.",
   "apierr_user_acquisition_source_already_set": "Hai già risposto a questa domanda.",
   "apierr_user_acquisition_source_disabled": "Questa istanza non pone questa domanda.",
-  "apierr_newsletter_send_not_found": "Questo invio non esiste più."
+  "apierr_newsletter_send_not_found": "Questo invio non esiste più.",
+  "apierr_contact_unavailable": "Questa istanza non riceve messaggi. Apri invece un ticket su feedback.loomkeep.app.",
+  "apierr_contact_send_failed": "Il messaggio non è partito. Riprova tra poco."
 }

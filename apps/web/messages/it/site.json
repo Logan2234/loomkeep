@@ -229,6 +229,14 @@
   "accessibility_settings_heading": "Cosa puoi regolare",
   "accessibility_settings_body": "In Impostazioni › Aspetto › Accessibilità puoi ridurre le animazioni, aumentare il contrasto e scegliere la densità della visualizzazione. Loomkeep segue anche l'impostazione «riduci movimento» del tuo dispositivo.",
   "accessibility_report_heading": "Segnalare un ostacolo",
-  "accessibility_report_body": "Se qualcosa ti impedisce di usare Loomkeep (un pulsante che non si raggiunge da tastiera, un testo illeggibile, un'informazione che il lettore di schermo salta), scrivi o apri un ticket. Indica la pagina, il dispositivo e lo strumento usato (browser, lettore di schermo): basta per riprodurre il problema.",
-  "accessibility_report_self_hosted": "Su un'istanza self-hosted, un ostacolo viene di solito dal software stesso: segnalalo al progetto Loomkeep, agli stessi indirizzi."
+  "accessibility_report_body": "Se qualcosa ti impedisce di usare Loomkeep (un pulsante che non si raggiunge da tastiera, un testo illeggibile, un'informazione che il lettore di schermo salta), segnalalo. Indica la pagina, il dispositivo e lo strumento usato (browser, lettore di schermo): basta per riprodurre il problema.",
+  "accessibility_report_self_hosted": "Su un'istanza self-hosted, il modulo scrive all'amministratore dell'istanza. Un ostacolo che viene dal software stesso può andare anche sui ticket del progetto.",
+  "accessibility_report_ticket": "Puoi aprire un ticket su",
+  "accessibility_report_form_intro": "Oppure compila questo modulo: arriva direttamente per email.",
+  "accessibility_form_message": "Cosa ti blocca",
+  "accessibility_form_message_hint": "Almeno 20 caratteri.",
+  "accessibility_form_page": "Pagina (facoltativa)",
+  "accessibility_form_email": "La tua email (facoltativa)",
+  "accessibility_form_email_hint": "Solo per risponderti. Senza indirizzo, la segnalazione resta anonima.",
+  "accessibility_form_sent": "Grazie, la tua segnalazione è stata inviata. Se contiene il tuo indirizzo, riceverai una risposta per email."
 }

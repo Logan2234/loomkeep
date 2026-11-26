@@ -229,6 +229,14 @@
   "accessibility_settings_heading": "What you can adjust",
   "accessibility_settings_body": "In Settings › Appearance › Accessibility, you can reduce animations, increase contrast and choose the display density. Loomkeep also follows your device's \"reduce motion\" setting.",
   "accessibility_report_heading": "Report a barrier",
-  "accessibility_report_body": "If something stops you from using Loomkeep (a button you can't reach with the keyboard, unreadable text, information the screen reader skips), write or open a ticket. Say which page, which device and which tool (browser, screen reader): that is enough to reproduce it.",
-  "accessibility_report_self_hosted": "On a self-hosted instance, a barrier usually comes from the software itself: report it to the Loomkeep project, at the same addresses."
+  "accessibility_report_body": "If something stops you from using Loomkeep (a button you can't reach with the keyboard, unreadable text, information the screen reader skips), report it. Say which page, which device and which tool (browser, screen reader): that is enough to reproduce it.",
+  "accessibility_report_self_hosted": "On a self-hosted instance, the form writes to the instance's administrator. A barrier that comes from the software itself can also go to the project's ticket board.",
+  "accessibility_report_ticket": "You can open a ticket on",
+  "accessibility_report_form_intro": "Or fill in this form: it arrives straight by email.",
+  "accessibility_form_message": "What is getting in your way",
+  "accessibility_form_message_hint": "At least 20 characters.",
+  "accessibility_form_page": "Page (optional)",
+  "accessibility_form_email": "Your email (optional)",
+  "accessibility_form_email_hint": "Only to reply to you. Without an address, the report stays anonymous.",
+  "accessibility_form_sent": "Thank you, your report is sent. If it includes your address, you'll get a reply by email."
 }

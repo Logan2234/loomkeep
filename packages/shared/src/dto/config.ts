@@ -29,6 +29,13 @@ export interface PublicConfigDto {
   gamificationEnabled: boolean;
 
   /**
+   * Whether the accessibility statement's form can email the instance: an
+   * SMTP relay and a support mailbox (`MAIL_SUPPORT_ADDRESS`, or the hosted
+   * instance's own) are both configured.
+   */
+  contactFormEnabled: boolean;
+
+  /**
    * Whether new sign-ups are accepted on this deployment. Driven by the
    * API's `REGISTRATION_ENABLED` env var (on by default). When false, the
    * web hides the sign-up link/route and the API rejects `POST
