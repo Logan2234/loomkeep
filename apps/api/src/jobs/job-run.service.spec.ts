@@ -3,9 +3,13 @@ import { vi, type Mock } from "vitest";
 import type { PrismaService } from "../prisma/prisma.service";
 import type { JobAlertService } from "./job-alert.service";
 import { JOB_KEYS } from "./job-keys";
-import { JobRunService } from "./job-run.service";
+import type { JobLockService } from "./job-lock.service";
+import { JOB_SKIPPED, JobRunService } from "./job-run.service";
 
-function makeService(previousStatus?: "SUCCESS" | "FAILURE") {
+function makeService(
+  previousStatus?: "SUCCESS" | "FAILURE",
+  { heldElsewhere = false } = {},
+) {
   const prisma = {
     jobRun: {
       create: vi.fn().mockResolvedValue(undefined),
@@ -22,12 +26,18 @@ function makeService(previousStatus?: "SUCCESS" | "FAILURE") {
   };
 
   const scheduler = { getCronJobs: vi.fn().mockReturnValue(new Map()) };
+  const lock = {
+    runExclusive: vi.fn(async (_key: string, fn: () => Promise<unknown>) =>
+      heldElsewhere ? { ran: false } : { ran: true, value: await fn() },
+    ),
+  };
   return {
     scheduler,
     service: new JobRunService(
       prisma as unknown as PrismaService,
       alerts as unknown as JobAlertService,
       scheduler as unknown as SchedulerRegistry,
+      lock as unknown as JobLockService,
     ),
     prisma,
     alerts,
@@ -400,5 +410,22 @@ describe("JobRunService — live scheduler state", () => {
     ).toBeNull();
     finish();
     await pending;
+  });
+});
+
+describe("JobRunService.record — another process holds the job", () => {
+  it("runs nothing, records nothing and says it skipped", async () => {
+    const { service, prisma, alerts } = makeService("FAILURE", {
+      heldElsewhere: true,
+    });
+    const job = vi.fn().mockResolvedValue("ok");
+
+    await expect(
+      service.record(JOB_KEYS.BACKUP, job, () => "summary"),
+    ).resolves.toBe(JOB_SKIPPED);
+
+    expect(job).not.toHaveBeenCalled();
+    expect(prisma.jobRun.create).not.toHaveBeenCalled();
+    expect(alerts.jobRecovered).not.toHaveBeenCalled();
   });
 });

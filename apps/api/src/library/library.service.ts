@@ -110,7 +110,7 @@ import type { BulkUpdateEntriesBody } from "./dto/bulk-update-entries.dto";
 import { UpdateEntryDto } from "./dto/update-entry.dto";
 import { UpsertEntryDto } from "./dto/upsert-entry.dto";
 import { WatchEpisodeDto } from "./dto/watch-episode.dto";
-import { toMediaItemDto } from "./media-item-dto.util";
+import { toMediaItemDto } from "./media-item.mapper";
 import { completedSagaWorks, MEDIA_SAGA_STATUS } from "./saga-progress.util";
 import { deriveStatus, normalizeAiringFinished } from "./status.util";
 

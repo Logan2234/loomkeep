@@ -9,7 +9,7 @@ import { Cron } from "@nestjs/schedule";
 import { AppException } from "../common/app.exception";
 import { randomToken, sha256Hex } from "../common/crypto.util";
 import { JOB_KEYS } from "../jobs/job-keys";
-import { JobRunService } from "../jobs/job-run.service";
+import { JobRunService, type JobSkipped } from "../jobs/job-run.service";
 import { MailService } from "../mail/mail.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { AccountDeletionService } from "./account-deletion.service";
@@ -139,7 +139,7 @@ export class ScheduledDeletionService {
   // 5:15, right after the inactive-accounts scan: once a day is enough for a
   // date announced to the day, and a missed run only delays by a day.
   @Cron("15 5 * * *", { name: JOB_KEYS.SCHEDULED_DELETIONS })
-  async scan(): Promise<{ reminded: number; deleted: number }> {
+  async scan(): Promise<{ reminded: number; deleted: number } | JobSkipped> {
     return this.jobRuns.record(
       JOB_KEYS.SCHEDULED_DELETIONS,
       () => this.runScan(),

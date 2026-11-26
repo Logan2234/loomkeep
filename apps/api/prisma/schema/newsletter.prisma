@@ -1,0 +1,19 @@
+// Audit log of newsletter emails sent to notifyNewsletter accounts. Release
+// notes themselves live on Quackback (feedback.loomkeep.app/changelog) —
+// this table only records that a given Quackback changelog entry triggered
+// a send, so a retried webhook delivery is a no-op (unique on
+// quackbackChangelogId, reserved before the emails go out — see
+// NewsletterService).
+model NewsletterSend {
+  id                   String   @id @default(cuid())
+  quackbackChangelogId String   @unique
+  title                String
+  // What the email carried, for Admin › Newsletter's preview. Null on sends
+  // that predate these columns: the preview then fetches it from Quackback.
+  contentPreview       String?
+  contentHtml          String?
+  recipientCount       Int      @default(0)
+  sentAt               DateTime @default(now())
+
+  @@index([sentAt])
+}

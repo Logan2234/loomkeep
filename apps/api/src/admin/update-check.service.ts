@@ -15,7 +15,7 @@ import { isHostedOrigin } from "../common/instance-defaults";
 import { primaryWebOrigin } from "../common/web-origin.util";
 import { instanceSetting } from "../instance-settings/instance-settings.store";
 import { JOB_KEYS } from "../jobs/job-keys";
-import { JobRunService } from "../jobs/job-run.service";
+import { JobRunService, type JobSkipped } from "../jobs/job-run.service";
 import { MailService } from "../mail/mail.service";
 import { AdminAlertService } from "../notifications/admin-alert.service";
 import { PrismaService } from "../prisma/prisma.service";
@@ -75,7 +75,7 @@ export class UpdateCheckService {
   ) {}
 
   @Cron("30 5 * * *", { name: JOB_KEYS.UPDATE_CHECK })
-  async runScheduled(): Promise<AdminUpdateStatusDto> {
+  async runScheduled(): Promise<AdminUpdateStatusDto | JobSkipped> {
     return this.jobRuns.record(
       JOB_KEYS.UPDATE_CHECK,
       () => this.check(),

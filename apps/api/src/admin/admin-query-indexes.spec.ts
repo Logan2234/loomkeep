@@ -1,12 +1,13 @@
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 describe("admin query indexes", () => {
   it("covers the chronological import, security and reporter queues", () => {
-    const schema = readFileSync(
-      resolve(__dirname, "../../prisma/schema.prisma"),
-      "utf8",
-    );
+    const dir = resolve(__dirname, "../../prisma/schema");
+    const schema = readdirSync(dir)
+      .filter((file) => file.endsWith(".prisma"))
+      .map((file) => readFileSync(resolve(dir, file), "utf8"))
+      .join("\n");
     const model = (name: string) =>
       schema.match(new RegExp(`model ${name} \\{([\\s\\S]*?)\\n\\}`))?.[1] ??
       "";

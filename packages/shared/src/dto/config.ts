@@ -52,7 +52,7 @@ export interface PublicConfigDto {
    * Whether the admin "Schéma" page (DB ERD) has content to
    * show. The underlying `docs/erd.md` is dev-only
    * artifacts, never generated in the Docker build (see `DISABLE_ERD` in
-   * `apps/api/Dockerfile` and the `erd` generator in `schema.prisma`) — this
+   * `apps/api/Dockerfile` and the `erd` generator in `prisma/schema/schema.prisma`) — this
    * mirrors that by reading the API's own `NODE_ENV`.
    */
   erdEnabled: boolean;

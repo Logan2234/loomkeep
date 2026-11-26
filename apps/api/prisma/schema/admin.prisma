@@ -1,0 +1,44 @@
+// Owned by apps/api/src/admin: instance operations (update checks, pings,
+// backups).
+
+// Outcome of UpdateCheckService's last look at the published version — a
+// single row, so a restart shows the last result instead of nothing.
+model UpdateCheck {
+  id              Int       @id @default(1)
+  latestVersion   String?
+  // Last successful check.
+  checkedAt       DateTime?
+  lastCheckFailed Boolean   @default(false)
+  // The newest version administrators were emailed about, so each version
+  // is announced once.
+  notifiedVersion String?
+  // Random, generated on the first telemetry ping: never derived from
+  // anything about the instance or its users.
+  instanceId      String?
+}
+
+// Self-hosted instances' daily pings, received by the hosted instance only.
+// No IP or anything else about the sender is stored; rows unseen for 90 days
+// are purged.
+model InstancePing {
+  instanceId  String   @id
+  version     String
+  firstSeenAt DateTime @default(now())
+  lastSeenAt  DateTime @default(now())
+
+  @@index([lastSeenAt])
+}
+
+// One row per persisted backup dump on disk (BACKUP_DIR), for the admin
+// "Sauvegarde" page's list/download/delete UI. Pruned to the 7 most recent at
+// write time (see BackupService) — both the row and its file are deleted
+// together, the row is never orphaned from its file or vice versa.
+model BackupFile {
+  id        String   @id @default(cuid())
+  filename  String
+  // BigInt: Int tops out at 2 GiB, which a dump reaches.
+  sizeBytes BigInt
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}

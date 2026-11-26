@@ -7,4 +7,4 @@ import { EntitlementService } from "./entitlement.service";
   providers: [EntitlementService],
   exports: [EntitlementService],
 })
-export class EntitlementModule {}
+export class EntitlementsModule {}

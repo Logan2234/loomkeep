@@ -9,7 +9,7 @@ import { sinceDaysAgo } from "../common/date.util";
 import { toJsonInput } from "../common/json.util";
 import { isUniqueViolation } from "../common/prisma-error.util";
 import { JOB_KEYS } from "../jobs/job-keys";
-import { JobRunService } from "../jobs/job-run.service";
+import { JobRunService, type JobSkipped } from "../jobs/job-run.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { isSocialEnabled } from "../social/social.config";
 import { isGamificationEnabled } from "./gamification.config";
@@ -379,7 +379,7 @@ export class XpService {
   @Cron(CronExpression.EVERY_DAY_AT_4AM, {
     name: JOB_KEYS.GAMIFICATION_RECONCILE,
   })
-  async runReconcileJob(): Promise<Record<string, number>> {
+  async runReconcileJob(): Promise<Record<string, number> | JobSkipped> {
     return this.jobRuns.record(
       JOB_KEYS.GAMIFICATION_RECONCILE,
       async () => {

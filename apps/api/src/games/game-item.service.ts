@@ -17,7 +17,11 @@ import { mapWithConcurrency } from "../common/concurrency.util";
 import { isUniqueViolation } from "../common/prisma-error.util";
 import { isDomainOffered } from "../instance-settings/instance-domains";
 import { JOB_KEYS } from "../jobs/job-keys";
-import { JobRunService } from "../jobs/job-run.service";
+import {
+  JOB_SKIPPED,
+  JobRunService,
+  type JobSkipped,
+} from "../jobs/job-run.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { GameSagaService } from "./game-saga.service";
 import type {
@@ -60,15 +64,15 @@ export class GameItemService {
    * someone re-added it.
    */
   @Cron(CronExpression.EVERY_6_HOURS, { name: JOB_KEYS.GAMES_REFRESH_STALE })
-  async refreshStale(): Promise<number> {
+  async refreshStale(): Promise<number | JobSkipped> {
     // A domain the instance no longer offers may have lost its catalogue key.
     if (!isDomainOffered(this.config, Domain.GAMES)) return 0;
-    const { refreshed } = await this.jobRuns.record(
+    const run = await this.jobRuns.record(
       JOB_KEYS.GAMES_REFRESH_STALE,
       async () => assertSomeRefreshed(await this.runRefreshStale(), "game"),
       summarizeRefresh("game item"),
     );
-    return refreshed;
+    return run === JOB_SKIPPED ? run : run.refreshed;
   }
 
   private async runRefreshStale(): Promise<RefreshOutcome> {

@@ -8,7 +8,7 @@
 
 Loomkeep est publié sous AGPLv3 (`LICENSE`). Au moment de cette décision,
 `User.entitlements` (Json) préparait un plan payant ; le modèle
-`UserEntitlement` l'a remplacé depuis (`apps/api/prisma/schema.prisma`).
+`UserEntitlement` l'a remplacé depuis (`apps/api/prisma/schema/entitlements.prisma`).
 
 Développées dans ce monorepo AGPL, les fonctionnalités premium seront
 distribuées comme le reste du code : un self-hoster pourra légalement
@@ -258,7 +258,7 @@ uniquement, ne pourrait plus être combinée avec le code `ee/`.
 
 ## Conséquences
 
-- `UserEntitlement` (le statut, dans `apps/api/prisma/schema.prisma`) reste
+- `UserEntitlement` (le statut, dans `apps/api/prisma/schema/entitlements.prisma`) reste
   dans le schéma AGPL principal, comme toutes les tables : le schéma n'est
   pas la valeur. Le code des fonctionnalités premium entières vit dans
   `ee/`.

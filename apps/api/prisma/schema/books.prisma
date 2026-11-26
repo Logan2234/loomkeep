@@ -1,0 +1,178 @@
+// Source a book's catalogue data comes from. Open Library only — keyless and
+// unmetered, unlike the Google Books API it replaced.
+enum BookSource {
+  OPEN_LIBRARY
+}
+
+// A book's library status. Like GameStatus it is entirely user-set; page
+// progress is tracked separately on the entry. TO_READ doubles as the wishlist.
+enum BookStatus {
+  TO_READ
+  READING
+  READ
+  DROPPED
+}
+
+// A book series as Open Library last described it, per language: kept so the
+// sagas view doesn't wait on one Open Library search per series after each
+// restart (see BookSagaService).
+model BookSeries {
+  key       String
+  locale    String
+  // The series (ProviderBookSeries), or null when Open Library has none
+  // under this key.
+  series    Json?
+  fetchedAt DateTime
+
+  @@id([key, locale])
+}
+
+// On-demand cache for books, mirroring GameItem: a book exists here only once
+// at least one user references it. Books have no chapter model — the library
+// entry's status is user-set and page progress lives on the entry.
+model BookItem {
+  id              String     @id @default(cuid())
+  canonicalSource BookSource
+  title           String
+  authors         String[]
+  coverUrl        String?
+  overview        String?
+  releaseDate     DateTime?  @db.Date
+  genres          String[]
+  // Number of pages, when the source knows it.
+  pageCount       Int?
+  // ISBN of the edition the source picked, when it has one. Goodreads matches
+  // an imported row on it first, before falling back to title and author.
+  isbn            String?
+  // 18+ title, restricted per-account like MediaItem/GameItem. Open Library
+  // exposes no maturity rating, so this stays false for now — kept so the
+  // per-account restriction still has a hook the day a source provides one.
+  isAdult         Boolean    @default(false)
+  // Open Library series the work belongs to as a numbered volume ("OL326110L"):
+  // the saga the library's sagas view groups it under.
+  seriesKey       String?
+  // An Internet Archive scan anyone can read for free, for the edition the
+  // refresh picks: the library's "free to read" filter reads it.
+  readOnlineUrl   String?
+  metadata        Json       @default("{}")
+  lastSyncedAt    DateTime   @default(now())
+  // Last failed background refresh: keeps the item out of the refresh
+  // job for one cycle (see notFailedSince), cleared by the next sync.
+  syncFailedAt    DateTime?
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  externalIds BookExternalId[]
+  entries     BookEntry[]
+
+  // refreshStale filters and sorts on it, as MediaItem's does.
+  @@index([lastSyncedAt])
+  @@index([seriesKey])
+}
+
+model BookExternalId {
+  bookItemId String
+  source     BookSource
+  externalId String
+
+  bookItem BookItem @relation(fields: [bookItemId], references: [id], onDelete: Cascade)
+
+  @@id([source, externalId])
+  @@index([bookItemId])
+}
+
+model BookEntry {
+  id                    String          @id @default(cuid())
+  userId                String
+  bookItemId            String
+  status                BookStatus      @default(TO_READ)
+  notes                 String?
+  favorite              Boolean         @default(false)
+  // Current reading position, derived from the baseline and dated sessions.
+  currentPage           Int             @default(0)
+  // Stable progress reference for the selected edition. `readingBaselinePage`
+  // preserves the position that existed before dated sessions were introduced.
+  editionKey            String?
+  referencePageCount    Int?
+  readingBaselinePage   Int             @default(0)
+  trackedReadingMinutes Int             @default(0)
+  startedAt             DateTime?
+  finishedAt            DateTime?
+  ownershipStatus       OwnershipStatus @default(NONE)
+  // Free-form detail for DIGITAL/AUDIO (e.g. "Kindle"); null otherwise.
+  ownershipSource       String?
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bookItem      BookItem       @relation(fields: [bookItemId], references: [id], onDelete: Cascade)
+  readings      BookReading[]
+  sessions      BookSession[]
+  sessionTimers SessionTimer[]
+  loans         Loan[]
+
+  @@unique([userId, bookItemId])
+  // "Who tracks this work" (see MediaEntry).
+  @@index([bookItemId])
+}
+
+model BookSession {
+  id              String        @id @default(cuid())
+  bookEntryId     String
+  readingId       String?
+  durationMinutes Int
+  pagesRead       Int
+  startPage       Int?
+  endPage         Int?
+  notes           String?
+  occurredAt      DateTime
+  source          SessionSource @default(MANUAL)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  bookEntry BookEntry    @relation(fields: [bookEntryId], references: [id], onDelete: Cascade)
+  reading   BookReading? @relation(fields: [readingId], references: [id], onDelete: SetNull)
+
+  @@index([bookEntryId, occurredAt])
+  @@index([readingId, occurredAt])
+  @@index([createdAt])
+}
+
+model BookReading {
+  id                 String              @id @default(cuid())
+  bookEntryId        String
+  number             Int
+  status             TrackingCycleStatus
+  editionKey         String?
+  referencePageCount Int?
+  baselinePage       Int                 @default(0)
+  currentPage        Int                 @default(0)
+  trackedMinutes     Int                 @default(0)
+  pagesRead          Int                 @default(0)
+  startedAt          DateTime?
+  finishedAt         DateTime?
+  legacyIncomplete   Boolean             @default(false)
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+
+  bookEntry BookEntry     @relation(fields: [bookEntryId], references: [id], onDelete: Cascade)
+  sessions  BookSession[]
+
+  @@unique([bookEntryId, number])
+  @@index([bookEntryId, status])
+}
+
+// A user's yearly reading target (e.g. "30 books in 2026"). Progress towards
+// it is computed on read, not stored — see BookLibraryService.getReadingGoal.
+model ReadingGoal {
+  id        String   @id @default(cuid())
+  userId    String
+  year      Int
+  target    Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, year])
+}

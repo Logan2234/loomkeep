@@ -65,6 +65,7 @@ export const ErrorCode = {
   AdminEmailTemplateNotFound: "admin.email_template_not_found",
   AdminSmtpNotConfigured: "admin.smtp_not_configured",
   AdminUnknownJob: "admin.unknown_job",
+  AdminJobAlreadyRunning: "admin.job_already_running",
   AdminAccountNotFound: "admin.account_not_found",
   AdminReportNotFound: "admin.report_not_found",
   AdminSettingLockedByEnv: "admin.setting_locked_by_env",

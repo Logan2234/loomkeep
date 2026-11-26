@@ -3,12 +3,12 @@ import { ChatModule } from "../chat/chat.module";
 import { CommentsModule } from "../comments/comments.module";
 import { GamesModule } from "../games/games.module";
 import { LibraryModule } from "../library/library.module";
-import { NotificationModule } from "../notifications/notification.module";
+import { NotificationsModule } from "../notifications/notifications.module";
 import { SocialModule } from "../social/social.module";
 import { NotificationActionController } from "./notification-action.controller";
 import { NotificationActionService } from "./notification-action.service";
 
-// A module of its own: Chat, Comments and Social import NotificationModule,
+// A module of its own: Chat, Comments and Social import NotificationsModule,
 // which can't import them back.
 @Module({
   imports: [
@@ -16,7 +16,7 @@ import { NotificationActionService } from "./notification-action.service";
     CommentsModule,
     GamesModule,
     LibraryModule,
-    NotificationModule,
+    NotificationsModule,
     SocialModule,
   ],
   controllers: [NotificationActionController],

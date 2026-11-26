@@ -1,0 +1,250 @@
+enum UserTokenType {
+  PASSWORD_RESET
+  EMAIL_VERIFICATION
+}
+
+// One row per device/session, so refreshing on the phone does not log out the desktop.
+// The row survives token rotation (only tokenHash/jti/lastUsedAt change), so it
+// models a durable "connected device" — see auth.service refresh().
+model RefreshToken {
+  id                String    @id @default(cuid())
+  userId            String
+  tokenHash         String    @unique
+  // Refresh-JWT id (payload `jti`); lets the current device be flagged in the
+  // sessions list without transmitting the token itself.
+  jti               String    @unique
+  // Raw User-Agent captured at sign-in, to label the device in the UI.
+  userAgent         String?
+  expiresAt         DateTime
+  // Bumped on every rotation — the session's "last active" timestamp.
+  lastUsedAt        DateTime  @default(now())
+  createdAt         DateTime  @default(now())
+  // When the person last proved it's them on this session (sign-in, or the
+  // confirmation sensitive actions ask for — see RecentAuthGuard).
+  reauthenticatedAt DateTime?
+  // Failed confirmations in a row; the session is signed out at the limit.
+  reauthFailures    Int       @default(0)
+
+  user           User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  consumedTokens ConsumedRefreshToken[]
+
+  @@index([userId])
+}
+
+// Hashes of already-rotated refresh tokens. A replay identifies the durable
+// session family and revokes it without retaining any bearer token in clear.
+model ConsumedRefreshToken {
+  id        String   @id @default(cuid())
+  sessionId String
+  tokenHash String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  session RefreshToken @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@index([expiresAt])
+}
+
+// Durable record of every device a user has ever logged in from, independent
+// of RefreshToken (which is pruned on logout/revoke/expiry/password-reset and
+// would otherwise misreport a familiar browser as "new" on the next login).
+// deviceKey is the normalized browser+OS label (see shared deviceLabel()),
+// not the raw User-Agent — a browser version bump shouldn't read as a new
+// device. Seeded (without an alert) on register, upserted on every login;
+// AuthService.login() emails+logs a SecurityEvent only when the row is created.
+model UserDevice {
+  id          String   @id @default(cuid())
+  userId      String
+  deviceKey   String
+  userAgent   String?
+  firstSeenAt DateTime @default(now())
+  lastSeenAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, deviceKey])
+}
+
+// One-time links mailed to the user (password reset, email verification):
+// same shape (a hashed token + an expiry), so both share a row via `type`. A
+// fresh request invalidates the previous one of the same type (see
+// AuthService.requestPasswordReset / .register). The raw token is only ever
+// mailed as a link (MailService) — its hash is what's stored here.
+model UserToken {
+  id        String        @id @default(cuid())
+  userId    String
+  type      UserTokenType
+  tokenHash String        @unique
+  expiresAt DateTime
+  createdAt DateTime      @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, type])
+  // Daily purge of expired tokens (SecurityEventService.purgeExpired).
+  @@index([expiresAt])
+}
+
+// Sign-up link, letting someone register even while REGISTRATION_ENABLED is
+// off. Not a UserToken: the invitee has no User row yet, and one creator
+// holds any number of live invitations at once. createdBy is any account,
+// not just an admin — today only admins mint them (AdminInvitationsController),
+// member referral can come later without a schema change. Status is derived
+// (revokedAt / expiresAt / useCount vs maxUses), never stored. Same token
+// scheme as UserToken: the raw token is only ever shown once or mailed, its
+// SHA-256 is what's stored — renewing mints a new one (tokenIssuedAt).
+model Invitation {
+  id            String    @id @default(cuid())
+  tokenHash     String    @unique
+  // SetNull: deleting the admin doesn't silently kill pending invitations.
+  createdById   String?
+  // Normalized (normalizeEmail). When set, only this address may redeem it,
+  // and redeeming marks the account's email verified — the link was mailed
+  // there, or handed over by someone who knows it.
+  email         String?
+  // Free-form admin note ("Famille", "Club ciné").
+  label         String?
+  maxUses       Int       @default(1)
+  useCount      Int       @default(0)
+  // When the current token was minted — creation, then each renewal. The
+  // renewal keeps the original validity (expiresAt − tokenIssuedAt).
+  tokenIssuedAt DateTime  @default(now())
+  expiresAt     DateTime
+  revokedAt     DateTime?
+  // Last time the link was mailed to `email` (null: shared by hand only).
+  emailedAt     DateTime?
+  // A member's own reusable link (SOC-02), at most one per member (partial
+  // unique index in the migration). Kept out of the admin list, refused while
+  // registration is closed, and its token kept in clear so the member can
+  // copy it again: it only ever opens an instance that is already open.
+  personal      Boolean   @default(false)
+  token         String?   @unique
+  createdAt     DateTime  @default(now())
+
+  createdBy  User?  @relation("InvitationsCreated", fields: [createdById], references: [id], onDelete: SetNull)
+  redeemedBy User[] @relation("InvitedVia")
+
+  @@index([createdAt])
+  @@index([email])
+}
+
+// One pending email change per row; a fresh request invalidates the previous
+// one (see UsersController.changeEmail). The new address only replaces
+// User.email once its code is confirmed (UsersController.confirmEmailChange).
+model EmailChangeRequest {
+  id        String   @id @default(cuid())
+  userId    String
+  newEmail  String
+  codeHash  String   @unique
+  // Failed confirm attempts; the request is deleted after 5 (see
+  // MAX_EMAIL_CHANGE_ATTEMPTS) to bound brute-forcing the 6-digit code.
+  attempts  Int      @default(0)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  // Daily purge of unconfirmed requests (SecurityEventService.purgeExpired).
+  @@index([expiresAt])
+}
+
+// One row per recovery code (bcrypt-hashed, BCRYPT_ROUNDS), single-use —
+// consumption deletes the row rather than flagging it. Deliberately NOT
+// @unique on codeHash: unlike EmailChangeRequest.codeHash (SHA-256 of a
+// high-entropy token, safe to look up by hash), bcrypt embeds a random salt,
+// so verification iterates a user's rows and bcrypt.compare against each.
+model MfaRecoveryCode {
+  id        String   @id @default(cuid())
+  userId    String
+  codeHash  String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// Short-lived record created after a password check succeeds for an account
+// with MFA enabled, before a session is opened. emailCodeHash/expiresAt are
+// only set when the email method is allowed for this login (mirrors
+// EmailChangeRequest's SHA-256 code-hash convention, not bcrypt — this is a
+// short-TTL numeric code, not a human-chosen secret). attempts is capped the
+// same way as EmailChangeRequest.attempts (see MAX_MFA_CHALLENGE_ATTEMPTS).
+model MfaLoginChallenge {
+  id                 String    @id @default(cuid())
+  userId             String
+  totpAllowed        Boolean   @default(false)
+  emailAllowed       Boolean   @default(false)
+  emailCodeHash      String?
+  emailCodeExpiresAt DateTime?
+  attempts           Int       @default(0)
+  expiresAt          DateTime
+  createdAt          DateTime  @default(now())
+
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Set only when a WebAuthn credential is used as this challenge's 2nd
+  // factor — see WebauthnChallenge.mfaLoginChallengeId.
+  webauthnChallenge WebauthnChallenge?
+
+  @@index([userId])
+  // Daily purge of abandoned challenges (SecurityEventService.purgeExpired).
+  @@index([expiresAt])
+}
+
+// A registered passkey/security key. Unlike the TOTP secret, publicKey needs
+// no encryption at rest — it only ever verifies a signature, never produces
+// one, so its disclosure alone can't authenticate anyone.
+model WebauthnCredential {
+  id           String    @id @default(cuid())
+  userId       String
+  // The authenticator-issued credential id (base64url), used to match an
+  // incoming assertion back to this row and to build the login-time
+  // allowCredentials list.
+  credentialId String    @unique
+  publicKey    Bytes
+  // Signature counter reported by the authenticator, expected to strictly
+  // increase on every use — a stagnant or lower value on a later login
+  // signals a cloned authenticator (standard WebAuthn clone detection).
+  counter      BigInt    @default(0)
+  // "singleDevice" (roaming key, e.g. YubiKey) vs "multiDevice" (synced
+  // passkey, e.g. iCloud Keychain/Google Password Manager) — informational,
+  // shown in the settings list.
+  // SimpleWebAuthn's CredentialDeviceType (WebauthnCredential_deviceType_check).
+  deviceType   String
+  backedUp     Boolean   @default(false)
+  transports   String[]
+  // User-supplied label so the settings list stays identifiable ("YubiKey bureau").
+  name         String
+  createdAt    DateTime  @default(now())
+  lastUsedAt   DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// Short-lived WebAuthn ceremony challenge, covering every case where no
+// MfaLoginChallenge exists yet: adding a credential from settings (already
+// authenticated) and a passwordless login (no password verified at all).
+// The one case where a password *was* already verified — the MFA step of a
+// classic login — links back via mfaLoginChallengeId instead of duplicating
+// MfaLoginChallenge's totpAllowed/emailAllowed shape for a third method.
+model WebauthnChallenge {
+  id                  String   @id @default(cuid())
+  // Null for a passwordless decoy: an identifier that isn't eligible still
+  // gets a real challenge, bound to no account (WebauthnService.passwordlessOptions).
+  userId              String?
+  challenge           String
+  mfaLoginChallengeId String?  @unique
+  expiresAt           DateTime
+  createdAt           DateTime @default(now())
+
+  user              User?              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mfaLoginChallenge MfaLoginChallenge? @relation(fields: [mfaLoginChallengeId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  // Daily purge of abandoned challenges (SecurityEventService.purgeExpired).
+  @@index([expiresAt])
+}

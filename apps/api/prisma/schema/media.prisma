@@ -1,0 +1,337 @@
+// Owned by the media domain: apps/api/src/catalog (items, seasons, episodes)
+// and apps/api/src/library (entries, watches, replays, sagas).
+
+enum MediaType {
+  MOVIE
+  SERIES
+  ANIME
+}
+
+// Sources we actually fetch from (canonical).
+enum CatalogSource {
+  TMDB
+  ANILIST
+}
+
+// All sources an external ID can come from. TVDB/IMDB are secondary
+// identifiers kept for reconciliation (e.g. TV Time import) and deduplication.
+enum ExternalSource {
+  TMDB
+  ANILIST
+  TVDB
+  IMDB
+}
+
+enum EntryStatus {
+  WATCHING
+  COMPLETED
+  PLANNED
+  DROPPED
+  // Series/anime: everything released is watched but the show is still airing.
+  // Never stored — it is a derived, read-time status (see LibraryService).
+  UP_TO_DATE
+}
+
+// On-demand cache: a media exists here only once at least one user references it.
+// Search results are served live from TMDB/AniList and never persisted.
+model MediaItem {
+  id                String        @id @default(cuid())
+  type              MediaType
+  canonicalSource   CatalogSource
+  title             String
+  posterUrl         String?
+  backdropUrl       String?
+  overview          String?
+  releaseDate       DateTime?     @db.Date
+  // Null identifies cached movies whose regional release dates have not been fetched yet.
+  movieReleaseDates Json?
+  // Airing status as reported by the source (free-form: "Returning Series", "FINISHED"…).
+  status            String?
+  // AniList release format ("TV", "MOVIE", "OVA"…); null for TMDB titles, whose
+  // type already tells a film apart. Lets the Letterboxd export include anime films.
+  format            String?
+  genres            String[]
+  // ISO 3166-1 alpha-2 countries of origin (TMDB `origin_country`), for the
+  // stats map and the "tour du monde" achievement. Empty until the next sync
+  // of an item cached before it existed.
+  originCountries   String[]      @default([])
+  // Average minutes per episode (series/anime) or the film's runtime; null until
+  // captured from the source. Used by the stats aggregation for watch time.
+  runtimeMin        Int?
+  // Regular episodes (season > 0) cached so far — maintained by a trigger on
+  // Episode, never written by the app (see MediaEntry.watchedEpisodes).
+  episodeCount      Int           @default(0)
+  // 18+ title (TMDB `adult` movies, AniList hentai). Restricted per-account.
+  isAdult           Boolean       @default(false)
+  // The saga it belongs to (TMDB collection or AniList main line, e.g.
+  // "TMDB:10194"), set when its saga is first read (see SagaService).
+  sagaKey           String?
+  metadata          Json          @default("{}")
+  lastSyncedAt      DateTime      @default(now())
+  // Last failed background refresh: keeps the item out of the refresh
+  // job for one cycle (see notFailedSince), cleared by the next sync.
+  syncFailedAt      DateTime?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  externalIds  MediaExternalId[]
+  seasons      Season[]
+  entries      MediaEntry[]
+  translations MediaItemTranslation[]
+
+  @@index([lastSyncedAt])
+  @@index([sagaKey])
+}
+
+// A saga a tracked work belongs to: a TMDB collection or an AniList main
+// line (see SagaSyncService), kept so the library can tell which sagas are
+// in progress and spot a sequel joining one. Saved only once one of its works
+// is tracked; titles are in the source's base language, like MediaItem's.
+model Saga {
+  // "TMDB:<collection id>" or "ANILIST:<id of its first work>".
+  key          String            @id
+  title        String
+  syncedAt     DateTime          @default(now())
+  createdAt    DateTime          @default(now())
+  members      SagaMember[]
+  translations SagaTranslation[]
+}
+
+// A film saga's titles in another language, kept so the library's sagas view
+// doesn't wait on one TMDB request per saga after each restart.
+model SagaTranslation {
+  sagaKey      String
+  locale       String
+  title        String
+  // Each work's title, by TMDB id.
+  memberTitles Json
+  updatedAt    DateTime @updatedAt
+
+  saga Saga @relation(fields: [sagaKey], references: [key], onDelete: Cascade)
+
+  @@id([sagaKey, locale])
+}
+
+model SagaMember {
+  id          String         @id @default(cuid())
+  sagaKey     String
+  source      ExternalSource
+  sourceId    String
+  type        MediaType
+  // Viewing order within the saga.
+  position    Int
+  title       String
+  posterUrl   String?
+  releaseDate String?
+  format      String?
+  episodes    Int?
+  isAdult     Boolean        @default(false)
+  upcoming    Boolean        @default(false)
+  // Set when the work joined a saga already known — never on a saga's first
+  // read, when every work is "new". What the sequel alert looks for.
+  announcedAt DateTime?
+  notifiedAt  DateTime?
+  createdAt   DateTime       @default(now())
+
+  saga Saga @relation(fields: [sagaKey], references: [key], onDelete: Cascade)
+
+  @@unique([sagaKey, sourceId])
+  @@index([announcedAt, notifiedAt])
+}
+
+// Locale-specific title/overview/genres, for a locale other than whatever
+// language the base MediaItem's own fields happen to be in (in practice
+// always English, since providers are queried without a language until a
+// non-default locale is actually requested). Created on demand the first
+// time someone views the item in that locale; refreshed alongside the base
+// row on the same lastSyncedAt-driven cycle (see MediaItemService.refresh) —
+// no TTL of its own. Stats/CSV export deliberately keep reading the base
+// MediaItem's own genres, never this table, so genre aggregation isn't
+// fragmented by language ("Horror" vs "Horreur" counted separately).
+model MediaItemTranslation {
+  id          String   @id @default(cuid())
+  mediaItemId String
+  locale      String
+  title       String
+  overview    String?
+  genres      String[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  mediaItem MediaItem @relation(fields: [mediaItemId], references: [id], onDelete: Cascade)
+
+  @@unique([mediaItemId, locale])
+}
+
+model MediaExternalId {
+  mediaItemId String
+  source      ExternalSource
+  externalId  String
+  // The owning MediaItem's type, denormalised here so the unique constraint
+  // below can disambiguate it. TMDB numbers movies and TV series in separate
+  // ID spaces, so the same externalId can legitimately refer to two different
+  // titles depending on type — without `type` in the key, upserting a TMDB
+  // series would silently overwrite an unrelated TMDB movie that happens to
+  // share the same numeric id (or vice versa).
+  type        MediaType
+
+  mediaItem MediaItem @relation(fields: [mediaItemId], references: [id], onDelete: Cascade)
+
+  @@id([source, externalId, type])
+  @@index([mediaItemId])
+}
+
+model Season {
+  id          String    @id @default(cuid())
+  mediaItemId String
+  number      Int
+  title       String?
+  // TMDB only: AniList entries are one season each, whose synopsis and cover
+  // are the MediaItem's own.
+  overview    String?
+  posterUrl   String?
+  airDate     DateTime?
+  // The source's own average score (TMDB, /10).
+  voteAverage Float?
+
+  mediaItem    MediaItem           @relation(fields: [mediaItemId], references: [id], onDelete: Cascade)
+  episodes     Episode[]
+  translations SeasonTranslation[]
+
+  @@unique([mediaItemId, number])
+}
+
+// A season's title/overview in a non-default locale, cached alongside
+// MediaItemTranslation and refreshed on the same cycle (see
+// MediaItemService.translationFor).
+model SeasonTranslation {
+  seasonId String
+  locale   String
+  title    String?
+  overview String?
+
+  season Season @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+
+  @@id([seasonId, locale])
+}
+
+model Episode {
+  id            String    @id @default(cuid())
+  seasonId      String
+  number        Int
+  title         String?
+  airDate       DateTime?
+  // The episode's own length, when the source gives one (TMDB per episode;
+  // AniList only has a per-title duration, copied onto every episode). Stats
+  // fall back to MediaItem.runtimeMin, then a per-type default, when null.
+  runtimeMin    Int?
+  // Default language (English) here; other locales in EpisodeTranslation.
+  overview      String?
+  // TMDB still, or AniList's Crunchyroll thumbnail.
+  stillUrl      String?
+  // The source's own score (TMDB, /10) and its vote count; null when nobody
+  // has voted yet.
+  voteAverage   Float?
+  voteCount     Int?
+  // TMDB's "standard" / "mid_season" / "finale". A finale is flagged in the
+  // calendar and the release digest.
+  episodeType   String?
+  // Where to stream it (AniList's Crunchyroll links).
+  streamingUrl  String?
+  streamingSite String?
+
+  season       Season               @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+  watches      EpisodeWatch[]
+  translations EpisodeTranslation[]
+
+  @@unique([seasonId, number])
+  // The hourly notification scan picks episodes by air date across every
+  // tracked show (NotificationService.runScanAll).
+  @@index([airDate])
+}
+
+// An episode's title/overview in a non-default locale. A null field means
+// the source has no translation for it, and the base row's English stands.
+model EpisodeTranslation {
+  episodeId String
+  locale    String
+  title     String?
+  overview  String?
+
+  episode Episode @relation(fields: [episodeId], references: [id], onDelete: Cascade)
+
+  @@id([episodeId, locale])
+}
+
+model MediaEntry {
+  id                     String          @id @default(cuid())
+  userId                 String
+  mediaItemId            String
+  status                 EntryStatus     @default(PLANNED)
+  notes                  String?
+  favorite               Boolean         @default(false)
+  startedAt              DateTime?
+  finishedAt             DateTime?
+  // Source and loans follow the rules of entry-loan.util.ts; the source one
+  // is enforced by the *_ownershipSource_check constraint on all four entry
+  // tables (written in SQL in the migration).
+  ownershipStatus        OwnershipStatus @default(NONE)
+  // Free-form detail for DIGITAL/STREAMING (e.g. "Netflix"); null otherwise.
+  ownershipSource        String?
+  // Series/anime only: skip this show in the new-episode push/email digest.
+  // It stays in the release calendar — only the alerts are silenced.
+  episodeAlertsMuted     Boolean         @default(false)
+  // Set while the user rewatches a title they had finished: a series counts
+  // only the watches since this instant for its progress, a movie goes back
+  // to "to watch". Cleared once every aired episode is seen again (series)
+  // or the movie is logged as rewatched.
+  rewatchStartedAt       DateTime?
+  movieReleaseReminderAt DateTime?
+  // A scheduled reminder has no browser language to resolve an automatic country from.
+  movieReleaseRegion     String?
+  // Maintained by the database, never written by the app: triggers on
+  // EpisodeWatch (and on insert here) keep them equal to what the watches
+  // say — regular episodes (season > 0) watched, last viewing of any
+  // episode. See migration 20261019160000_materialized_library_progress.
+  watchedEpisodes        Int             @default(0)
+  lastWatchedAt          DateTime?
+  createdAt              DateTime        @default(now())
+  updatedAt              DateTime        @updatedAt
+
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mediaItem MediaItem     @relation(fields: [mediaItemId], references: [id], onDelete: Cascade)
+  replays   MovieReplay[]
+  loans     Loan[]
+
+  @@unique([userId, mediaItemId])
+  // "Who tracks this work": notification scans, WorkFriends, hidden_gem.
+  @@index([mediaItemId])
+}
+
+// One row per completed replay, beyond the entry's own first completion —
+// Movies only: series/anime rewatches
+// are tracked per-episode via EpisodeWatch instead.
+model MovieReplay {
+  id           String   @id @default(cuid())
+  mediaEntryId String
+  finishedAt   DateTime @default(now())
+
+  mediaEntry MediaEntry @relation(fields: [mediaEntryId], references: [id], onDelete: Cascade)
+
+  @@index([mediaEntryId])
+}
+
+// One row per viewing: watching the same episode twice = two rows (rewatch).
+model EpisodeWatch {
+  id        String    @id @default(cuid())
+  userId    String
+  episodeId String
+  watchedAt DateTime? @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  episode Episode @relation(fields: [episodeId], references: [id], onDelete: Cascade)
+
+  @@index([userId, episodeId])
+  // A user's viewings over a period: home stats, streaks, yearly recap.
+  @@index([userId, watchedAt])
+}

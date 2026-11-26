@@ -1,0 +1,80 @@
+name: Image checks
+
+# Signs and scans the images images.yml has just tagged. Called by ci.yml
+# outside ready-to-ship: a Sigstore or Trivy outage never holds a deploy back.
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  # Signs each tagged image's provenance with GitHub's OIDC identity
+  # (Sigstore) and stores it in GHCR next to the image, as for the APK:
+  # `gh attestation verify oci://… -R Logan2234/loomkeep` proves an image
+  # was built by this repository's CI.
+  attest-images:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+    strategy:
+      matrix:
+        name: [api, web]
+    steps:
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4
+      - uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - id: image
+        run: |
+          image="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/loomkeep-${{ matrix.name }}"
+          digest=$(docker buildx imagetools inspect "$image:${GITHUB_SHA:0:12}" --format '{{json .Manifest}}' | jq -r .digest)
+          echo "name=$image" >> "$GITHUB_OUTPUT"
+          echo "digest=$digest" >> "$GITHUB_OUTPUT"
+      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-name: ${{ steps.image.outputs.name }}
+          subject-digest: ${{ steps.image.outputs.digest }}
+          push-to-registry: true
+
+  # The SHA-tagged images the deploy pulls, scanned once pushed; trivy.yml
+  # rescans `edge` weekly, for new CVEs in an unchanged base image. PRs are
+  # scanned by ci.yml's docker-build-images, on the image it builds anyway: both upload
+  # to the same trivy-api/trivy-web categories, so code scanning's PR check
+  # compares a PR's alerts with main's. Advisory only (exit-code 0).
+  scan-images:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+      security-events: write
+    strategy:
+      matrix:
+        name: [api, web]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      # Trivy pulls the image with the credentials docker login stores.
+      - uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - id: vars
+        run: echo "image=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/loomkeep-${{ matrix.name }}:${GITHUB_SHA:0:12}" >> "$GITHUB_OUTPUT"
+      - name: scan ${{ matrix.name }} image
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: ${{ steps.vars.outputs.image }}
+          format: sarif
+          output: trivy-${{ matrix.name }}.sarif
+          severity: CRITICAL,HIGH
+          exit-code: "0"
+      - uses: github/codeql-action/upload-sarif@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
+        with:
+          sarif_file: trivy-${{ matrix.name }}.sarif
+          category: trivy-${{ matrix.name }}

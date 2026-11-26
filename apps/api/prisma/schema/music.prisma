@@ -1,0 +1,74 @@
+// Source a music item's catalogue data comes from. MusicBrainz only.
+enum MusicSource {
+  MUSICBRAINZ
+}
+
+// An album's library status. Deliberately binary, unlike GameStatus/
+// BookStatus: an album listen is a short, single-session event, so there is
+// no "in progress" or "dropped" state. TO_LISTEN doubles as the wishlist.
+enum MusicStatus {
+  TO_LISTEN
+  LISTENED
+}
+
+// On-demand cache for albums, mirroring BookItem: an album exists here only
+// once at least one user references it. Albums have no page/chapter model —
+// the library entry's status is user-set (binary: to-listen/listened).
+model MusicItem {
+  id              String      @id @default(cuid())
+  canonicalSource MusicSource
+  title           String
+  artists         String[]
+  coverUrl        String?
+  releaseDate     DateTime?   @db.Date
+  genres          String[]
+  // Release-group primary type (Album/EP/Single/Compilation…), informational.
+  albumType       String?
+  // Number of tracks, when the source knows it.
+  trackCount      Int?
+  // Sum of known track durations, in minutes — null until enough tracks carry
+  // a duration (see MusicBrainzProvider's totalDurationMs).
+  durationMin     Int?
+  metadata        Json        @default("{}")
+  lastSyncedAt    DateTime    @default(now())
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  externalIds MusicExternalId[]
+  entries     MusicEntry[]
+}
+
+model MusicExternalId {
+  musicItemId String
+  source      MusicSource
+  externalId  String
+
+  musicItem MusicItem @relation(fields: [musicItemId], references: [id], onDelete: Cascade)
+
+  @@id([source, externalId])
+  @@index([musicItemId])
+}
+
+model MusicEntry {
+  id              String          @id @default(cuid())
+  userId          String
+  musicItemId     String
+  status          MusicStatus     @default(TO_LISTEN)
+  notes           String?
+  favorite        Boolean         @default(false)
+  startedAt       DateTime?
+  finishedAt      DateTime?
+  ownershipStatus OwnershipStatus @default(NONE)
+  // Free-form detail for DIGITAL/STREAMING (e.g. "Spotify"); null otherwise.
+  ownershipSource String?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  musicItem MusicItem @relation(fields: [musicItemId], references: [id], onDelete: Cascade)
+  loans     Loan[]
+
+  @@unique([userId, musicItemId])
+  // "Who tracks this work" (see MediaEntry).
+  @@index([musicItemId])
+}

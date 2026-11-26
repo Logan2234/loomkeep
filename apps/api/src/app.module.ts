@@ -32,7 +32,7 @@ import { InstanceSettingsModule } from "./instance-settings/instance-settings.mo
 import { LibraryModule } from "./library/library.module";
 import { LinksModule } from "./links/links.module";
 import { ListWorksModule } from "./lists/list-works.module";
-import { ListsModule } from "./lists/list.module";
+import { ListsModule } from "./lists/lists.module";
 import { MailModule } from "./mail/mail.module";
 import { MetricsModule } from "./metrics/metrics.module";
 import { MusicModule } from "./music/music.module";
@@ -40,11 +40,11 @@ import { AdultImageKeysService } from "./native-app/adult-image-keys.service";
 import { NativeAppAdultImagesInterceptor } from "./native-app/native-app-adult-images.interceptor";
 import { NewsletterModule } from "./newsletter/newsletter.module";
 import { NotificationActionsModule } from "./notification-actions/notification-actions.module";
-import { NotificationModule } from "./notifications/notification.module";
+import { NotificationsModule } from "./notifications/notifications.module";
 import { PrismaModule } from "./prisma/prisma.module";
 import { PublicApiModule } from "./public-api/public-api.module";
 import { ReviewsModule } from "./reviews/reviews.module";
-import { SavedViewsModule } from "./saved-views/saved-view.module";
+import { SavedViewsModule } from "./saved-views/saved-views.module";
 import { SearchModule } from "./search/search.module";
 import { SessionTimerModule } from "./session-timer/session-timer.module";
 import { ShowcaseModule } from "./showcase/showcase.module";
@@ -91,7 +91,7 @@ import { UsersModule } from "./users/users.module";
     CreatorsModule,
     LinksModule,
     ImportModule,
-    NotificationModule,
+    NotificationsModule,
     NotificationActionsModule,
     HomeScreenWidgetsModule,
     HealthModule,

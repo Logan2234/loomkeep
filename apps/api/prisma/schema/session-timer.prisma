@@ -1,0 +1,28 @@
+enum SessionCycleAction {
+  CONTINUE
+  RESTART
+  HISTORY_ONLY
+}
+
+// One durable stopwatch per account. The elapsed segment is accumulated on
+// pause so the timer survives navigation, browser closure and API restarts.
+model SessionTimer {
+  id                 String              @id @default(cuid())
+  userId             String              @unique
+  domain             Domain
+  gameEntryId        String?
+  bookEntryId        String?
+  startedAt          DateTime
+  pausedAt           DateTime?
+  accumulatedSeconds Int                 @default(0)
+  cycleAction        SessionCycleAction?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  gameEntry GameEntry? @relation(fields: [gameEntryId], references: [id], onDelete: Cascade)
+  bookEntry BookEntry? @relation(fields: [bookEntryId], references: [id], onDelete: Cascade)
+
+  @@index([gameEntryId])
+  @@index([bookEntryId])
+}

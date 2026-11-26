@@ -1,6 +1,7 @@
 import { ErrorCode } from "@loomkeep/shared";
 import { vi } from "vitest";
 import { JOB_KEYS } from "../jobs/job-keys";
+import { JOB_SKIPPED } from "../jobs/job-run.service";
 import { AdminJobsController } from "./admin-jobs.controller";
 
 function makeController() {
@@ -46,5 +47,14 @@ describe("AdminJobsController.runJob", () => {
     await controller.runJob(JOB_KEYS.NOTIFICATIONS_SCAN);
 
     expect(scanAll).toHaveBeenCalledOnce();
+  });
+
+  it("answers a conflict when the job is already running elsewhere", async () => {
+    const { controller, scanAll } = makeController();
+    scanAll.mockResolvedValue(JOB_SKIPPED);
+
+    await expect(
+      controller.runJob(JOB_KEYS.NOTIFICATIONS_SCAN),
+    ).rejects.toMatchObject({ response: ErrorCode.AdminJobAlreadyRunning });
   });
 });

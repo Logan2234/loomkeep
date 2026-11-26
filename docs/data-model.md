@@ -1,12 +1,13 @@
 # Modèle de données
 
-Vue d'ensemble des tables de `apps/api/prisma/schema.prisma` et de leurs
+Vue d'ensemble des tables de `apps/api/prisma/schema/` (un fichier par module
+propriétaire) et de leurs
 relations. Pour le diagramme visuel, voir [erd.md](./erd.md) (généré
 automatiquement à chaque `prisma generate`, `DISABLE_ERD` en prod).
 
 Cette doc est une vue d'ensemble navigable, pas un remplacement des
 commentaires du schéma — pour le _pourquoi_ d'une table précise, se référer
-aux commentaires dans `schema.prisma`, qui restent la source de vérité.
+aux commentaires du schéma, qui restent la source de vérité.
 
 ## Tables sans relation (aucune FK)
 

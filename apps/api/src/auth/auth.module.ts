@@ -6,7 +6,7 @@ import { GamificationModule } from "../gamification/gamification.module";
 import { JobsModule } from "../jobs/jobs.module";
 import { MailModule } from "../mail/mail.module";
 import { AdminAlertModule } from "../notifications/admin-alert.module";
-import { NotificationModule } from "../notifications/notification.module";
+import { NotificationsModule } from "../notifications/notifications.module";
 import { SecurityModule } from "../security/security.module";
 import { SocialModule } from "../social/social.module";
 import { AuthController } from "./auth.controller";
@@ -32,7 +32,7 @@ import { WebauthnService } from "./webauthn.service";
     SecurityModule,
     GamificationModule,
     EventsModule,
-    NotificationModule,
+    NotificationsModule,
     AdminAlertModule,
     JobsModule,
     SocialModule,

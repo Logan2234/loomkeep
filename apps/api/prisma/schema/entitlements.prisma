@@ -1,0 +1,80 @@
+// Open-core entitlements; see docs/adr/0001-open-core-agpl.md.
+enum Plan {
+  FREE
+  PREMIUM
+}
+
+// How a user came to have their current plan — informational, for support/admin
+// visibility (e.g. "why is this account premium") rather than a behavioral
+// switch. STRIPE accounts are the only ones with a backing Subscription row;
+// the others are granted directly, with no billing behind them.
+enum EntitlementSource {
+  STRIPE
+  SELF_HOST_LICENSE
+  FRIENDS_FAMILY
+  BETA_TESTER
+  COMPENSATION
+  // Set by hand from the admin user panel — the catch-all for a manual grant
+  // that isn't specifically one of the reasons above.
+  ADMIN_GRANT
+}
+
+enum SubscriptionProvider {
+  STRIPE
+}
+
+// Mirrors Stripe's own subscription status values rather than inventing an
+// active/inactive binary — PAST_DUE (failed payment, still in its grace
+// period) and TRIALING carry real product decisions that a plain boolean
+// would lose.
+enum SubscriptionStatus {
+  ACTIVE
+  TRIALING
+  PAST_DUE
+  CANCELED
+  INCOMPLETE
+  UNPAID
+}
+
+// One row per user, upserted. `plan` is a derived projection of the user's
+// Subscription rows for STRIPE-sourced entitlements (see
+// EntitlementService.recompute) — never write it directly for a user with an
+// active subscription, or the two will drift. For SELF_HOST_LICENSE/
+// FRIENDS_FAMILY/BETA_TESTER/COMPENSATION there is no Subscription at all;
+// `plan` is set directly by whoever grants it.
+model UserEntitlement {
+  userId    String             @id
+  user      User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan      Plan               @default(FREE)
+  source    EntitlementSource?
+  grantedAt DateTime?
+  expiresAt DateTime?
+  // Per-feature/quota exceptions that override what `plan` would otherwise
+  // grant — both a grandfathered feature (kept despite plan) and a negotiated
+  // quota (different from the plan default) are the same shape: a feature key
+  // mapped to its override value. See docs/adr/0001-open-core-agpl.md.
+  overrides Json               @default("{}")
+  updatedAt DateTime           @updatedAt
+}
+
+// One row per provider subscription, updated in place as Stripe webhooks
+// arrive — not append-only like EpisodeWatch, since a subscription is a
+// single stateful object, not a stream of discrete events. A user can have at
+// most one ACTIVE row: enforced by a partial unique index added by hand in
+// the migration (Prisma has no declarative partial-unique syntax) — see
+// migration.sql for "one_active_subscription_per_user".
+model Subscription {
+  id                     String               @id @default(cuid())
+  userId                 String
+  user                   User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider               SubscriptionProvider
+  providerSubscriptionId String               @unique
+  status                 SubscriptionStatus
+  currentPeriodEnd       DateTime?
+  cancelAtPeriodEnd      Boolean              @default(false)
+  canceledAt             DateTime?
+  createdAt              DateTime             @default(now())
+  updatedAt              DateTime             @updatedAt
+
+  @@index([userId])
+}

@@ -5,9 +5,9 @@ import { CatalogModule } from "../catalog/catalog.module";
 import { GamesModule } from "../games/games.module";
 import { GamificationModule } from "../gamification/gamification.module";
 import { LibraryModule } from "../library/library.module";
-import { ListsModule } from "../lists/list.module";
+import { ListsModule } from "../lists/lists.module";
 import { MusicModule } from "../music/music.module";
-import { NotificationModule } from "../notifications/notification.module";
+import { NotificationsModule } from "../notifications/notifications.module";
 import { ReviewsModule } from "../reviews/reviews.module";
 import { StatsModule } from "../stats/stats.module";
 import { UsersModule } from "../users/users.module";
@@ -52,7 +52,7 @@ import { WorkTitlesService } from "./v1/work-titles.service";
     StatsModule,
     ReviewsModule,
     GamificationModule,
-    NotificationModule,
+    NotificationsModule,
   ],
   controllers: [
     MeV1Controller,

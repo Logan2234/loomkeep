@@ -32,8 +32,8 @@ import { PrismaService } from "../prisma/prisma.service";
 import { ActivityService } from "../social/activity.service";
 import { CreateGameSessionDto } from "./dto/create-game-session.dto";
 import { UpdateGameSessionDto } from "./dto/update-game-session.dto";
+import { toPlaythroughDto } from "./game-playthrough.mapper";
 import { assertGameReleased } from "./game-release.util";
-import { toPlaythroughDto } from "./game.mappers";
 
 const PAGE_SIZE = 10;
 

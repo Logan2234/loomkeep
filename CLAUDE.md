@@ -54,6 +54,10 @@ wording change or a rename.
   re-sync in a 6-hourly `refreshStale` job; music has none, an album only
   refreshes when someone tracks it again. Behaviour the four domains must
   share gets a case in `apps/api/src/common/domain-parity.spec.ts`.
+- The Prisma schema is one file per owning API module in
+  `apps/api/prisma/schema/` (`games.prisma`…): a new table goes in the file of
+  the module that writes it; generators, datasource and enums several files
+  share sit in `schema.prisma`.
 - TMDB movie/TV ids are separate namespaces: every call carries a
   `MediaType`. TVDB ids are captured from TMDB because the TV Time import
   reconciles through them.
@@ -141,6 +145,11 @@ wording change or a rename.
   compose file's location. Which overrides the VPS combines comes from its
   own `.env` (`COMPOSE_FILE`). Logs redact auth headers and never log
   request bodies.
+- One API process per instance ([docs/adr/0002](docs/adr/0002-one-api-process.md)):
+  imports, throttling, socket.io and the session cache live in memory. A new
+  in-memory state adds a row to that ADR. A scheduled job goes through
+  `JobRunService.record()`, whose database lock runs it once across replicas
+  and returns `JOB_SKIPPED` when it is already running.
 - Social features are gated by the `socialEnabled` instance setting;
   `SocialFeatureGuard` answers 404 (never 403) when off.
   [apps/api/src/social/README.md](apps/api/src/social/README.md).
@@ -166,6 +175,10 @@ wording change or a rename.
   its own `### Breaking changes` section, worded as what to do.
 - Feedback and roadmap live on Quackback (feedback.loomkeep.app), not
   GitHub Issues — see `.claude/skills/quackback-ticket`.
+- API file names: a module file is named after its folder
+  (`lists/lists.module.ts`, a second module in it names itself:
+  `lists/list-works.module.ts`), and a function turning a row into a DTO
+  lives in `<subject>.mapper.ts` (`games/game-item.mapper.ts`).
 - Reuse `apps/web/src/lib/components/` before writing a new component.
 - Check the mobile viewport on every `apps/web` UI change, and ship its
   transitions (`apps/web/DESIGN.md` › Motion; visual identity "Séance" in
@@ -176,5 +189,8 @@ wording change or a rename.
   at the same version.
 - Every alert (bell, push, email) is declared once in `ALERTS`
   (`packages/shared/src/alerts.ts`). A new alert starts there.
+- An email is a `build…()` function in `apps/api/src/mail/templates/<theme>.ts`
+  drawn with `MailLayout`, an entry in `mail-gallery.ts` (Admin's preview),
+  and a `send…()` on `MailService`, which keeps only transport and sending.
 - A shipped user-facing feature gets a `"Nouveau"` badge entry in
   `apps/web/src/lib/feature-badges.ts` at its point of discovery.

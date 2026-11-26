@@ -1,7 +1,7 @@
 import { Module } from "@nestjs/common";
 import { PushService } from "./push.service";
 
-// Its own module so JobsModule can reach it: NotificationModule imports
+// Its own module so JobsModule can reach it: NotificationsModule imports
 // JobsModule, so the reverse would be a cycle.
 @Module({
   providers: [PushService],
