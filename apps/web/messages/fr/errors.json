@@ -66,7 +66,6 @@
   "apierr_import_job_no_analysis": "Cet import n'a pas encore été analysé.",
   "apierr_import_job_already_running": "Un autre import est déjà en cours. Attends sa fin avant d'en démarrer un nouveau.",
   "apierr_import_unknown_source": "Source d'import inconnue.",
-  "apierr_import_free_quota_exceeded": "Un import gratuit par domaine, passe premium pour réimporter dans ce domaine.",
   "apierr_import_source_unavailable": "La source d'import est momentanément indisponible, réessaie dans un instant.",
   "apierr_import_steam_profile_not_found": "Profil Steam introuvable, vérifie l'identifiant ou l'URL du profil.",
   "apierr_import_steam_library_private": "Bibliothèque Steam inaccessible, le profil et les détails des jeux doivent être publics.",
@@ -249,5 +248,7 @@
   "apierr_user_deletion_not_scheduled": "Aucune suppression n'est programmée pour ce compte.",
   "apierr_user_acquisition_source_already_set": "Tu as déjà répondu à cette question.",
   "apierr_user_acquisition_source_disabled": "Cette instance ne pose pas cette question.",
-  "apierr_newsletter_send_not_found": "Cet envoi n'existe plus."
+  "apierr_newsletter_send_not_found": "Cet envoi n'existe plus.",
+  "apierr_contact_unavailable": "Cette instance ne reçoit pas de messages. Ouvre plutôt un ticket sur feedback.loomkeep.app.",
+  "apierr_contact_send_failed": "Le message n'est pas parti. Réessaie dans un moment."
 }

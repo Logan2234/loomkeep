@@ -13,6 +13,7 @@ import { primaryWebOrigin } from "../common/web-origin.util";
 import { isGamificationEnabled } from "../gamification/gamification.config";
 import { instanceDomains } from "../instance-settings/instance-domains";
 import { instanceSetting } from "../instance-settings/instance-settings.store";
+import { MailService } from "../mail/mail.service";
 import { isSocialEnabled } from "../social/social.config";
 import { PublicConfigResponseDto } from "./dto/public-config-response.dto";
 
@@ -20,7 +21,10 @@ import { PublicConfigResponseDto } from "./dto/public-config-response.dto";
 @Public()
 @Controller("config")
 export class PublicConfigController {
-  constructor(private readonly config: ConfigService) {}
+  constructor(
+    private readonly config: ConfigService,
+    private readonly mail: MailService,
+  ) {}
 
   @Get()
   @ApiOkResponse({ type: PublicConfigResponseDto })
@@ -32,6 +36,7 @@ export class PublicConfigController {
       socialEnabled: isSocialEnabled(this.config),
       chatEnabled: isChatEnabled(this.config),
       gamificationEnabled: isGamificationEnabled(this.config),
+      contactFormEnabled: this.mail.canReceiveContact(),
       registrationEnabled: isRegistrationEnabled(this.config),
       publicApiEnabled: instanceSetting(this.config, "publicApiEnabled"),
       askAcquisitionSource: instanceSetting(

@@ -42,6 +42,7 @@ export const IT_COPY: MailCopy = {
     accountDeleted: "L’eliminazione del tuo account Loomkeep è confermata.",
     importAlert: "Un'importazione non è riuscita sulla tua istanza.",
     adminNewUser: "È stato creato un nuovo account sulla tua istanza.",
+    accessibilityReport: "Qualcuno segnala un ostacolo di accessibilità.",
     inactivityWarning:
       "Controlla la data di eliminazione prevista e accedi per conservare l’account.",
     moderationDecision: "Leggi la decisione, i motivi e come contestarla.",
@@ -334,6 +335,15 @@ export const IT_COPY: MailCopy = {
     intro: (source) =>
       `Un'importazione ${source} non è riuscita sulla tua istanza.`,
     button: "Vedi le importazioni",
+  },
+  accessibilityReport: {
+    subject: "Ostacolo di accessibilità segnalato",
+    heading: "Ostacolo di accessibilità",
+    intro:
+      "Qualcuno ha segnalato un ostacolo dalla dichiarazione di accessibilità.",
+    page: (where) => `Pagina: ${where}`,
+    replyTo: "Rispondi a questa email per scrivergli.",
+    anonymous: "Nessun indirizzo lasciato: non puoi rispondere.",
   },
   adminNewUser: {
     subject: (name) => `Nuova iscrizione: ${name}`,

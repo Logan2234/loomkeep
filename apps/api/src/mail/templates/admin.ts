@@ -1,10 +1,11 @@
 import type { Locale } from "@loomkeep/shared";
 import { resolveCopyLocale } from "../../common/copy-locale.util";
 import { QUACKBACK_ORIGIN } from "../../common/instance-defaults";
-import { escapeHtml } from "../mail-html";
+import { COLOR_BORDER, escapeHtml } from "../mail-html";
 import { MailLayout } from "../mail-layout";
 import { MAIL_COPY } from "../mail.i18n";
 import type {
+  AccessibilityReport,
   ImportAlert,
   JobAlert,
   QuotaAlert,
@@ -157,6 +158,35 @@ export function buildAdminNewUser(
       `<p>${escapeHtml(copy.intro(displayName))}</p>
          ${layout.button(url, copy.button)}`,
       { template: "adminNewUser", footer: { type: "admin" } },
+    ),
+  };
+}
+
+export function buildAccessibilityReport(
+  layout: MailLayout,
+  locale: Locale,
+  report: AccessibilityReport,
+): TemplateBody {
+  const copy = MAIL_COPY[resolveCopyLocale(locale)].accessibilityReport;
+  const page = report.page ? copy.page(report.page) : null;
+  const reply = report.email ? copy.replyTo : copy.anonymous;
+  const paragraphs = report.message
+    .split(/\n{2,}/)
+    .map((p) => `<p>${escapeHtml(p).replace(/\n/g, "<br>")}</p>`)
+    .join("");
+  return {
+    subject: `[Admin] ${copy.subject}`,
+    text: [copy.intro, page, report.message, reply]
+      .filter(Boolean)
+      .join("\n\n"),
+    html: layout.wrapEmail(
+      locale,
+      copy.heading,
+      `<p>${escapeHtml(copy.intro)}</p>
+         ${page ? `<p><strong>${escapeHtml(page)}</strong></p>` : ""}
+         <blockquote style="margin:0 0 16px;padding-left:12px;border-left:3px solid ${COLOR_BORDER};">${paragraphs}</blockquote>
+         <p>${escapeHtml(reply)}</p>`,
+      { template: "accessibilityReport", footer: { type: "admin" } },
     ),
   };
 }

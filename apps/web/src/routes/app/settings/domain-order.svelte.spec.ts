@@ -46,7 +46,6 @@ it("orders import groups and excludes disabled domains", async () => {
   } as UserDto;
   server.use(
     http.get(apiUrl("/import/availability"), () => HttpResponse.json({})),
-    http.get(apiUrl("/import/quota"), () => HttpResponse.json({})),
     http.get(apiUrl("/import/last-run"), () =>
       HttpResponse.json({ run: null }),
     ),

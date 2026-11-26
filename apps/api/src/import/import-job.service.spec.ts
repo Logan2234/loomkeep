@@ -4,7 +4,6 @@ import type { ConfigService } from "@nestjs/config";
 import { vi } from "vitest";
 import { AppException } from "../common/app.exception";
 import { parsePageQuery } from "../common/pagination.util";
-import type { EntitlementService } from "../entitlements/entitlement.service";
 import type { NotificationService } from "../notifications/notification.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import { stubAchievements, stubEvents, stubXp } from "../test-utils/stubs";
@@ -58,9 +57,6 @@ describe("ImportJobService translatable failures", () => {
       [source],
       {} as PrismaService,
       {} as ConfigService,
-      {
-        isEffectivelyPremium: vi.fn().mockResolvedValue(true),
-      } as unknown as EntitlementService,
       stubXp(),
       stubAchievements(),
       stubEvents(),
@@ -109,9 +105,6 @@ describe("ImportJobService translatable failures", () => {
         [source],
         {} as PrismaService,
         {} as ConfigService,
-        {
-          isEffectivelyPremium: vi.fn().mockResolvedValue(true),
-        } as unknown as EntitlementService,
         stubXp(),
         stubAchievements(),
         stubEvents(),
@@ -142,7 +135,6 @@ describe("ImportJobService.getAvailability", () => {
       ],
       {} as PrismaService,
       config as unknown as ConfigService,
-      { isEffectivelyPremium: vi.fn() } as unknown as EntitlementService,
       stubXp(),
       stubAchievements(),
       stubEvents(),
@@ -160,68 +152,29 @@ describe("ImportJobService.getAvailability", () => {
   });
 });
 
-describe("ImportJobService.startAnalyze — premium gating", () => {
-  function makeService(
-    hasPremium: boolean,
-    priorRun: { status: string; itemCount: number } | null,
-  ) {
+describe("ImportJobService.startAnalyze — imports are free", () => {
+  it("lets any account re-import into a domain it has already imported into", async () => {
     const prisma = {
       importRun: {
-        findFirst: vi.fn().mockResolvedValue(priorRun),
-        findMany: vi.fn().mockResolvedValue([]),
+        findFirst: vi
+          .fn()
+          .mockResolvedValue({ status: "SUCCESS", itemCount: 5 }),
       },
     } as unknown as PrismaService;
-    const entitlements = {
-      isEffectivelyPremium: vi.fn().mockResolvedValue(hasPremium),
-    } as unknown as EntitlementService;
     const service = new ImportJobService(
       [fakeSource("tvtime")],
       prisma,
       {} as unknown as ConfigService,
-      entitlements,
       stubXp(),
       stubAchievements(),
       stubEvents(),
       stubNotifications(),
       stubImportAlerts(),
     );
-    return { service, prisma };
-  }
 
-  it("allows a first import into a domain for a free account", async () => {
-    const { service } = makeService(false, null);
     await expect(
       service.startAnalyze("u1", "tvtime", { input: "" }),
     ).resolves.toMatchObject({ status: "running" });
-  });
-
-  it("rejects a second import into an already-imported domain for a free account", async () => {
-    const { service } = makeService(false, {
-      status: "SUCCESS",
-      itemCount: 5,
-    });
-    await expect(
-      service.startAnalyze("u1", "tvtime", { input: "" }),
-    ).rejects.toMatchObject({ code: ErrorCode.ImportFreeQuotaExceeded });
-  });
-
-  it("allows any import for a premium account, even with prior history", async () => {
-    const { service } = makeService(true, { status: "SUCCESS", itemCount: 5 });
-    await expect(
-      service.startAnalyze("u1", "tvtime", { input: "" }),
-    ).resolves.toMatchObject({ status: "running" });
-  });
-
-  it("only counts a prior run with items actually written towards the free import", async () => {
-    const { service, prisma } = makeService(false, null);
-    await expect(
-      service.startAnalyze("u1", "tvtime", { input: "" }),
-    ).resolves.toMatchObject({ status: "running" });
-    expect(prisma.importRun.findFirst).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: expect.objectContaining({ itemCount: { gt: 0 } }),
-      }),
-    );
   });
 
   it("rejects a second concurrent import for the same user", async () => {
@@ -233,9 +186,6 @@ describe("ImportJobService.startAnalyze — premium gating", () => {
         importRun: { findFirst: vi.fn().mockResolvedValue(null) },
       } as unknown as PrismaService,
       {} as ConfigService,
-      {
-        isEffectivelyPremium: vi.fn().mockResolvedValue(true),
-      } as unknown as EntitlementService,
       stubXp(),
       stubAchievements(),
       stubEvents(),
@@ -248,34 +198,6 @@ describe("ImportJobService.startAnalyze — premium gating", () => {
     await expect(
       service.startAnalyze("u1", "tvtime", { input: "" }),
     ).rejects.toBeInstanceOf(AppException);
-  });
-});
-
-describe("ImportJobService.getQuota", () => {
-  it("maps every domain with a recorded successful import to true", async () => {
-    const prisma = {
-      importRun: {
-        findMany: vi
-          .fn()
-          .mockResolvedValue([{ domain: "MEDIA" }, { domain: "BOOKS" }]),
-      },
-    } as unknown as PrismaService;
-    const service = new ImportJobService(
-      [fakeSource("tvtime")],
-      prisma,
-      {} as unknown as ConfigService,
-      {} as unknown as EntitlementService,
-      stubXp(),
-      stubAchievements(),
-      stubEvents(),
-      stubNotifications(),
-      stubImportAlerts(),
-    );
-
-    await expect(service.getQuota("u1")).resolves.toEqual({
-      MEDIA: true,
-      BOOKS: true,
-    });
   });
 });
 
@@ -301,9 +223,6 @@ describe("ImportJobService.commit — IMPORT_COMPLETED", () => {
       [source],
       prisma,
       {} as unknown as ConfigService,
-      {
-        isEffectivelyPremium: vi.fn().mockResolvedValue(true),
-      } as unknown as EntitlementService,
       xp,
       stubAchievements(),
       events,
@@ -724,9 +643,6 @@ describe("ImportJobService — retained payloads", () => {
       [source],
       prisma,
       {} as unknown as ConfigService,
-      {
-        isEffectivelyPremium: vi.fn().mockResolvedValue(true),
-      } as unknown as EntitlementService,
       stubXp(),
       stubAchievements(),
       stubEvents(),
@@ -862,7 +778,6 @@ describe("ImportJobService.getLastRun", () => {
       [],
       { importRun: { findFirst } } as unknown as PrismaService,
       {} as ConfigService,
-      {} as EntitlementService,
       stubXp(),
       stubAchievements(),
       stubEvents(),
@@ -928,7 +843,6 @@ describe("ImportJobService.getHistory", () => {
       [],
       { importRun: { findMany } } as unknown as PrismaService,
       {} as ConfigService,
-      {} as EntitlementService,
       stubXp(),
       stubAchievements(),
       stubEvents(),

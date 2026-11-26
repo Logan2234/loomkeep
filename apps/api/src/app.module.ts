@@ -20,6 +20,7 @@ import { CommonModule } from "./common/common.module";
 import { loggerOptions } from "./common/logger.config";
 import { RuntimeConfigModule } from "./config/config.module";
 import { validateEnv } from "./config/env.validation";
+import { ContactModule } from "./contact/contact.module";
 import { CreatorsModule } from "./creators/creators.module";
 import { EeModule } from "./ee/ee.module";
 import { EventsModule } from "./events/events.module";
@@ -81,6 +82,7 @@ import { UsersModule } from "./users/users.module";
     SessionCacheModule,
     ApiKeyAuthModule,
     RuntimeConfigModule,
+    ContactModule,
     MailModule,
     AuthModule,
     AdminModule,

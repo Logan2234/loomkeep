@@ -36,6 +36,7 @@ export const EN_COPY: MailCopy = {
     accountDeleted: "Your Loomkeep account deletion is confirmed.",
     importAlert: "An import failed on your instance.",
     adminNewUser: "A new account was created on your instance.",
+    accessibilityReport: "Someone reported an accessibility barrier.",
     inactivityWarning:
       "Check the scheduled deletion date and sign in to keep your account.",
     moderationDecision: "Read the decision, its reasons and how to appeal.",
@@ -326,6 +327,14 @@ export const EN_COPY: MailCopy = {
     heading: "Import failed",
     intro: (source) => `A ${source} import failed on your instance.`,
     button: "See imports",
+  },
+  accessibilityReport: {
+    subject: "Accessibility barrier reported",
+    heading: "Accessibility barrier",
+    intro: "Someone reported a barrier from the accessibility statement.",
+    page: (where) => `Page: ${where}`,
+    replyTo: "Reply to this email to write back.",
+    anonymous: "No address left: you can't reply.",
   },
   adminNewUser: {
     subject: (name) => `New account: ${name}`,

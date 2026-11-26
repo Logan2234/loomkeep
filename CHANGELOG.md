@@ -31,6 +31,9 @@ history from before it was started.
 
 ### Added
 
+- An accessibility statement, linked from the footer: what is tested, what
+  isn't yet, and where to report a barrier, with a form that emails the
+  instance's support mailbox (`MAIL_SUPPORT_ADDRESS`) when it has one.
 - Stats (premium): a world map of where the films and series you watched
   come from, next to the full ranking by titles or watch time.
 - A « Tour du monde » achievement: films and series from 5, 15 and 30
@@ -77,6 +80,8 @@ history from before it was started.
 
 ### Changed
 
+- Imports are free and unlimited: no more "one import per domain" on the
+  free plan, so a second source or a fresh re-import is never refused.
 - Scheduled jobs take a lock in the database: a job runs once at a time, even
   if you run a second API container, and Admin › Jobs says so when you start
   one that is already running. The self-hosting docs now state that an

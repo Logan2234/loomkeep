@@ -13,6 +13,7 @@ export async function initConfig(): Promise<void> {
     appConfig.socialEnabled = config.socialEnabled;
     appConfig.chatEnabled = config.chatEnabled;
     appConfig.gamificationEnabled = config.gamificationEnabled;
+    appConfig.contactFormEnabled = config.contactFormEnabled;
     appConfig.registrationEnabled = config.registrationEnabled;
     appConfig.publicApiEnabled = config.publicApiEnabled;
     appConfig.askAcquisitionSource = config.askAcquisitionSource;
@@ -26,6 +27,7 @@ export async function initConfig(): Promise<void> {
     appConfig.socialEnabled = false;
     appConfig.chatEnabled = false;
     appConfig.gamificationEnabled = false;
+    appConfig.contactFormEnabled = false;
     appConfig.registrationEnabled = false;
     appConfig.publicApiEnabled = false;
     appConfig.askAcquisitionSource = false;

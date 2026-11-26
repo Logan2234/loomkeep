@@ -39,6 +39,7 @@ export const FR_COPY: MailCopy = {
     accountDeleted: "La suppression de ton compte Loomkeep est confirmée.",
     importAlert: "Un import a échoué sur ton instance.",
     adminNewUser: "Un nouveau compte a été créé sur ton instance.",
+    accessibilityReport: "Quelqu’un signale un obstacle d’accessibilité.",
     inactivityWarning:
       "Consulte la date de suppression prévue et reconnecte-toi pour conserver ton compte.",
     moderationDecision:
@@ -332,6 +333,15 @@ export const FR_COPY: MailCopy = {
     heading: "Import en échec",
     intro: (source) => `Un import ${source} a échoué sur ton instance.`,
     button: "Voir les imports",
+  },
+  accessibilityReport: {
+    subject: "Obstacle d'accessibilité signalé",
+    heading: "Obstacle d'accessibilité",
+    intro:
+      "Quelqu'un a signalé un obstacle depuis la déclaration d'accessibilité.",
+    page: (where) => `Page concernée : ${where}`,
+    replyTo: "Réponds à ce mail pour lui écrire.",
+    anonymous: "Aucune adresse laissée : tu ne peux pas lui répondre.",
   },
   adminNewUser: {
     subject: (name) => `Nouvelle inscription : ${name}`,

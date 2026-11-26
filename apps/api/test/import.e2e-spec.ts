@@ -15,10 +15,8 @@ import { authCookies, createE2eApp, e2eUser, progressDrift } from "./e2e-app";
  * client sends back selecting the right items, and the commit landing in the
  * library.
  *
- * The order here is load-bearing, and both constraints are product rules
- * rather than test scaffolding: a new analysis invalidates the previous one,
- * and the free plan allows a single import per domain. So the refusals come
- * first and the one real import last.
+ * The order here is load-bearing: a new analysis invalidates the previous
+ * one, so the refusals come first and the real import after them.
  *
  * MyAnimeList is the source used because its export is a single XML string —
  * no ZIP to build — and it resolves through AniList, which the suite stubs.
@@ -111,18 +109,15 @@ describe("Import (e2e)", () => {
 
   it("refuses a malformed export as a client error, not a failed job", async () => {
     // A parse failure is the client's: no job may be left behind holding the
-    // account's one free import slot.
+    // account's running-import slot.
     await request(http)
       .post("/api/import/myanimelist/analyze")
       .set("Cookie", cookies)
       .send({ input: "not xml at all" })
       .expect(400);
 
-    const quota = await request(http)
-      .get("/api/import/quota")
-      .set("Cookie", cookies)
-      .expect(200);
-    expect(quota.body).toEqual({});
+    const fresh = await analyze();
+    expect(fresh.status).toBe("completed");
   });
 
   it("invalidates an earlier analysis once a new one starts", async () => {
@@ -214,16 +209,7 @@ describe("Import (e2e)", () => {
     });
   });
 
-  it("marks the domain as spent in the quota", async () => {
-    const res = await request(http)
-      .get("/api/import/quota")
-      .set("Cookie", cookies)
-      .expect(200);
-
-    expect(res.body).toMatchObject({ MEDIA: true });
-  });
-
-  it("refuses a second import into a domain already imported on the free plan", async () => {
+  it("lets a free account import again into a domain it already imported into", async () => {
     const flags = app.get(FeatureFlagsService);
     const isEnabled = flags.isEnabled.bind(flags);
     const premiumFlag = vi
@@ -233,13 +219,10 @@ describe("Import (e2e)", () => {
       );
 
     try {
-      // The refusal lands at analyze, before anything is parsed: a user must
-      // not review a plan they cannot commit.
-      await request(http)
-        .post("/api/import/myanimelist/analyze")
-        .set("Cookie", cookies)
-        .send({ input: MAL_EXPORT })
-        .expect(403);
+      // Imports stay free with premium on: someone arriving from two
+      // services of the same domain must not be refused the second one.
+      const again = await analyze();
+      expect(again.status).toBe("completed");
     } finally {
       premiumFlag.mockRestore();
     }

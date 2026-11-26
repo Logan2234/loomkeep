@@ -8,7 +8,6 @@
     analyzeImport,
     commitImport,
     getImportJob,
-    getImportQuota,
     searchBooks,
     searchCatalog,
     searchGames,
@@ -17,7 +16,6 @@
   import { keys } from "#lib/api/keys.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
-  import { auth } from "#lib/auth.svelte.js";
   import Banner from "#lib/components/Banner.svelte";
   import Combobox from "#lib/components/Combobox.svelte";
   import ConfirmationModal from "#lib/components/ConfirmationModal.svelte";
@@ -94,13 +92,6 @@
   const descriptor: AvailableImportSourceDescriptor =
     IMPORTS_DEFINITION[source];
   const queryClient = useQueryClient();
-
-  const quotaQuery = createApiQuery(() => ({
-    key: keys.import.quota(),
-    fetch: getImportQuota,
-  }));
-  const quotaUsed = $derived(quotaQuery.data?.[descriptor.domain] === true);
-  const premiumLocked = $derived(auth.isPremiumLocked);
 
   let analyzeJobId = $state<string | null>(null);
   let job = $state<ImportJobDto | null>(null);
@@ -489,12 +480,6 @@
 
   {#if bannerError}
     <Banner variant="error" class="mb-4">{bannerError}</Banner>
-  {:else if premiumLocked && quotaUsed}
-    <Banner variant="warning" class="mb-4">{m.import_free_quota_used()}</Banner>
-  {:else if premiumLocked}
-    <Banner variant="info" class="mb-4">
-      {m.import_free_quota_reminder()}
-    </Banner>
   {/if}
 
   {#if phase === "input"}

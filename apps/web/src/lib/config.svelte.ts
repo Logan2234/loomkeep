@@ -16,6 +16,7 @@ class AppConfig implements PublicConfigDto {
   socialEnabled = $state(false);
   chatEnabled = $state(false);
   gamificationEnabled = $state(false);
+  contactFormEnabled = $state(false);
   registrationEnabled = $state(false);
   publicApiEnabled = $state(false);
   askAcquisitionSource = $state(false);

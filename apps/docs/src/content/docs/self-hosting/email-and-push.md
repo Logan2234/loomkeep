@@ -37,6 +37,11 @@ address (for example `support@example.com`). Without it, they go to the sender,
 so set it as soon as someone reads that mailbox. Moderation notices include the
 decision reference in their contact link's subject.
 
+It also receives the accessibility statement's form (`/legal/accessibility`):
+without it, or without SMTP, the page only offers a ticket on
+feedback.loomkeep.app. Each address can send three reports an hour, and
+Turnstile guards the form when `TURNSTILE_SECRET_KEY` is set.
+
 ### Newsletter unsubscribe button
 
 Only newsletters include the RFC 8058 `List-Unsubscribe` and

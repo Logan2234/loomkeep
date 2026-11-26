@@ -332,6 +332,14 @@ export const ALERTS = {
     mailTemplate: "updateAvailable",
     audience: "admins",
   },
+  // To the instance's support mailbox rather than to an account, so no one
+  // has a setting for it.
+  ACCESSIBILITY_REPORT: {
+    group: AlertGroup.ADMIN,
+    email: "always",
+    mailTemplate: "accessibilityReport",
+    audience: "admins",
+  },
 } as const satisfies Record<string, AlertDefinition>;
 
 export type AlertKey = keyof typeof ALERTS;

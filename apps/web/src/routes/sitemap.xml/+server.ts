@@ -16,6 +16,7 @@ export const _PUBLIC_PATHS = [
   { path: "/legal/terms-of-service", priority: "0.3", lastmod: "2026-11-23" },
   { path: "/legal/privacy-policy", priority: "0.3", lastmod: "2026-11-23" },
   { path: "/legal/legal-notice", priority: "0.3", lastmod: "2026-11-23" },
+  { path: "/legal/accessibility", priority: "0.3", lastmod: "2026-11-26" },
 ];
 
 export const GET: RequestHandler = ({ url, setHeaders }) => {
