@@ -66,7 +66,6 @@
   "apierr_import_job_no_analysis": "Questa importazione non è ancora stata analizzata.",
   "apierr_import_job_already_running": "Un'altra importazione è già in corso. Attendi che finisca prima di avviarne una nuova.",
   "apierr_import_unknown_source": "Fonte di importazione sconosciuta.",
-  "apierr_import_free_quota_exceeded": "Un'importazione gratuita per dominio: passa a premium per importare di nuovo in questo dominio.",
   "apierr_import_source_unavailable": "La fonte di importazione è temporaneamente non disponibile, riprova tra poco.",
   "apierr_import_steam_profile_not_found": "Profilo Steam non trovato, controlla l'ID o l'URL del profilo.",
   "apierr_import_steam_library_private": "Libreria Steam inaccessibile: il profilo e i dettagli dei giochi devono essere pubblici.",

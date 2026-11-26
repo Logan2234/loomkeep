@@ -12,27 +12,25 @@ already have: tracking, history, imports and exports stay free.
 
 ## What differs
 
-| Feature                                               | Free           | Premium                 |
-| ----------------------------------------------------- | -------------- | ----------------------- |
-| Films, series, anime, games, books                    | ✓              | ✓                       |
-| Music, and podcasts and board games once they arrive  | —              | ✓, in early access      |
-| [Imports](/guide/imports/)                            | One per domain | Unlimited               |
-| Saved library views                                   | 3              | 24                      |
-| Release digest                                        | Weekly         | Daily or weekly         |
-| [Stats](#advanced-stats)                              | ✓              | ✓, plus advanced stats  |
-| [Calendar and feed links](/guide/calendar-and-feeds/) | —              | ✓                       |
-| Navigation styles                                     | Marquee        | Marquee, Dock and Board |
-| [API](/api/) requests per minute                      | 60             | 300                     |
+| Feature                                               | Free    | Premium                 |
+| ----------------------------------------------------- | ------- | ----------------------- |
+| Films, series, anime, games, books                    | ✓       | ✓                       |
+| Music, and podcasts and board games once they arrive  | —       | ✓, in early access      |
+| Saved library views                                   | 3       | 24                      |
+| Release digest                                        | Weekly  | Daily or weekly         |
+| [Stats](#advanced-stats)                              | ✓       | ✓, plus advanced stats  |
+| [Calendar and feed links](/guide/calendar-and-feeds/) | —       | ✓                       |
+| Navigation styles                                     | Marquee | Marquee, Dock and Board |
+| [API](/api/) requests per minute                      | 60      | 300                     |
 
-"One import per domain" means one successful import: a second source for the
-same domain, or importing the same one again, would need premium. The API
-limits are loomkeep.app's; a self-hosted instance sets its own.
+The API limits are loomkeep.app's; a self-hosted instance sets its own.
 
 ## Free, with no limit
 
 Everything else: tracking in every free domain, episodes, sessions,
 rewatches and cycles, ratings and notes, lists, the calendar page,
-notifications, social features, achievements, the full
+notifications, social features, achievements, every
+[import](/guide/imports/), as often as you like, the full
 [data export](/guide/your-data/), personal API keys and
 [two-factor authentication](/guide/security/).
 

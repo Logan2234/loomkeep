@@ -1,10 +1,8 @@
 import { m } from "#lib/paraglide/messages.js";
-import { apiUrl, server } from "#lib/test/msw.js";
 import { renderWithQuery } from "#lib/test/render.js";
 import { screen } from "@testing-library/svelte";
-import { http, HttpResponse } from "msw";
 import type { Component } from "svelte";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import AnilistPage from "./anilist/+page.svelte";
 import BabelioPage from "./babelio/+page.svelte";
 import GoodreadsPage from "./goodreads/+page.svelte";
@@ -19,10 +17,6 @@ vi.mock("#lib/realtime/socket.js", () => ({
   socket: { on: vi.fn(), off: vi.fn() },
   onRealtimeEvent: vi.fn(() => () => {}),
 }));
-
-beforeEach(() => {
-  server.use(http.get(apiUrl("/import/quota"), () => HttpResponse.json({})));
-});
 
 // Each intro is a link to the source's export page followed by its hint,
 // whole: no sentence stitched from fragments that say the same thing twice.

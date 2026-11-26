@@ -71,6 +71,8 @@ history from before it was started.
 
 ### Changed
 
+- Imports are free and unlimited: no more "one import per domain" on the
+  free plan, so a second source or a fresh re-import is never refused.
 - Scheduled jobs take a lock in the database: a job runs once at a time, even
   if you run a second API container, and Admin › Jobs says so when you start
   one that is already running. The self-hosting docs now state that an

@@ -3,7 +3,6 @@ import type {
   ImportHistoryRunDto,
   ImportJobDto,
   ImportLastRunDto,
-  ImportQuotaDto,
   ImportSource,
   PagedResult,
 } from "@loomkeep/shared";
@@ -19,7 +18,6 @@ import { ImportAvailabilityResponseDto } from "./dto/import-availability-respons
 import { ImportHistoryRunResponseDto } from "./dto/import-history-run-response.dto";
 import { ImportJobResponseDto } from "./dto/import-job-response.dto";
 import { ImportLastRunResponseDto } from "./dto/import-last-run-response.dto";
-import { ImportQuotaResponseDto } from "./dto/import-quota-response.dto";
 import { ImportJobService } from "./import-job.service";
 
 /**
@@ -41,13 +39,6 @@ export class ImportController {
   @ApiOkResponse({ type: ImportAvailabilityResponseDto })
   availability(): ImportAvailabilityDto {
     return this.jobs.getAvailability();
-  }
-
-  /** Per domain, whether this user has already used their one free import in it. */
-  @Get("quota")
-  @ApiOkResponse({ type: ImportQuotaResponseDto })
-  quota(@CurrentUser() user: JwtPayload): Promise<ImportQuotaDto> {
-    return this.jobs.getQuota(user.sub);
   }
 
   /** The user's last import, whatever its outcome — `{ run: null }` if none. */

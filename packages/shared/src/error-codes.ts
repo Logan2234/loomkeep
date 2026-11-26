@@ -260,7 +260,6 @@ export const ErrorCode = {
   ImportJobAlreadyRunning: "import.job_already_running",
   ImportInterrupted: "import.interrupted",
   ImportUnknownSource: "import.unknown_source",
-  ImportFreeQuotaExceeded: "import.free_quota_exceeded",
   ImportSourceUnavailable: "import.source_unavailable",
   ImportSteamProfileNotFound: "import.steam_profile_not_found",
   ImportSteamLibraryPrivate: "import.steam_library_private",

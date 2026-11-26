@@ -299,8 +299,6 @@ const MESSAGES = {
   [ErrorCode.ImportJobAlreadyRunning]: () =>
     m.apierr_import_job_already_running(),
   [ErrorCode.ImportUnknownSource]: () => m.apierr_import_unknown_source(),
-  [ErrorCode.ImportFreeQuotaExceeded]: () =>
-    m.apierr_import_free_quota_exceeded(),
   [ErrorCode.ImportSourceUnavailable]: () =>
     m.apierr_import_source_unavailable(),
   [ErrorCode.ImportSteamProfileNotFound]: () =>

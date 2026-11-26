@@ -10,8 +10,6 @@ import { typedRequest } from "./generated/typed-request";
 
 export const getImportAvailability = () => typedRequest("/import/availability");
 
-export const getImportQuota = () => typedRequest("/import/quota");
-
 export const getLastImportRun = () => typedRequest("/import/last-run");
 
 export const getImportHistory = (page: number) =>
