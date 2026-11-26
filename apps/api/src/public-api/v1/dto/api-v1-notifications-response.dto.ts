@@ -1,4 +1,4 @@
-import type { ApiV1NotificationsDto } from "@loomkeep/shared";
+import type { ApiV1NotificationsDto } from "../api-v1.types";
 
 import { ApiProperty } from "@nestjs/swagger";
 import { ApiV1NotificationResponseDto } from "./api-v1-notification-response.dto";

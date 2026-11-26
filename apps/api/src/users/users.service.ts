@@ -10,10 +10,7 @@ import {
   UsernameAvailabilityDto,
   XpReason,
   type AccountDeletionSummaryDto,
-  type CsvExportDto,
-  type EntitlementDto,
   type SocialProfileDto,
-  type UserDataExportDto,
   type WidgetTokenDto,
 } from "@loomkeep/shared";
 import { HttpStatus, Injectable } from "@nestjs/common";
@@ -22,6 +19,10 @@ import { Prisma, type User } from "@prisma/client";
 import * as bcrypt from "bcryptjs";
 import { CsvExportService } from "../account/csv-export.service";
 import { DataExportService } from "../account/data-export.service";
+import {
+  type CsvExportDto,
+  type UserDataExportDto,
+} from "../account/data-export.types";
 import { ApiKeysService } from "../api-keys/api-keys.service";
 import {
   BCRYPT_ROUNDS,
@@ -36,6 +37,7 @@ import { HibpService } from "../common/hibp.service";
 import { parseEnumParam } from "../common/parse-enum-param.util";
 import { isUniqueViolation } from "../common/prisma-error.util";
 import { EntitlementService } from "../entitlements/entitlement.service";
+import { type EntitlementDto } from "../entitlements/entitlement.types";
 import { EventsGateway } from "../events/events.gateway";
 import { XpService } from "../gamification/xp.service";
 import { instanceSetting } from "../instance-settings/instance-settings.store";

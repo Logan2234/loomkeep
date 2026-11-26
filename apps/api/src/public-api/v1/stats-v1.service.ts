@@ -1,13 +1,10 @@
-import type {
-  ApiV1Phase,
-  ApiV1StatsSummaryDto,
-  StatsDomain,
-} from "@loomkeep/shared";
+import type { StatsDomain } from "@loomkeep/shared";
 import { STATS_DOMAINS, StatsStatusBucket } from "@loomkeep/shared";
 import { Injectable } from "@nestjs/common";
 import { BookLibraryService } from "../../books/book-library.service";
 import { StatsService } from "../../stats/stats.service";
 import { DomainGateService } from "../../users/domain-gate.service";
+import type { ApiV1Phase, ApiV1StatsSummaryDto } from "./api-v1.types";
 
 // Only the free tier of each stats section is exposed: premium figures stay
 // in the app, where they're gated.

@@ -1,8 +1,9 @@
-import type { ApiV1TargetDto, ApiV1WorkDto, Locale } from "@loomkeep/shared";
+import type { Locale } from "@loomkeep/shared";
 import { Injectable } from "@nestjs/common";
 import { MediaItemService } from "../../catalog/media-item.service";
 import { safeLang } from "../../common/locale.util";
 import { PrismaService } from "../../prisma/prisma.service";
+import type { ApiV1TargetDto, ApiV1WorkDto } from "./api-v1.types";
 
 /**
  * Titles in the language a script asks for (`?lang=`), else the account's.

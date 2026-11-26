@@ -1,4 +1,5 @@
-import type { DataExportCommentReaction, Emote } from "@loomkeep/shared";
+import type { Emote } from "@loomkeep/shared";
+import type { DataExportCommentReaction } from "../../../account/data-export.types";
 
 export class DataExportCommentReactionResponseDto implements DataExportCommentReaction {
   /**

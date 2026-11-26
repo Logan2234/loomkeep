@@ -1,4 +1,4 @@
-import type { ApiV1ListDetailDto } from "@loomkeep/shared";
+import type { ApiV1ListDetailDto } from "../api-v1.types";
 
 import { ApiProperty } from "@nestjs/swagger";
 import { ApiV1ListItemResponseDto } from "./api-v1-list-item-response.dto";

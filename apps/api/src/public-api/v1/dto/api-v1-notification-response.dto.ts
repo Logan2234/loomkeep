@@ -1,4 +1,4 @@
-import type { ApiV1NotificationDto } from "@loomkeep/shared";
+import type { ApiV1NotificationDto } from "../api-v1.types";
 
 export class ApiV1NotificationResponseDto implements ApiV1NotificationDto {
   /**

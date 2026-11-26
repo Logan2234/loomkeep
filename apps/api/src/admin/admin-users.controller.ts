@@ -16,7 +16,6 @@ import {
   type PagedResult,
   type ReportDto,
   type SessionDto,
-  type UserDataExportDto,
   type UserSummaryDto,
   ADMIN_USER_FILTERS,
   ADMIN_USER_LIBRARY_KINDS,
@@ -26,6 +25,7 @@ import {
   ModerationMeasure,
   ReportTargetType,
 } from "@loomkeep/shared";
+import { type UserDataExportDto } from "../account/data-export.types";
 
 import {
   Body,

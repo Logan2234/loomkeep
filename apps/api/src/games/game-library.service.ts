@@ -6,7 +6,6 @@ import {
   GAME_SORT_KEYS,
   type GameDetailDto,
   type GameEntryDto,
-  gameFinishedXp,
   type GameItemDto,
   GameOwnershipStatus,
   type GameSortKey,
@@ -15,9 +14,7 @@ import {
   type PagedResult,
   type PileSummaryDto,
   RealtimeEvent,
-  replayXp,
   ReviewTargetType,
-  sagaCompletionXp,
   SESSION_FILTER_PAUSED,
   TrackingCycleStatus,
   XpReason,
@@ -29,6 +26,11 @@ import { toDateOrNull, utcDateKey } from "../common/date.util";
 import { compareTitles, timeMs } from "../common/sort.util";
 import { EventsGateway } from "../events/events.gateway";
 import { AchievementService } from "../gamification/achievements/achievement.service";
+import {
+  gameFinishedXp,
+  replayXp,
+  sagaCompletionXp,
+} from "../gamification/xp-rules";
 import {
   addToList,
   applyBulkUpdate,

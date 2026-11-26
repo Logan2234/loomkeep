@@ -1,4 +1,4 @@
-import type { ApiV1ListItemDto } from "@loomkeep/shared";
+import type { ApiV1ListItemDto } from "../api-v1.types";
 
 import { ApiV1TargetResponseDto } from "./api-v1-target-response.dto";
 export class ApiV1ListItemResponseDto implements ApiV1ListItemDto {

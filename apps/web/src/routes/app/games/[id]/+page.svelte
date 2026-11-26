@@ -62,7 +62,7 @@
   import { createEntryTrackingMutations } from "#lib/entry-tracking-mutations.svelte.js";
   import { isFeatureNew } from "#lib/feature-badges.js";
   import { joinMeta } from "#lib/format.js";
-  import { gameReleaseLabel, isVagueRelease } from "#lib/game-release.js";
+  import { gameReleaseLabel } from "#lib/game-release.js";
   import { releaseDigestOff } from "#lib/release-alerts.js";
   import Tooltip from "#lib/components/Tooltip.svelte";
   import { prefersReducedMotion } from "#lib/motion.js";
@@ -72,7 +72,7 @@
     statusCorrectionLabel,
     cycleAwareStatusCorrections,
   } from "#lib/status-corrections.js";
-  import type { GameEntryDto } from "@loomkeep/shared";
+  import { isVagueGameRelease, type GameEntryDto } from "@loomkeep/shared";
   import { slide } from "svelte/transition";
   import GameSagaSection from "./components/GameSagaSection.svelte";
   import GameTimeToBeat from "./components/GameTimeToBeat.svelte";
@@ -584,7 +584,7 @@
               ? m.media_movie_reminder_active()
               : m.media_movie_reminder_enable()}
           </p>
-          {#if entry.releaseAlertsEnabled && isVagueRelease(detail?.releaseDatePrecision ?? null)}
+          {#if entry.releaseAlertsEnabled && isVagueGameRelease(detail?.releaseDatePrecision ?? null)}
             <p class="text-dim text-xs">
               {m.game_release_reminder_vague_hint()}
             </p>

@@ -33,7 +33,3 @@ export function gameReleaseLabel(
       return `${m.media_release_expected()} ${formatDate(date)}`;
   }
 }
-
-/** A reminder set on a vaguer date waits for IGDB to name a day or a month. */
-export const isVagueRelease = (precision: ReleaseDatePrecision | null) =>
-  precision === "QUARTER" || precision === "YEAR" || precision === "TBD";

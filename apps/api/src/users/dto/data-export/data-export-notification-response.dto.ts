@@ -1,4 +1,4 @@
-import type { DataExportNotification } from "@loomkeep/shared";
+import type { DataExportNotification } from "../../../account/data-export.types";
 
 export class DataExportNotificationResponseDto implements DataExportNotification {
   /**

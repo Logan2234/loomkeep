@@ -1,4 +1,4 @@
-import type { DataExportListMute } from "@loomkeep/shared";
+import type { DataExportListMute } from "../../../account/data-export.types";
 
 export class DataExportListMuteResponseDto implements DataExportListMute {
   /**

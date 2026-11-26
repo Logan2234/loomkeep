@@ -1,8 +1,5 @@
-import type {
-  Domain,
-  ResolvedLinkDto,
-  ResolveLinkResultDto,
-} from "@loomkeep/shared";
+import type { Domain } from "@loomkeep/shared";
+import type { ResolvedLinkDto, ResolveLinkResultDto } from "../link.types";
 
 export class ResolvedLinkResponseDto implements ResolvedLinkDto {
   domain!: Domain | null;

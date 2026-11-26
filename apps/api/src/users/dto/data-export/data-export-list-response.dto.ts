@@ -1,10 +1,12 @@
 import type {
-  DataExportList,
-  DataExportListItem,
   ListKind,
   ListVisibility,
   ReviewTargetType,
 } from "@loomkeep/shared";
+import type {
+  DataExportList,
+  DataExportListItem,
+} from "../../../account/data-export.types";
 
 class DataExportListItemResponseDto implements DataExportListItem {
   /**

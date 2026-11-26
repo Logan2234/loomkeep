@@ -1,4 +1,4 @@
-import type { DataExportSession } from "@loomkeep/shared";
+import type { DataExportSession } from "../../../account/data-export.types";
 
 export class DataExportSessionResponseDto implements DataExportSession {
   /**

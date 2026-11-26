@@ -1,4 +1,4 @@
-import type { DataExportActivity } from "@loomkeep/shared";
+import type { DataExportActivity } from "../../../account/data-export.types";
 
 export class DataExportActivityResponseDto implements DataExportActivity {
   /**

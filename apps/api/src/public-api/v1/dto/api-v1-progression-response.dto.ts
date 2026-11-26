@@ -1,4 +1,4 @@
-import type { ApiV1ProfileDto } from "@loomkeep/shared";
+import type { ApiV1ProfileDto } from "../api-v1.types";
 
 export class ApiV1ProgressionResponseDto implements NonNullable<
   ApiV1ProfileDto["progression"]

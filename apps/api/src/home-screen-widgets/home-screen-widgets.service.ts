@@ -2,16 +2,6 @@ import {
   type CalendarEntryDto,
   Domain,
   ErrorCode,
-  type HomeScreenWidgetAddedDto,
-  type HomeScreenWidgetFeedDto,
-  type HomeScreenWidgetPart,
-  type HomeScreenWidgetProgressionDto,
-  type HomeScreenWidgetReleaseDto,
-  type HomeScreenWidgetSessionDto,
-  type HomeScreenWidgetShowDto,
-  type HomeScreenWidgetStartTimerDto,
-  type HomeScreenWidgetTimerDto,
-  type HomeScreenWidgetWatchNextDto,
   levelProgress,
   type LibraryEntryDto,
   type SessionDomain,
@@ -32,6 +22,18 @@ import {
 } from "../stats/video-temporal.util";
 import { DomainGateService } from "../users/domain-gate.service";
 import { isSuspended } from "../users/suspension.util";
+import {
+  type HomeScreenWidgetAddedDto,
+  type HomeScreenWidgetFeedDto,
+  type HomeScreenWidgetPart,
+  type HomeScreenWidgetProgressionDto,
+  type HomeScreenWidgetReleaseDto,
+  type HomeScreenWidgetSessionDto,
+  type HomeScreenWidgetShowDto,
+  type HomeScreenWidgetStartTimerDto,
+  type HomeScreenWidgetTimerDto,
+  type HomeScreenWidgetWatchNextDto,
+} from "./home-screen-widget.types";
 import { signWidgetToken, verifyWidgetToken } from "./widget-token";
 
 /** The most a 5 × 5 widget shows: 3 × 3 posters. */

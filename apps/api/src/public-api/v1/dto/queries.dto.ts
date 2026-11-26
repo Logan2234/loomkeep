@@ -1,6 +1,4 @@
-import type { ApiV1LibrarySort, ApiV1Phase } from "@loomkeep/shared";
 import {
-  API_V1_LIBRARY_SORTS,
   Locale,
   SORT_ORDERS,
   STATS_DOMAINS,
@@ -11,6 +9,8 @@ import {
 import { ApiPropertyOptional } from "@nestjs/swagger";
 import { Transform, Type } from "class-transformer";
 import { IsIn, IsInt, IsISO8601, IsOptional, Max, Min } from "class-validator";
+import type { ApiV1LibrarySort, ApiV1Phase } from "../api-v1.types";
+import { API_V1_LIBRARY_SORTS } from "../api-v1.types";
 
 const API_V1_MAX_LIMIT = 100;
 

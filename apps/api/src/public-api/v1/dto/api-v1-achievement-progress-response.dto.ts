@@ -1,4 +1,4 @@
-import type { ApiV1AchievementDto } from "@loomkeep/shared";
+import type { ApiV1AchievementDto } from "../api-v1.types";
 
 export class ApiV1AchievementProgressResponseDto implements NonNullable<
   ApiV1AchievementDto["progress"]

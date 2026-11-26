@@ -1,4 +1,4 @@
-import { ErrorCode, XP_RULES, XpReason } from "@loomkeep/shared";
+import { ErrorCode, XpReason } from "@loomkeep/shared";
 import { HttpStatus, Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { Cron, CronExpression } from "@nestjs/schedule";
@@ -13,6 +13,7 @@ import { JobRunService, type JobSkipped } from "../jobs/job-run.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { isSocialEnabled } from "../social/social.config";
 import { isGamificationEnabled } from "./gamification.config";
+import { XP_RULES } from "./xp-rules";
 import {
   SUBJECT_SOURCE_TYPES,
   resolveXpSubjects,

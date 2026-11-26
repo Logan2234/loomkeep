@@ -1,3 +1,5 @@
+import type { SessionDomain } from "@loomkeep/shared";
+import { NextEpisodeResponseDto } from "../../library/dto/next-episode-response.dto";
 import type {
   HomeScreenWidgetAddedDto,
   HomeScreenWidgetFeedDto,
@@ -7,9 +9,7 @@ import type {
   HomeScreenWidgetShowDto,
   HomeScreenWidgetTimerDto,
   HomeScreenWidgetTokenDto,
-  SessionDomain,
-} from "@loomkeep/shared";
-import { NextEpisodeResponseDto } from "../../library/dto/next-episode-response.dto";
+} from "../home-screen-widget.types";
 
 export class HomeScreenWidgetTokenResponseDto implements HomeScreenWidgetTokenDto {
   token!: string;

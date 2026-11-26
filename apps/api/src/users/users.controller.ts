@@ -1,11 +1,8 @@
 import type {
   AccountDeletionScheduleDto,
   AccountDeletionSummaryDto,
-  CsvExportDto,
-  EntitlementDto,
   MigrationExportDto,
   SocialProfileDto,
-  UserDataExportDto,
   UserDto,
   UsernameAvailabilityDto,
   WidgetTokenDto,
@@ -28,6 +25,10 @@ import {
 import { ApiCreatedResponse, ApiOkResponse } from "@nestjs/swagger";
 import { Throttle } from "@nestjs/throttler";
 import type { FastifyReply } from "fastify";
+import type {
+  CsvExportDto,
+  UserDataExportDto,
+} from "../account/data-export.types";
 import { MigrationExportService } from "../account/migration-export.service";
 import { ScheduledDeletionService } from "../account/scheduled-deletion.service";
 import type { JwtPayload } from "../auth/decorators/current-user.decorator";
@@ -38,6 +39,7 @@ import {
   EXPORT_THROTTLE,
   SENSITIVE_ACTION_THROTTLE,
 } from "../common/throttle.constants";
+import type { EntitlementDto } from "../entitlements/entitlement.types";
 import { SocialProfileResponseDto } from "../social/dto/social-profile-response.dto";
 import { AccountDeletionScheduleResponseDto } from "./dto/account-deletion-schedule-response.dto";
 import { AccountDeletionSummaryResponseDto } from "./dto/account-deletion-summary-response.dto";

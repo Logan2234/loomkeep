@@ -1,4 +1,3 @@
-import { XP_RULES } from "@loomkeep/shared";
 import { Prisma } from "@prisma/client";
 import { vi, type Mock } from "vitest";
 import {
@@ -11,6 +10,7 @@ import { MediaItemService } from "../catalog/media-item.service";
 import { isUniqueViolation } from "../common/prisma-error.util";
 import { GameItemService } from "../games/game-item.service";
 import { GameLibraryService } from "../games/game-library.service";
+import { XP_RULES } from "../gamification/xp-rules";
 import { JOB_KEYS } from "../jobs/job-keys";
 import { LibraryService } from "../library/library.service";
 import { MusicItemService } from "../music/music-item.service";

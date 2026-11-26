@@ -1,11 +1,11 @@
 import type {
-  DataExportGameEntry,
   GameOwnershipStatus,
   GameSource,
   GameStatus,
   SessionSource,
   TrackingCycleStatus,
 } from "@loomkeep/shared";
+import type { DataExportGameEntry } from "../../../account/data-export.types";
 
 class DataExportGameExternalIdResponseDto {
   /**

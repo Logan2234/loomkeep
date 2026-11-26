@@ -1,4 +1,4 @@
-import type { DataExportApiKey } from "@loomkeep/shared";
+import type { DataExportApiKey } from "../../../account/data-export.types";
 
 export class DataExportApiKeyResponseDto implements DataExportApiKey {
   /**

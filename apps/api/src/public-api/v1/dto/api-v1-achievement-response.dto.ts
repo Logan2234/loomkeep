@@ -1,4 +1,4 @@
-import type { ApiV1AchievementDto } from "@loomkeep/shared";
+import type { ApiV1AchievementDto } from "../api-v1.types";
 
 import { ApiProperty } from "@nestjs/swagger";
 import { ApiV1AchievementProgressResponseDto } from "./api-v1-achievement-progress-response.dto";

@@ -1,10 +1,10 @@
 import type {
-  DataExportReport,
   ReportCategory,
   ReportMotif,
   ReportStatus,
   ReportTargetType,
 } from "@loomkeep/shared";
+import type { DataExportReport } from "../../../account/data-export.types";
 
 export class DataExportReportResponseDto implements DataExportReport {
   /**

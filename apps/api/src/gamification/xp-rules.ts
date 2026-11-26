@@ -1,4 +1,4 @@
-import { XpReason } from "./enums";
+import { XpReason } from "@loomkeep/shared";
 
 /**
  * One barème row: the XP a reason grants, the daily cap that bounds farming

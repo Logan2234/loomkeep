@@ -1,4 +1,4 @@
-import type { DataExportDevice } from "@loomkeep/shared";
+import type { DataExportDevice } from "../../../account/data-export.types";
 
 export class DataExportDeviceResponseDto implements DataExportDevice {
   /**

@@ -1,9 +1,4 @@
 import {
-  HOME_SCREEN_WIDGET_PARTS,
-  type HomeScreenWidgetFeedDto,
-  type HomeScreenWidgetPart,
-} from "@loomkeep/shared";
-import {
   Body,
   Controller,
   Get,
@@ -27,6 +22,11 @@ import {
 } from "./dto/home-screen-widget-response.dto";
 import { StartTimerDto } from "./dto/start-timer.dto";
 import { WatchNextDto } from "./dto/watch-next.dto";
+import {
+  HOME_SCREEN_WIDGET_PARTS,
+  type HomeScreenWidgetFeedDto,
+  type HomeScreenWidgetPart,
+} from "./home-screen-widget.types";
 import { HomeScreenWidgetsService } from "./home-screen-widgets.service";
 
 const TIMER_STEPS = {

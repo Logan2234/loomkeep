@@ -1,5 +1,5 @@
-import type { UserDataExportDto } from "@loomkeep/shared";
 import { ApiProperty } from "@nestjs/swagger";
+import type { UserDataExportDto } from "../../../account/data-export.types";
 import { SavedViewResponseDto } from "../../../saved-views/dto/saved-view.dto";
 import { UserResponseDto } from "../user-response.dto";
 import { DataExportAccountRecordResponseDto } from "./data-export-account-record-response.dto";

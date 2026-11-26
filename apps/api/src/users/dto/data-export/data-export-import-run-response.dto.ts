@@ -1,4 +1,4 @@
-import type { DataExportImportRun } from "@loomkeep/shared";
+import type { DataExportImportRun } from "../../../account/data-export.types";
 
 export class DataExportImportRunResponseDto implements DataExportImportRun {
   /**

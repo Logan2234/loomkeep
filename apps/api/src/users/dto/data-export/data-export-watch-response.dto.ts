@@ -1,4 +1,5 @@
-import type { DataExportWatch, MediaType } from "@loomkeep/shared";
+import type { MediaType } from "@loomkeep/shared";
+import type { DataExportWatch } from "../../../account/data-export.types";
 
 class DataExportWatchMediaResponseDto {
   /**

@@ -1,9 +1,4 @@
-import type {
-  ApiV1CalendarEpisodeDto,
-  ApiV1HistoryEventDto,
-  ApiV1LibraryEntryDto,
-  PagedResult,
-} from "@loomkeep/shared";
+import type { PagedResult } from "@loomkeep/shared";
 import { Controller, Get, Param, Query } from "@nestjs/common";
 import { ApiOperation, ApiParam } from "@nestjs/swagger";
 import { PublicApi } from "../../../api-keys/public-api.decorator";
@@ -15,6 +10,11 @@ import {
   ApiV1NotFound,
   ApiV1OkResponse,
 } from "../api-responses";
+import type {
+  ApiV1CalendarEpisodeDto,
+  ApiV1HistoryEventDto,
+  ApiV1LibraryEntryDto,
+} from "../api-v1.types";
 import {
   CalendarQueryDto,
   EntryHistoryQueryDto,

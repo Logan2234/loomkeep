@@ -29,7 +29,6 @@ import {
   movieReleaseDates,
   movieReleaseInfo,
   type MovieReplayDto,
-  nextInRewatch,
   type PagedResult,
   type PileSummaryDto,
   type ProgressDto,
@@ -37,13 +36,16 @@ import {
   RealtimeEvent,
   ReviewTargetType,
   runtimeFor,
-  sagaCompletionXp,
-  seasonCompletedXp,
-  seriesCompletedXp,
   type TrackedMediaDto,
   XpReason,
 } from "@loomkeep/shared";
+import {
+  sagaCompletionXp,
+  seasonCompletedXp,
+  seriesCompletedXp,
+} from "../gamification/xp-rules";
 import { revokeEntryXp } from "../work/entry-lifecycle.util";
+import { nextInRewatch } from "./rewatch.util";
 
 import { HttpStatus, Injectable } from "@nestjs/common";
 import type {
