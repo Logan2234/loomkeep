@@ -8,7 +8,7 @@ import { MusicModule } from "../music/music.module";
 import { NotificationsModule } from "../notifications/notifications.module";
 import { ReportsModule } from "../reports/reports.module";
 import { SocialModule } from "../social/social.module";
-import { DomainGateModule } from "../users/domain-gate.module";
+import { UserGatesModule } from "../users/user-gates.module";
 import { AppBadgeService } from "./app-badge.service";
 import { ChatCommandsService } from "./chat-commands.service";
 import { ChatWorkService } from "./chat-work.service";
@@ -29,7 +29,7 @@ import { WorkThreadService } from "./work-thread.service";
     GamesModule,
     BooksModule,
     MusicModule,
-    DomainGateModule,
+    UserGatesModule,
     LibraryModule,
     SocialModule,
     NotificationsModule,

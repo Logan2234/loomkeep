@@ -20,6 +20,8 @@ import { HttpStatus, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { Prisma, type User } from "@prisma/client";
 import * as bcrypt from "bcryptjs";
+import { CsvExportService } from "../account/csv-export.service";
+import { DataExportService } from "../account/data-export.service";
 import { ApiKeysService } from "../api-keys/api-keys.service";
 import {
   BCRYPT_ROUNDS,
@@ -51,8 +53,6 @@ import {
   reencodeAvatar,
   STORED_AVATAR_MIME_TYPE,
 } from "./avatar.util";
-import { CsvExportService } from "./csv-export.service";
-import { DataExportService } from "./data-export.service";
 import type { ChangeEmailDto } from "./dto/change-email.dto";
 import type { ChangePasswordDto } from "./dto/change-password.dto";
 import type { ConfirmEmailChangeDto } from "./dto/confirm-email-change.dto";

@@ -1,7 +1,7 @@
 import { vi } from "vitest";
+import type { ScheduledDeletionService } from "../account/scheduled-deletion.service";
 import type { JwtPayload } from "../auth/decorators/current-user.decorator";
 import { fakeReply } from "../test-utils/fake-reply";
-import type { ScheduledDeletionService } from "./scheduled-deletion.service";
 import { UsersController } from "./users.controller";
 import type { UsersService } from "./users.service";
 

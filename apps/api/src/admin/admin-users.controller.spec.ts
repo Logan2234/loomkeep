@@ -1,5 +1,8 @@
 import { Prisma } from "@prisma/client";
 import { vi, type Mock } from "vitest";
+import { AccountDeletionService } from "../account/account-deletion.service";
+import type { DataExportService } from "../account/data-export.service";
+import type { ScheduledDeletionService } from "../account/scheduled-deletion.service";
 import type { AuthService } from "../auth/auth.service";
 import type { JwtPayload } from "../auth/decorators/current-user.decorator";
 import type { ChatService } from "../chat/chat.service";
@@ -18,9 +21,6 @@ import type { ReportService } from "../reports/report.service";
 import type { ReviewService } from "../reviews/review.service";
 import type { SecurityEventService } from "../security/security-event.service";
 import type { FollowService } from "../social/follow.service";
-import { AccountDeletionService } from "../users/account-deletion.service";
-import type { DataExportService } from "../users/data-export.service";
-import type { ScheduledDeletionService } from "../users/scheduled-deletion.service";
 import { AdminUsersController } from "./admin-users.controller";
 import { AdminUsersService } from "./admin-users.service";
 

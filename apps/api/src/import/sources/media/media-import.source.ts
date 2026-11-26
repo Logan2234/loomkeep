@@ -24,14 +24,10 @@ import { MediaItemService } from "../../../catalog/media-item.service";
 import { assertMediaReleased } from "../../../catalog/movie-release.util";
 import { AppException } from "../../../common/app.exception";
 import { mapWithConcurrency } from "../../../common/concurrency.util";
+import { MediaEntryImportWriter } from "../../../library/media-entry-import.writer";
 import type { ListService } from "../../../lists/list.service";
 import { PrismaService } from "../../../prisma/prisma.service";
 import { ReviewService } from "../../../reviews/review.service";
-import {
-  LOAN_INCLUDE,
-  loanUpdate,
-  ownershipSourceUpdate,
-} from "../../../work/entry-loan.util";
 import {
   entryStatusFromProgress,
   furthestStatus,
@@ -110,7 +106,12 @@ export abstract class MediaImportSource<
     protected readonly reviews: ReviewService,
     /** Only for sources that export lists (Letterboxd, IMDb). */
     protected readonly lists?: ListService,
-  ) {}
+  ) {
+    this.entryWriter = new MediaEntryImportWriter(prisma);
+  }
+
+  /** The library module's writes: an import never writes its tables itself. */
+  protected readonly entryWriter: MediaEntryImportWriter;
 
   abstract parseInput(input: string): TParsed;
 
@@ -358,14 +359,7 @@ export abstract class MediaImportSource<
         match.type,
       );
       if (replaced.has(media.id)) return;
-      await this.prisma.$transaction([
-        this.prisma.episodeWatch.deleteMany({
-          where: { userId, episode: { season: { mediaItemId: media.id } } },
-        }),
-        this.prisma.mediaEntry.deleteMany({
-          where: { userId, mediaItemId: media.id },
-        }),
-      ]);
+      await this.entryWriter.removeTitle(userId, media.id);
       replaced.add(media.id);
     };
 
@@ -421,17 +415,7 @@ export abstract class MediaImportSource<
     // the library then would be the old failure all over again.
     if (decisions.overwrite && replaced.size > 0) {
       const kept = [...replaced];
-      await this.prisma.$transaction([
-        this.prisma.episodeWatch.deleteMany({
-          where: {
-            userId,
-            episode: { season: { mediaItemId: { notIn: kept } } },
-          },
-        }),
-        this.prisma.mediaEntry.deleteMany({
-          where: { userId, mediaItemId: { notIn: kept } },
-        }),
-      ]);
+      await this.entryWriter.removeAllExcept(userId, kept);
     }
 
     if (parsed.lists && parsed.lists.length > 0) {
@@ -633,10 +617,7 @@ export abstract class MediaImportSource<
     const watched = movie.watched && (await this.isReleased(media.id));
     // A movie is a single sitting — start and finish share the same instant.
     const watchedAt = watched ? movie.watchedAt : null;
-    const existing = await this.prisma.mediaEntry.findUnique({
-      where: { userId_mediaItemId: { userId, mediaItemId: media.id } },
-      select: { status: true, notes: true, startedAt: true, finishedAt: true },
-    });
+    const existing = await this.entryWriter.findForMerge(userId, media.id);
     const status = furthestStatus(
       existing?.status ?? null,
       movie.status ?? (watched ? "COMPLETED" : "PLANNED"),
@@ -644,32 +625,18 @@ export abstract class MediaImportSource<
     // Only ever turns favorite ON — an importer never has grounds to unset
     // something the user set manually in the app.
     const favorite = movie.favorite === true;
-    const entry = await this.prisma.mediaEntry.upsert({
-      where: { userId_mediaItemId: { userId, mediaItemId: media.id } },
-      // Re-importing over an entry adds what the source knows and never
-      // takes anything away: no status moved back, and no date or note the
-      // entry already has replaced (the user may have corrected it here).
-      update: {
+    const entry = await this.entryWriter.mergeMovie(
+      userId,
+      media.id,
+      existing,
+      {
         status,
-        startedAt: existing?.startedAt ? undefined : (watchedAt ?? undefined),
-        finishedAt: existing?.finishedAt ? undefined : (watchedAt ?? undefined),
-        favorite: favorite ? true : undefined,
-        notes: existing?.notes ? undefined : (movie.notes ?? undefined),
-      },
-      create: {
-        userId,
-        mediaItemId: media.id,
-        status,
-        startedAt: watchedAt,
-        finishedAt: watchedAt,
+        watchedAt,
         favorite,
-        notes: movie.notes ?? null,
-        // The date the user added it on the source, so "recently added" keeps
-        // meaning something after an import. Only on create: an existing entry
-        // already has the user's own history.
-        createdAt: movie.addedAt ?? undefined,
+        notes: movie.notes,
+        addedAt: movie.addedAt,
       },
-    });
+    );
 
     if (watched && movie.rewatchedAt.length > 0) {
       await this.recordMovieReplays(entry.id, movie.rewatchedAt);
@@ -826,14 +793,7 @@ export abstract class MediaImportSource<
     mediaEntryId: string,
     dates: Date[],
   ): Promise<void> {
-    const existing = await this.prisma.movieReplay.count({
-      where: { mediaEntryId },
-    });
-    if (existing > 0) return; // Idempotent re-run.
-
-    await this.prisma.movieReplay.createMany({
-      data: dates.map((finishedAt) => ({ mediaEntryId, finishedAt })),
-    });
+    await this.entryWriter.addMovieReplays(mediaEntryId, dates);
   }
 
   /** Persist the series (on-demand cache) and index its stored episodes. */
@@ -874,19 +834,12 @@ export abstract class MediaImportSource<
     // One row per watch: an export claiming millions (a corrupt or forged
     // TV Time `cpt`) would otherwise be allocated in full and take the API down.
     totalWatches = Math.min(totalWatches, MAX_WATCHES_PER_EPISODE);
-    const existing = await this.prisma.episodeWatch.count({
-      where: { userId, episodeId },
-    });
-    if (existing > 0) return 0; // Idempotent re-run.
-
-    await this.prisma.episodeWatch.createMany({
-      data: Array.from({ length: totalWatches }, () => ({
-        userId,
-        episodeId,
-        watchedAt,
-      })),
-    });
-    return totalWatches;
+    return this.entryWriter.addEpisodeWatches(
+      userId,
+      episodeId,
+      totalWatches,
+      watchedAt,
+    );
   }
 
   private async upsertSeriesEntry(
@@ -908,17 +861,10 @@ export abstract class MediaImportSource<
     });
     if (!ref) return incoming; // upsertFromSource ran just before, so this always exists.
 
-    const existing = await this.prisma.mediaEntry.findUnique({
-      where: { userId_mediaItemId: { userId, mediaItemId: ref.mediaItemId } },
-      select: {
-        status: true,
-        notes: true,
-        startedAt: true,
-        finishedAt: true,
-        ownershipStatus: true,
-        ...LOAN_INCLUDE,
-      },
-    });
+    const existing = await this.entryWriter.findForMerge(
+      userId,
+      ref.mediaItemId,
+    );
     const status = furthestStatus(existing?.status ?? null, incoming);
     const inferredWindow = watchWindow(show, status === "COMPLETED");
     const startedAt = show.startedAt ?? inferredWindow.startedAt;
@@ -926,44 +872,15 @@ export abstract class MediaImportSource<
     // Only ever turns favorite ON — an importer never has grounds to unset
     // something the user set manually in the app.
     const favorite = show.favorite === true;
-    await this.prisma.mediaEntry.upsert({
-      where: { userId_mediaItemId: { userId, mediaItemId: ref.mediaItemId } },
-      // Same rule as films: the status only moves forward, and a date is
-      // written only where the entry has none.
-      update: {
-        status,
-        startedAt: existing?.startedAt ? undefined : (startedAt ?? undefined),
-        finishedAt: existing?.finishedAt
-          ? undefined
-          : (finishedAt ?? undefined),
-        favorite: favorite ? true : undefined,
-        notes: existing?.notes ? undefined : (show.notes ?? undefined),
-        ownershipStatus: show.ownershipStatus,
-        // A new ownership status drops the source and loan it no longer fits.
-        ...(existing
-          ? {
-              ownershipSource: ownershipSourceUpdate(
-                existing.ownershipStatus,
-                show,
-              ),
-              ...loanUpdate(existing, {
-                ownershipStatus: show.ownershipStatus,
-              }),
-            }
-          : { ownershipSource: show.ownershipSource }),
-      },
-      create: {
-        userId,
-        mediaItemId: ref.mediaItemId,
-        status,
-        startedAt,
-        finishedAt,
-        favorite,
-        notes: show.notes ?? null,
-        ownershipStatus: show.ownershipStatus ?? "NONE",
-        ownershipSource: show.ownershipSource ?? null,
-        createdAt: show.addedAt ?? undefined,
-      },
+    await this.entryWriter.mergeSeries(userId, ref.mediaItemId, existing, {
+      status,
+      startedAt,
+      finishedAt,
+      favorite,
+      notes: show.notes,
+      ownershipStatus: show.ownershipStatus,
+      ownershipSource: show.ownershipSource,
+      addedAt: show.addedAt,
     });
 
     await this.writeRating(

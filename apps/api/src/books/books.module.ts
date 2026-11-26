@@ -4,7 +4,7 @@ import { GamificationModule } from "../gamification/gamification.module";
 import { JobsModule } from "../jobs/jobs.module";
 import { ListsModule } from "../lists/lists.module";
 import { ReviewsModule } from "../reviews/reviews.module";
-import { UsersModule } from "../users/users.module";
+import { UserGatesModule } from "../users/user-gates.module";
 import { BookItemService } from "./book-item.service";
 import { BookLibraryService } from "./book-library.service";
 import { BookSagaService } from "./book-saga.service";
@@ -16,7 +16,7 @@ import { OpenLibraryProvider } from "./providers/open-library.provider";
 // BookItemService, hence the export).
 @Module({
   imports: [
-    UsersModule,
+    UserGatesModule,
     ReviewsModule,
     GamificationModule,
     ListsModule,

@@ -28,6 +28,8 @@ import {
 import { ApiCreatedResponse, ApiOkResponse } from "@nestjs/swagger";
 import { Throttle } from "@nestjs/throttler";
 import type { FastifyReply } from "fastify";
+import { MigrationExportService } from "../account/migration-export.service";
+import { ScheduledDeletionService } from "../account/scheduled-deletion.service";
 import type { JwtPayload } from "../auth/decorators/current-user.decorator";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
 import { Public } from "../auth/decorators/public.decorator";
@@ -58,8 +60,6 @@ import { UploadAvatarDto } from "./dto/upload-avatar.dto";
 import { UserResponseDto } from "./dto/user-response.dto";
 import { UsernameAvailabilityResponseDto } from "./dto/username-availability-response.dto";
 import { WidgetTokenResponseDto } from "./dto/widget-token-response.dto";
-import { MigrationExportService } from "./migration-export.service";
-import { ScheduledDeletionService } from "./scheduled-deletion.service";
 import { UsersService } from "./users.service";
 
 // Once carried out, the deletion can't be undone: the web always asks for a

@@ -1,4 +1,5 @@
 import { Module } from "@nestjs/common";
+import { AccountModule } from "../account/account.module";
 import { ApiKeysModule } from "../api-keys/api-keys.module";
 import { BooksModule } from "../books/books.module";
 import { CatalogModule } from "../catalog/catalog.module";
@@ -10,7 +11,7 @@ import { MusicModule } from "../music/music.module";
 import { NotificationsModule } from "../notifications/notifications.module";
 import { ReviewsModule } from "../reviews/reviews.module";
 import { StatsModule } from "../stats/stats.module";
-import { UsersModule } from "../users/users.module";
+import { UserGatesModule } from "../users/user-gates.module";
 import {
   ExportV1Controller,
   ListsV1Controller,
@@ -42,7 +43,8 @@ import { WorkTitlesService } from "./v1/work-titles.service";
 @Module({
   imports: [
     ApiKeysModule,
-    UsersModule,
+    AccountModule,
+    UserGatesModule,
     LibraryModule,
     GamesModule,
     BooksModule,

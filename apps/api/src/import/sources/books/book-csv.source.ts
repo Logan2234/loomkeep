@@ -17,17 +17,13 @@ import {
   ReviewTargetType,
 } from "@loomkeep/shared";
 import assert from "node:assert/strict";
+import { BookEntryImportWriter } from "../../../books/book-entry-import.writer";
 import { BookItemService } from "../../../books/book-item.service";
 import { AppException } from "../../../common/app.exception";
 import { mapWithConcurrency, refKey } from "../../../common/concurrency.util";
 import { PrismaService } from "../../../prisma/prisma.service";
 import { ReviewService } from "../../../reviews/review.service";
 import { AgeGateService } from "../../../users/age-gate.service";
-import {
-  LOAN_INCLUDE,
-  loanUpdate,
-  ownershipSourceUpdate,
-} from "../../../work/entry-loan.util";
 import {
   type CommitDecisions,
   type ImportReq,
@@ -95,7 +91,12 @@ export abstract class BookCsvSource<
     protected readonly bookItemService: BookItemService,
     protected readonly ageGate: AgeGateService,
     protected readonly reviews: ReviewService,
-  ) {}
+  ) {
+    this.entryWriter = new BookEntryImportWriter(prisma);
+  }
+
+  /** The books module's writes: an import never writes its tables itself. */
+  protected readonly entryWriter: BookEntryImportWriter;
 
   /** Source-specific: parse the raw export CSV into normalised rows. */
   protected abstract parseCsv(csv: string): TRow[];
@@ -222,9 +223,7 @@ export abstract class BookCsvSource<
     // Nothing written replaces nothing, rather than emptying the library.
     if (decisions.overwrite && written.size > 0) {
       // Reading cycles cascade on BookEntry delete.
-      await this.prisma.bookEntry.deleteMany({
-        where: { userId, bookItemId: { notIn: [...written] } },
-      });
+      await this.entryWriter.removeAllExcept(userId, [...written]);
     }
 
     const tiles: ImportReportTile[] = STATUS_GROUPS.flatMap((status) => {
@@ -275,9 +274,7 @@ export abstract class BookCsvSource<
     const bookItem = await this.bookItemService.persistDetails(source, details);
 
     if (replace && !replace.has(bookItem.id)) {
-      await this.prisma.bookEntry.deleteMany({
-        where: { userId, bookItemId: bookItem.id },
-      });
+      await this.entryWriter.removeTitle(userId, bookItem.id);
     }
 
     // A finished book with a known length reads as fully progressed.
@@ -296,26 +293,13 @@ export abstract class BookCsvSource<
       ownershipStatus: row.ownershipStatus,
     };
     // Only a first-time import backfills reading cycles from "Read Count".
-    const existing = await this.prisma.bookEntry.findUnique({
-      where: { userId_bookItemId: { userId, bookItemId: bookItem.id } },
-      select: { id: true, ownershipStatus: true, ...LOAN_INCLUDE },
-    });
-    const ownership = { ownershipStatus: row.ownershipStatus };
-    const entry = await this.prisma.bookEntry.upsert({
-      where: { userId_bookItemId: { userId, bookItemId: bookItem.id } },
-      // A new ownership status drops the source and loan it no longer fits.
-      update: existing
-        ? {
-            ...data,
-            ownershipSource: ownershipSourceUpdate(
-              existing.ownershipStatus,
-              ownership,
-            ),
-            ...loanUpdate(existing, ownership),
-          }
-        : data,
-      create: { userId, bookItemId: bookItem.id, ...data },
-    });
+    const existing = await this.entryWriter.findForMerge(userId, bookItem.id);
+    const entry = await this.entryWriter.write(
+      userId,
+      bookItem.id,
+      existing,
+      data,
+    );
 
     // The rating now lives in Review (the single source of truth).
     if (row.rating !== null) {
@@ -329,8 +313,8 @@ export abstract class BookCsvSource<
 
     if (!existing && status !== "TO_READ") {
       const count = status === "READ" ? Math.max(1, row.readCount) : 1;
-      await this.prisma.bookReading.createMany({
-        data: Array.from({ length: count }, (_, index) => ({
+      await this.entryWriter.backfillReadings(
+        Array.from({ length: count }, (_, index) => ({
           bookEntryId: entry.id,
           number: index + 1,
           status:
@@ -352,7 +336,7 @@ export abstract class BookCsvSource<
               : null,
           legacyIncomplete: count > 1,
         })),
-      });
+      );
     }
 
     return bookItem.id;

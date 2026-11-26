@@ -13,6 +13,7 @@ import type {
 import { Controller, Get, Param, Query, UseGuards } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { ApiOperation, ApiParam } from "@nestjs/swagger";
+import { DataExportService } from "../../../account/data-export.service";
 import { PublicApi } from "../../../api-keys/public-api.decorator";
 import type { JwtPayload } from "../../../auth/decorators/current-user.decorator";
 import { CurrentUser } from "../../../auth/decorators/current-user.decorator";
@@ -20,7 +21,6 @@ import { parsePageQuery } from "../../../common/pagination.util";
 import { GamificationFeatureGuard } from "../../../gamification/gamification-feature.guard";
 import { NotificationService } from "../../../notifications/notification.service";
 import { ReviewService } from "../../../reviews/review.service";
-import { DataExportService } from "../../../users/data-export.service";
 import { UserDataExportResponseDto } from "../../../users/dto/data-export/user-data-export-response.dto";
 import {
   ApiV1BadRequest,

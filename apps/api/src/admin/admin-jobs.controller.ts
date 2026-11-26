@@ -8,6 +8,8 @@ import {
   Post,
 } from "@nestjs/common";
 import { ApiOkResponse } from "@nestjs/swagger";
+import { InactiveAccountService } from "../account/inactive-account.service";
+import { ScheduledDeletionService } from "../account/scheduled-deletion.service";
 import { ApiKeyLifecycleService } from "../api-keys/api-key-lifecycle.service";
 import { InvitationService } from "../auth/invitation.service";
 import { BookItemService } from "../books/book-item.service";
@@ -23,8 +25,6 @@ import { NotificationService } from "../notifications/notification.service";
 import { PausedReminderService } from "../notifications/paused-reminder.service";
 import { ReportService } from "../reports/report.service";
 import { SecurityEventService } from "../security/security-event.service";
-import { InactiveAccountService } from "../users/inactive-account.service";
-import { ScheduledDeletionService } from "../users/scheduled-deletion.service";
 import { AdminOnly } from "./admin-only.decorator";
 import { BackupService } from "./backup.service";
 import { JobListResponseResponseDto } from "./dto/job-list-response.dto";

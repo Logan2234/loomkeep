@@ -6,17 +6,12 @@ import type {
   ImportReport,
   ImportReportTile,
 } from "@loomkeep/shared";
-import {
-  Domain,
-  ErrorCode,
-  GameOwnershipStatus,
-  GameSource,
-  GameStatus,
-} from "@loomkeep/shared";
+import { Domain, ErrorCode, GameSource, GameStatus } from "@loomkeep/shared";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { AppException } from "../../../common/app.exception";
 import { HTTP_TIMEOUT_MS } from "../../../common/http.util";
+import { GameEntryImportWriter } from "../../../games/game-entry-import.writer";
 import { GameItemService } from "../../../games/game-item.service";
 import { IgdbProvider } from "../../../games/providers/igdb.provider";
 import { PrismaService } from "../../../prisma/prisma.service";
@@ -74,7 +69,12 @@ export class SteamImportSource implements ImportReq<SteamParsed> {
     private readonly gameItemService: GameItemService,
     private readonly ageGate: AgeGateService,
     private readonly quota: QuotaTrackerService,
-  ) {}
+  ) {
+    this.gameWriter = new GameEntryImportWriter(prisma);
+  }
+
+  /** The games module's write: an import never writes its tables itself. */
+  private readonly gameWriter: GameEntryImportWriter;
 
   parseInput(input: string): SteamParsed {
     return { rawInput: steamProfileRef(input), playtimeByKey: new Map() };
@@ -265,26 +265,10 @@ export class SteamImportSource implements ImportReq<SteamParsed> {
         proposed.get(key),
       );
       const playtimeMinutes = parsed.playtimeByKey.get(key) ?? 0;
-      const syncedAt = new Date();
-      // Every newly imported game is, by definition, owned digitally on
-      // Steam. A reimport only refreshes Steam's own counter, however: the
-      // user's Loomkeep status, notes, dates, ownership and sessions survive.
-      const createData = {
+      await this.gameWriter.syncSteamGame(userId, gameItem.id, {
         status,
         playtimeMinutes,
-        steamPlaytimeMinutes: playtimeMinutes,
-        steamSyncedAt: syncedAt,
-        ownershipStatus: GameOwnershipStatus.DIGITAL,
-        ownershipSource: "Steam",
-      };
-      await this.prisma.gameEntry.upsert({
-        where: { userId_gameItemId: { userId, gameItemId: gameItem.id } },
-        update: {
-          playtimeMinutes,
-          steamPlaytimeMinutes: playtimeMinutes,
-          steamSyncedAt: syncedAt,
-        },
-        create: { userId, gameItemId: gameItem.id, ...createData },
+        syncedAt: new Date(),
       });
       tally.set(status, (tally.get(status) ?? 0) + 1);
       totalMinutes += playtimeMinutes;
