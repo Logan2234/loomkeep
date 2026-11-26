@@ -23,6 +23,7 @@ import { EntitlementService } from "../../entitlements/entitlement.service";
 import { CalendarService } from "../../library/calendar.service";
 import { notificationCopy } from "../../notifications/notification-copy";
 import { PrismaService } from "../../prisma/prisma.service";
+import { saveUserUrlToken } from "../../users/user-url-token.writer";
 import type { ReleaseFeed, ReleaseFeedEntry } from "./feed.util";
 import { buildCalendarIcs, buildPremieresIcs } from "./ics.util";
 
@@ -304,11 +305,7 @@ export class CalendarFeedService {
 
   private async issueToken(userId: string): Promise<CalendarTokenDto> {
     const token = randomToken(24, "base64url");
-    await this.prisma.userUrlToken.upsert({
-      where: { userId },
-      create: { userId, calendarToken: token },
-      update: { calendarToken: token },
-    });
+    await saveUserUrlToken(this.prisma, userId, "calendarToken", token);
     return { token };
   }
 

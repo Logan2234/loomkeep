@@ -5,6 +5,7 @@ import { AppException } from "../../common/app.exception";
 import { randomToken } from "../../common/crypto.util";
 import { EntitlementService } from "../../entitlements/entitlement.service";
 import { PrismaService } from "../../prisma/prisma.service";
+import { saveUserUrlToken } from "../../users/user-url-token.writer";
 import type { ArrFeedItem } from "./arr-feed.util";
 
 const ITEM_SELECT = {
@@ -115,11 +116,7 @@ export class ArrFeedService {
 
   private async issueToken(userId: string): Promise<ArrTokenDto> {
     const token = randomToken(24, "base64url");
-    await this.prisma.userUrlToken.upsert({
-      where: { userId },
-      create: { userId, arrToken: token },
-      update: { arrToken: token },
-    });
+    await saveUserUrlToken(this.prisma, userId, "arrToken", token);
     return { token };
   }
 

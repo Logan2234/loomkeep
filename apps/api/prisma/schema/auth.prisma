@@ -129,27 +129,6 @@ model Invitation {
   @@index([email])
 }
 
-// One pending email change per row; a fresh request invalidates the previous
-// one (see UsersController.changeEmail). The new address only replaces
-// User.email once its code is confirmed (UsersController.confirmEmailChange).
-model EmailChangeRequest {
-  id        String   @id @default(cuid())
-  userId    String
-  newEmail  String
-  codeHash  String   @unique
-  // Failed confirm attempts; the request is deleted after 5 (see
-  // MAX_EMAIL_CHANGE_ATTEMPTS) to bound brute-forcing the 6-digit code.
-  attempts  Int      @default(0)
-  expiresAt DateTime
-  createdAt DateTime @default(now())
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  // Daily purge of unconfirmed requests (SecurityEventService.purgeExpired).
-  @@index([expiresAt])
-}
-
 // One row per recovery code (bcrypt-hashed, BCRYPT_ROUNDS), single-use —
 // consumption deletes the row rather than flagging it. Deliberately NOT
 // @unique on codeHash: unlike EmailChangeRequest.codeHash (SHA-256 of a

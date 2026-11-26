@@ -3,9 +3,8 @@ import { XpReason } from "@loomkeep/shared";
 /**
  * One barème row: the XP a reason grants, the daily cap that bounds farming
  * it, the table its `XpEntry.sourceId` points into, and whether it only
- * applies when SOCIAL_ENABLED is on. Pure data, no Prisma — consumed by the
- * API's `XpService` (crediting) and reconciliation job, and by the web for
- * any "how do I earn XP" copy.
+ * applies when SOCIAL_ENABLED is on. Pure data, no Prisma — consumed by
+ * `XpService` (crediting) and the reconciliation job.
  *
  * `dailyCap` is omitted only for a reason that is inherently unique by
  * nature (a one-off milestone, e.g. DOMAIN_STARTED) — every repeatable

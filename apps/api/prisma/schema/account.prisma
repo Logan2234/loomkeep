@@ -1,0 +1,11 @@
+// Owned by apps/api/src/account: what deleting an account leaves behind.
+
+// One row per self-requested account deletion actually carried out, with
+// no link to the account: only what Admin › Statistics shows.
+model AccountDeletionFeedback {
+  id        String                 @id @default(cuid())
+  reason    AccountDeletionReason?
+  deletedAt DateTime               @default(now())
+
+  @@index([deletedAt])
+}

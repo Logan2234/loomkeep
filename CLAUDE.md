@@ -14,9 +14,10 @@ music), open-core under AGPL-3.0. pnpm monorepo:
   JSDoc description and `@example`; `generate:openapi` fails on a gap.
 - `apps/mobile` — Capacitor Android shell that loads the instance's `/app`
   rather than bundling the web ([ADR 0009](docs/adr/0009-capacitor-remote-shell.md)).
-- `packages/shared` — DTOs/enums, consumed from its built `dist/`
-  ([ADR 0007](docs/adr/0007-shared-package-compiled.md)): run
-  `pnpm build:package` after any change there.
+- `packages/shared` — DTOs/enums and rules both apps use, consumed from its
+  built `dist/` ([ADR 0007](docs/adr/0007-shared-package-compiled.md)): run
+  `pnpm build:package` after any change there. A type or rule only the API
+  reads lives in `apps/api` (`<subject>.types.ts`).
 
 Two destinations: Logan's hosted VPS (auto-deployed by `ci.yml`) and
 self-hosting via `docker/`.
@@ -62,7 +63,9 @@ wording change or a rename.
 - The Prisma schema is one file per owning API module in
   `apps/api/prisma/schema/` (`games.prisma`…): a new table goes in the file of
   the module that writes it; generators, datasource and enums several files
-  share sit in `schema.prisma`.
+  share sit in `schema.prisma`. Only that module writes it
+  (`src/table-ownership.spec.ts`): another one calls the owner or publishes
+  an event, never a new entry in the spec's list of known crossings.
 - TMDB movie/TV ids are separate namespaces: every call carries a
   `MediaType`. TVDB ids are captured from TMDB because the TV Time import
   reconciles through them.
