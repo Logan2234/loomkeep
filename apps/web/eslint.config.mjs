@@ -40,6 +40,37 @@ const noModuleLevelMessage = {
   },
 };
 
+const NO_NATIVE_CONFIRM = [
+  {
+    selector:
+      "CallExpression[callee.object.name='window'][callee.property.name='confirm']",
+    message: "Use ConfirmationModal instead of the native confirm dialog.",
+  },
+  {
+    selector:
+      "CallExpression[callee.object.name='globalThis'][callee.property.name='confirm']",
+    message: "Use ConfirmationModal instead of the native confirm dialog.",
+  },
+];
+
+// A query key written by hand drifts from the one keys.ts gives the same
+// data, and the invalidation then misses it.
+const QUERY_KEYS_FROM_KEYS_TS = {
+  selector:
+    "CallExpression[callee.name=/^createApi(Query|Mutation|InfiniteQuery)$/] Property[key.name=/^(key|invalidates)$/] ArrayExpression > Literal",
+  message:
+    "Take query keys from keys.ts (#lib/api/keys.js), and add one there if it is missing.",
+};
+
+// Component tests stub the API with msw (src/lib/test/msw.ts) so the real
+// query layer, errors and translations run.
+const NO_MOCKED_API_LAYER = {
+  selector:
+    "CallExpression[callee.object.name='vi'][callee.property.name=/^(mock|doMock)$/][arguments.0.value=/^[#$]lib\\/api(\\/|$)/]",
+  message:
+    "Stub the API with msw (src/lib/test/msw.ts) instead of mocking #lib/api.",
+};
+
 export default defineConfig(
   // The service worker is compiled in SvelteKit's own worker context (no DOM
   // globals); it is type-checked by svelte-check, not by this ESLint config.
@@ -104,18 +135,9 @@ export default defineConfig(
       ],
       "no-restricted-syntax": [
         "error",
-        {
-          selector:
-            "CallExpression[callee.object.name='window'][callee.property.name='confirm']",
-          message:
-            "Use ConfirmationModal instead of the native confirm dialog.",
-        },
-        {
-          selector:
-            "CallExpression[callee.object.name='globalThis'][callee.property.name='confirm']",
-          message:
-            "Use ConfirmationModal instead of the native confirm dialog.",
-        },
+        ...NO_NATIVE_CONFIRM,
+        QUERY_KEYS_FROM_KEYS_TS,
+        NO_MOCKED_API_LAYER,
       ],
       // The app navigates with plain string hrefs/goto and is served from the
       // root — adopting resolve() everywhere is base-path support (a feature),
@@ -129,6 +151,27 @@ export default defineConfig(
       "@typescript-eslint/no-unused-vars": [
         "error",
         { argsIgnorePattern: "^_", varsIgnorePattern: "^_" },
+      ],
+    },
+  },
+  {
+    // The installed APK can be releases behind the web: a plugin is reached
+    // through lib/native/, whose wrappers check Capacitor.isPluginAvailable()
+    // first. @capacitor/core itself (isNativePlatform…) is fine anywhere.
+    files: ["src/**/*.ts", "src/**/*.svelte"],
+    ignores: ["src/lib/native/**"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["@capacitor/*", "!@capacitor/core", "@capacitor-*/*"],
+              message:
+                "Reach a native plugin through src/lib/native/, whose wrappers check Capacitor.isPluginAvailable() first.",
+            },
+          ],
+        },
       ],
     },
   },

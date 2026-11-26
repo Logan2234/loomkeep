@@ -22,16 +22,3 @@ model ApiKey {
   @@index([userId])
   @@index([expiresAt])
 }
-
-// One row per external provider per UTC day — the raw series the /admin/services
-// page aggregates into "today" and "this month" depending on each provider's
-// documented quota window. Never purged: a few rows per provider per day is
-// negligible volume.
-model ApiCallCounter {
-  provider String
-  // The UTC day (startOfUtcDay), a calendar day rather than an instant.
-  day      DateTime @db.Date
-  count    Int      @default(0)
-
-  @@id([provider, day])
-}

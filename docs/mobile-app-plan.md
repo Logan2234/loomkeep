@@ -5,17 +5,8 @@ dans les PR citées et dans l'historique de ce fichier.
 
 ## Choix d'architecture
 
-- **Coque distante** : l'app Capacitor affiche le `/app` de l'instance
-  (loomkeep.app par défaut) au lieu d'embarquer le web. Embarqué, le web
-  tournerait sur `https://localhost` (cookies `SameSite=Strict` devenus
-  tiers, donc un second transport d'authentification) et resterait figé à
-  la version de l'APK, ce qui ferait de l'API interne un contrat public.
-  En distant, web et API restent synchrones : une PR web arrive sur les
-  téléphones au déploiement, seul un changement dans `apps/mobile` demande
-  un nouvel APK.
-- **APK installés anciens** : le web n'appelle un plugin natif que si
-  `Capacitor.isPluginAvailable()` dit que l'APK l'a. Un plugin s'ajoute à
-  la même version dans `apps/web` et `apps/mobile`.
+- **Coque distante, et APK installés anciens** : voir
+  [ADR 0009](adr/0009-capacitor-remote-shell.md).
 - **Instance choisie à l'exécution** (MOB-15) : `server.url` est fixé à la
   création du pont, donc `MainActivity` le prend dans les préférences avant
   `super.onCreate`, et changer d'instance recrée l'activité.

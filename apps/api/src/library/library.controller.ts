@@ -30,15 +30,15 @@ import {
 import { ApiCreatedResponse, ApiOkResponse } from "@nestjs/swagger";
 import type { JwtPayload } from "../auth/decorators/current-user.decorator";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
-import {
-  BulkEntriesResultResponseDto,
-  BulkEntriesTargetBody,
-} from "../common/dto/bulk-entries.dto";
 import { PagedResponseDto } from "../common/dto/paged-response.dto";
-import { parseListEntriesQuery } from "../common/entry-lifecycle.util";
 import { toQueryArray } from "../common/query-array.util";
 import { PileSummaryResponseDto } from "../stats/dto/pile-summary-response.dto";
 import { DomainGateService } from "../users/domain-gate.service";
+import {
+  BulkEntriesResultResponseDto,
+  BulkEntriesTargetBody,
+} from "../work/dto/bulk-entries.dto";
+import { parseListEntriesQuery } from "../work/entry-lifecycle.util";
 import { CalendarService } from "./calendar.service";
 import { AddMovieReplayDto } from "./dto/add-movie-replay.dto";
 import { BulkUpdateEntriesBody } from "./dto/bulk-update-entries.dto";

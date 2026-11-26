@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
+import { startOfUtcDay } from "../common/date.util";
 import { PrismaService } from "../prisma/prisma.service";
-import { startOfUtcDay } from "./date.util";
 
 /**
  * Documented free-tier daily quotas, for the providers that publish one.

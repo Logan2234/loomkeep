@@ -8,7 +8,7 @@ import { ConfigService } from "@nestjs/config";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { vi } from "vitest";
-import type { QuotaTrackerService } from "../../common/quota-tracker.service";
+import type { QuotaTrackerService } from "../../quota/quota-tracker.service";
 import { mockFetchByUrl } from "../../test-utils/mock-fetch";
 import { OmdbService } from "../omdb.service";
 import { TmdbProvider } from "./tmdb.provider";

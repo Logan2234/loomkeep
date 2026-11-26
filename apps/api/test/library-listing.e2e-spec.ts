@@ -1,11 +1,11 @@
 import { INestApplication } from "@nestjs/common";
 import request from "supertest";
 import { App } from "supertest/types";
-import { BookLibraryService } from "./../src/books/book-library.service";
-import { GameLibraryService } from "./../src/games/game-library.service";
-import { LibraryService } from "./../src/library/library.service";
-import { MusicLibraryService } from "./../src/music/music-library.service";
-import type { PrismaService } from "./../src/prisma/prisma.service";
+import { BookLibraryService } from "../src/books/book-library.service";
+import { GameLibraryService } from "../src/games/game-library.service";
+import { LibraryService } from "../src/library/library.service";
+import { MusicLibraryService } from "../src/music/music-library.service";
+import type { PrismaService } from "../src/prisma/prisma.service";
 import { createE2eApp, e2eUser } from "./e2e-app";
 
 /**

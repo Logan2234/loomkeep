@@ -24,14 +24,14 @@ import { MediaItemService } from "../../../catalog/media-item.service";
 import { assertMediaReleased } from "../../../catalog/movie-release.util";
 import { AppException } from "../../../common/app.exception";
 import { mapWithConcurrency } from "../../../common/concurrency.util";
+import type { ListService } from "../../../lists/list.service";
+import { PrismaService } from "../../../prisma/prisma.service";
+import { ReviewService } from "../../../reviews/review.service";
 import {
   LOAN_INCLUDE,
   loanUpdate,
   ownershipSourceUpdate,
-} from "../../../common/entry-loan.util";
-import type { ListService } from "../../../lists/list.service";
-import { PrismaService } from "../../../prisma/prisma.service";
-import { ReviewService } from "../../../reviews/review.service";
+} from "../../../work/entry-loan.util";
 import {
   entryStatusFromProgress,
   furthestStatus,

@@ -8,6 +8,7 @@ import {
 import { BookItemService } from "../books/book-item.service";
 import { BookLibraryService } from "../books/book-library.service";
 import { MediaItemService } from "../catalog/media-item.service";
+import { isUniqueViolation } from "../common/prisma-error.util";
 import { GameItemService } from "../games/game-item.service";
 import { GameLibraryService } from "../games/game-library.service";
 import { JOB_KEYS } from "../jobs/job-keys";
@@ -16,7 +17,6 @@ import { MusicItemService } from "../music/music-item.service";
 import { MusicLibraryService } from "../music/music-library.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import { allDomainsConfig, stubSagas } from "../test-utils/stubs";
-import { isUniqueViolation } from "./prisma-error.util";
 
 /**
  * Parity across the four library domains. Each has its own services and

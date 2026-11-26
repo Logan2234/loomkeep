@@ -13,7 +13,7 @@ import type { ChatWorkService, WorkCard } from "./chat-work.service";
 import type { ChatService } from "./chat.service";
 
 // The pile's item ids, straight into a film's page.
-vi.mock("../common/work-href.util", () => ({
+vi.mock("../work/work-href.util", () => ({
   resolveWorkHref: (_prisma: unknown, _type: string, id: string) =>
     Promise.resolve(`/app/media/movie/${id}`),
 }));

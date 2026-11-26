@@ -201,6 +201,7 @@ export const keys = {
   // Outside ["chat"]: a reconnection refetches what's under it, and these
   // are catalogue searches.
   search: {
+    all: () => ["search"] as const,
     works: (query: string, scope: "local" | "all") =>
       ["search", "works", scope, query] as const,
   },

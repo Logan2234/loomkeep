@@ -1,10 +1,10 @@
 import * as Sentry from "@sentry/node";
 import { vi } from "vitest";
-import type { QuotaTrackerService } from "../common/quota-tracker.service";
 import type { MailService } from "../mail/mail.service";
 import { AdminAlertService } from "../notifications/admin-alert.service";
 import type { PushService } from "../notifications/push.service";
 import type { PrismaService } from "../prisma/prisma.service";
+import type { QuotaTrackerService } from "../quota/quota-tracker.service";
 import { QuotaAlertService } from "./quota-alert.service";
 
 vi.mock("@sentry/node", () => ({ captureMessage: vi.fn() }));

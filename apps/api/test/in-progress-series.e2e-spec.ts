@@ -1,9 +1,9 @@
 import { INestApplication } from "@nestjs/common";
 import request from "supertest";
 import { App } from "supertest/types";
-import { PausedReminderService } from "./../src/notifications/paused-reminder.service";
-import type { PrismaService } from "./../src/prisma/prisma.service";
-import { StatsService } from "./../src/stats/stats.service";
+import { PausedReminderService } from "../src/notifications/paused-reminder.service";
+import type { PrismaService } from "../src/prisma/prisma.service";
+import { StatsService } from "../src/stats/stats.service";
 import { authCookies, createE2eApp, e2eUser } from "./e2e-app";
 
 /**

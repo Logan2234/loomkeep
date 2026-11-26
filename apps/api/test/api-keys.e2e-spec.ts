@@ -1,7 +1,7 @@
 import { INestApplication } from "@nestjs/common";
 import request from "supertest";
 import { App } from "supertest/types";
-import { InstanceSettingsService } from "./../src/instance-settings/instance-settings.service";
+import { InstanceSettingsService } from "../src/instance-settings/instance-settings.service";
 import { authCookies, createE2eApp, e2eUser } from "./e2e-app";
 
 /**

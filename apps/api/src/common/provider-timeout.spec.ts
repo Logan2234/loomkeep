@@ -3,7 +3,7 @@ import type { ConfigService } from "@nestjs/config";
 import { vi } from "vitest";
 import { OpenLibraryProvider } from "../books/providers/open-library.provider";
 import { MusicBrainzProvider } from "../music/providers/musicbrainz.provider";
-import type { QuotaTrackerService } from "./quota-tracker.service";
+import type { QuotaTrackerService } from "../quota/quota-tracker.service";
 
 afterEach(() => {
   vi.unstubAllGlobals();

@@ -13,7 +13,8 @@ const { scanNatively } = vi.hoisted(() => ({
 }));
 vi.mock("$app/state", () => import("#lib/test/navigation.svelte.js"));
 vi.mock("$app/navigation", () => import("#lib/test/navigation.svelte.js"));
-vi.mock("#lib/native/scan.js", () => ({
+vi.mock("#lib/native/scan.js", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("#lib/native/scan.js")>()),
   isNativeScanAvailable: () => true,
   scanNatively,
 }));

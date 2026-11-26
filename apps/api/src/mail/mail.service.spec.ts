@@ -2,7 +2,7 @@ import { ALERTS, type AlertDefinition } from "@loomkeep/shared";
 import { Logger } from "@nestjs/common";
 import nodemailer from "nodemailer";
 import { vi, type Mock } from "vitest";
-import type { QuotaTrackerService } from "../common/quota-tracker.service";
+import type { QuotaTrackerService } from "../quota/quota-tracker.service";
 import { MAIL_COPY } from "./mail.i18n";
 import { MailService } from "./mail.service";
 

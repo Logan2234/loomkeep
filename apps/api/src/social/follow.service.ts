@@ -10,7 +10,6 @@ import {
   type UserSummaryDto,
 } from "@loomkeep/shared";
 import { HttpStatus, Injectable } from "@nestjs/common";
-import type { Prisma } from "@prisma/client";
 import { AppException } from "../common/app.exception";
 import { type ParsedPage, toPagedResult } from "../common/pagination.util";
 import { EventsGateway } from "../events/events.gateway";
@@ -26,17 +25,10 @@ import { NotificationService } from "../notifications/notification.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { toUserSummaryDto } from "../users/avatar.util";
 import { isSuspended } from "../users/suspension.util";
+import { USER_SUMMARY_SELECT } from "../users/user.queries";
 import { BlockService } from "./block.service";
 import { VisibilityService } from "./visibility.service";
 import { computeIsFriend } from "./visibility.util";
-
-const USER_SUMMARY_SELECT = {
-  id: true,
-  username: true,
-  displayName: true,
-  profileAccess: true,
-  avatarUpdatedAt: true,
-} satisfies Prisma.UserSelect;
 
 @Injectable()
 export class FollowService {

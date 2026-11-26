@@ -28,9 +28,9 @@ import {
 } from "../common/external-id.util";
 import { isUniqueViolation } from "../common/prisma-error.util";
 import { toRatingStep } from "../common/rating-step.validator";
-import { resolveWorkLink } from "../common/work-href.util";
 import { assertGameReleased } from "../games/game-release.util";
 import { AchievementService } from "../gamification/achievements/achievement.service";
+import { resolveWorkLink } from "../work/work-href.util";
 
 import {
   ACHIEVEMENT_KEYS_ON_REVIEW_VOTE_UP,
@@ -49,6 +49,7 @@ import { VisibilityService } from "../social/visibility.service";
 import { resolveReviewVisibility } from "../social/visibility.util";
 import { toUserSummaryDto } from "../users/avatar.util";
 import { preferencesOf } from "../users/preferences.util";
+import { USER_SUMMARY_SELECT } from "../users/user.queries";
 
 // How far past the threshold a burst of concurrent upvotes may land.
 const VOTE_NOTIFY_WINDOW = 5;
@@ -68,11 +69,7 @@ type ReviewRow = {
 };
 
 const AUTHOR_SELECT = {
-  id: true,
-  username: true,
-  displayName: true,
-  profileAccess: true,
-  avatarUpdatedAt: true,
+  ...USER_SUMMARY_SELECT,
   // Only ever used locally to build the withXp gating map below — never
   // forwarded to toUserSummaryDto/the client (that would leak the setting
   // itself, not just its effect).

@@ -12,8 +12,8 @@ import {
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { AppException } from "../../common/app.exception";
 import { fetchJson, HTTP_TIMEOUT_MS } from "../../common/http.util";
-import { QuotaTrackerService } from "../../common/quota-tracker.service";
 import { RequestThrottle } from "../../common/request-throttle";
+import { QuotaTrackerService } from "../../quota/quota-tracker.service";
 import {
   MAIN_LINE_RELATIONS,
   toCastDetail,

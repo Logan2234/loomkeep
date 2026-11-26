@@ -1,8 +1,8 @@
 import { INestApplication } from "@nestjs/common";
 import request from "supertest";
 import { App } from "supertest/types";
-import { LibraryService } from "./../src/library/library.service";
-import type { PrismaService } from "./../src/prisma/prisma.service";
+import { LibraryService } from "../src/library/library.service";
+import type { PrismaService } from "../src/prisma/prisma.service";
 import { authCookies, createE2eApp, e2eUser } from "./e2e-app";
 
 /**

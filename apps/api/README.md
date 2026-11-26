@@ -27,36 +27,20 @@ decisions and dev conventions shared with the web app, see the root
 - **Swagger UI** on `/swagger`, dev-only (`NODE_ENV=development`) — the
   `@nestjs/swagger` import is dynamic so it's never bundled in production.
 
-## Modules (`src/`)
+## Layout (`src/`)
 
-Domain modules, one per bounded concern:
+One folder per NestJS module, named after what it owns: its controller,
+services, DTOs and, for the tables it writes, its file in `prisma/schema/`.
+Three folders are not domains:
 
-- `catalog/` — the `CatalogProvider` interface + TMDB/AniList/IGDB/Open
-  Library/MusicBrainz providers, and `MediaItemService.upsertFromSource()`
-  (the single entry point that persists a catalogue item on-demand).
-- `library/` — a user's tracked items, watch/read/listen progress.
-- `import/` — interactive import pipelines (TV Time, Trakt, Simkl, IMDb,
-  Letterboxd, AniList, MyAnimeList, Steam, Goodreads, StoryGraph, Babelio)
-  under `sources/`,
-  behind a shared analyze → review → commit flow.
-- `reviews/`, `comments/`, `social/`, `reports/` — the social feature set,
-  gated behind `SOCIAL_ENABLED` (see
-  [social/README.md](src/social/README.md) for the full design).
-- `lists/` — user-curated, optionally shared collections.
-- `notifications/`, `jobs/` — in-app notifications, Web Push, and the
-  scheduled jobs (`@nestjs/schedule`) that scan tracked shows for new
-  episodes. `JobRunService` records every run for the admin "Jobs" page and
-  optionally pings Healthchecks.io per job — see
-  [Scheduled jobs](https://docs.loomkeep.app/self-hosting/scheduled-jobs/).
-- `stats/` — per-domain and admin aggregate statistics.
-- `admin/` — moderation queue, ops summaries.
-- `auth/`, `users/`, `security/` — auth flows, account management,
-  login-failure tracking.
-- `mail/` — SMTP sending (password reset, verification, alerts) via
-  `nodemailer`; silently disabled when `SMTP_*` is unset.
-- `health/` — `/health` endpoint used by Docker healthchecks and the
-  Homepage dashboard widget.
-- `common/`, `config/` — cross-cutting utilities and env/config loading.
+- `common/` — infrastructure and pure helpers (HTTP, logging, CORS,
+  pagination, errors). It imports no other module (`common-boundary.spec.ts`).
+- `work/` — what the four domains (media, games, books, music) share: entry
+  lifecycle, loans, bulk edits, work links, and `domain-parity.spec.ts`.
+- `ee/` — premium features under LICENSE-EE, registered only by
+  `app.module.ts`.
+
+The decisions behind this shape are in [docs/adr/](../../docs/adr/README.md).
 
 ## Commands
 

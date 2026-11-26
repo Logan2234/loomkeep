@@ -29,15 +29,15 @@ import { ApiOkResponse } from "@nestjs/swagger";
 import type { JwtPayload } from "../auth/decorators/current-user.decorator";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
 import { AppException } from "../common/app.exception";
-import {
-  BulkEntriesResultResponseDto,
-  BulkEntriesTargetBody,
-} from "../common/dto/bulk-entries.dto";
 import { PagedResponseDto } from "../common/dto/paged-response.dto";
-import { parseListEntriesQuery } from "../common/entry-lifecycle.util";
 import { parseEnumParam } from "../common/parse-enum-param.util";
 import { PileSummaryResponseDto } from "../stats/dto/pile-summary-response.dto";
 import { DomainGateService } from "../users/domain-gate.service";
+import {
+  BulkEntriesResultResponseDto,
+  BulkEntriesTargetBody,
+} from "../work/dto/bulk-entries.dto";
+import { parseListEntriesQuery } from "../work/entry-lifecycle.util";
 import { BulkUpdateMusicEntriesBody } from "./dto/bulk-update-music-entries.dto";
 import {
   MusicDetailResponseDto,

@@ -43,7 +43,7 @@ import {
   type TrackedMediaDto,
   XpReason,
 } from "@loomkeep/shared";
-import { revokeEntryXp } from "../common/entry-lifecycle.util";
+import { revokeEntryXp } from "../work/entry-lifecycle.util";
 
 import { HttpStatus, Injectable } from "@nestjs/common";
 import type {
@@ -56,18 +56,22 @@ import { MediaItemService } from "../catalog/media-item.service";
 import { assertMediaReleased } from "../catalog/movie-release.util";
 import { resolveWatchRegion } from "../catalog/watch-region.util";
 import { AppException } from "../common/app.exception";
+import { toDateOrNull, utcDateKey } from "../common/date.util";
+import { canonicalExternalId } from "../common/external-id.util";
+import { compareTitles, timeMs } from "../common/sort.util";
+import { EventsGateway } from "../events/events.gateway";
+import { AchievementService } from "../gamification/achievements/achievement.service";
 import {
   addToList,
   applyBulkUpdate,
   applyToEntries,
   assertBulkTarget,
   assertBulkUpdate,
-} from "../common/bulk-entries.util";
-import { toDateOrNull, utcDateKey } from "../common/date.util";
+} from "../work/bulk-entries.util";
 import type {
   EntryStatusChange,
   ListEntriesFilters as SharedListEntriesFilters,
-} from "../common/entry-lifecycle.util";
+} from "../work/entry-lifecycle.util";
 import {
   assertEntryOwnership,
   awardNewEntryXp,
@@ -77,20 +81,8 @@ import {
   polymorphicTargetCleanup,
   RECENTLY_UPDATED_FIRST,
   searchTerm,
-} from "../common/entry-lifecycle.util";
-import { canonicalExternalId } from "../common/external-id.util";
-import { compareTitles, timeMs } from "../common/sort.util";
-import { EventsGateway } from "../events/events.gateway";
-import { AchievementService } from "../gamification/achievements/achievement.service";
+} from "../work/entry-lifecycle.util";
 
-import {
-  isLoanActive,
-  LOAN_INCLUDE,
-  loanFields,
-  loanUpdate,
-  loanWhere,
-  ownershipSourceUpdate,
-} from "../common/entry-loan.util";
 import { retryAfterUniqueRace } from "../common/prisma-error.util";
 import { ACHIEVEMENT_KEYS_BY_XP_REASON } from "../gamification/achievements/triggers";
 import {
@@ -105,6 +97,14 @@ import { ActivityService } from "../social/activity.service";
 import { summarizePile } from "../stats/pile.util";
 import { AgeGateService } from "../users/age-gate.service";
 import { preferencesOf } from "../users/preferences.util";
+import {
+  isLoanActive,
+  LOAN_INCLUDE,
+  loanFields,
+  loanUpdate,
+  loanWhere,
+  ownershipSourceUpdate,
+} from "../work/entry-loan.util";
 import { AddMovieReplayDto } from "./dto/add-movie-replay.dto";
 import type { BulkUpdateEntriesBody } from "./dto/bulk-update-entries.dto";
 import { UpdateEntryDto } from "./dto/update-entry.dto";

@@ -15,7 +15,7 @@ import { ConfigService } from "@nestjs/config";
 import { AppException } from "../../common/app.exception";
 import { chunk } from "../../common/array.util";
 import { fetchJson, identifyingUserAgent } from "../../common/http.util";
-import { QuotaTrackerService } from "../../common/quota-tracker.service";
+import { QuotaTrackerService } from "../../quota/quota-tracker.service";
 import type {
   BookCatalogProvider,
   ProviderBookDetails,

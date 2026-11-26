@@ -26,7 +26,6 @@ import {
   type ParsedPage,
 } from "../common/pagination.util";
 import { isUniqueViolation } from "../common/prisma-error.util";
-import { resolveWorkHref } from "../common/work-href.util";
 import { EventsGateway } from "../events/events.gateway";
 import { JOB_KEYS } from "../jobs/job-keys";
 import { JobRunService, type JobSkipped } from "../jobs/job-run.service";
@@ -36,6 +35,8 @@ import { notificationCopy } from "../notifications/notification-copy";
 import { NotificationService } from "../notifications/notification.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { toUserSummaryDto } from "../users/avatar.util";
+import { USER_SUMMARY_SELECT } from "../users/user.queries";
+import { resolveWorkHref } from "../work/work-href.util";
 
 const EXCERPT_LENGTH = 120;
 
@@ -67,14 +68,6 @@ type ReviewTarget = {
   targetId: string;
   user: { username: string } | null;
 };
-
-const REPORTER_SELECT = {
-  id: true,
-  username: true,
-  displayName: true,
-  profileAccess: true,
-  avatarUpdatedAt: true,
-} satisfies Prisma.UserSelect;
 
 @Injectable()
 export class ReportService {
@@ -314,7 +307,7 @@ export class ReportService {
       skip,
       take: take + 1,
       include: {
-        reporter: { select: REPORTER_SELECT },
+        reporter: { select: USER_SUMMARY_SELECT },
         targetOwner: { select: { username: true } },
       },
     });
@@ -448,7 +441,7 @@ export class ReportService {
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],
       take: DEFAULT_PAGE_SIZE,
       include: {
-        reporter: { select: REPORTER_SELECT },
+        reporter: { select: USER_SUMMARY_SELECT },
         targetOwner: { select: { username: true } },
       },
     });

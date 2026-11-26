@@ -26,13 +26,13 @@ import {
   toPagedResult,
   type ParsedPage,
 } from "../common/pagination.util";
+import { EventsGateway } from "../events/events.gateway";
+import { AchievementService } from "../gamification/achievements/achievement.service";
 import {
   resolveWorkHref,
   resolveWorkLink,
   workTargetExists,
-} from "../common/work-href.util";
-import { EventsGateway } from "../events/events.gateway";
-import { AchievementService } from "../gamification/achievements/achievement.service";
+} from "../work/work-href.util";
 
 import { ACHIEVEMENT_KEYS_ON_COMMENT_POSTED } from "../gamification/achievements/triggers";
 import { isGamificationEnabled } from "../gamification/gamification.config";
@@ -45,6 +45,7 @@ import { BlockService } from "../social/block.service";
 import { anonymizeAuthor } from "../social/pseudonym.util";
 import { VisibilityService } from "../social/visibility.service";
 import { toUserSummaryDto } from "../users/avatar.util";
+import { USER_SUMMARY_SELECT } from "../users/user.queries";
 import type { CreateCommentBody } from "./dto/create-comment.dto";
 import type { UpdateCommentBody } from "./dto/update-comment.dto";
 
@@ -64,11 +65,7 @@ export const REPLY_PREVIEW_LIMIT = 3;
 const COMMENT_SEARCH_LIMIT = 20;
 
 const AUTHOR_SELECT = {
-  id: true,
-  username: true,
-  displayName: true,
-  profileAccess: true,
-  avatarUpdatedAt: true,
+  ...USER_SUMMARY_SELECT,
   // Only ever used locally to build the withXp gating map below — never
   // forwarded to toUserSummaryDto/the client (that would leak the setting
   // itself, not just its effect).

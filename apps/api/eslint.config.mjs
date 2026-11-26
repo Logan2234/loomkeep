@@ -5,6 +5,21 @@ const BARE_EXCEPTION_NAMES =
   "BadRequest|NotFound|Forbidden|Unauthorized|Conflict|Gone|" +
   "BadGateway|ServiceUnavailable|InternalServerError";
 
+const NO_BARE_EXCEPTION = {
+  selector: `NewExpression[callee.name=/^(${BARE_EXCEPTION_NAMES})Exception$/]`,
+  message:
+    "Throw an AppException (apps/api/src/common/app.exception.ts) with an ErrorCode from @loomkeep/shared instead — a bare NestJS exception has no code the web app can translate.",
+};
+
+// Premium is a seam, not sold yet: isEffectivelyPremium() answers true for
+// everyone while the premium-features flag is off. Only the raw-plan readers
+// listed below the rule call hasPremium() (see CLAUDE.md).
+const NO_RAW_PREMIUM_CHECK = {
+  selector: "CallExpression[callee.property.name='hasPremium']",
+  message:
+    "Call EntitlementService.isEffectivelyPremium(): hasPremium() is the raw plan, read only by GET /users/me/entitlement and the API quota.",
+};
+
 export default defineConfig(
   ...baseConfig(import.meta.dirname),
   // Plain CJS vitest setup scripts, not part of the app tsconfig (no allowJs) —
@@ -20,14 +35,23 @@ export default defineConfig(
     // A new bare exception would bypass the translated error-code contract.
     files: ["src/**/*.ts"],
     ignores: ["src/**/*.spec.ts"],
+    rules: { "no-restricted-syntax": ["error", NO_BARE_EXCEPTION] },
+  },
+  {
+    // Same files minus the raw-plan readers. Repeats NO_BARE_EXCEPTION: a
+    // later block's no-restricted-syntax replaces an earlier one's.
+    files: ["src/**/*.ts"],
+    ignores: [
+      "src/**/*.spec.ts",
+      "src/entitlements/entitlement.service.ts",
+      "src/users/users.service.ts",
+      "src/api-keys/api-rate-limit.service.ts",
+    ],
     rules: {
       "no-restricted-syntax": [
         "error",
-        {
-          selector: `NewExpression[callee.name=/^(${BARE_EXCEPTION_NAMES})Exception$/]`,
-          message:
-            "Throw an AppException (apps/api/src/common/app.exception.ts) with an ErrorCode from @loomkeep/shared instead — a bare NestJS exception has no code the web app can translate.",
-        },
+        NO_BARE_EXCEPTION,
+        NO_RAW_PREMIUM_CHECK,
       ],
     },
   },
