@@ -34,7 +34,8 @@ L'application les lit et ne les écrit jamais.
 - Deux écritures simultanées ne se marchent pas dessus : le trigger recompte
   depuis les lignes, dans la transaction, au lieu d'incrémenter une valeur lue
   avant.
-- Le calcul est invisible depuis le TypeScript : il se lit dans la migration.
-  Écrire l'une de ces colonnes depuis l'app produirait une valeur aussitôt
-  écrasée ou fausse, sans erreur. Un garde-fou dans les tests le signalerait
-  (audit d'architecture du 26/11/2026, API-14).
+- Le calcul se lit dans la migration, pas dans le TypeScript. Écrire l'une de
+  ces colonnes depuis l'app produirait une valeur aussitôt écrasée ou fausse,
+  sans erreur : `src/prisma/trigger-columns.spec.ts` refuse toute écriture de
+  ces noms, par Prisma comme en SQL brut, et un commentaire `///` sur chaque
+  champ du schéma le dit à qui lit le modèle (repris dans l'ERD).

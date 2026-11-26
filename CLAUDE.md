@@ -68,7 +68,7 @@ wording change or a rename.
   reconciles through them.
 - `MediaEntry.watchedEpisodes`/`lastWatchedAt` and `MediaItem.episodeCount`
   are maintained by Postgres triggers — never write them from the app
-  ([ADR 0006](docs/adr/0006-progress-counters-by-trigger.md)).
+  (`trigger-columns.spec.ts`, [ADR 0006](docs/adr/0006-progress-counters-by-trigger.md)).
 - Import sources share a base class per domain (`MediaImportSource`,
   `BookCsvSource`): a new source only supplies its parsing.
 - Shared enums (`packages/shared/src/enums.ts`) mirror Prisma enums with
