@@ -9,7 +9,7 @@ comment next to it, in its compose or Caddy file.
 
 ## Images & deploy
 
-The `docker-push` job in `.github/workflows/ci.yml` builds
+The `docker-push` job in `.github/workflows/images.yml` (called by `ci.yml`) builds
 `apps/api/Dockerfile` and `apps/web/Dockerfile` on every push to `main`, for
 `amd64` and `arm64`, each on a runner of that architecture. `docker-tag`
 then tags both platforms together (arm64 is optional: if it fails, amd64 is
@@ -26,12 +26,12 @@ and deletes the rest every Monday, with the platform images and
 attestations that belong to them (the "untagged" versions in the package
 view). The `unknown/unknown` platform there is each image's provenance and
 SBOM attestation (BuildKit's, `sbom: true` in `docker-push`), not an image.
-`attest-images` then signs each tagged index's provenance with Sigstore and
+`attest-images` (`image-checks.yml`) then signs each tagged index's provenance with Sigstore and
 pushes it to GHCR as a referrer; it runs after `docker-tag`, outside
 `ready-to-ship`, so it never holds a deploy back.
 
 `.github/workflows/ci.yml` ends every `main` run by redeploying the VPS,
-once every check passed and the images are tagged (its `deploy` job; a run
+once every check passed and the images are tagged (`deploy.yml`'s `deploy` job; a run
 whose commit is no longer `main`'s head leaves it to the newer one): it resets the checkout to that commit and runs
 `.github/deploy/vps-deploy.sh`. That script dumps the database (encrypted,
 the last 5 kept in `~/loomkeep-predeploy/`), pulls the commit's images, and
@@ -49,7 +49,7 @@ release; nothing is tagged by hand:
 
 1. CI passes on the bump commit; `docker-tag` adds the version tags and
    moves `latest`.
-2. The `release` job creates the GitHub release `v1.12.0` as a draft
+2. `release.yml`'s `release` job creates the GitHub release `v1.12.0` as a draft
    targeting that commit, its notes being the version's `CHANGELOG.md`
    section.
 3. `publish-release-apk` attaches `loomkeep-android.apk`, the Play bundle

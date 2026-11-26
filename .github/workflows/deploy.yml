@@ -1,0 +1,105 @@
+name: Deploy
+
+# Redeploys the hosted instance with a main commit once every check passed,
+# then says how it went on ntfy. Called by ci.yml on every push to main.
+on:
+  workflow_call:
+    inputs:
+      ci-result:
+        description: ci.yml's ready-to-ship result; anything but success deploys nothing.
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    # ready-to-ship's own result is what counts (see ci.yml): a check
+    # skipped for want of changes has already passed there.
+    if: ${{ !cancelled() && inputs.ci-result == 'success' }}
+    runs-on: ubuntu-latest
+    # The VPS_* secrets live in this environment, limited to main, so no
+    # other branch's workflow can read them; it also records each deploy.
+    environment: production
+    # One deploy at a time; a newer commit's replaces one still queued.
+    concurrency:
+      group: deploy-production
+      cancel-in-progress: false
+    outputs:
+      superseded: ${{ steps.head.outputs.superseded }}
+    steps:
+      # Runs no longer cancel each other on main, so an older commit's run can
+      # finish after a newer one's: deploying it then would roll production
+      # back. The newer commit's own run deploys instead.
+      - name: Is this still main's head?
+        id: head
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          head=$(gh api "repos/$GITHUB_REPOSITORY/commits/main" --jq .sha)
+          if [ "$head" != "$GITHUB_SHA" ]; then
+            echo "::notice::main has moved on to ${head::7}, whose run deploys instead."
+            echo "superseded=true" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Deploy over SSH
+        if: steps.head.outputs.superseded != 'true'
+        env:
+          DEPLOY_SHA: ${{ github.sha }}
+        uses: appleboy/ssh-action@0ff4204d59e8e51228ff73bce53f80d53301dee2 # v1
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          # The host key the runner must find (`SHA256:…`, from
+          # `ssh-keygen -lf /etc/ssh/ssh_host_ed25519_key.pub` on the VPS):
+          # without it, a hijacked DNS or route gets the key and the script.
+          fingerprint: ${{ secrets.VPS_SSH_FINGERPRINT }}
+          envs: DEPLOY_SHA
+          # Deploys the exact commit CI validated. The rest (pre-deploy dump,
+          # start, health wait, rollback) is the checked-out commit's own
+          # .github/deploy/vps-deploy.sh.
+          script: |
+            set -e
+            cd ${{ secrets.VPS_DEPLOY_PATH }}
+            git fetch origin main
+            git reset --hard "$DEPLOY_SHA"
+            DEPLOY_SHA="$DEPLOY_SHA" bash .github/deploy/vps-deploy.sh
+      # The healthchecks above run inside the containers: a broken Caddy
+      # route, certificate or Cloudflare rule would still pass them. This
+      # goes through the same path as a visitor; a failure fails the job,
+      # so the ntfy alert below fires.
+      - name: Check the public site
+        if: steps.head.outputs.superseded != 'true'
+        run: |
+          for url in https://loomkeep.app/ https://loomkeep.app/api/health; do
+            curl --fail --silent --show-error --output /dev/null \
+              --retry 5 --retry-delay 6 --retry-all-errors --max-time 15 "$url"
+            echo "$url answers"
+          done
+
+  # Says how it went on ntfy (NTFY_TOPIC_URL: the topic's full URL, e.g.
+  # https://ntfy.sh/<unguessable name>, which is all it takes to post or
+  # read): a skipped deploy otherwise goes unnoticed, as #433 and #438 did.
+  notify:
+    needs: deploy
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          sparse-checkout: .github/deploy
+      - name: Notify on ntfy
+        env:
+          NTFY_TOPIC_URL: ${{ secrets.NTFY_TOPIC_URL }}
+          CI_RESULT: ${{ inputs.ci-result }}
+          DEPLOY_RESULT: ${{ needs.deploy.result }}
+          SUPERSEDED: ${{ needs.deploy.outputs.superseded }}
+          SHA: ${{ github.sha }}
+          COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          MAIN_SHA=$(gh api "repos/$GITHUB_REPOSITORY/commits/main" --jq .sha)
+          export MAIN_SHA
+          bash .github/deploy/notify.sh

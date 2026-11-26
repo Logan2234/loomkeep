@@ -1,0 +1,232 @@
+name: Release
+
+# What a main commit publishes besides its images: the version's GitHub
+# release with its APK, and the dev APK pre-release. Called by ci.yml on
+# every push to main, after ready-to-ship and android-debug.
+on:
+  workflow_call:
+    inputs:
+      ci-result:
+        description: ci.yml's ready-to-ship result; anything but success releases nothing.
+        type: string
+        required: true
+      android-result:
+        description: ci.yml's android-debug result; the dev APK is published only on success.
+        type: string
+        required: true
+      release-apk:
+        description: Whether android-debug uploaded a signed release APK ("success" when it did).
+        type: string
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  # One GitHub release per version, `v1.12.0`, notes from that version's
+  # CHANGELOG.md section, created by the first commit that passes on main at
+  # a version with no release yet: the version-bump skill's PR, or the next
+  # commit if its run never got this far. images.yml's docker-tag tagged the
+  # images in the same run. It starts as a draft: the repository's releases are
+  # immutable, so a published one takes no more assets (1.12.0 got no APK
+  # that way). publish-release-apk attaches the APK, then publishes it as
+  # the latest one. The notes end with each image pinned by digest: a tag
+  # like `1.12.0` can be moved, a digest names one image only.
+  release:
+    # See deploy.yml.
+    if: ${{ !cancelled() && inputs.ci-result == 'success' }}
+    runs-on: ubuntu-latest
+    # Unlike published ones, two drafts can share a tag: one run at a time
+    # sees the other's.
+    concurrency:
+      group: github-release
+      cancel-in-progress: false
+    permissions:
+      contents: write
+      packages: read
+    outputs:
+      tag: ${{ steps.release.outputs.tag }}
+      draft: ${{ steps.release.outputs.draft }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          sparse-checkout: |
+            package.json
+            CHANGELOG.md
+          sparse-checkout-cone-mode: false
+      - uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create the version's draft release if it doesn't exist yet
+        id: release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          tag="v$(jq -r .version package.json)"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          if draft=$(gh release view "$tag" --json isDraft --jq .isDraft 2> /dev/null); then
+            echo "$tag already exists (draft: $draft)."
+            echo "draft=$draft" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          heading=$(grep -m1 "^## ${tag#v} " CHANGELOG.md || true)
+          if [ -z "$heading" ]; then
+            echo "::error::CHANGELOG.md has no '## ${tag#v} …' section."
+            exit 1
+          fi
+          # The release is named after the version alone; the heading's
+          # subtitle, after " — ", opens the notes instead.
+          subtitle=$(printf '%s' "$heading" | sed -n 's/^## [^ ]* — //p')
+          {
+            if [ -n "$subtitle" ]; then printf '# %s\n' "$subtitle"; fi
+            awk -v h="$heading" '$0 == h {f=1; next} f && /^## / {exit} f' CHANGELOG.md
+          } > notes.md
+          # Published releases are immutable: a digest that can't be read
+          # leaves the section out rather than print a broken reference.
+          pinned=""
+          for name in api web; do
+            image="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/loomkeep-$name"
+            digest=$(docker buildx imagetools inspect "$image:${tag#v}" --format '{{json .Manifest}}' | jq -r '.digest // empty' || true)
+            if [[ "$digest" != sha256:* ]]; then
+              echo "::warning::No digest for $image:${tag#v}; the notes go out without the Images section."
+              pinned=""
+              break
+            fi
+            pinned+="$image:${tag#v}@$digest"$'\n'
+          done
+          if [ -n "$pinned" ]; then
+            {
+              printf '\n## Images\n\nThe exact images of this release, signed by this workflow:\n\n```\n%s```\n\n' "$pinned"
+              printf 'Check one with `gh attestation verify oci://<image> -R %s`.\n' "$GITHUB_REPOSITORY"
+            } >> notes.md
+          fi
+          # The tag only exists once publish-release-apk publishes it.
+          gh release create "$tag" \
+            --target "$GITHUB_SHA" \
+            --title "${tag#v}" \
+            --notes-file notes.md \
+            --draft
+          echo "draft=true" >> "$GITHUB_OUTPUT"
+
+  # The app users install (MOB-23), attached to its version's draft release
+  # (`v1.12.0`, created by the release job) by the first main build that
+  # finds it still a draft, usually the bump commit's own, which then
+  # publishes it. The asset keeps one name, so
+  # releases/latest/download/loomkeep-android.apk (the landing's and the
+  # docs' link) always serves the newest.
+  publish-release-apk:
+    needs: release
+    # See deploy.yml.
+    if: >-
+      !cancelled() && needs.release.result == 'success'
+      && needs.release.outputs.draft == 'true'
+      && inputs.release-apk == 'success'
+    runs-on: ubuntu-latest
+    concurrency:
+      group: github-release-apk
+      cancel-in-progress: false
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      TAG: ${{ needs.release.outputs.tag }}
+    steps:
+      # Another run may have published it while this one waited its turn.
+      - name: Is the release still a draft?
+        id: draft
+        run: |
+          if [ "$(gh release view "$TAG" --json isDraft --jq .isDraft)" = true ]; then
+            echo "draft=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "$TAG is already published."
+          fi
+      - if: steps.draft.outputs.draft
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: loomkeep-android-release
+      # The artifact keeps the build tree's paths below its common root.
+      - if: steps.draft.outputs.draft
+        run: |
+          mv apk/release/app-release.apk loomkeep-android.apk
+          mv bundle/release/app-release.aab loomkeep-android-play.aab
+      - id: attest
+        if: steps.draft.outputs.draft
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: loomkeep-android.apk
+      - id: attest-bundle
+        if: steps.draft.outputs.draft
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: loomkeep-android-play.aab
+      # The bundle rides along for Google Play (MOB-10), uploaded by hand
+      # from here; Obtainium only looks at APKs.
+      - name: Attach the APK and the Play bundle, then publish the release
+        if: steps.draft.outputs.draft
+        env:
+          BUNDLE: ${{ steps.attest.outputs.bundle-path }}
+          AAB_BUNDLE: ${{ steps.attest-bundle.outputs.bundle-path }}
+        run: |
+          cp "$BUNDLE" loomkeep-android.apk.sigstore.json
+          cp "$AAB_BUNDLE" loomkeep-android-play.aab.sigstore.json
+          gh release upload "$TAG" loomkeep-android.apk loomkeep-android.apk.sigstore.json \
+            loomkeep-android-play.aab loomkeep-android-play.aab.sigstore.json --clobber
+          # Publishing makes the release immutable, and `latest` only now: a
+          # latest release without its APK would answer the download link
+          # above with a 404.
+          gh release edit "$TAG" --draft=false --latest
+
+  # Main's APK as a GitHub pre-release, for Obtainium on the phone to notice
+  # and install over the previous one (same debug key, so the session
+  # stays). One release per build, since Obtainium spots an update by a new
+  # tag; only the three latest are kept. Main only, once the smoke test
+  # passed: a PR's APK stays a run artifact.
+  publish-dev-apk:
+    if: ${{ !cancelled() && inputs.android-result == 'success' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      # Signing the build's provenance with GitHub's OIDC identity (Sigstore).
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          sparse-checkout: apps/mobile/package.json
+          sparse-checkout-cone-mode: false
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: loomkeep-android-debug
+      - run: mv app-debug.apk loomkeep-dev.apk
+      # Proves the APK came from this workflow at this commit; the bundle is
+      # attached so `gh attestation verify` works offline too.
+      - id: attest
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: loomkeep-dev.apk
+      - name: Publish the dev pre-release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: android-dev-${{ github.run_number }}
+          BUNDLE: ${{ steps.attest.outputs.bundle-path }}
+        # The title reads like the stable releases', with the version this
+        # build leads to and its build number, so the list sorts and scans.
+        run: |
+          version=$(jq -r .version apps/mobile/package.json)
+          cp "$BUNDLE" loomkeep-dev.apk.sigstore.json
+          gh release create "$TAG" loomkeep-dev.apk loomkeep-dev.apk.sigstore.json \
+            --prerelease \
+            --target "$GITHUB_SHA" \
+            --title "Loomkeep Android $version-dev.${{ github.run_number }}" \
+            --notes "Debug build of main at ${GITHUB_SHA::7} (\"Loomkeep Dev\", app.loomkeep.debug), for testing: not a supported release."
+          gh release list --limit 100 --json tagName --jq '.[].tagName' \
+            | grep '^android-dev-' | tail -n +4 \
+            | xargs -r -n1 gh release delete --cleanup-tag --yes

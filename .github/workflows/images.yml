@@ -1,0 +1,177 @@
+name: Images
+
+# The api and web images of a main commit, built per platform and pushed to
+# GHCR, then tagged. Called by ci.yml once openapi-artifact has produced the
+# OpenAPI document the web image is built from; ci.yml's ready-to-ship waits
+# for it before anything ships.
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  # Pushes to GHCR so the deploy job (and self-hosters) can `pull` a pre-built
+  # image instead of building on the target machine. Runs unconditionally
+  # on every push to main (not gated on the `changes` filter like
+  # docker-build-images in ci.yml) so a SHA-tagged pair of images always exists for
+  # whatever commit the deploy is about to check out — a push that only
+  # touched apps/api must still produce a web image at that SHA, otherwise
+  # `docker compose pull` on the VPS would have nothing to fetch.
+  #
+  # Each image is built once per platform, each on a runner of that
+  # architecture (GitHub's arm64 runners are free for public repositories),
+  # and pushed untagged, by digest; docker-tag below then puts both under
+  # the same tags. No QEMU: emulated arm64 builds crashed in the api's
+  # `prisma generate`, so the api had no arm64 image at all, and a native
+  # build also gets the right binaries for sharp and Prisma's engines.
+  docker-push:
+    runs-on: ${{ matrix.platform == 'arm64' && 'ubuntu-24.04-arm' || 'ubuntu-latest' }}
+    # arm64 serves Raspberry Pis, ARM NAS models and ARM servers, not the
+    # hosted instance: its failure leaves amd64 tagged and the deploy going.
+    continue-on-error: ${{ matrix.platform == 'arm64' }}
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        name: [api, web]
+        platform: [amd64, arm64]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Download OpenAPI document
+        if: matrix.name == 'web'
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: openapi-json
+          path: apps/api
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4
+      - uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - id: vars
+        # GHCR image paths must be lowercase; github.repository_owner
+        # preserves the account's actual casing (Logan2234).
+        run: |
+          echo "short=${GITHUB_SHA:0:12}" >> "$GITHUB_OUTPUT"
+          echo "owner=${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_OUTPUT"
+      - name: build and push the ${{ matrix.platform }} ${{ matrix.name }} image
+        id: build
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7
+        with:
+          context: .
+          file: apps/${{ matrix.name }}/Dockerfile
+          platforms: linux/${{ matrix.platform }}
+          # Only the api Dockerfile declares a GIT_SHA ARG (see its
+          # ARG GIT_SHA=unknown) — passing it for web too would just be an
+          # unused build-arg warning.
+          build-args: ${{ matrix.name == 'api' && format('GIT_SHA={0}', steps.vars.outputs.short) || '' }}
+          outputs: type=image,name=ghcr.io/${{ steps.vars.outputs.owner }}/loomkeep-${{ matrix.name }},push-by-digest=true,name-canonical=true,push=true
+          # An SPDX SBOM rides along with the image, next to its provenance:
+          # self-hosters can list what an image contains without pulling it.
+          sbom: true
+          provenance: mode=max
+          cache-from: type=gha,scope=${{ matrix.name }}-${{ matrix.platform }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.name }}-${{ matrix.platform }}
+      - name: Hand the digest to docker-tag
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/digests"
+          touch "$RUNNER_TEMP/digests/${DIGEST#sha256:}"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: digest-${{ matrix.name }}-${{ matrix.platform }}
+          path: ${{ runner.temp }}/digests/*
+          if-no-files-found: error
+          retention-days: 1
+
+  # Tags each image from its platform digests (amd64 always, arm64 when its
+  # build succeeded):
+  # - every commit: its 12-character SHA (what the deploy pulls) and `edge`;
+  # - the first commit built at a new root package.json version (the bump,
+  #   or the next one if its run never got this far): `1.12.0`, `1.12`, `1`
+  #   and `latest`, so `latest` is the last release, the one self-hosters get
+  #   by default.
+  docker-tag:
+    needs: docker-push
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        name: [api, web]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          sparse-checkout: package.json
+          sparse-checkout-cone-mode: false
+      # Both images' digests, one folder per image and platform: a platform
+      # is tagged only when api and web both built it (see the tag step).
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: digest-*
+          path: ${{ runner.temp }}/digests
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4
+      - uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - id: release
+        # GHCR image paths must be lowercase; github.repository_owner
+        # preserves the account's actual casing (Logan2234).
+        run: |
+          image="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/loomkeep-${{ matrix.name }}"
+          echo "image=$image" >> "$GITHUB_OUTPUT"
+          version=$(jq -r .version package.json)
+          if ! docker buildx imagetools inspect "$image:$version" > /dev/null 2>&1; then
+            echo "version=$version" >> "$GITHUB_OUTPUT"
+          fi
+      - id: meta
+        uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
+        env:
+          DOCKER_METADATA_SHORT_SHA_LENGTH: 12
+        with:
+          images: ${{ steps.release.outputs.image }}
+          flavor: latest=false
+          tags: |
+            type=sha,prefix=,format=short
+            type=edge,branch=main
+            type=semver,pattern={{version}},value=${{ steps.release.outputs.version }},enable=${{ steps.release.outputs.version != '' }}
+            type=semver,pattern={{major}}.{{minor}},value=${{ steps.release.outputs.version }},enable=${{ steps.release.outputs.version != '' }}
+            type=semver,pattern={{major}},value=${{ steps.release.outputs.version }},enable=${{ steps.release.outputs.version != '' }}
+            type=raw,value=latest,enable=${{ steps.release.outputs.version != '' }}
+      - name: tag the ${{ matrix.name }} image
+        working-directory: ${{ runner.temp }}/digests
+        env:
+          IMAGE: ${{ steps.release.outputs.image }}
+          NAME: ${{ matrix.name }}
+        # A failed arm64 build (continue-on-error) used to leave one image's
+        # tags without arm64 and the other's with it: a self-hoster on ARM
+        # then pulled a web and no api. A platform only one image built is
+        # left out of both, and announced.
+        run: |
+          other=$([ "$NAME" = api ] && echo web || echo api)
+          refs=()
+          for platform in amd64 arm64; do
+            mine=$(ls "digest-$NAME-$platform" 2>/dev/null || true)
+            theirs=$(ls "digest-$other-$platform" 2>/dev/null || true)
+            if [ -n "$mine" ] && [ -n "$theirs" ]; then
+              refs+=("$IMAGE@sha256:$mine")
+            elif [ -n "$mine$theirs" ]; then
+              echo "::warning title=$platform left out::Only one of api and web built $platform: neither image is tagged for it."
+            fi
+          done
+          if [ "${#refs[@]}" -eq 0 ]; then
+            echo "::error::No platform built for both api and web."
+            exit 1
+          fi
+          docker buildx imagetools create \
+            $(jq -cr '.tags | map("--tag " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
+            "${refs[@]}"
+          docker buildx imagetools inspect "$IMAGE:${GITHUB_SHA:0:12}"

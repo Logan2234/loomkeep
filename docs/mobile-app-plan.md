@@ -19,7 +19,7 @@ dans les PR citées et dans l'historique de ce fichier.
 - **Instance choisie à l'exécution** (MOB-15) : `server.url` est fixé à la
   création du pont, donc `MainActivity` le prend dans les préférences avant
   `super.onCreate`, et changer d'instance recrée l'activité.
-- **Builds** : `ci.yml` publie un APK de debug (`app.loomkeep.debug`,
+- **Builds** : `ci.yml` construit et `release.yml` publie un APK de debug (`app.loomkeep.debug`,
   pré-release `android-dev-<n>`) à chaque commit de `main` qui touche
   `apps/mobile` (ou quand une release est en attente), et l'APK et
   l'AAB release (`app.loomkeep`, signés avec la clé release) avec chaque

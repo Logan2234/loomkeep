@@ -6,7 +6,8 @@ name: Generate OpenAPI artifact
 # openapi-v1.json, the public API alone, for docs.yml) as an
 # artifact — generate:api-types' one input — for every consumer that needs
 # it: ci.yml's lint-test-web and knip jobs (which just turn it into typed API
-# client code), and ci.yml's web Docker image builds, which run
+# client code), and the web Docker image builds (ci.yml's docker-build-images,
+# images.yml's docker-push), which run
 # in total isolation (no live API or database reachable from inside
 # `docker build`) and so can't produce this document itself. See the comment
 # on ci.yml's openapi-artifact job for the full reasoning.
