@@ -8,7 +8,7 @@ import {
   MaxLength,
 } from "class-validator";
 
-export const ACCESSIBILITY_REPORT_LIMITS = {
+const ACCESSIBILITY_REPORT_LIMITS = {
   messageMin: 20,
   messageMax: 5000,
   page: 300,
