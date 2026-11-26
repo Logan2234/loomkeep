@@ -22,6 +22,11 @@ history from before it was started.
 - **Self-hosting: email on any port but 465 now requires STARTTLS.** If your
   relay sits on the same host or private network and sends in clear, set
   `SMTP_REQUIRE_TLS=false`.
+- **Self-hosting: the Authelia and Portainer overrides are gone.** Drop
+  `docker-compose.authelia.yml` and `docker-compose.portainer.yml` from
+  `COMPOSE_FILE` before updating (keep your own copy to go on running them).
+  Grafana's single sign-on is now off unless `GRAFANA_OIDC_ENABLED=true`,
+  with your provider's URLs in the `GRAFANA_OIDC_*` variables.
 
 ### Added
 

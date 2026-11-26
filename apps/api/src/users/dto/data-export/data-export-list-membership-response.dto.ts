@@ -1,4 +1,4 @@
-import type { DataExportListMembership } from "@loomkeep/shared";
+import type { DataExportListMembership } from "../../../account/data-export.types";
 
 export class DataExportListMembershipResponseDto implements DataExportListMembership {
   /**

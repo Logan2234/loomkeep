@@ -1,4 +1,4 @@
-import type { EntitlementDto } from "@loomkeep/shared";
+import type { EntitlementDto } from "../../entitlements/entitlement.types";
 
 export class EntitlementResponseDto implements EntitlementDto {
   isPremium!: boolean;

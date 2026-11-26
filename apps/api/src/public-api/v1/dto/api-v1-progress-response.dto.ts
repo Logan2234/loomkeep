@@ -1,4 +1,4 @@
-import type { ApiV1ProgressDto } from "@loomkeep/shared";
+import type { ApiV1ProgressDto } from "../api-v1.types";
 
 import { ApiProperty } from "@nestjs/swagger";
 export class ApiV1ProgressResponseDto implements ApiV1ProgressDto {

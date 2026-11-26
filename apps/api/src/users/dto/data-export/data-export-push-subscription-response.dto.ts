@@ -1,4 +1,4 @@
-import type { DataExportPushSubscription } from "@loomkeep/shared";
+import type { DataExportPushSubscription } from "../../../account/data-export.types";
 
 export class DataExportPushSubscriptionResponseDto implements DataExportPushSubscription {
   /**

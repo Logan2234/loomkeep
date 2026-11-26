@@ -12,6 +12,7 @@ import { primaryWebOrigin } from "../../common/web-origin.util";
 import { EntitlementService } from "../../entitlements/entitlement.service";
 import { PrismaService } from "../../prisma/prisma.service";
 import { ActivityService } from "../../social/activity.service";
+import { saveUserUrlToken } from "../../users/user-url-token.writer";
 import { type ReleaseFeed } from "../calendar/feed.util";
 
 /** A feed reader keeps what it already fetched: this only caps one fetch. */
@@ -217,11 +218,7 @@ export class ActivityFeedService {
 
   private async issueToken(userId: string): Promise<ActivityFeedTokenDto> {
     const token = randomToken(24, "base64url");
-    await this.prisma.userUrlToken.upsert({
-      where: { userId },
-      create: { userId, activityFeedToken: token },
-      update: { activityFeedToken: token },
-    });
+    await saveUserUrlToken(this.prisma, userId, "activityFeedToken", token);
     return { token };
   }
 

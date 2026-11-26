@@ -2,8 +2,8 @@
 # docker/README.md § "Access control per public subdomain" — every
 # visitor's browser calls this same subdomain's /api/frontend path directly
 # and unauthenticated to poll live flags (apps/web/src/lib/feature-flags-live.ts),
-# so gating the whole hostname (Authelia forward_auth, or a Cloudflare
-# Access policy via docker-compose.tunnel.yml) requires exempting that path
+# so gating the whole hostname (a Cloudflare Access policy via
+# docker-compose.tunnel.yml) requires exempting that path
 # first — a separate Access Application scoped to `/api/frontend*` with a
 # public/bypass policy.
 #

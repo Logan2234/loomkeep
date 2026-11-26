@@ -1,4 +1,5 @@
-import type { ApiV1WorkDto, MediaType, StatsDomain } from "@loomkeep/shared";
+import type { MediaType, StatsDomain } from "@loomkeep/shared";
+import type { ApiV1WorkDto } from "../api-v1.types";
 
 import { MediaType as MediaTypeValues, STATS_DOMAINS } from "@loomkeep/shared";
 

@@ -1,4 +1,4 @@
-import type { ApiV1ProfileDto } from "@loomkeep/shared";
+import type { ApiV1ProfileDto } from "../api-v1.types";
 
 import { ApiProperty } from "@nestjs/swagger";
 import { ApiV1ProgressionResponseDto } from "./api-v1-progression-response.dto";

@@ -379,12 +379,23 @@ model UserAvatar {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
-// One row per self-requested account deletion actually carried out, with
-// no link to the account: only what Admin › Statistics shows.
-model AccountDeletionFeedback {
-  id        String                 @id @default(cuid())
-  reason    AccountDeletionReason?
-  deletedAt DateTime               @default(now())
+// One pending email change per row; a fresh request invalidates the previous
+// one (see UsersController.changeEmail). The new address only replaces
+// User.email once its code is confirmed (UsersController.confirmEmailChange).
+model EmailChangeRequest {
+  id        String   @id @default(cuid())
+  userId    String
+  newEmail  String
+  codeHash  String   @unique
+  // Failed confirm attempts; the request is deleted after 5 (see
+  // MAX_EMAIL_CHANGE_ATTEMPTS) to bound brute-forcing the 6-digit code.
+  attempts  Int      @default(0)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
 
-  @@index([deletedAt])
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  // Daily purge of unconfirmed requests (SecurityEventService.purgeExpired).
+  @@index([expiresAt])
 }

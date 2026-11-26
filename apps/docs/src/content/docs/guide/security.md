@@ -68,8 +68,8 @@ device is signed out and you get an email.
 
 Not planned yet, but considered:
 
-- **Signing in with your own identity provider** (OpenID Connect: Authelia,
-  Authentik, Keycloak…), mostly for self-hosted instances.
+- **Signing in with your own identity provider** (OpenID Connect: Authentik,
+  Keycloak…), mostly for self-hosted instances.
 
 Vote for it or suggest others on the
 [feature requests board](https://feedback.loomkeep.app/board/feature-requests).

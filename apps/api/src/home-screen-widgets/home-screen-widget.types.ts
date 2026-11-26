@@ -1,5 +1,4 @@
-import type { NextEpisodeDto } from "./library";
-import type { SessionDomain } from "./session";
+import type { NextEpisodeDto, SessionDomain } from "@loomkeep/shared";
 
 /**
  * Lets the Android app's home-screen widgets (MOB-20) read and act without

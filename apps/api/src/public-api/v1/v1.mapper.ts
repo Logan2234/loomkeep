@@ -1,7 +1,4 @@
 import type {
-  ApiV1LibraryEntryDto,
-  ApiV1TargetDto,
-  ApiV1WorkDto,
   BookEntryDto,
   BookItemDto,
   GameEntryDto,
@@ -19,6 +16,11 @@ import {
   bucketizeGameStatus,
   bucketizeMusicStatus,
 } from "../../stats/status-bucket.util";
+import type {
+  ApiV1LibraryEntryDto,
+  ApiV1TargetDto,
+  ApiV1WorkDto,
+} from "./api-v1.types";
 
 /** Absolute link into the web app, from its `/app/...` path. */
 export function webUrl(webOrigin: string, path: string): string {

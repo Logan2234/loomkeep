@@ -1,8 +1,5 @@
-import type {
-  ApiV1LibraryEntryDto,
-  ApiV1Phase,
-  StatsDomain,
-} from "@loomkeep/shared";
+import type { StatsDomain } from "@loomkeep/shared";
+import type { ApiV1LibraryEntryDto, ApiV1Phase } from "../api-v1.types";
 
 import { STATS_DOMAINS, StatsStatusBucket } from "@loomkeep/shared";
 

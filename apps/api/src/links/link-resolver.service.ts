@@ -1,8 +1,4 @@
-import {
-  Domain,
-  type MediaSummaryDto,
-  type ResolvedLinkDto,
-} from "@loomkeep/shared";
+import { Domain, type MediaSummaryDto } from "@loomkeep/shared";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { OpenLibraryProvider } from "../books/providers/open-library.provider";
@@ -13,6 +9,7 @@ import { webOrigins } from "../common/web-origin.util";
 import { IgdbProvider } from "../games/providers/igdb.provider";
 import { MusicBrainzProvider } from "../music/providers/musicbrainz.provider";
 import { type CatalogLink, parseCatalogLink } from "./link-parser";
+import { type ResolvedLinkDto } from "./link.types";
 
 // The hosted instance: its links open on a self-hosted one too.
 const HOSTED_INSTANCE_HOST = "loomkeep.app";

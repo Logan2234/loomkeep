@@ -2,7 +2,6 @@ import {
   BOOK_SORT_KEYS,
   type BookDetailDto,
   type BookEntryDto,
-  bookFinishedXp,
   type BookItemDto,
   type BookOwnershipStatus,
   type BookSortKey,
@@ -11,15 +10,11 @@ import {
   type BulkEntriesResultDto,
   type BulkEntriesTargetDto,
   Domain,
-  MIN_REWARDED_READING_GOAL,
   type PagedResult,
   type PileSummaryDto,
   type ReadingGoalDto,
-  readingGoalXp,
   RealtimeEvent,
-  replayXp,
   ReviewTargetType,
-  sagaCompletionXp,
   SESSION_FILTER_PAUSED,
   TrackingCycleStatus,
   XpReason,
@@ -37,6 +32,13 @@ import { localYear, localYearRange } from "../common/local-day.util";
 import { compareTitles, timeMs } from "../common/sort.util";
 import { EventsGateway } from "../events/events.gateway";
 import { AchievementService } from "../gamification/achievements/achievement.service";
+import {
+  bookFinishedXp,
+  MIN_REWARDED_READING_GOAL,
+  readingGoalXp,
+  replayXp,
+  sagaCompletionXp,
+} from "../gamification/xp-rules";
 import {
   addToList,
   applyBulkUpdate,

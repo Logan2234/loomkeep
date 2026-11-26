@@ -38,7 +38,7 @@ import { WorkTitlesService } from "./v1/work-titles.service";
 /**
  * The versioned public API (`/api/v1`), the only surface API keys reach.
  * Its controllers map internal services onto the public DTOs of
- * `@loomkeep/shared`'s `api-v1.ts`, never exposing an internal DTO as is.
+ * `v1/api-v1.types.ts`, never exposing an internal DTO as is.
  */
 @Module({
   imports: [

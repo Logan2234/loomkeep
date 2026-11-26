@@ -1,9 +1,9 @@
 import type {
   ApiV1HistoryEventDto,
   ApiV1HistoryEventType,
-} from "@loomkeep/shared";
+} from "../api-v1.types";
 
-import { API_V1_HISTORY_EVENT_TYPES } from "@loomkeep/shared";
+import { API_V1_HISTORY_EVENT_TYPES } from "../api-v1.types";
 
 import { ApiProperty } from "@nestjs/swagger";
 import { ApiV1HistoryEpisodeResponseDto } from "./api-v1-history-episode-response.dto";

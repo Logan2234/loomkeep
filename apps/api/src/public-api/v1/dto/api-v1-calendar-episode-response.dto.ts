@@ -1,4 +1,4 @@
-import type { ApiV1CalendarEpisodeDto } from "@loomkeep/shared";
+import type { ApiV1CalendarEpisodeDto } from "../api-v1.types";
 
 import { ApiV1WorkResponseDto } from "./api-v1-work-response.dto";
 export class ApiV1CalendarEpisodeResponseDto implements ApiV1CalendarEpisodeDto {

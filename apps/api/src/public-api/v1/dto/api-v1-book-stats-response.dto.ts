@@ -1,4 +1,4 @@
-import type { ApiV1StatsSummaryDto } from "@loomkeep/shared";
+import type { ApiV1StatsSummaryDto } from "../api-v1.types";
 
 import { ApiProperty } from "@nestjs/swagger";
 import { ApiV1ReadingGoalResponseDto } from "./api-v1-reading-goal-response.dto";

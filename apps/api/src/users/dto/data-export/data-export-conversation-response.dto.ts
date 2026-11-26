@@ -2,7 +2,7 @@ import type {
   DataExportConversation,
   DataExportMessage,
   DataExportMessageWork,
-} from "@loomkeep/shared";
+} from "../../../account/data-export.types";
 
 export class DataExportMessageWorkResponseDto implements DataExportMessageWork {
   /**

@@ -1,10 +1,10 @@
-import type { ApiV1AchievementDto, ApiV1ProfileDto } from "@loomkeep/shared";
 import { levelProgress } from "@loomkeep/shared";
 import { Injectable } from "@nestjs/common";
 import { AchievementService } from "../../gamification/achievements/achievement.service";
 import { XpService } from "../../gamification/xp.service";
 import { PrismaService } from "../../prisma/prisma.service";
 import { avatarUrl } from "../../users/avatar.util";
+import type { ApiV1AchievementDto, ApiV1ProfileDto } from "./api-v1.types";
 
 @Injectable()
 export class ProfileV1Service {

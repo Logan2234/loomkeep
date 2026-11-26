@@ -122,7 +122,7 @@ jobs:
         run: |
           docker compose -f docker-compose.yml config -q
           docker compose -f docker-compose.yml -f docker-compose.prod.yml config -q
-          for addon in docker-compose.*.yml; do
+          for addon in docker-compose.*.yml hosted/docker-compose.*.yml; do
             case "$addon" in docker-compose.prod.yml|docker-compose.ci.yml) continue ;; esac
             echo "::group::$addon"
             docker compose -f docker-compose.yml -f docker-compose.prod.yml -f "$addon" config -q
@@ -144,11 +144,9 @@ jobs:
           caddy_image=$(grep -oP 'image: \Kcaddy:\S+' docker/docker-compose.prod.yml)
           docker run --rm "${mounts[@]}" \
             -e SITE_ADDRESS=loomkeep.example \
-            -e AUTHELIA_SITE_ADDRESS=auth.loomkeep.example \
             -e GLITCHTIP_SITE_ADDRESS=errors.loomkeep.example \
             -e GRAFANA_SITE_ADDRESS=grafana.loomkeep.example \
             -e HOMEPAGE_SITE_ADDRESS=home.loomkeep.example \
-            -e PORTAINER_SITE_ADDRESS=portainer.loomkeep.example \
             -e QUACKBACK_SITE_ADDRESS=feedback.loomkeep.example \
             -e QUACKBACK_APP_PORT=3000 \
             -e UMAMI_SITE_ADDRESS=stats.loomkeep.example \

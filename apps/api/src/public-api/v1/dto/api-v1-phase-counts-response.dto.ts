@@ -1,4 +1,4 @@
-import type { ApiV1Phase } from "@loomkeep/shared";
+import type { ApiV1Phase } from "../api-v1.types";
 
 export class ApiV1PhaseCountsResponseDto implements Record<ApiV1Phase, number> {
   /**

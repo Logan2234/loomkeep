@@ -13,6 +13,7 @@ import { isUniqueViolation } from "../common/prisma-error.util";
 import { MailService } from "../mail/mail.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { notSuspended } from "../users/suspension.util";
+import { saveUserUrlToken } from "../users/user-url-token.writer";
 
 const QUACKBACK_CHANGELOG_API_URL = `${QUACKBACK_ORIGIN}/api/v1/changelog`;
 
@@ -221,11 +222,12 @@ export class NewsletterService {
     if (existing) return existing;
 
     const token = randomToken(32, "hex");
-    await this.prisma.userUrlToken.upsert({
-      where: { userId },
-      create: { userId, newsletterUnsubscribeToken: token },
-      update: { newsletterUnsubscribeToken: token },
-    });
+    await saveUserUrlToken(
+      this.prisma,
+      userId,
+      "newsletterUnsubscribeToken",
+      token,
+    );
     return token;
   }
 

@@ -1,4 +1,4 @@
-import type { ApiV1HistoryEventDto } from "@loomkeep/shared";
+import type { ApiV1HistoryEventDto } from "../api-v1.types";
 
 export class ApiV1HistoryEpisodeResponseDto implements NonNullable<
   ApiV1HistoryEventDto["episode"]

@@ -1,9 +1,5 @@
-import type {
-  CatalogSource,
-  DataExportEntry,
-  EntryStatus,
-  MediaType,
-} from "@loomkeep/shared";
+import type { CatalogSource, EntryStatus, MediaType } from "@loomkeep/shared";
+import type { DataExportEntry } from "../../../account/data-export.types";
 
 class DataExportEntryExternalIdResponseDto {
   /**

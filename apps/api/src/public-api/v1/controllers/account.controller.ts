@@ -1,19 +1,9 @@
-import type {
-  ApiV1AchievementDto,
-  ApiV1ListDetailDto,
-  ApiV1ListDto,
-  ApiV1NotificationsDto,
-  ApiV1ProfileDto,
-  ApiV1ReviewDto,
-  ApiV1StatsSummaryDto,
-  ReviewTargetType,
-  StatsDomain,
-  UserDataExportDto,
-} from "@loomkeep/shared";
+import type { ReviewTargetType, StatsDomain } from "@loomkeep/shared";
 import { Controller, Get, Param, Query, UseGuards } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { ApiOperation, ApiParam } from "@nestjs/swagger";
 import { DataExportService } from "../../../account/data-export.service";
+import type { UserDataExportDto } from "../../../account/data-export.types";
 import { PublicApi } from "../../../api-keys/public-api.decorator";
 import type { JwtPayload } from "../../../auth/decorators/current-user.decorator";
 import { CurrentUser } from "../../../auth/decorators/current-user.decorator";
@@ -27,6 +17,15 @@ import {
   ApiV1NotFound,
   ApiV1OkResponse,
 } from "../api-responses";
+import type {
+  ApiV1AchievementDto,
+  ApiV1ListDetailDto,
+  ApiV1ListDto,
+  ApiV1NotificationsDto,
+  ApiV1ProfileDto,
+  ApiV1ReviewDto,
+  ApiV1StatsSummaryDto,
+} from "../api-v1.types";
 import { LangQueryDto, ReviewsQueryDto } from "../dto/queries.dto";
 import {
   ApiV1AchievementResponseDto,

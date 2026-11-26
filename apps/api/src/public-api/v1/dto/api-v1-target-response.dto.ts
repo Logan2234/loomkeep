@@ -1,4 +1,5 @@
-import type { ApiV1TargetDto, ReviewTargetType } from "@loomkeep/shared";
+import type { ReviewTargetType } from "@loomkeep/shared";
+import type { ApiV1TargetDto } from "../api-v1.types";
 
 import { ReviewTargetType as ReviewTargetTypeValues } from "@loomkeep/shared";
 

@@ -1,4 +1,4 @@
-import type { ApiV1LibraryEntryDto } from "@loomkeep/shared";
+import type { ApiV1LibraryEntryDto } from "./api-v1.types";
 import { compareEntries, statusesFor } from "./library-v1.service";
 
 describe("statusesFor", () => {

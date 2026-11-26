@@ -1,8 +1,8 @@
-import type { EeStatusDto } from "@loomkeep/shared";
 import { Controller, Get } from "@nestjs/common";
 import { ApiOkResponse } from "@nestjs/swagger";
 import { Public } from "../../auth/decorators/public.decorator";
 import { EeStatusResponseDto } from "./dto/ee-status-response.dto";
+import type { EeStatusDto } from "./ee-status.types";
 import { LicenseService } from "./license.service";
 
 /** Lets the web lock the `ee/` screens on an unlicensed instance. */

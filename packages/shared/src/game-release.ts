@@ -15,12 +15,22 @@ export function isGameUpcoming(
 }
 
 /**
- * The day a release reminder goes off, `YYYY-MM-DD`: only a day or a month
- * pins one down, a month on its 1st. A vaguer date waits for IGDB to narrow it.
+ * Too vague for a release reminder: only a day or a month pins one down, so
+ * a reminder on a quarter, a year, TBD or no precision waits for IGDB.
+ */
+export function isVagueGameRelease(
+  precision: ReleaseDatePrecision | null,
+): boolean {
+  return precision !== "DAY" && precision !== "MONTH";
+}
+
+/**
+ * The day a release reminder goes off, `YYYY-MM-DD`, a month on its 1st;
+ * null while the date is vague (isVagueGameRelease).
  */
 export function gameReleaseAlertDay(
   releaseDate: string | null,
   precision: ReleaseDatePrecision | null,
 ): string | null {
-  return precision === "DAY" || precision === "MONTH" ? releaseDate : null;
+  return isVagueGameRelease(precision) ? null : releaseDate;
 }

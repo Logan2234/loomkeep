@@ -1,7 +1,5 @@
-import type {
-  DataExportListItemAdded,
-  ReviewTargetType,
-} from "@loomkeep/shared";
+import type { ReviewTargetType } from "@loomkeep/shared";
+import type { DataExportListItemAdded } from "../../../account/data-export.types";
 
 export class DataExportListItemAddedResponseDto implements DataExportListItemAdded {
   /**

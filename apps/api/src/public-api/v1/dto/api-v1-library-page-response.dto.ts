@@ -1,4 +1,5 @@
-import type { ApiV1LibraryEntryDto, PagedResult } from "@loomkeep/shared";
+import type { PagedResult } from "@loomkeep/shared";
+import type { ApiV1LibraryEntryDto } from "../api-v1.types";
 
 import { ApiProperty } from "@nestjs/swagger";
 import { ApiV1LibraryEntryResponseDto } from "./api-v1-library-entry-response.dto";

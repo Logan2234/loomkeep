@@ -1,4 +1,4 @@
-import type { DataExportPasskey } from "@loomkeep/shared";
+import type { DataExportPasskey } from "../../../account/data-export.types";
 
 export class DataExportPasskeyResponseDto implements DataExportPasskey {
   /**

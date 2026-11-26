@@ -2,10 +2,10 @@ import type {
   BookOwnershipStatus,
   BookSource,
   BookStatus,
-  DataExportBookEntry,
   SessionSource,
   TrackingCycleStatus,
 } from "@loomkeep/shared";
+import type { DataExportBookEntry } from "../../../account/data-export.types";
 
 class DataExportBookExternalIdResponseDto {
   /**

@@ -1,4 +1,3 @@
-import type { PublicStatsSummaryDto } from "@loomkeep/shared";
 import { Controller, Get, UseGuards } from "@nestjs/common";
 import { ApiOkResponse } from "@nestjs/swagger";
 import { Public } from "../auth/decorators/public.decorator";
@@ -7,6 +6,7 @@ import { PrismaService } from "../prisma/prisma.service";
 import { AdminService } from "./admin.service";
 import { PublicStatsSummaryResponseDto } from "./dto/public-stats-summary-response.dto";
 import { PublicStatsGuard } from "./public-stats.guard";
+import type { PublicStatsSummaryDto } from "./public-stats.types";
 import { UpdateCheckService } from "./update-check.service";
 
 /**

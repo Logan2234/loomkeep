@@ -4,7 +4,6 @@ import type {
   MusicOwnershipStatus,
   SavedViewDomain,
   SavedViewFiltersDto,
-  UserDataExportDto,
 } from "@loomkeep/shared";
 import { ErrorCode, ReviewTargetType } from "@loomkeep/shared";
 import { HttpStatus, Injectable } from "@nestjs/common";
@@ -18,6 +17,7 @@ import { jsonObject } from "../common/json.util";
 import { PrismaService } from "../prisma/prisma.service";
 import { ReviewService } from "../reviews/review.service";
 import { LOAN_INCLUDE, loanFields } from "../work/entry-loan.util";
+import type { UserDataExportDto } from "./data-export.types";
 
 /**
  * Builds the full portable data dump (GDPR "download my data"). Shared by the

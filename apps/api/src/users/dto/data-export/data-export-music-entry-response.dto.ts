@@ -1,9 +1,9 @@
 import type {
-  DataExportMusicEntry,
   MusicOwnershipStatus,
   MusicSource,
   MusicStatus,
 } from "@loomkeep/shared";
+import type { DataExportMusicEntry } from "../../../account/data-export.types";
 
 class DataExportMusicExternalIdResponseDto {
   /**

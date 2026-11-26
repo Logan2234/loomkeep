@@ -27,14 +27,14 @@ import type {
   ReviewTargetType,
   ReviewVisibility,
   ReviewVoteValue,
+  SavedViewDto,
   SecurityEventType,
   SessionSource,
   TrackingCycleStatus,
   VisibilityAudience,
   VisibilityFacet,
-} from "../enums";
-import type { SavedViewDto } from "./saved-view";
-import { UserDto } from "./user";
+} from "@loomkeep/shared";
+import { UserDto } from "@loomkeep/shared";
 
 export interface DataExportEntry {
   media: {
@@ -523,19 +523,4 @@ export interface UserDataExportDto {
  */
 export interface CsvExportDto {
   csv: string;
-}
-
-/** One CSV of a migration export, importable on its own. */
-export interface MigrationExportFileDto {
-  /** Base name, without date nor extension: "letterboxd-diary-2". */
-  name: string;
-  csv: string;
-}
-
-/**
- * A library in another service's import format (Letterboxd, Goodreads). Several
- * files when the service imports them separately, or caps their size.
- */
-export interface MigrationExportDto {
-  files: MigrationExportFileDto[];
 }

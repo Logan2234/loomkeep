@@ -1,4 +1,4 @@
-import type { ApiV1HistoryEventDto } from "@loomkeep/shared";
+import type { ApiV1HistoryEventDto } from "./api-v1.types";
 
 import { ValidationException } from "../../common/validation.exception";
 import { historyRange, newestFirst } from "./history-v1.service";

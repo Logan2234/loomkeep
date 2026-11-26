@@ -13,7 +13,7 @@ set -euo pipefail
 # (separate databases on the shared Postgres instance), and Quackback's own
 # Postgres + MinIO uploads (a completely separate compose project, sibling
 # checkout). Deliberately NOT covered: Grafana/Loki/Prometheus,
-# Portainer, Caddy's TLS certs.
+# Caddy's TLS certs.
 #
 # Every dump is age-encrypted (ASCII-armored) before it leaves this host,
 # for BACKUP_ENCRYPTION_PUBLIC_KEY — same key as the in-app backup, only

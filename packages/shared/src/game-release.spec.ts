@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { gameReleaseAlertDay, isGameUpcoming } from "./game-release";
+import {
+  gameReleaseAlertDay,
+  isGameUpcoming,
+  isVagueGameRelease,
+} from "./game-release";
 
 const now = new Date("2026-10-04T12:00:00Z");
 
@@ -24,5 +28,13 @@ describe("game release", () => {
     expect(gameReleaseAlertDay("2027-10-01", "QUARTER")).toBeNull();
     expect(gameReleaseAlertDay("2028-01-01", "YEAR")).toBeNull();
     expect(gameReleaseAlertDay(null, "TBD")).toBeNull();
+  });
+
+  it("calls vague every date a reminder waits on, unknown precision included", () => {
+    expect(isVagueGameRelease("DAY")).toBe(false);
+    expect(isVagueGameRelease("MONTH")).toBe(false);
+    expect(isVagueGameRelease("QUARTER")).toBe(true);
+    expect(isVagueGameRelease(null)).toBe(true);
+    expect(gameReleaseAlertDay("2026-11-19", null)).toBeNull();
   });
 });

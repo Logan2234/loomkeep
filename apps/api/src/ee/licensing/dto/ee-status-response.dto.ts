@@ -1,4 +1,4 @@
-import type { EeStatusDto } from "@loomkeep/shared";
+import type { EeStatusDto } from "../ee-status.types";
 
 export class EeStatusResponseDto implements EeStatusDto {
   active!: boolean;

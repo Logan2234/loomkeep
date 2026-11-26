@@ -1,5 +1,5 @@
-import type { PublicStatsSummaryDto } from "@loomkeep/shared";
 import { ApiProperty } from "@nestjs/swagger";
+import type { PublicStatsSummaryDto } from "../public-stats.types";
 
 export class PublicStatsSummaryResponseDto implements PublicStatsSummaryDto {
   @ApiProperty({ enum: ["ok"] })

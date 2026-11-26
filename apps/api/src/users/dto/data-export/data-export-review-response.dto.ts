@@ -1,8 +1,5 @@
-import type {
-  DataExportReview,
-  ReviewTargetType,
-  ReviewVisibility,
-} from "@loomkeep/shared";
+import type { ReviewTargetType, ReviewVisibility } from "@loomkeep/shared";
+import type { DataExportReview } from "../../../account/data-export.types";
 
 class DataExportReviewRevisionResponseDto {
   /**

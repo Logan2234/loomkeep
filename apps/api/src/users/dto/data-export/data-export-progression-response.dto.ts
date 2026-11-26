@@ -1,4 +1,4 @@
-import type { DataExportProgression } from "@loomkeep/shared";
+import type { DataExportProgression } from "../../../account/data-export.types";
 
 class DataExportXpEntryResponseDto {
   /**

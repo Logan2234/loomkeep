@@ -1,12 +1,4 @@
-import type {
-  ApiV1CalendarEpisodeDto,
-  ApiV1LibraryEntryDto,
-  ApiV1LibrarySort,
-  ApiV1Phase,
-  Locale,
-  PagedResult,
-  StatsDomain,
-} from "@loomkeep/shared";
+import type { Locale, PagedResult, StatsDomain } from "@loomkeep/shared";
 import {
   BookStatus,
   EntryStatus,
@@ -35,6 +27,12 @@ import {
 } from "../../stats/status-bucket.util";
 import { DomainGateService } from "../../users/domain-gate.service";
 import type { ListEntriesFilters } from "../../work/entry-lifecycle.util";
+import type {
+  ApiV1CalendarEpisodeDto,
+  ApiV1LibraryEntryDto,
+  ApiV1LibrarySort,
+  ApiV1Phase,
+} from "./api-v1.types";
 import {
   fromBookEntry,
   fromGameEntry,

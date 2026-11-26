@@ -1,4 +1,4 @@
-import type { ApiV1StatsSummaryDto } from "@loomkeep/shared";
+import type { ApiV1StatsSummaryDto } from "../api-v1.types";
 
 export class ApiV1MusicStatsResponseDto implements NonNullable<
   ApiV1StatsSummaryDto["music"]

@@ -1,4 +1,4 @@
-import type { ApiV1StatsSummaryDto } from "@loomkeep/shared";
+import type { ApiV1StatsSummaryDto } from "../api-v1.types";
 
 export class ApiV1VideoStatsResponseDto implements NonNullable<
   ApiV1StatsSummaryDto["video"]

@@ -1,8 +1,8 @@
-import type { ResolveLinkResultDto } from "@loomkeep/shared";
 import { Controller, Get, Query } from "@nestjs/common";
 import { ApiOkResponse } from "@nestjs/swagger";
 import { ResolveLinkResultResponseDto } from "./dto/resolve-link-response.dto";
 import { LinkResolverService } from "./link-resolver.service";
+import type { ResolveLinkResultDto } from "./link.types";
 
 @Controller("links")
 export class LinksController {

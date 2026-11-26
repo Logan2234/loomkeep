@@ -1,7 +1,7 @@
 // Gamification: XP ledger, level curve and reward scale.
-// The level curve (xpForLevel/levelForXp) and the full barème (amount/cap/
-// source per reason) live in packages/shared/src/level.ts and xp-rules.ts —
-// pure data/functions shared with the web, kept out of Prisma entirely.
+// The level curve (xpForLevel/levelForXp, packages/shared/src/level.ts,
+// shared with the web) and the full barème (amount/cap/source per reason,
+// apps/api/src/gamification/xp-rules.ts) are pure data, kept out of Prisma.
 
 // One credited unit of XP. A reversal stamps `revokedAt` rather than deleting
 // the row, so the history can show what was taken back; every sum reads live

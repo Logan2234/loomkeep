@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { nextInRewatch } from "./rewatch";
+import { nextInRewatch } from "./rewatch.util";
 
 const run = ["e1", "e2", "e3", "e4"];
 const next = (seenAgain: string[]) =>

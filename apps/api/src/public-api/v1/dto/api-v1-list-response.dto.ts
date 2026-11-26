@@ -1,4 +1,5 @@
-import type { ApiV1ListDto, ListKind, ListVisibility } from "@loomkeep/shared";
+import type { ListKind, ListVisibility } from "@loomkeep/shared";
+import type { ApiV1ListDto } from "../api-v1.types";
 
 import {
   ListKind as ListKindValues,

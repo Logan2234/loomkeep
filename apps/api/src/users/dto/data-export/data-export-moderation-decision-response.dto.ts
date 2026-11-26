@@ -1,11 +1,11 @@
 import type {
-  DataExportModerationDecision,
   ModerationLegalBasis,
   ModerationMeasure,
   ReportCategory,
   ReportMotif,
   ReportTargetType,
 } from "@loomkeep/shared";
+import type { DataExportModerationDecision } from "../../../account/data-export.types";
 
 export class DataExportModerationDecisionResponseDto implements DataExportModerationDecision {
   /**

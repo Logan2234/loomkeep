@@ -1,9 +1,9 @@
 import type {
-  DataExportVisibilitySetting,
   Domain,
   VisibilityAudience,
   VisibilityFacet,
 } from "@loomkeep/shared";
+import type { DataExportVisibilitySetting } from "../../../account/data-export.types";
 
 export class DataExportVisibilitySettingResponseDto implements DataExportVisibilitySetting {
   /**

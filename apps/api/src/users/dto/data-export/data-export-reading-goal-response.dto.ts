@@ -1,4 +1,4 @@
-import type { DataExportReadingGoal } from "@loomkeep/shared";
+import type { DataExportReadingGoal } from "../../../account/data-export.types";
 
 export class DataExportReadingGoalResponseDto implements DataExportReadingGoal {
   /**

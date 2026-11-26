@@ -1,4 +1,5 @@
-import type { ApiV1ReviewDto, ReviewVisibility } from "@loomkeep/shared";
+import type { ReviewVisibility } from "@loomkeep/shared";
+import type { ApiV1ReviewDto } from "../api-v1.types";
 
 import { ReviewVisibility as ReviewVisibilityValues } from "@loomkeep/shared";
 

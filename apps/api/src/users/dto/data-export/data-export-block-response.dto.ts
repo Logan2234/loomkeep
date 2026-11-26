@@ -1,4 +1,4 @@
-import type { DataExportBlock } from "@loomkeep/shared";
+import type { DataExportBlock } from "../../../account/data-export.types";
 
 export class DataExportBlockResponseDto implements DataExportBlock {
   /**

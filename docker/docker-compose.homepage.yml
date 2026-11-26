@@ -1,12 +1,12 @@
 # Landing page aggregating every dashboard in this stack into one set of
-# link tiles. Homepage has no login of its own — see docker/README.md
-# § "Access control per public subdomain" for how it's gated (Cloudflare
-# Access on the public instance, Authelia `forward_auth` for self-hosters).
+# link tiles. Homepage has no login of its own: keep it behind Cloudflare
+# Access (docker-compose.tunnel.yml) or off a public hostname — see
+# docker/README.md § "Access control per public subdomain".
 #
 #   docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.tunnel.yml -f docker-compose.homepage.yml up -d --build
 #
-# Static config only — no Docker socket mount, since Portainer/Grafana/
-# Prometheus/cAdvisor already give per-container metrics with history.
+# Static config only — no Docker socket mount, since Grafana/Prometheus/
+# cAdvisor already give per-container metrics with history.
 # Widget API keys are passed as HOMEPAGE_VAR_* env vars, substituted into
 # the config as {{HOMEPAGE_VAR_X}} to keep secrets out of the committed YAML.
 services:
@@ -20,8 +20,6 @@ services:
         max-file: "5"
     environment:
       HOMEPAGE_ALLOWED_HOSTS: home.${DOMAIN:?set DOMAIN in .env}
-      HOMEPAGE_VAR_PORTAINER_API_KEY: ${PORTAINER_API_KEY:-}
-      HOMEPAGE_VAR_PORTAINER_ENV_ID: ${PORTAINER_ENV_ID:-1}
       HOMEPAGE_VAR_GRAFANA_USER: ${GRAFANA_ADMIN_USER:-admin}
       HOMEPAGE_VAR_GRAFANA_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-}
       HOMEPAGE_VAR_GLITCHTIP_API_TOKEN: ${GLITCHTIP_API_TOKEN:-}

@@ -1,4 +1,4 @@
-import type { DataExportAccountRecord } from "@loomkeep/shared";
+import type { DataExportAccountRecord } from "../../../account/data-export.types";
 
 class DataExportAvatarResponseDto {
   /**

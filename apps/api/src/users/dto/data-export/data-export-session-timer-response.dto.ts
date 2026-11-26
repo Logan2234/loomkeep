@@ -1,4 +1,5 @@
-import type { DataExportSessionTimer, Domain } from "@loomkeep/shared";
+import type { Domain } from "@loomkeep/shared";
+import type { DataExportSessionTimer } from "../../../account/data-export.types";
 
 export class DataExportSessionTimerResponseDto implements DataExportSessionTimer {
   /**

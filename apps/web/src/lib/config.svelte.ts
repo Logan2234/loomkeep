@@ -1,4 +1,4 @@
-import { Domain } from "@loomkeep/shared";
+import { Domain, type PublicConfigDto } from "@loomkeep/shared";
 
 /**
  * Global runtime config (Svelte 5 runes), loaded once at startup from
@@ -9,8 +9,10 @@ import { Domain } from "@loomkeep/shared";
  * instead, the safe direction for a security gate (fail closed, not open,
  * if the config fetch fails). `domains` defaults to every domain: hiding them
  * all on a failed fetch would empty the app, and the API enforces the gate.
+ * `implements` keeps it in step with the API's contract: a field added to
+ * `GET /api/config` has to land here too.
  */
-class AppConfig {
+class AppConfig implements PublicConfigDto {
   socialEnabled = $state(false);
   chatEnabled = $state(false);
   gamificationEnabled = $state(false);

@@ -1,15 +1,11 @@
-import type {
-  ApiV1ListDetailDto,
-  ApiV1ListDto,
-  ListDto,
-  Locale,
-} from "@loomkeep/shared";
+import type { ListDto, Locale } from "@loomkeep/shared";
 import { ErrorCode } from "@loomkeep/shared";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { AppException } from "../../common/app.exception";
 import { ListService } from "../../lists/list.service";
 import { isSocialEnabled } from "../../social/social.config";
+import type { ApiV1ListDetailDto, ApiV1ListDto } from "./api-v1.types";
 import { webOriginOf } from "./library-v1.service";
 import { toTarget } from "./v1.mapper";
 import { WorkTitlesService } from "./work-titles.service";

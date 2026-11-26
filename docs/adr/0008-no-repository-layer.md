@@ -32,11 +32,36 @@ plus l'étendent (`{ ...USER_SUMMARY_SELECT, preferences: … }`).
 On ne crée pas de requête nommée par principe : une requête qu'un seul service
 utilise reste dans ce service.
 
+**Chaque table n'est écrite que par son module propriétaire** (complément du
+26/11/2026). Le propriétaire est le dossier de `src/` qui porte le nom du
+fichier de schéma où la table est déclarée : `games.prisma` → `games/`.
+`media.prisma`, partagé entre deux modules, a été découpé en `catalog.prisma`
+et `library.prisma`. Un autre module qui doit changer la table appelle le
+propriétaire (un writer comme `users/user-url-token.writer.ts`, ou un service)
+ou publie un événement qu'il écoute (ADR 0010). Les lectures restent libres.
+
+`src/table-ownership.spec.ts` le vérifie sur les écritures Prisma
+(`create`, `update`, `upsert`, `delete` et leurs variantes `Many`). Deux
+dérogations y sont nommées :
+
+- les copropriétaires, quand deux modules partagent vraiment une table :
+  `User`, dont auth écrit les identifiants et les seconds facteurs, et account
+  le calendrier de suppression ;
+- les franchissements antérieurs à la règle, chacun avec sa raison (purge de
+  la suppression de compte, cron de nettoyage des secrets d'auth…). Cette
+  liste ne fait que rétrécir : une entrée qui ne correspond plus à aucune
+  écriture fait échouer le test.
+
 ## Conséquences
 
 - Renommer une colonne lue par plusieurs modules se fait dans le fichier
   `*.queries.ts` du propriétaire ; le typage signale les appelants à adapter.
 - Les services gardent l'accès direct à Prisma, transactions comprises : pas de
   couche à traverser pour une requête simple.
-- La règle ne dit pas encore _qui_ a le droit d'écrire une table. C'est l'étape
-  suivante (propriété des tables, vérifiée par un test sur les écritures).
+- Une nouvelle écriture hors du propriétaire échoue en CI ; la corriger, c'est
+  passer par le propriétaire, pas allonger la liste.
+- Le test lit le source : une écriture imbriquée (`user.update({ data: {
+preferences: { upsert: … } } })`) ou un modèle atteint par une variable lui
+  échappe. La règle reste valable pour elles.
+- Les lectures ne sont pas encore encadrées (`User` est lu par 19 modules) :
+  ce serait l'étape suivante, avec les requêtes nommées pour point d'appui.

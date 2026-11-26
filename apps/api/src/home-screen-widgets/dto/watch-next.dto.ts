@@ -1,5 +1,5 @@
-import type { HomeScreenWidgetWatchNextDto } from "@loomkeep/shared";
 import { IsString, MaxLength } from "class-validator";
+import type { HomeScreenWidgetWatchNextDto } from "../home-screen-widget.types";
 
 export class WatchNextDto implements HomeScreenWidgetWatchNextDto {
   @IsString()

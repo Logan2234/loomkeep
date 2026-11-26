@@ -1,7 +1,7 @@
 // Entry point of the multi-file schema (prisma.config.ts points at this
 // folder): the generators, the datasource, and the enums several files share.
 // Every other file holds the tables one API module owns, named after it —
-// that module is the one that writes them (see CLAUDE.md, Data model).
+// that module is the one that writes them (src/table-ownership.spec.ts).
 
 generator client {
   provider = "prisma-client-js"

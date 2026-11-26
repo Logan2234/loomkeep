@@ -1,5 +1,6 @@
-// Owned by the media domain: apps/api/src/catalog (items, seasons, episodes)
-// and apps/api/src/library (entries, watches, replays, sagas).
+// Owned by apps/api/src/catalog: the media catalogue cache (items, sagas,
+// seasons, episodes and their translations). What users track of it is in
+// library.prisma.
 
 enum MediaType {
   MOVIE
@@ -20,16 +21,6 @@ enum ExternalSource {
   ANILIST
   TVDB
   IMDB
-}
-
-enum EntryStatus {
-  WATCHING
-  COMPLETED
-  PLANNED
-  DROPPED
-  // Series/anime: everything released is watched but the show is still airing.
-  // Never stored — it is a derived, read-time status (see LibraryService).
-  UP_TO_DATE
 }
 
 // On-demand cache: a media exists here only once at least one user references it.
@@ -58,8 +49,8 @@ model MediaItem {
   // Average minutes per episode (series/anime) or the film's runtime; null until
   // captured from the source. Used by the stats aggregation for watch time.
   runtimeMin        Int?
-  // Regular episodes (season > 0) cached so far — maintained by a trigger on
-  // Episode, never written by the app (see MediaEntry.watchedEpisodes).
+  /// Maintained by a trigger on Episode, never written by the app: regular
+  /// episodes (season > 0) cached so far. See MediaEntry.watchedEpisodes.
   episodeCount      Int           @default(0)
   // 18+ title (TMDB `adult` movies, AniList hentai). Restricted per-account.
   isAdult           Boolean       @default(false)
@@ -261,77 +252,4 @@ model EpisodeTranslation {
   episode Episode @relation(fields: [episodeId], references: [id], onDelete: Cascade)
 
   @@id([episodeId, locale])
-}
-
-model MediaEntry {
-  id                     String          @id @default(cuid())
-  userId                 String
-  mediaItemId            String
-  status                 EntryStatus     @default(PLANNED)
-  notes                  String?
-  favorite               Boolean         @default(false)
-  startedAt              DateTime?
-  finishedAt             DateTime?
-  // Source and loans follow the rules of entry-loan.util.ts; the source one
-  // is enforced by the *_ownershipSource_check constraint on all four entry
-  // tables (written in SQL in the migration).
-  ownershipStatus        OwnershipStatus @default(NONE)
-  // Free-form detail for DIGITAL/STREAMING (e.g. "Netflix"); null otherwise.
-  ownershipSource        String?
-  // Series/anime only: skip this show in the new-episode push/email digest.
-  // It stays in the release calendar — only the alerts are silenced.
-  episodeAlertsMuted     Boolean         @default(false)
-  // Set while the user rewatches a title they had finished: a series counts
-  // only the watches since this instant for its progress, a movie goes back
-  // to "to watch". Cleared once every aired episode is seen again (series)
-  // or the movie is logged as rewatched.
-  rewatchStartedAt       DateTime?
-  movieReleaseReminderAt DateTime?
-  // A scheduled reminder has no browser language to resolve an automatic country from.
-  movieReleaseRegion     String?
-  // Maintained by the database, never written by the app: triggers on
-  // EpisodeWatch (and on insert here) keep them equal to what the watches
-  // say — regular episodes (season > 0) watched, last viewing of any
-  // episode. See migration 20261019160000_materialized_library_progress.
-  watchedEpisodes        Int             @default(0)
-  lastWatchedAt          DateTime?
-  createdAt              DateTime        @default(now())
-  updatedAt              DateTime        @updatedAt
-
-  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  mediaItem MediaItem     @relation(fields: [mediaItemId], references: [id], onDelete: Cascade)
-  replays   MovieReplay[]
-  loans     Loan[]
-
-  @@unique([userId, mediaItemId])
-  // "Who tracks this work": notification scans, WorkFriends, hidden_gem.
-  @@index([mediaItemId])
-}
-
-// One row per completed replay, beyond the entry's own first completion —
-// Movies only: series/anime rewatches
-// are tracked per-episode via EpisodeWatch instead.
-model MovieReplay {
-  id           String   @id @default(cuid())
-  mediaEntryId String
-  finishedAt   DateTime @default(now())
-
-  mediaEntry MediaEntry @relation(fields: [mediaEntryId], references: [id], onDelete: Cascade)
-
-  @@index([mediaEntryId])
-}
-
-// One row per viewing: watching the same episode twice = two rows (rewatch).
-model EpisodeWatch {
-  id        String    @id @default(cuid())
-  userId    String
-  episodeId String
-  watchedAt DateTime? @default(now())
-
-  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  episode Episode @relation(fields: [episodeId], references: [id], onDelete: Cascade)
-
-  @@index([userId, episodeId])
-  // A user's viewings over a period: home stats, streaks, yearly recap.
-  @@index([userId, watchedAt])
 }

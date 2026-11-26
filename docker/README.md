@@ -7,6 +7,20 @@ service. This file only keeps what concerns the hosted instance and the
 decisions that span several files here. A setting's own reason lives as a
 comment next to it, in its compose or Caddy file.
 
+## What's here
+
+| Files                                                                        | For                                                              |
+| ---------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| `docker-compose.yml`, `docker-compose.prod.yml`, `Caddyfile`, `maintenance/` | Loomkeep itself: every instance                                  |
+| `docker-compose.ci.yml`                                                      | CI's e2e stack                                                   |
+| `docker-compose.{observability,glitchtip,umami,unleash,homepage}.yml`        | Optional services, documented for self-hosters                   |
+| `docker-compose.{cloudflare,tunnel}.yml`                                     | Running behind Cloudflare, documented for self-hosters           |
+| `backup-offsite.sh`                                                          | Offsite backups, documented for self-hosters                     |
+| `hosted/`                                                                    | loomkeep.app only (Quackback): nothing a self-hoster should need |
+
+An override in `hosted/` writes its paths relative to `docker/`, like every
+other override: Compose resolves them from the first file's folder.
+
 ## Images & deploy
 
 The `docker-push` job in `.github/workflows/images.yml` (called by `ci.yml`) builds
@@ -89,20 +103,17 @@ an existing volume, create it once by hand with the command in that file.
 Depends on whether Cloudflare Access is in front (loomkeep.app,
 `docker-compose.tunnel.yml`) or not (self-hosters, by default):
 
-- **With Cloudflare Access**: every admin hostname (`grafana.`, `portainer.`,
-  `errors.`, `flags.`, `home.`) goes through the tunnel below, gated by
-  GitHub SSO and MFA before reaching Caddy. Grafana, GlitchTip and Portainer
-  use Access as their OIDC provider too. Unleash needs bypasses for
-  `/api/client/*` and `/api/frontend/*`, Grafana for `/api/health` from
-  UptimeRobot's addresses.
-- **Without it**: Authelia, either as an OIDC provider (Grafana, GlitchTip,
-  Portainer) or through Caddy's `forward_auth` (Homepage, which has no login
-  of its own). Unleash and Umami keep only their own login: their frontend
-  API and tracker must stay reachable by every visitor. Quackback has its own
-  email login.
+- **With Cloudflare Access**: every admin hostname (`grafana.`, `errors.`,
+  `flags.`, `home.`) goes through the tunnel below, gated by GitHub SSO and
+  MFA before reaching Caddy. Grafana and GlitchTip use Access as their OIDC
+  provider too (`GRAFANA_OIDC_ENABLED` and the `GRAFANA_OIDC_*` variables).
+  Unleash needs bypasses for `/api/client/*` and `/api/frontend/*`, Grafana
+  for `/api/health` from UptimeRobot's addresses.
+- **Without it**: each tool keeps its own login. Homepage has none, so it
+  stays off a public hostname. Quackback has its own email login.
 
-Authelia isn't deployed on loomkeep.app any more; it stays the documented
-path for self-hosters without Cloudflare.
+No single sign-on service ships here any more (Authelia was removed, with
+Portainer): a self-hoster who wants one brings their own.
 
 ## Cloudflare Tunnel + Access
 
@@ -129,10 +140,10 @@ Two independent layers, encrypted for the same age public key:
 Key generation and restoring:
 [Upgrades & backups](https://docs.loomkeep.app/self-hosting/upgrades-and-backups/).
 
-## User feedback board (`docker-compose.quackback.yml`)
+## User feedback board (`hosted/docker-compose.quackback.yml`)
 
 [Quackback](https://quackback.io) runs as its own unmodified deployment,
-bootstrapped with `quackback-bootstrap.sh`: translating its stack (its own
+bootstrapped with `hosted/quackback-bootstrap.sh`: translating its stack (its own
 Postgres, Dragonfly, MinIO) into this repo would drift with every upstream
 change. The override here only routes Caddy to its published port. The
 in-app launcher appears only when the web has `PUBLIC_QUACKBACK_URL`
