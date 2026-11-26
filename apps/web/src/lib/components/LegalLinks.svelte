@@ -49,6 +49,16 @@
       {m.common_terms()}
     </a>
 
+    <span class="mx-1.5">·</span>
+
+    <a
+      href="/legal/accessibility"
+      target="_blank"
+      rel="noopener noreferrer"
+      class="btn-text font-normal">
+      {m.accessibility_page_title()}
+    </a>
+
     {#if appConfig.socialEnabled}
       <span class="mx-1.5">·</span>
 

@@ -146,6 +146,11 @@
           event: "footer-terms",
         },
         {
+          label: m.accessibility_page_title(),
+          href: "/legal/accessibility",
+          event: "footer-accessibility",
+        },
+        {
           label: m.common_transparency(),
           href: "/legal/transparency",
           event: "footer-transparency",

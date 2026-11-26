@@ -78,6 +78,7 @@ const LAYERS = [
     modules: [
       "account/account.module",
       "admin/admin.module",
+      "contact/contact.module",
       "chat/chat-api.module",
       "import/import.module",
       "public-api/public-api.module",

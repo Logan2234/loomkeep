@@ -1,9 +1,5 @@
 <script lang="ts">
-  import {
-    getImportAvailability,
-    getImportQuota,
-    getLastImportRun,
-  } from "#lib/api/client.js";
+  import { getImportAvailability, getLastImportRun } from "#lib/api/client.js";
   import { keys } from "#lib/api/keys.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
   import { auth } from "#lib/auth.svelte.js";
@@ -13,7 +9,6 @@
   import EmptyState from "#lib/components/EmptyState.svelte";
   import NewBadge from "#lib/components/NewBadge.svelte";
   import RelativeTime from "#lib/components/RelativeTime.svelte";
-  import Tooltip from "#lib/components/Tooltip.svelte";
   import { DOMAINS } from "#lib/constants/domains.js";
   import {
     IMPORT_SOURCE_BRANDS,
@@ -28,7 +23,6 @@
   import {
     Domain,
     type ImportAvailabilityDto,
-    type ImportQuotaDto,
     type ImportSource,
   } from "@loomkeep/shared";
 
@@ -62,16 +56,9 @@
     key: keys.import.availability(),
     fetch: getImportAvailability,
   }));
-  const quotaQuery = createApiQuery(() => ({
-    key: keys.import.quota(),
-    fetch: getImportQuota,
-  }));
   const availability = $derived<ImportAvailabilityDto>(
     availabilityQuery.data ?? {},
   );
-  const quota = $derived<ImportQuotaDto>(quotaQuery.data ?? {});
-
-  const premiumLocked = $derived(auth.isPremiumLocked);
 
   // "Did it work?" is the question people come back here with, and the
   // source list can't answer it. The last run does, before anything else.
@@ -138,23 +125,14 @@
   <div class="flex flex-col gap-8">
     {#each orderedGroups as { domain, sources } (domain)}
       {#if isDomainEnabled(domain)}
-        {@const usedUp = premiumLocked && quota[domain] === true}
         <section>
           <p class="timecode mb-3 flex items-center gap-2 text-xs uppercase">
             {DOMAINS[domain].label}
-            {#if premiumLocked && !usedUp}
-              <span
-                class="bg-surface-2 text-dim rounded-full px-2 py-0.5 text-[0.65rem] font-semibold normal-case">
-                {m.import_free_quota()}
-              </span>
-            {/if}
           </p>
           <div class="flex flex-col gap-2">
             {#each sources as source (source.label)}
               {@const available =
-                !source.comingSoon &&
-                availability[source.type] !== false &&
-                !usedUp}
+                !source.comingSoon && availability[source.type] !== false}
               {#if !source.comingSoon && available}
                 <a
                   id={`import-source-${source.type}`}
@@ -194,22 +172,12 @@
                     </span>
                     <span class="text-dim text-sm">{source.description}</span>
                   </span>
-                  {#if usedUp}
-                    <Tooltip text={m.import_free_quota_used()}>
-                      <span
-                        class="bg-accent text-accent-fg inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold">
-                        <Icon name="lock" class="h-3 w-3" />
-                        {m.common_premium()}
-                      </span>
-                    </Tooltip>
-                  {:else}
-                    <span
-                      class="bg-surface-2 text-dim rounded-full px-2.5 py-0.5 text-xs font-semibold">
-                      {source.comingSoon
-                        ? m.common_coming_soon()
-                        : m.common_unavailable()}
-                    </span>
-                  {/if}
+                  <span
+                    class="bg-surface-2 text-dim rounded-full px-2.5 py-0.5 text-xs font-semibold">
+                    {source.comingSoon
+                      ? m.common_coming_soon()
+                      : m.common_unavailable()}
+                  </span>
                 </div>
               {/if}
             {/each}

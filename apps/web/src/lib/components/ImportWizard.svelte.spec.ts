@@ -128,7 +128,6 @@ async function analyzeExport() {
 
 beforeEach(() => {
   commitBody = null;
-  server.use(http.get(apiUrl("/import/quota"), () => HttpResponse.json({})));
 });
 
 describe("ImportWizard", () => {

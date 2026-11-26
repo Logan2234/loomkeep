@@ -151,6 +151,8 @@ export const ErrorCode = {
   HomeScreenWidgetTokenInvalid: "home_screen_widgets.token_invalid",
 
   // reports
+  ContactUnavailable: "contact.unavailable",
+  ContactSendFailed: "contact.send_failed",
   ReportReasonRequired: "reports.reason_required",
   ReportInvalidMotif: "reports.invalid_motif",
   ReportNotFound: "reports.not_found",
@@ -260,7 +262,6 @@ export const ErrorCode = {
   ImportJobAlreadyRunning: "import.job_already_running",
   ImportInterrupted: "import.interrupted",
   ImportUnknownSource: "import.unknown_source",
-  ImportFreeQuotaExceeded: "import.free_quota_exceeded",
   ImportSourceUnavailable: "import.source_unavailable",
   ImportSteamProfileNotFound: "import.steam_profile_not_found",
   ImportSteamLibraryPrivate: "import.steam_library_private",

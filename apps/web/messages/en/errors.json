@@ -66,7 +66,6 @@
   "apierr_import_job_no_analysis": "This import hasn't been analyzed yet.",
   "apierr_import_job_already_running": "Another import is already running. Wait for it to finish before starting a new one.",
   "apierr_import_unknown_source": "Unknown import source.",
-  "apierr_import_free_quota_exceeded": "One free import per domain, go premium to re-import in this domain.",
   "apierr_import_source_unavailable": "The import source is temporarily unavailable, try again in a moment.",
   "apierr_import_steam_profile_not_found": "Steam profile not found, check the id or profile URL.",
   "apierr_import_steam_library_private": "Steam library inaccessible, the profile and game details must be public.",
@@ -249,5 +248,7 @@
   "apierr_user_deletion_not_scheduled": "No deletion is scheduled for this account.",
   "apierr_user_acquisition_source_already_set": "You've already answered this question.",
   "apierr_user_acquisition_source_disabled": "This instance doesn't ask this question.",
-  "apierr_newsletter_send_not_found": "This send no longer exists."
+  "apierr_newsletter_send_not_found": "This send no longer exists.",
+  "apierr_contact_unavailable": "This instance doesn't receive messages. Open a ticket on feedback.loomkeep.app instead.",
+  "apierr_contact_send_failed": "The message didn't go out. Try again in a moment."
 }

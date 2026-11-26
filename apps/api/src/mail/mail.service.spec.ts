@@ -997,4 +997,54 @@ describe("MailService template gallery", () => {
 
     expect(sent).toBe(false);
   });
+
+  describe("accessibility reports", () => {
+    function smtp(support?: string) {
+      process.env.SMTP_HOST = "smtp.example.com";
+      process.env.SMTP_USER = "user";
+      process.env.SMTP_PASS = "pass";
+      process.env.WEB_ORIGIN = "https://nas.example";
+      if (support) process.env.MAIL_SUPPORT_ADDRESS = support;
+      const sendMail = vi.fn().mockResolvedValue(undefined);
+      vi.mocked(nodemailer.createTransport).mockReturnValue({
+        sendMail,
+      } as never);
+      return sendMail;
+    }
+
+    it("goes to the support mailbox, with the visitor only in Reply-To and their text escaped", async () => {
+      const sendMail = smtp("support@instance.example");
+      const service = new MailService(quota);
+
+      await expect(
+        service.sendAccessibilityReport(
+          {
+            message: "Le bouton <script>alert(1)</script> n'a pas de nom.",
+            page: "/app/search",
+            email: "visitor@example.com",
+          },
+          "fr",
+        ),
+      ).resolves.toBe(true);
+
+      const [mail] = sendMail.mock.calls[0];
+      expect(mail.to).toBe("support@instance.example");
+      expect(mail.replyTo).toBe("visitor@example.com");
+      expect(mail.from).not.toContain("visitor@example.com");
+      expect(mail.html).not.toContain("<script>");
+      expect(mail.html).toContain("&lt;script&gt;");
+      expect(mail.html).toContain("/app/search");
+    });
+
+    it("can't receive one on a self-host without a support mailbox", async () => {
+      const sendMail = smtp();
+      const service = new MailService(quota);
+
+      expect(service.canReceiveContact()).toBe(false);
+      await expect(
+        service.sendAccessibilityReport({ message: "x".repeat(30) }, "en"),
+      ).resolves.toBe(false);
+      expect(sendMail).not.toHaveBeenCalled();
+    });
+  });
 });

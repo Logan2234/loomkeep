@@ -299,8 +299,6 @@ const MESSAGES = {
   [ErrorCode.ImportJobAlreadyRunning]: () =>
     m.apierr_import_job_already_running(),
   [ErrorCode.ImportUnknownSource]: () => m.apierr_import_unknown_source(),
-  [ErrorCode.ImportFreeQuotaExceeded]: () =>
-    m.apierr_import_free_quota_exceeded(),
   [ErrorCode.ImportSourceUnavailable]: () =>
     m.apierr_import_source_unavailable(),
   [ErrorCode.ImportSteamProfileNotFound]: () =>
@@ -335,6 +333,8 @@ const MESSAGES = {
     m.apierr_gamification_badge_secret(),
   [ErrorCode.GamificationBadgeLimitReached]: () =>
     m.apierr_gamification_badge_limit_reached(),
+  [ErrorCode.ContactUnavailable]: () => m.apierr_contact_unavailable(),
+  [ErrorCode.ContactSendFailed]: () => m.apierr_contact_send_failed(),
 } satisfies Record<ErrorCode, () => string>;
 
 /**

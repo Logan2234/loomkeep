@@ -21,6 +21,7 @@ import {
   buildWelcome,
 } from "./templates/account";
 import {
+  buildAccessibilityReport,
   buildAdminNewUser,
   buildImportAlert,
   buildJobAlert,
@@ -485,6 +486,25 @@ export function mailGallery(
       label: "Nouvelle inscription (admins)",
       fields: [{ key: "name", label: "Nom affiché", default: "Alice" }],
       build: (locale, v) => buildAdminNewUser(layout, locale, v.name),
+    },
+    accessibilityReport: {
+      label: "Obstacle d'accessibilité signalé (support)",
+      fields: [
+        {
+          key: "message",
+          label: "Message",
+          default:
+            "Le bouton « Ajouter » de la recherche n'a pas de nom pour TalkBack.",
+        },
+        { key: "page", label: "Page", default: "/app/search" },
+        { key: "email", label: "Adresse", default: "alex@example.com" },
+      ],
+      build: (locale, v) =>
+        buildAccessibilityReport(layout, locale, {
+          message: v.message,
+          page: v.page || undefined,
+          email: v.email || undefined,
+        }),
     },
     inactivityWarning: {
       label: "Relance compte inactif",

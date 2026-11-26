@@ -16,7 +16,6 @@ import {
   type ImportLastRunDto,
   type ImportPlan,
   type ImportProgressEvent,
-  type ImportQuotaDto,
   type ImportReport,
   type ImportReportTile,
   type ImportSource,
@@ -29,7 +28,6 @@ import { ConfigService } from "@nestjs/config";
 import { randomUUID } from "node:crypto";
 import { AppException } from "../common/app.exception";
 import { toPagedResult, type ParsedPage } from "../common/pagination.util";
-import { EntitlementService } from "../entitlements/entitlement.service";
 import { EventsGateway } from "../events/events.gateway";
 import { AchievementService } from "../gamification/achievements/achievement.service";
 
@@ -96,7 +94,6 @@ export class ImportJobService {
     @Inject(IMPORT_SOURCES) sources: ImportReq[],
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
-    private readonly entitlements: EntitlementService,
     private readonly xp: XpService,
     private readonly achievements: AchievementService,
     private readonly events: EventsGateway,
@@ -124,32 +121,6 @@ export class ImportJobService {
     }
 
     return availability;
-  }
-
-  /**
-   * Per `Domain`, whether this user has already used their one free import
-   * in it — see {@link assertImportAllowed}. Domains never successfully
-   * imported into are simply absent from the map.
-   */
-  async getQuota(userId: string): Promise<ImportQuotaDto> {
-    const runs = await this.prisma.importRun.findMany({
-      where: {
-        userId,
-        status: "SUCCESS",
-        itemCount: { gt: 0 },
-        domain: { not: null },
-      },
-      select: { domain: true },
-      distinct: ["domain"],
-    });
-
-    const quota: ImportQuotaDto = {};
-
-    for (const run of runs) {
-      if (run.domain) quota[run.domain as Domain] = true;
-    }
-
-    return quota;
   }
 
   /**
@@ -243,17 +214,15 @@ export class ImportJobService {
     this.pruneExcessJobs(userId);
     const source = this.sourceOrThrow(sourceId);
 
-    // Registered before the first await, not after the parse: the running-job
-    // check above is only worth anything if the slot is claimed in the same
-    // synchronous turn. Otherwise two concurrent POSTs both pass it while the
-    // first is still awaiting its quota check, and the user gets two imports.
+    // Registered before the parse: the running-job check above is only worth
+    // anything if the slot is claimed in the same synchronous turn, or two
+    // concurrent POSTs both pass it and the user gets two imports.
     const job = this.newJob(userId, sourceId, "analyze", null);
     this.jobs.set(job.id, job);
 
     let parsed: unknown;
 
     try {
-      await this.assertImportAllowed(userId, source.searchDomain);
       parsed = source.parseInput(dto.input);
     } catch (error) {
       // Nothing ran, so the reservation must go — leaving it behind would lock
@@ -273,8 +242,8 @@ export class ImportJobService {
 
     // Only the newest analysis can still be committed, so no older one needs
     // to keep its parse model alive. Released once the new file is read, not
-    // before: a wrong file (or the free quota) mustn't cost the analysis the
-    // user already reviewed.
+    // before: a wrong file mustn't cost the analysis the user already
+    // reviewed.
     this.releasePayloads(userId);
     job.parsed = parsed;
 
@@ -487,33 +456,6 @@ export class ImportJobService {
         `Unknown import source: ${sourceId}`,
       );
     return source;
-  }
-
-  /**
-   * A free account gets one successful import per `Domain`, regardless of
-   * source (TV Time then Trakt on MEDIA counts as a 2nd MEDIA import) — see
-   * docs/adr/0001-open-core-agpl.md. No-op while the `premium-features` flag
-   * is off (see `EntitlementService#isEffectivelyPremium`) or once premium.
-   */
-  private async assertImportAllowed(
-    userId: string,
-    domain: Domain,
-  ): Promise<void> {
-    if (await this.entitlements.isEffectivelyPremium(userId)) return;
-
-    const alreadyImported = await this.prisma.importRun.findFirst({
-      where: { userId, domain, status: "SUCCESS", itemCount: { gt: 0 } },
-      select: { id: true },
-    });
-
-    if (alreadyImported) {
-      throw new AppException(
-        HttpStatus.FORBIDDEN,
-        ErrorCode.ImportFreeQuotaExceeded,
-        undefined,
-        "One free import per domain — go premium to re-import in this domain.",
-      );
-    }
   }
 
   private newJob(

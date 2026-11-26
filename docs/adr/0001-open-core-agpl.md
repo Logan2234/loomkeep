@@ -191,8 +191,9 @@ faire tenir.
   `StatsService` au démarrage (`setAdvancedStatsSource`). Mêmes routes, mêmes
   DTO : sans `ee/`, le web reçoit la forme verrouillée qu'il recevait déjà.
 - **Dans le cœur AGPL** : les **quotas et paliers** de fonctionnalités
-  gratuites (un import par domaine, digest quotidien) et les domaines en accès
-  anticipé. Leur code est de toute façon public, puisque la fonctionnalité de
+  gratuites (digest quotidien) et les domaines en accès anticipé. Le quota
+  d'un import par domaine a été retiré en novembre 2026 (MON-02) : il taxait
+  l'arrivée d'un nouveau venu, au moment même où il décide de rester. Leur code est de toute façon public, puisque la fonctionnalité de
   base est gratuite : ce qui se vend là, c'est le service hébergé.
 - **Déplacer une fonctionnalité déjà publiée a un effet**, même si les
   anciennes versions restent AGPL pour toujours : pour la garder

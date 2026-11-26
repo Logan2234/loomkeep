@@ -89,7 +89,6 @@ export const keys = {
     availability: () => ["import", "availability"] as const,
     history: () => ["import", "history"] as const,
     lastRun: () => ["import", "last-run"] as const,
-    quota: () => ["import", "quota"] as const,
     job: (source: string, jobId: string) =>
       ["import", "job", source, jobId] as const,
   },
