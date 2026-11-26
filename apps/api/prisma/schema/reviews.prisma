@@ -1,0 +1,71 @@
+// A vote cast on someone else's review — Reddit-style, one active vote per
+// (user, review), never shown attributed to a voter (only the aggregate score
+// + the viewer's own vote are ever surfaced).
+enum ReviewVoteValue {
+  UP
+  DOWN
+}
+
+// Social (P4): the single source of truth for a user's /10 rating on a target
+// (a work, or a media season/episode). Rating is mandatory, text optional.
+// Editing your own review always works (even with social off — it's your
+// rating); reading others' and the FRIENDS/PUBLIC audience are social-gated.
+// One review per (user, target); edits are historised in ReviewRevision.
+// targetId is not a FK (polymorphic across item/season/episode tables).
+model Review {
+  id         String           @id @default(cuid())
+  // Nullable: account deletion detaches the author (SetNull) instead of
+  // deleting the review — other users' votes/replies stay meaningful, the
+  // front renders a "Utilisateur supprimé" placeholder.
+  userId     String?
+  targetType ReviewTargetType
+  targetId   String
+  // 0–10 in half points (RATING_STEP), enforced by Review_rating_check —
+  // exact in a float, hence no Decimal.
+  rating     Float
+  text       String?
+  visibility ReviewVisibility @default(FRIENDS)
+  // Author-set, same manual flag as Comment.spoilerTag. Not part of the
+  // revision snapshot (a masking hint, not content).
+  spoilerTag Boolean          @default(false)
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+  user       User?            @relation(fields: [userId], references: [id], onDelete: SetNull)
+  revisions  ReviewRevision[]
+  votes      ReviewVote[]
+
+  @@unique([userId, targetType, targetId])
+  @@index([targetType, targetId])
+}
+
+// One active vote per (user, review) — a second vote on the same review
+// replaces the first (upsert on the unique pair), same pattern as
+// CommentReaction. Voting on your own review isn't allowed (checked in
+// ReviewService), so there's no self-vote case to model here.
+model ReviewVote {
+  id        String          @id @default(cuid())
+  reviewId  String
+  userId    String
+  value     ReviewVoteValue
+  createdAt DateTime        @default(now())
+
+  review Review @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([reviewId, userId])
+  // The unique leads with the other key: without this, deleting an account
+  // scans the whole table for its cascade.
+  @@index([userId])
+}
+
+// One immutable snapshot per review edit (V1, V2, …), newest by createdAt.
+model ReviewRevision {
+  id        String   @id @default(cuid())
+  reviewId  String
+  rating    Float
+  text      String?
+  createdAt DateTime @default(now())
+  review    Review   @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+
+  @@index([reviewId, createdAt])
+}

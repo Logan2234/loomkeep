@@ -1,0 +1,107 @@
+// What a comment thread targets. Same shape as ReviewTargetType (a comment
+// under a work, or one of its seasons/episodes).
+enum CommentTargetType {
+  MEDIA
+  SEASON
+  EPISODE
+  GAME
+  BOOK
+  MUSIC
+}
+
+// Social (P4): a comment/reply on an item (work, season or episode —
+// CommentTargetType mirrors ReviewTargetType). Flat + one reply level: a
+// reply's parentId always points at a top-level comment (never chained), the
+// UI enforces this by only offering "reply" on top-level comments. Deletion is
+// soft (text cleared, deletedAt set) so replies stay attached and readable —
+// hard-deleting a parent would orphan or lose the whole sub-thread.
+model Comment {
+  id             String            @id @default(cuid())
+  targetType     CommentTargetType
+  targetId       String
+  // Nullable: account deletion detaches the author (SetNull) rather than
+  // cascading, for the same reason as the soft-delete above — a hard delete
+  // would orphan replies other users posted under this comment.
+  authorId       String?
+  parentId       String?
+  text           String?
+  // Author-set manual spoiler tag. The read model maps it directly to the
+  // viewer-facing masking hint; there is no automatic progression-based gate.
+  spoilerTag     Boolean           @default(false)
+  // Last time the text or spoiler flag changed; null if never edited.
+  editedAt       DateTime?
+  deletedAt      DateTime?
+  // Set only by admin takedown (adminRemove) — distinguishes the tombstone
+  // shown to readers ("supprimé par un administrateur" vs the author's own
+  // "supprimé").
+  deletedByAdmin Boolean           @default(false)
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  author    User?             @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  parent    Comment?          @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies   Comment[]         @relation("CommentReplies")
+  reactions CommentReaction[]
+  mentions  CommentMention[]
+
+  @@index([targetType, targetId, createdAt])
+  @@index([parentId])
+  // Per-author lookups: the chatterbox_* achievement count on every posted
+  // comment, entry removal's tombstoning, account export and deletion.
+  @@index([authorId])
+}
+
+// One active reaction per (user, comment) — posting a new emote replaces it
+// (upsert on the unique pair), not a multi-emote-per-user model.
+model CommentReaction {
+  id        String   @id @default(cuid())
+  commentId String
+  userId    String
+  emote     Emote
+  createdAt DateTime @default(now())
+
+  comment Comment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([commentId, userId])
+  // The unique leads with the other key: without this, deleting an account
+  // scans the whole table for its cascade.
+  @@index([userId])
+}
+
+// Up to when a member read a work's discussion: the unread count of the
+// "Œuvres" tab in Messages. Writing in a discussion reads it too.
+model CommentThreadRead {
+  userId       String
+  targetType   CommentTargetType
+  targetId     String
+  // Null for a discussion muted before it was ever read.
+  lastReadAt   DateTime?
+  // Muted: its new comments don't count in Messages' launcher nor its tab.
+  mutedAt      DateTime?
+  // Pinned atop the "Œuvres" tab, most recently pinned first.
+  pinnedAt     DateTime?
+  // Left out of the "Œuvres" tab until the member writes in it or is
+  // mentioned in it again.
+  unfollowedAt DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, targetType, targetId])
+}
+
+// An explicit recipient selected from the discussion's mention picker. A raw
+// `@handle` in comment text intentionally creates no row and remains plain
+// text: only a deliberate picker choice may link or notify a person.
+model CommentMention {
+  commentId String
+  userId    String
+  start     Int
+  createdAt DateTime @default(now())
+
+  comment Comment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([commentId, start])
+  @@index([userId])
+}

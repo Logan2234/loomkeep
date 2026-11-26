@@ -1,0 +1,25 @@
+// Instance-wide settings, edited from Admin › Settings. A single row (id 1).
+// An env var named in INSTANCE_SETTING_ENV (@loomkeep/shared), when set,
+// overrides its column and locks it in the admin page.
+model InstanceSettings {
+  id                   Int      @id @default(1)
+  socialEnabled        Boolean  @default(false)
+  // Private messages between friends; only effective with socialEnabled.
+  chatEnabled          Boolean  @default(false)
+  gamificationEnabled  Boolean  @default(false)
+  registrationEnabled  Boolean  @default(true)
+  publicApiEnabled     Boolean  @default(true)
+  apiRateLimitFree     Int      @default(60)
+  apiRateLimitPremium  Int      @default(300)
+  updateCheckEnabled   Boolean  @default(true)
+  telemetryEnabled     Boolean  @default(true)
+  // Off for self-hosters; the hosted instance turns it on.
+  askAcquisitionSource Boolean  @default(false)
+  // A domain off, or without its catalogue key, is gone from the app; its
+  // library entries stay.
+  mediaDomainEnabled   Boolean  @default(true)
+  gamesDomainEnabled   Boolean  @default(true)
+  booksDomainEnabled   Boolean  @default(true)
+  musicDomainEnabled   Boolean  @default(true)
+  updatedAt            DateTime @updatedAt
+}

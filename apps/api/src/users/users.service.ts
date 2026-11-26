@@ -813,7 +813,7 @@ export class UsersService {
   /**
    * Live preview of what deleting the account would do, for the confirmation
    * modal — every category is always present, even at 0 rows, so the summary
-   * reads as exhaustive. Mirrors the `onDelete` behaviour in schema.prisma and
+   * reads as exhaustive. Mirrors the `onDelete` behaviour in the Prisma schema and
    * AccountDeletionService: owned rows cascade away; what other members can
    * see (reviews, comments, items added to their lists) is detached
    * (SetNull) instead; lists with editors change hands.

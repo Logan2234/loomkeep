@@ -1,0 +1,199 @@
+// What a report targets: a comment, a review, a profile, a list or a private
+// message.
+enum ReportTargetType {
+  COMMENT
+  REVIEW
+  USER
+  LIST
+  MESSAGE
+}
+
+// Top-level reason bucket for a report, chosen before a precise ReportMotif
+// (except OTHER, which skips straight to the free-text `reason` instead).
+// Deliberately generic across every ReportTargetType — not comment-specific —
+// so filing a report against a review/user/list later needs no enum change.
+enum ReportCategory {
+  SPAM
+  ILLEGAL_CONTENT
+  HARASSMENT
+  HATE_SPEECH
+  SEXUAL_CONTENT
+  VIOLENCE
+  MINOR_ENDANGERMENT
+  SPOILER
+  IMPERSONATION
+  MISINFORMATION
+  STOLEN_CONTENT
+  MISLEADING_REVIEW
+  NONCOMPLIANT_ACCOUNT
+  OTHER
+}
+
+// Precise reason within a ReportCategory. The category->motif mapping
+// (REPORT_CATEGORY_MOTIFS) is checked in ReportService.create and enforced by
+// the Report_motif_check / ModerationDecision_reasonMotif_check constraints,
+// written in SQL in the migration (Prisma can't declare them): a new motif
+// updates both. OTHER has no motif (null): the free-text `reason` carries
+// the detail instead.
+enum ReportMotif {
+  SPAM_PROMOTIONAL
+  SPAM_SUSPICIOUS_LINK
+  SPAM_REPEATED
+  ILLEGAL_PIRACY_LINK
+  ILLEGAL_TERRORISM
+  ILLEGAL_DEFAMATION
+  ILLEGAL_OTHER
+  HARASSMENT_INSULTS
+  HARASSMENT_THREATS
+  HARASSMENT_STALKING
+  HARASSMENT_DOXXING
+  HATE_RACISM
+  HATE_SEXISM_LGBTQ
+  HATE_OTHER
+  SEXUAL_EXPLICIT
+  VIOLENCE_GRAPHIC
+  MINOR_ENDANGERMENT_CONTENT
+  MINOR_ENDANGERMENT_SOLICITATION
+  SPOILER_UNTAGGED
+  IMPERSONATION_REAL_PERSON
+  MISINFORMATION_FALSE_FACT
+  STOLEN_CONTENT_PLAGIARIZED
+  STOLEN_CONTENT_IMAGE
+  MISLEADING_REVIEW_MANIPULATION
+  MISLEADING_REVIEW_OFF_TOPIC
+  ACCOUNT_BOT
+  ACCOUNT_UNDERAGE
+  ACCOUNT_BAN_EVASION
+  ACCOUNT_MANIPULATION
+}
+
+// The part of a profile a USER report is about (see ReportProfilePart in
+// packages/shared): narrows the picker's categories and points the moderator
+// at the matching measure.
+enum ReportProfilePart {
+  NAME
+  PHOTO
+  BIO
+  BEHAVIOUR
+}
+
+enum ReportStatus {
+  PENDING
+  RESOLVED
+  DISMISSED
+}
+
+// The restrictive measures actually implemented (see ModerationDecision) —
+// keep in lockstep with the CGU §9 sanctions list: the CGU must describe
+// exactly what the code can do, not more (DSA art. 14).
+enum ModerationMeasure {
+  COMMENT_REMOVED
+  REVIEW_REMOVED
+  LIST_REMOVED
+  LIST_EDITED
+  AVATAR_REMOVED
+  BIO_CLEARED
+  DISPLAY_NAME_CHANGED
+  ACCOUNT_SUSPENDED
+  ACCOUNT_DELETED
+  MESSAGE_REMOVED
+}
+
+// DSA art. 17(3)(d): whether the measure is grounded in the content's alleged
+// illegality (point a) or in a breach of the CGU (point b, tosClause names
+// the clause).
+enum ModerationLegalBasis {
+  ILLEGAL_CONTENT
+  TOS_BREACH
+}
+
+// Social (P4): a user-submitted report against a polymorphic target — a
+// comment today, extensible to reviews/profiles later without a new table
+// (targetType/targetId, same pattern as Review/ActivityEvent). Feeds the admin
+// moderation queue (/admin/reports). targetId is not a FK (polymorphic).
+model Report {
+  id            String             @id @default(cuid())
+  targetType    ReportTargetType
+  targetId      String
+  // Nullable: account deletion detaches the reporter (SetNull) — same
+  // pattern as resolvedById below — so the moderation record survives.
+  reporterId    String?
+  // Nullable: reports filed before the category/motif picker existed have
+  // neither. New submissions always set category (motif too, except OTHER).
+  category      ReportCategory?
+  motif         ReportMotif?
+  // USER reports only, always set for them.
+  profilePart   ReportProfilePart?
+  reason        String?
+  status        ReportStatus       @default(PENDING)
+  createdAt     DateTime           @default(now())
+  resolvedAt    DateTime?
+  resolvedById  String?
+  // Who the reported content belongs to (author, list owner, the profile's
+  // account), kept once the content itself is gone: an author deleting
+  // what got reported still shows in their moderation history. Null when
+  // unknown (pre-existing content already gone) or the account was deleted.
+  targetOwnerId String?
+
+  reporter            User?                @relation("ReportsFiled", fields: [reporterId], references: [id], onDelete: SetNull)
+  resolvedBy          User?                @relation("ReportsResolved", fields: [resolvedById], references: [id], onDelete: SetNull)
+  targetOwner         User?                @relation("ReportsReceived", fields: [targetOwnerId], references: [id], onDelete: SetNull)
+  moderationDecisions ModerationDecision[]
+  // Plus, in SQL only (Prisma can't declare a partial index): one PENDING
+  // report per (reporterId, targetType, targetId), see
+  // 20261125160000_one_pending_report_per_reporter.
+
+  @@index([status, createdAt])
+  @@index([category])
+  @@index([reporterId, status, createdAt])
+  @@index([targetOwnerId])
+}
+
+// DSA art. 17 "statement of reasons" record — one row per restrictive measure
+// actually applied (not per report: DISMISSED/no-op reports never create one,
+// and admin account deletions can happen with no report at all, see
+// admin-users.controller.ts deleteUser). Deliberately its own table rather
+// than extra columns on Report: it has its own lifecycle (a legal notice,
+// never revised) and must survive the subject's account being deleted, which
+// Report's reporterId/resolvedById pattern already establishes (SetNull).
+// subjectEmail/subjectUsername are snapshotted (not read through the relation)
+// because ACCOUNT_DELETED rows outlive the user row itself.
+model ModerationDecision {
+  id         String            @id @default(cuid())
+  measure    ModerationMeasure
+  targetType ReportTargetType
+  // Comment id for COMMENT_REMOVED; equals subjectUserId for ACCOUNT_DELETED.
+  targetId   String
+
+  subjectUserId   String?
+  subjectEmail    String
+  subjectUsername String
+
+  legalBasis      ModerationLegalBasis
+  // Prefilled from the originating report's category/motif when there is
+  // one, editable by the admin before the notice is sent.
+  reasonCategory  ReportCategory?
+  reasonMotif     ReportMotif?
+  reasonText      String
+  // Free-text CGU clause reference shown in the notice (e.g. "§7 — Règles de
+  // conduite"), or the legal ground when legalBasis is ILLEGAL_CONTENT.
+  tosClause       String
+  // COMMENT_REMOVED only: the comment's text before the tombstone nulled it,
+  // kept for evidence — admin-only, never re-exposed publicly.
+  contentSnapshot String?
+
+  // Always false: moderation here is human-only. Column exists so the notice
+  // (and any future audit) states it explicitly, per DSA art. 17(3)(c).
+  automated Boolean @default(false)
+
+  decidedById String?
+  decidedAt   DateTime @default(now())
+  reportId    String?
+
+  subject   User?   @relation("ModerationDecisionSubject", fields: [subjectUserId], references: [id], onDelete: SetNull)
+  decidedBy User?   @relation("ModerationDecisionAdmin", fields: [decidedById], references: [id], onDelete: SetNull)
+  report    Report? @relation(fields: [reportId], references: [id], onDelete: SetNull)
+
+  @@index([subjectUserId])
+  @@index([decidedAt])
+}

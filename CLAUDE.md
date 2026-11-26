@@ -54,6 +54,10 @@ wording change or a rename.
   re-sync in a 6-hourly `refreshStale` job; music has none, an album only
   refreshes when someone tracks it again. Behaviour the four domains must
   share gets a case in `apps/api/src/common/domain-parity.spec.ts`.
+- The Prisma schema is one file per owning API module in
+  `apps/api/prisma/schema/` (`games.prisma`…): a new table goes in the file of
+  the module that writes it; generators, datasource and enums several files
+  share sit in `schema.prisma`.
 - TMDB movie/TV ids are separate namespaces: every call carries a
   `MediaType`. TVDB ids are captured from TMDB because the TV Time import
   reconciles through them.

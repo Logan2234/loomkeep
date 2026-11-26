@@ -1,0 +1,18 @@
+// One row per execution of a scheduled/admin-triggered job (notification scan,
+// media refresh…), for the admin "Jobs & tâches" page. Pruned to the last 50
+// rows per jobKey at write time (see JobRunService) so the table stays bounded
+// on a self-host instance running for years.
+model JobRun {
+  id         String    @id @default(cuid())
+  // Stable identifier, e.g. "notifications.scan", "media.refreshStale".
+  jobKey     String
+  startedAt  DateTime
+  finishedAt DateTime
+  status     RunStatus
+  // Short human summary of the outcome, e.g. "12 notification(s) créée(s)".
+  summary    String?
+  // Present only when status is "FAILURE".
+  error      String?
+
+  @@index([jobKey, startedAt])
+}

@@ -11,7 +11,9 @@ decisions and dev conventions shared with the web app, see the root
 
 - **NestJS** on **Fastify** (`@nestjs/platform-fastify`), global prefix
   `/api`, global JWT guard (`@Public()` to opt out).
-- **Prisma** + **PostgreSQL**, schema in `prisma/schema.prisma`. An `erd`
+- **Prisma** + **PostgreSQL**, schema in `prisma/schema/`: one file per
+  module that owns those tables (`users.prisma`, `games.prisma`…), and the
+  generators, datasource and shared enums in `schema.prisma`. An `erd`
   generator (`prisma-erd-generator`) is configured alongside the client
   generator — run `pnpm exec prisma generate` to also emit an ERD diagram.
 - **Auth**: access JWT (15 min) + rotating refresh tokens (one row per
@@ -64,7 +66,7 @@ Setting up the whole repository is in the
 ```sh
 pnpm --filter @loomkeep/api test           # unit tests, offline (HTTP calls are stubbed)
 pnpm --filter @loomkeep/api test:e2e       # full API flow against the dev Postgres, isolated "e2e" schema
-pnpm --filter @loomkeep/api exec prisma migrate dev --name <name>   # after editing schema.prisma
+pnpm --filter @loomkeep/api exec prisma migrate dev --name <name>   # after editing prisma/schema/
 pnpm --filter @loomkeep/api generate:openapi   # the public API's openapi-v1.json, after `build`
 ```
 

@@ -93,7 +93,7 @@ export async function checkNoFavorites(
 /**
  * "full_inventory": every MediaOwnershipStatus value used at least once.
  * Scoped to the MEDIA domain — GAMES/BOOKS/MUSIC each have their own,
- * differently-shaped ownership enum (see schema.prisma), so a single
+ * differently-shaped ownership enum (see the Prisma schema), so a single
  * transversal "every status across every domain" reading doesn't have one
  * coherent target set.
  */

@@ -40,7 +40,7 @@ Get the shape of the repo before opening files, so reading time goes where the m
 ```sh
 find apps/api/src -name "*.ts" ! -name "*.spec.ts" -printf "%s %p\n" | sort -rn | head -45
 find apps/web/src -type f \( -name "*.ts" -o -name "*.svelte" \) -printf "%s %p\n" | sort -rn | head -45
-grep -c "@@index" apps/api/prisma/schema.prisma
+cat apps/api/prisma/schema/*.prisma | grep -c "@@index"
 ```
 
 Then the cheap negative checks, which mostly come back clean and tell you where _not_ to spend
@@ -132,9 +132,9 @@ terminal — the artifact is the deliverable.
 
 Logan usually comes back with a list of IDs to fix, and wants them spread across parallel agents.
 When that happens, group **by file ownership before thematic coherence** — two agents editing
-`library.service.ts` or `schema.prisma` at the same time will clobber each other. Concretely:
+`library.service.ts` or the same `prisma/schema/*.prisma` file at the same time will clobber each other. Concretely:
 
-- One agent, and one only, owns `prisma/schema.prisma` and any migration.
+- One agent, and one only, owns `prisma/schema/` and any migration.
 - Findings that live in the same file go to the same agent, even if their themes differ.
 - State the grouping and the model per agent, and flag any group with fewer than ~4 tasks — the
   spin-up cost isn't worth a single small fix.
