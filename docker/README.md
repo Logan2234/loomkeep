@@ -9,14 +9,14 @@ comment next to it, in its compose or Caddy file.
 
 ## What's here
 
-| Files                                                                        | For                                                              |
-| ---------------------------------------------------------------------------- | ---------------------------------------------------------------- |
-| `docker-compose.yml`, `docker-compose.prod.yml`, `Caddyfile`, `maintenance/` | Loomkeep itself: every instance                                  |
-| `docker-compose.ci.yml`                                                      | CI's e2e stack                                                   |
-| `docker-compose.{observability,glitchtip,umami,unleash,homepage}.yml`        | Optional services, documented for self-hosters                   |
-| `docker-compose.{cloudflare,tunnel}.yml`                                     | Running behind Cloudflare, documented for self-hosters           |
-| `backup-offsite.sh`                                                          | Offsite backups, documented for self-hosters                     |
-| `hosted/`                                                                    | loomkeep.app only (Quackback): nothing a self-hoster should need |
+| Files                                                                        | For                                                                        |
+| ---------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| `docker-compose.yml`, `docker-compose.prod.yml`, `Caddyfile`, `maintenance/` | Loomkeep itself: every instance                                            |
+| `docker-compose.ci.yml`                                                      | CI's e2e stack                                                             |
+| `docker-compose.{observability,glitchtip,umami,unleash}.yml`                 | Optional services, documented for self-hosters                             |
+| `docker-compose.{cloudflare,tunnel}.yml`                                     | Running behind Cloudflare, documented for self-hosters                     |
+| `backup-offsite.sh`                                                          | Offsite backups, documented for self-hosters                               |
+| `hosted/`                                                                    | loomkeep.app only (Quackback, Homepage): nothing a self-hoster should need |
 
 An override in `hosted/` writes its paths relative to `docker/`, like every
 other override: Compose resolves them from the first file's folder.
@@ -109,8 +109,7 @@ Depends on whether Cloudflare Access is in front (loomkeep.app,
   provider too (`GRAFANA_OIDC_ENABLED` and the `GRAFANA_OIDC_*` variables).
   Unleash needs bypasses for `/api/client/*` and `/api/frontend/*`, Grafana
   for `/api/health` from UptimeRobot's addresses.
-- **Without it**: each tool keeps its own login. Homepage has none, so it
-  stays off a public hostname. Quackback has its own email login.
+- **Without it**: each tool keeps its own login.
 
 No single sign-on service ships here any more (Authelia was removed, with
 Portainer): a self-hoster who wants one brings their own.
@@ -152,8 +151,8 @@ from the board unless it sets its own.
 
 ## Homepage dashboard
 
-`homepage/` is loomkeep.app's own admin start page; self-hosters get the
-setup in the docs, these are the choices behind it:
+`hosted/homepage/` is loomkeep.app's own admin start page, behind Cloudflare
+Access (it has no login of its own). The choices behind it:
 
 - **No Docker socket.** Tiles read each tool's API. Per-container stats were
   left to Grafana and cAdvisor.
