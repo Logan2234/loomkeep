@@ -179,7 +179,10 @@ jobs:
       security-events: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      # The web reads packages/shared from its source (docs/adr/0007).
       - uses: ./.github/actions/setup
+        with:
+          build-shared: false
       - name: Generate Paraglide types
         run: pnpm --filter @loomkeep/web generate:paraglide
       # The typed API client (apps/web/src/lib/api/generated/schema.d.ts) is

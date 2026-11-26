@@ -2,7 +2,9 @@
   "extends": ["../../tsconfig.base.json", "$app/tsconfig"],
   "compilerOptions": {
     "allowJs": true,
-    "checkJs": true
+    "checkJs": true,
+    // Types @loomkeep/shared from its source, like Vite (docs/adr/0007).
+    "customConditions": ["source"]
   },
   "include": ["src", "*.ts", "*.js"],
   "exclude": ["src/service-worker"]
