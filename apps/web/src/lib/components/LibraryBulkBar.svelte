@@ -1,7 +1,7 @@
 <script lang="ts">
   // Floating bar of a library's selection mode (UX-04): the count, then one
-  // menu per bulk action. It stays dark in both themes, so it reads as a
-  // layer above the page rather than part of it.
+  // menu per bulk action. A floating bar in the page's own theme, like the
+  // search page's.
   import { getEditableLists } from "#lib/api/client.js";
   import { keys } from "#lib/api/keys.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
@@ -45,7 +45,7 @@
     {#snippet trigger({ open, toggle, onkeydown })}
       <button
         type="button"
-        class="inline-flex h-10 w-10 items-center justify-center gap-1.5 rounded-xl text-sm font-semibold transition-[background-color,transform] hover:bg-white/10 active:scale-95 disabled:pointer-events-none disabled:opacity-40 sm:h-auto sm:w-auto sm:px-3 sm:py-2"
+        class="hover:bg-surface-2 inline-flex h-10 w-10 items-center justify-center gap-1.5 rounded-xl text-sm font-semibold transition-[background-color,transform] active:scale-95 disabled:pointer-events-none disabled:opacity-40 sm:h-auto sm:w-auto sm:px-3 sm:py-2"
         aria-label={label}
         aria-haspopup="menu"
         aria-expanded={open}
@@ -127,7 +127,7 @@
   <div
     role="toolbar"
     aria-label={m.library_bulk_toolbar()}
-    class="pointer-events-auto flex w-full items-center justify-between gap-0.5 rounded-2xl border border-[#2A2E38] bg-[#15171C] p-1.5 text-[#ECECEA] shadow-2xl shadow-black/40 sm:w-auto sm:justify-start sm:pl-4"
+    class="border-border bg-surface text-fg pointer-events-auto flex w-full items-center justify-between gap-0.5 rounded-2xl border p-1.5 shadow-2xl shadow-black/25 sm:w-auto sm:justify-start sm:pl-4"
     in:fly|global={{ y: 24, duration: reduced ? 0 : 260 }}
     out:fly|global={{ y: 24, duration: reduced ? 0 : 180 }}>
     <span aria-live="polite" class="sm:mr-2">
@@ -150,7 +150,7 @@
     {@render action("list", m.add_to_list_button(), listItems)}
     <button
       type="button"
-      class="inline-flex h-10 w-10 items-center justify-center gap-1.5 rounded-xl text-sm font-semibold text-[#FF8A80] transition-[background-color,transform] hover:bg-white/10 active:scale-95 disabled:pointer-events-none disabled:opacity-40 sm:h-auto sm:w-auto sm:px-3 sm:py-2"
+      class="text-danger hover:bg-surface-2 inline-flex h-10 w-10 items-center justify-center gap-1.5 rounded-xl text-sm font-semibold transition-[background-color,transform] active:scale-95 disabled:pointer-events-none disabled:opacity-40 sm:h-auto sm:w-auto sm:px-3 sm:py-2"
       aria-label={m.common_remove()}
       disabled={busy}
       onclick={onRemove}>
@@ -159,7 +159,7 @@
     </button>
     <button
       type="button"
-      class="grid h-10 w-10 place-items-center rounded-xl text-[#9AA0AE] transition-[background-color,color,transform] hover:bg-white/10 hover:text-[#ECECEA] active:scale-95 sm:ml-1 sm:h-9 sm:w-9"
+      class="text-dim hover:bg-surface-2 hover:text-fg grid h-10 w-10 place-items-center rounded-xl transition-[background-color,color,transform] active:scale-95 sm:ml-1 sm:h-9 sm:w-9"
       aria-label={m.library_bulk_exit()}
       onclick={onExit}>
       <Icon name="x" class="h-4 w-4" />
