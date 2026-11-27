@@ -34,7 +34,7 @@ it("leaves out the films still to come", async () => {
     },
   } as unknown as LibraryEntryDto;
   server.use(
-    http.get(apiUrl("/library"), ({ request }) =>
+    http.get(apiUrl("/media"), ({ request }) =>
       HttpResponse.json({
         items:
           new URL(request.url).searchParams.get("status") === "PLANNED"

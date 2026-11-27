@@ -92,7 +92,7 @@ describe("Loomkeep API (e2e)", () => {
   });
 
   it("rejects unauthenticated access to the library", () => {
-    return request(http).get("/api/library").expect(401);
+    return request(http).get("/api/media").expect(401);
   });
 
   it("returns the profile of the authenticated user", async () => {
@@ -158,7 +158,7 @@ describe("Loomkeep API (e2e)", () => {
 
   it("searches the catalog (stubbed providers)", async () => {
     const response = await request(http)
-      .get("/api/catalog/search?q=test&type=ANIME")
+      .get("/api/media/search?q=test&type=ANIME")
       .set("Cookie", sessionCookies)
       .expect(200);
 
@@ -167,7 +167,7 @@ describe("Loomkeep API (e2e)", () => {
 
   it("tracks a media: first touch persists it with seasons and episodes", async () => {
     const response = await request(http)
-      .put("/api/library")
+      .put("/api/media")
       .set("Cookie", sessionCookies)
       .send({
         source: "ANILIST",
@@ -191,7 +191,7 @@ describe("Loomkeep API (e2e)", () => {
 
   it("lists the library with the new entry", async () => {
     const response = await request(http)
-      .get("/api/library?type=ANIME")
+      .get("/api/media?type=ANIME")
       .set("Cookie", sessionCookies)
       .expect(200);
 
@@ -201,7 +201,7 @@ describe("Loomkeep API (e2e)", () => {
 
   it("exposes the persisted episodes of the entry", async () => {
     const response = await request(http)
-      .get(`/api/library/entries/${entryId}/episodes`)
+      .get(`/api/media/entries/${entryId}/episodes`)
       .set("Cookie", sessionCookies)
       .expect(200);
 
@@ -214,13 +214,13 @@ describe("Loomkeep API (e2e)", () => {
 
   it("marks an episode as watched and updates progress", async () => {
     await request(http)
-      .post(`/api/library/episodes/${firstEpisodeId}/watches`)
+      .post(`/api/media/episodes/${firstEpisodeId}/watches`)
       .set("Cookie", sessionCookies)
       .send({})
       .expect(201);
 
     const entry = await request(http)
-      .get(`/api/library/entries/${entryId}`)
+      .get(`/api/media/entries/${entryId}`)
       .set("Cookie", sessionCookies)
       .expect(200);
     expect(entry.body.progress).toMatchObject({
@@ -232,19 +232,19 @@ describe("Loomkeep API (e2e)", () => {
 
   it("supports rewatches: same episode again bumps the count, not the progress", async () => {
     await request(http)
-      .post(`/api/library/episodes/${firstEpisodeId}/watches`)
+      .post(`/api/media/episodes/${firstEpisodeId}/watches`)
       .set("Cookie", sessionCookies)
       .send({ rating: 9 })
       .expect(201);
 
     const episodes = await request(http)
-      .get(`/api/library/entries/${entryId}/episodes`)
+      .get(`/api/media/entries/${entryId}/episodes`)
       .set("Cookie", sessionCookies)
       .expect(200);
     expect(episodes.body.seasons[0].episodes[0].watchCount).toBe(2);
 
     const entry = await request(http)
-      .get(`/api/library/entries/${entryId}`)
+      .get(`/api/media/entries/${entryId}`)
       .set("Cookie", sessionCookies)
       .expect(200);
     expect(entry.body.progress).toMatchObject({
@@ -257,12 +257,12 @@ describe("Loomkeep API (e2e)", () => {
     // Episode 1 is already watched (twice); watchSeason fills episode 2 but
     // skips episode 3, whose air date is still in the future.
     await request(http)
-      .post(`/api/library/seasons/${firstSeasonId}/watches`)
+      .post(`/api/media/seasons/${firstSeasonId}/watches`)
       .set("Cookie", sessionCookies)
       .expect(204);
 
     const episodes = await request(http)
-      .get(`/api/library/entries/${entryId}/episodes`)
+      .get(`/api/media/entries/${entryId}/episodes`)
       .set("Cookie", sessionCookies)
       .expect(200);
     const eps = episodes.body.seasons[0].episodes;
@@ -271,7 +271,7 @@ describe("Loomkeep API (e2e)", () => {
     ]);
 
     const entry = await request(http)
-      .get(`/api/library/entries/${entryId}`)
+      .get(`/api/media/entries/${entryId}`)
       .set("Cookie", sessionCookies)
       .expect(200);
     // Episode 3 still unwatched (unaired) → WATCHING, not COMPLETED.
@@ -280,13 +280,13 @@ describe("Loomkeep API (e2e)", () => {
 
   it("rejects marking an unaired episode as watched, directly or via watch-through", async () => {
     const episodes = await request(http)
-      .get(`/api/library/entries/${entryId}/episodes`)
+      .get(`/api/media/entries/${entryId}/episodes`)
       .set("Cookie", sessionCookies)
       .expect(200);
     const futureEpisodeId = episodes.body.seasons[0].episodes[2].id;
 
     const rejected = await request(http)
-      .post(`/api/library/episodes/${futureEpisodeId}/watches`)
+      .post(`/api/media/episodes/${futureEpisodeId}/watches`)
       .set("Cookie", sessionCookies)
       .send({})
       .expect(400);
@@ -300,7 +300,7 @@ describe("Loomkeep API (e2e)", () => {
     expect(rejected.body.requestId).toEqual(expect.any(String));
 
     await request(http)
-      .post(`/api/library/episodes/${futureEpisodeId}/watch-through`)
+      .post(`/api/media/episodes/${futureEpisodeId}/watch-through`)
       .set("Cookie", sessionCookies)
       .expect(400);
   });
@@ -342,13 +342,13 @@ describe("Loomkeep API (e2e)", () => {
 
   it("keeps a manual dropped override until the user resumes", async () => {
     await request(http)
-      .patch(`/api/library/entries/${entryId}`)
+      .patch(`/api/media/entries/${entryId}`)
       .set("Cookie", sessionCookies)
       .send({ status: "DROPPED" })
       .expect(200);
 
     const dropped = await request(http)
-      .get(`/api/library/entries/${entryId}`)
+      .get(`/api/media/entries/${entryId}`)
       .set("Cookie", sessionCookies)
       .expect(200);
     // Override wins over the derived status.
@@ -356,12 +356,12 @@ describe("Loomkeep API (e2e)", () => {
 
     // Resume → back to the derived status.
     await request(http)
-      .patch(`/api/library/entries/${entryId}`)
+      .patch(`/api/media/entries/${entryId}`)
       .set("Cookie", sessionCookies)
       .send({ status: "WATCHING" })
       .expect(200);
     const resumed = await request(http)
-      .get(`/api/library/entries/${entryId}`)
+      .get(`/api/media/entries/${entryId}`)
       .set("Cookie", sessionCookies)
       .expect(200);
     expect(resumed.body.status).toBe("WATCHING");
@@ -370,26 +370,26 @@ describe("Loomkeep API (e2e)", () => {
   it("marks episodes through a chosen one, excluding specials", async () => {
     // A fresh media so earlier watches don't interfere.
     const created = await request(http)
-      .put("/api/library")
+      .put("/api/media")
       .set("Cookie", sessionCookies)
       .send({ source: "ANILIST", sourceId: "5555", type: "ANIME" })
       .expect(200);
     const newEntryId = created.body.id;
 
     const before = await request(http)
-      .get(`/api/library/entries/${newEntryId}/episodes`)
+      .get(`/api/media/entries/${newEntryId}/episodes`)
       .set("Cookie", sessionCookies)
       .expect(200);
     const eps = before.body.seasons[0].episodes;
 
     // Watch through episode 2 → episodes 1 and 2, not 3.
     await request(http)
-      .post(`/api/library/episodes/${eps[1].id}/watch-through`)
+      .post(`/api/media/episodes/${eps[1].id}/watch-through`)
       .set("Cookie", sessionCookies)
       .expect(204);
 
     const after = await request(http)
-      .get(`/api/library/entries/${newEntryId}/episodes`)
+      .get(`/api/media/entries/${newEntryId}/episodes`)
       .set("Cookie", sessionCookies)
       .expect(200);
     const counts = after.body.seasons[0].episodes.map(
@@ -398,7 +398,7 @@ describe("Loomkeep API (e2e)", () => {
     expect(counts).toEqual([1, 1, 0]);
 
     const entry = await request(http)
-      .get(`/api/library/entries/${newEntryId}`)
+      .get(`/api/media/entries/${newEntryId}`)
       .set("Cookie", sessionCookies)
       .expect(200);
     expect(entry.body.progress).toMatchObject({
@@ -409,12 +409,12 @@ describe("Loomkeep API (e2e)", () => {
 
     // Undo watching episode 2 → back to 1 watched.
     await request(http)
-      .delete(`/api/library/episodes/${eps[1].id}/watches`)
+      .delete(`/api/media/episodes/${eps[1].id}/watches`)
       .set("Cookie", sessionCookies)
       .expect(204);
 
     const undone = await request(http)
-      .get(`/api/library/entries/${newEntryId}/episodes`)
+      .get(`/api/media/entries/${newEntryId}/episodes`)
       .set("Cookie", sessionCookies)
       .expect(200);
     expect(
@@ -425,7 +425,7 @@ describe("Loomkeep API (e2e)", () => {
 
     // #4 "Resume": next up is now episode 2 (first unwatched, released).
     const resume = await request(http)
-      .get(`/api/library/entries/${newEntryId}`)
+      .get(`/api/media/entries/${newEntryId}`)
       .set("Cookie", sessionCookies)
       .expect(200);
     expect(resume.body.progress.nextEpisode).toMatchObject({
@@ -435,7 +435,7 @@ describe("Loomkeep API (e2e)", () => {
 
     const watchCounts = async () => {
       const res = await request(http)
-        .get(`/api/library/entries/${newEntryId}/episodes`)
+        .get(`/api/media/entries/${newEntryId}/episodes`)
         .set("Cookie", sessionCookies)
         .expect(200);
       return res.body.seasons[0].episodes.map(
@@ -445,13 +445,13 @@ describe("Loomkeep API (e2e)", () => {
 
     const batch = (action: string, episodeIds: string[]) =>
       request(http)
-        .post("/api/library/episodes/watches/batch")
+        .post("/api/media/episodes/watches/batch")
         .set("Cookie", sessionCookies)
         .send({ action, episodeIds })
         .expect(200);
     const undo = (body: object) =>
       request(http)
-        .post("/api/library/episodes/watches/undo")
+        .post("/api/media/episodes/watches/undo")
         .set("Cookie", sessionCookies)
         .send(body)
         .expect(204);
@@ -489,7 +489,7 @@ describe("Loomkeep API (e2e)", () => {
     );
 
     await request(http)
-      .delete(`/api/library/episodes/${eps[0].id}/watches`)
+      .delete(`/api/media/episodes/${eps[0].id}/watches`)
       .set("Cookie", sessionCookies)
       .expect(204);
 
@@ -580,7 +580,7 @@ describe("Loomkeep API (e2e)", () => {
 
   it("media extras: returns where-to-watch, cast and similar", async () => {
     const res = await request(http)
-      .get("/api/catalog/anilist/5555/extras?type=ANIME")
+      .get("/api/media/anilist/5555/extras?type=ANIME")
       .set("Cookie", sessionCookies)
       .expect(200);
     expect(res.body.watchProviders).toBeDefined();

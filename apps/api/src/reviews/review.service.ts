@@ -22,7 +22,6 @@ import {
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import type { Prisma } from "@prisma/client";
-import { assertMediaReleased } from "../catalog/movie-release.util";
 import { AppException } from "../common/app.exception";
 import {
   CANONICAL_EXTERNAL_ID_SELECT,
@@ -32,6 +31,7 @@ import { isUniqueViolation } from "../common/prisma-error.util";
 import { toRatingStep } from "../common/rating-step.validator";
 import { assertGameReleased } from "../games/game-release.util";
 import { AchievementService } from "../gamification/achievements/achievement.service";
+import { assertMediaReleased } from "../media/movie-release.util";
 import { resolveWorkLink } from "../work/work-href.util";
 
 import {

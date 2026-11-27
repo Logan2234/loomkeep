@@ -1,8 +1,8 @@
 import type { ConfigService } from "@nestjs/config";
 import { vi } from "vitest";
-import type { TmdbProvider } from "../../catalog/providers/tmdb.provider";
 import type { EntitlementService } from "../../entitlements/entitlement.service";
 import type { CalendarService } from "../../library/calendar.service";
+import type { TmdbProvider } from "../../media/providers/tmdb.provider";
 import type { PrismaService } from "../../prisma/prisma.service";
 import { CalendarFeedService } from "./calendar-feed.service";
 

@@ -16,7 +16,7 @@ import { compareTitles, timeMs } from "../../common/sort.util";
 import { primaryWebOrigin } from "../../common/web-origin.util";
 import { GameLibraryService } from "../../games/game-library.service";
 import { CalendarService } from "../../library/calendar.service";
-import { LibraryService } from "../../library/library.service";
+import { MediaLibraryService } from "../../media/media-library.service";
 import { MusicLibraryService } from "../../music/music-library.service";
 import { PrismaService } from "../../prisma/prisma.service";
 import {
@@ -84,7 +84,7 @@ export class LibraryV1Service {
     config: ConfigService,
     private readonly prisma: PrismaService,
     private readonly domainGate: DomainGateService,
-    private readonly media: LibraryService,
+    private readonly media: MediaLibraryService,
     private readonly games: GameLibraryService,
     private readonly books: BookLibraryService,
     private readonly music: MusicLibraryService,

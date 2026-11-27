@@ -1,5 +1,5 @@
 import { MusicStatus, ReviewVoteValue, XpReason } from "@loomkeep/shared/enums";
-import { isAiringFinished } from "../catalog/airing-status.util";
+import { isAiringFinished } from "../media/airing-status.util";
 import type { PrismaService } from "../prisma/prisma.service";
 
 /**
@@ -102,9 +102,9 @@ export function wordCount(text: string | null | undefined): number {
 /**
  * True only if every already-aired episode among `episodes` has at least one
  * watch by `userId` — the shared core of the SEASON_COMPLETED/
- * SERIES_COMPLETED checks below. Mirrors `LibraryService.computeProgress`'s
- * notion of "done" without depending on LibraryService itself (importing it
- * here would create a module cycle: LibraryModule already imports
+ * SERIES_COMPLETED checks below. Mirrors `MediaLibraryService.computeProgress`'s
+ * notion of "done" without depending on MediaLibraryService itself (importing it
+ * here would create a module cycle: MediaModule already imports
  * GamificationModule for XpService).
  */
 async function allAiredEpisodesWatched(
@@ -130,7 +130,7 @@ async function allAiredEpisodesWatched(
 /**
  * Whether `seasonId` is complete for `userId` — the same check the
  * SEASON_COMPLETED verifier below runs during nightly reconciliation,
- * exported so `LibraryService` can award/revoke it live right after a watch
+ * exported so `MediaLibraryService` can award/revoke it live right after a watch
  * change without duplicating the "what counts as complete" rule.
  */
 export async function isSeasonComplete(
@@ -143,7 +143,7 @@ export async function isSeasonComplete(
     select: { number: true, episodes: { select: { id: true, airDate: true } } },
   });
   // Season 0 (specials) is excluded from progress everywhere else in the
-  // app (see LibraryService.computeProgress) — never a valid completion.
+  // app (see MediaLibraryService.computeProgress) — never a valid completion.
   if (!season || season.number === 0) return false;
   return allAiredEpisodesWatched(prisma, userId, season.episodes);
 }

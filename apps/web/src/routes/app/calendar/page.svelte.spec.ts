@@ -65,7 +65,7 @@ beforeEach(() => {
         upcoming("e1", "Lanterns", 8, 8),
       ]),
     ),
-    http.patch(apiUrl("/library/entries/:id"), async ({ request, params }) => {
+    http.patch(apiUrl("/media/entries/:id"), async ({ request, params }) => {
       patched.push({ id: String(params.id), body: await request.json() });
       return HttpResponse.json({});
     }),
@@ -293,8 +293,8 @@ describe("calendar page", () => {
 
   it("switches to the premieres on the same page, linkable", async () => {
     server.use(
-      http.get(apiUrl("/catalog/premieres"), () => HttpResponse.json([])),
-      http.get(apiUrl("/library/tracked"), () => HttpResponse.json([])),
+      http.get(apiUrl("/media/premieres"), () => HttpResponse.json([])),
+      http.get(apiUrl("/media/tracked"), () => HttpResponse.json([])),
     );
     renderWithQuery(CalendarPage, {});
     const user = userEvent.setup();

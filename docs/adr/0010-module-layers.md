@@ -21,8 +21,8 @@ couche ou des couches inférieures :
 | infra           | Transport, stockage, configuration                | prisma, config, mail, events (socket.io), jobs, quota                       |
 | plateforme      | Identité, droits et services transverses          | auth, entitlements, notifications, gamification, reports, `UserGatesModule` |
 | communauté      | Ce que les membres partagent                      | social, reviews, comments, lists, chat (le service)                         |
-| domaines        | Le catalogue et la bibliothèque de chaque domaine | catalog, library (media), games, books, music                               |
-| transverses     | Ce qui croise les domaines                        | links, search, stats, session-timer, creators                               |
+| domaines        | Le catalogue et la bibliothèque de chaque domaine | media, games, books, music                                                  |
+| transverses     | Ce qui croise les domaines                        | library (counts, calendar), links, search, stats, session-timer, creators   |
 | fonctionnalités | Ce qui assemble tout                              | account, admin, import, public-api, users (`/users/me`), chat-api, ee       |
 
 `apps/api/src/module-layers.spec.ts` porte la liste et échoue quand un module

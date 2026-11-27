@@ -6,7 +6,7 @@ import { typedRequest } from "./generated/typed-request";
 export const getShowcase = () => typedRequest("/showcase");
 
 export function searchCatalog(query: string, type?: MediaType, page = 1) {
-  return typedRequest("/catalog/search", {
+  return typedRequest("/media/search", {
     query: {
       q: query,
       lang: getLocale(),
@@ -23,7 +23,7 @@ export function getMediaExtras(
   type: MediaType,
   region: string | undefined,
 ) {
-  return typedRequest("/catalog/{source}/{id}/extras", {
+  return typedRequest("/media/{source}/{id}/extras", {
     params: { source: source.toLowerCase(), id: sourceId },
     query: { type, lang: getLocale(), region },
   });
@@ -35,27 +35,27 @@ export const getEpisodeMedia = (
   season: number,
   episode: number,
 ) =>
-  typedRequest("/catalog/tmdb/{id}/seasons/{season}/episodes/{episode}/media", {
+  typedRequest("/media/tmdb/{id}/seasons/{season}/episodes/{episode}/media", {
     params: { id: sourceId, season: String(season), episode: String(episode) },
     query: { lang: getLocale() },
   });
 
 /** A TMDB series season's posters, live. */
 export const getSeasonImages = (sourceId: string, season: number) =>
-  typedRequest("/catalog/tmdb/{id}/seasons/{season}/images", {
+  typedRequest("/media/tmdb/{id}/seasons/{season}/images", {
     params: { id: sourceId, season: String(season) },
     query: { lang: getLocale() },
   });
 
 /** Series premiering over the next eight weeks, soonest first. */
 export const getPremieres = () =>
-  typedRequest("/catalog/premieres", { query: { lang: getLocale() } });
+  typedRequest("/media/premieres", { query: { lang: getLocale() } });
 
 export const getWatchProviderCatalog = (region: string | undefined) =>
-  typedRequest("/catalog/watch-providers", { query: { region } });
+  typedRequest("/media/watch-providers", { query: { region } });
 
 export const getCastDetail = (source: string, id: string) =>
-  typedRequest("/catalog/{source}/person/{id}", {
+  typedRequest("/media/{source}/person/{id}", {
     params: { source: source.toLowerCase(), id },
   });
 

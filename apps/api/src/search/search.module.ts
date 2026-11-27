@@ -1,8 +1,7 @@
 import { Module } from "@nestjs/common";
 import { BooksModule } from "../books/books.module";
-import { CatalogModule } from "../catalog/catalog.module";
 import { GamesModule } from "../games/games.module";
-import { LibraryModule } from "../library/library.module";
+import { MediaModule } from "../media/media.module";
 import { MusicModule } from "../music/music.module";
 import { UserGatesModule } from "../users/user-gates.module";
 import { WorkSearchController } from "./work-search.controller";
@@ -10,11 +9,10 @@ import { WorkSearchService } from "./work-search.service";
 
 @Module({
   imports: [
-    CatalogModule,
+    MediaModule,
     GamesModule,
     BooksModule,
     MusicModule,
-    LibraryModule,
     UserGatesModule,
   ],
   controllers: [WorkSearchController],

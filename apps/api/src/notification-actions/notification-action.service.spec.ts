@@ -8,7 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ChatService } from "../chat/chat.service";
 import type { CommentService } from "../comments/comment.service";
 import type { GameLibraryService } from "../games/game-library.service";
-import type { LibraryService } from "../library/library.service";
+import type { MediaLibraryService } from "../media/media-library.service";
 import {
   type ActionClaims,
   NotificationAction,
@@ -43,7 +43,7 @@ function make(subscription: unknown = { user: ACCOUNT }) {
     chat as unknown as ChatService,
     follows as unknown as FollowService,
     comments as unknown as CommentService,
-    library as unknown as LibraryService,
+    library as unknown as MediaLibraryService,
     games as unknown as GameLibraryService,
     notifications as unknown as NotificationService,
   );

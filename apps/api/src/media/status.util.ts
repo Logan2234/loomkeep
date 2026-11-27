@@ -1,7 +1,7 @@
 import type { ProgressDto } from "@loomkeep/shared/contracts";
 import type { EntryStatus, MediaType } from "@loomkeep/shared/enums";
-import { isAiringFinished } from "../catalog/airing-status.util";
 import type { PrismaService } from "../prisma/prisma.service";
+import { isAiringFinished } from "./airing-status.util";
 
 // Re-exported under this module's original name — the logic itself now
 // lives in catalog/airing-status.util.ts (see there for the rationale),

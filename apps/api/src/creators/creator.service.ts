@@ -13,9 +13,9 @@ import { CatalogSource, MediaType } from "@loomkeep/shared/enums";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { BookSagaService } from "../books/book-saga.service";
 import { OpenLibraryProvider } from "../books/providers/open-library.provider";
-import { TmdbProvider } from "../catalog/providers/tmdb.provider";
 import { AppException } from "../common/app.exception";
-import { LibraryService } from "../library/library.service";
+import { MediaProgressService } from "../media/media-progress.service";
+import { TmdbProvider } from "../media/providers/tmdb.provider";
 import { AgeGateService } from "../users/age-gate.service";
 
 // A filmography barely moves within a day; the viewer's statuses are read
@@ -35,7 +35,7 @@ export class CreatorService {
   constructor(
     private readonly tmdb: TmdbProvider,
     private readonly openLibrary: OpenLibraryProvider,
-    private readonly library: LibraryService,
+    private readonly library: MediaProgressService,
     private readonly bookSagas: BookSagaService,
     private readonly ageGate: AgeGateService,
   ) {}

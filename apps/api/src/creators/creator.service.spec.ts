@@ -5,8 +5,8 @@ import { MediaType } from "@loomkeep/shared/enums";
 import { vi } from "vitest";
 import type { BookSagaService } from "../books/book-saga.service";
 import type { OpenLibraryProvider } from "../books/providers/open-library.provider";
-import type { TmdbProvider } from "../catalog/providers/tmdb.provider";
-import type { LibraryService } from "../library/library.service";
+import type { MediaProgressService } from "../media/media-progress.service";
+import type { TmdbProvider } from "../media/providers/tmdb.provider";
 import type { AgeGateService } from "../users/age-gate.service";
 import { CreatorService } from "./creator.service";
 
@@ -88,7 +88,7 @@ function setup(person: PersonPageDto, allowAdult = false) {
   const service = new CreatorService(
     tmdb as unknown as TmdbProvider,
     openLibrary as unknown as OpenLibraryProvider,
-    library as unknown as LibraryService,
+    library as unknown as MediaProgressService,
     bookSagas as unknown as BookSagaService,
     ageGate as unknown as AgeGateService,
   );

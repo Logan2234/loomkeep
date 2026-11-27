@@ -6,10 +6,10 @@ import { CatalogSource, Domain, type MediaType } from "@loomkeep/shared/enums";
 import { Injectable } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
 import { BookItemService } from "../books/book-item.service";
-import { MediaItemService } from "../catalog/media-item.service";
 import { sleep } from "../common/async.util";
 import { GameItemService } from "../games/game-item.service";
-import { LibraryService } from "../library/library.service";
+import { MediaItemService } from "../media/media-item.service";
+import { MediaProgressService } from "../media/media-progress.service";
 import { MusicItemService } from "../music/music-item.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { AgeGateService } from "../users/age-gate.service";
@@ -163,7 +163,7 @@ export class WorkSearchService {
     private readonly games: GameItemService,
     private readonly books: BookItemService,
     private readonly music: MusicItemService,
-    private readonly library: LibraryService,
+    private readonly library: MediaProgressService,
   ) {}
 
   /** `catalogs: false`: the instance's own works only, for a first answer. */
@@ -406,7 +406,7 @@ export class WorkSearchService {
   /**
    * Fills in the viewer's library status of the works they track. A series'
    * status is derived from its episodes, as the library shows it: the media
-   * ones come from LibraryService, not the stored column.
+   * ones come from MediaProgressService, not the stored column.
    */
   private async withStatuses(
     userId: string,

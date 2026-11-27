@@ -1,11 +1,11 @@
 import { ErrorCode } from "@loomkeep/shared/catalog";
 import { type ImportMatch } from "@loomkeep/shared/contracts";
 import { HttpStatus, Injectable, Logger } from "@nestjs/common";
-import { MediaItemService } from "../../../catalog/media-item.service";
-import { TmdbProvider } from "../../../catalog/providers/tmdb.provider";
 import { AppException } from "../../../common/app.exception";
 import { mapWithConcurrency } from "../../../common/concurrency.util";
 import { ListService } from "../../../lists/list.service";
+import { MediaItemService } from "../../../media/media-item.service";
+import { TmdbProvider } from "../../../media/providers/tmdb.provider";
 import { PrismaService } from "../../../prisma/prisma.service";
 import { ReviewService } from "../../../reviews/review.service";
 import type { ProgressReporter } from "../../import-source";

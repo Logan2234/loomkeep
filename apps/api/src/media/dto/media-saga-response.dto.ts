@@ -6,7 +6,7 @@ import type {
   SagaMemberDto,
 } from "@loomkeep/shared/contracts";
 import type { EntryStatus } from "@loomkeep/shared/enums";
-import { MediaSummaryResponseDto } from "../../catalog/dto/media-summary-response.dto";
+import { MediaSummaryResponseDto } from "./media-summary-response.dto";
 
 export class SagaMemberResponseDto
   extends MediaSummaryResponseDto

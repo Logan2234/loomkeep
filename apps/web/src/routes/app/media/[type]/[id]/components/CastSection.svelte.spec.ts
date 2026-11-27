@@ -41,7 +41,7 @@ describe("CastSection", () => {
 
   it("opens the detail dialog for an AniList voice actor, with no page yet", async () => {
     server.use(
-      http.get(apiUrl("/catalog/anilist/person/95185"), () =>
+      http.get(apiUrl("/media/anilist/person/95185"), () =>
         HttpResponse.json({ ...detail, name: "Atsumi Tanezaki" }),
       ),
     );

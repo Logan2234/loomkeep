@@ -35,8 +35,9 @@ utilise reste dans ce service.
 **Chaque table n'est écrite que par son module propriétaire** (complément du
 26/11/2026). Le propriétaire est le dossier de `src/` qui porte le nom du
 fichier de schéma où la table est déclarée : `games.prisma` → `games/`.
-`media.prisma`, partagé entre deux modules, a été découpé en `catalog.prisma`
-et `library.prisma`. Un autre module qui doit changer la table appelle le
+Le media a d'abord été découpé entre `catalog.prisma` et `library.prisma`,
+puis réuni en `media.prisma` quand son module `media/` a réuni `catalog/` et
+la partie media de `library/` (API-04). Un autre module qui doit changer la table appelle le
 propriétaire (un writer comme `users/user-url-token.writer.ts`, ou un service)
 ou publie un événement qu'il écoute (ADR 0010). Les lectures restent libres.
 

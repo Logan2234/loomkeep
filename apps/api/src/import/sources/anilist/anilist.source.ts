@@ -1,10 +1,10 @@
 import { ErrorCode } from "@loomkeep/shared/catalog";
 import { CatalogSource, MediaType } from "@loomkeep/shared/enums";
 import { HttpStatus, Injectable } from "@nestjs/common";
-import { MediaItemService } from "../../../catalog/media-item.service";
-import { AnilistProvider } from "../../../catalog/providers/anilist.provider";
 import { AppException } from "../../../common/app.exception";
 import { ListService } from "../../../lists/list.service";
+import { MediaItemService } from "../../../media/media-item.service";
+import { AnilistProvider } from "../../../media/providers/anilist.provider";
 import { PrismaService } from "../../../prisma/prisma.service";
 import { ReviewService } from "../../../reviews/review.service";
 import type { ParsedImport } from "../../media-import-model";

@@ -25,12 +25,12 @@ describe("typedRequest", () => {
   it("appends a query string built from the query option, skipping undefined values", async () => {
     const { typedRequest } = await import("./typed-request");
 
-    await typedRequest("/catalog/search", {
+    await typedRequest("/media/search", {
       query: { q: "one piece", type: undefined, page: 2 },
     });
 
     const [url] = request.mock.calls[0] as [string];
-    expect(url.startsWith("/catalog/search?")).toBe(true);
+    expect(url.startsWith("/media/search?")).toBe(true);
     const params = new URLSearchParams(url.split("?")[1]);
     expect(params.get("q")).toBe("one piece");
     expect(params.get("page")).toBe("2");
@@ -40,7 +40,7 @@ describe("typedRequest", () => {
   it("repeats the key for an array query value instead of joining it", async () => {
     const { typedRequest } = await import("./typed-request");
 
-    await typedRequest("/library", {
+    await typedRequest("/media", {
       query: { status: ["WATCHING", "PLANNED"] },
     });
 
@@ -52,13 +52,13 @@ describe("typedRequest", () => {
   it("combines interpolated path params with a query string", async () => {
     const { typedRequest } = await import("./typed-request");
 
-    await typedRequest("/catalog/{source}/{id}/extras", {
+    await typedRequest("/media/{source}/{id}/extras", {
       params: { source: "tmdb", id: "42" },
       query: { lang: "fr" },
     });
 
     expect(request).toHaveBeenCalledWith(
-      "/catalog/tmdb/42/extras?lang=fr",
+      "/media/tmdb/42/extras?lang=fr",
       expect.anything(),
     );
   });

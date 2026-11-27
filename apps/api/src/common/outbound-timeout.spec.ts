@@ -1,10 +1,10 @@
 import { vi } from "vitest";
 import { TurnstileService } from "../auth/turnstile.service";
-import { OmdbService } from "../catalog/omdb.service";
 import { SimklImportSource } from "../import/sources/simkl/simkl.source";
 import { SteamImportSource } from "../import/sources/steam/steam.source";
 import { JOB_KEYS } from "../jobs/job-keys";
 import { JobRunService } from "../jobs/job-run.service";
+import { OmdbService } from "../media/omdb.service";
 import { MusicBrainzProvider } from "../music/providers/musicbrainz.provider";
 import { NewsletterService } from "../newsletter/newsletter.service";
 import { RequestThrottle } from "./request-throttle";

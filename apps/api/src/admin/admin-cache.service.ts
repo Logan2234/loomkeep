@@ -14,7 +14,6 @@ import {
 import { HttpStatus, Injectable, Logger } from "@nestjs/common";
 import type { Prisma } from "@prisma/client";
 import { BookItemService } from "../books/book-item.service";
-import { MediaItemService } from "../catalog/media-item.service";
 import { AppException } from "../common/app.exception";
 import {
   CATALOG_SYNC_TTL_MS,
@@ -22,6 +21,7 @@ import {
 } from "../common/catalog-sync.util";
 import { canonicalExternalId } from "../common/external-id.util";
 import { GameItemService } from "../games/game-item.service";
+import { MediaItemService } from "../media/media-item.service";
 import { MusicItemService } from "../music/music-item.service";
 import { PrismaService } from "../prisma/prisma.service";
 

@@ -1,7 +1,7 @@
 import { vi } from "vitest";
 import type { BookItemService } from "../books/book-item.service";
-import type { MediaItemService } from "../catalog/media-item.service";
 import type { GameItemService } from "../games/game-item.service";
+import type { MediaItemService } from "../media/media-item.service";
 import type { MusicItemService } from "../music/music-item.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import { AdminCacheService } from "./admin-cache.service";

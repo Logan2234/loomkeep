@@ -64,7 +64,7 @@ describe("Friends on a work (e2e)", () => {
         .send({ enabledDomains: ["MEDIA"] })
         .expect(200);
       const entry = await as(who)
-        .put("/api/library")
+        .put("/api/media")
         .send({
           source: "ANILIST",
           sourceId: "4242",
@@ -91,7 +91,7 @@ describe("Friends on a work (e2e)", () => {
       select: { id: true },
     });
     await as("bob")
-      .post(`/api/library/episodes/${first.id}/watches`)
+      .post(`/api/media/episodes/${first.id}/watches`)
       .send({})
       .expect(201);
   });

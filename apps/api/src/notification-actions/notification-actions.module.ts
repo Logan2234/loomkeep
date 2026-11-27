@@ -2,7 +2,7 @@ import { Module } from "@nestjs/common";
 import { ChatModule } from "../chat/chat.module";
 import { CommentsModule } from "../comments/comments.module";
 import { GamesModule } from "../games/games.module";
-import { LibraryModule } from "../library/library.module";
+import { MediaModule } from "../media/media.module";
 import { NotificationsModule } from "../notifications/notifications.module";
 import { SocialModule } from "../social/social.module";
 import { NotificationActionController } from "./notification-action.controller";
@@ -15,7 +15,7 @@ import { NotificationActionService } from "./notification-action.service";
     ChatModule,
     CommentsModule,
     GamesModule,
-    LibraryModule,
+    MediaModule,
     NotificationsModule,
     SocialModule,
   ],

@@ -14,13 +14,13 @@ import { ScheduledDeletionService } from "../account/scheduled-deletion.service"
 import { ApiKeyLifecycleService } from "../api-keys/api-key-lifecycle.service";
 import { InvitationService } from "../auth/invitation.service";
 import { BookItemService } from "../books/book-item.service";
-import { MediaItemService } from "../catalog/media-item.service";
 import { AppException } from "../common/app.exception";
 import { GameItemService } from "../games/game-item.service";
 import { AchievementService } from "../gamification/achievements/achievement.service";
 import { XpService } from "../gamification/xp.service";
 import { JOB_KEYS, type JobKey } from "../jobs/job-keys";
 import { JOB_SKIPPED, JobRunService } from "../jobs/job-run.service";
+import { MediaItemService } from "../media/media-item.service";
 import { NotificationDigestService } from "../notifications/notification-digest.service";
 import { NotificationService } from "../notifications/notification.service";
 import { PausedReminderService } from "../notifications/paused-reminder.service";

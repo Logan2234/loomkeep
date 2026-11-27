@@ -52,8 +52,7 @@ const LAYERS = [
   {
     name: "domains",
     modules: [
-      "catalog/catalog.module",
-      "library/library.module",
+      "media/media.module",
       "games/games.module",
       "books/books.module",
       "music/music.module",
@@ -62,6 +61,7 @@ const LAYERS = [
   {
     name: "cross-domain",
     modules: [
+      "library/library.module",
       "links/links.module",
       "lists/list-works.module",
       "session-timer/session-timer.module",

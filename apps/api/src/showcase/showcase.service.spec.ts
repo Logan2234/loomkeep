@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import type { TmdbProvider } from "../catalog/providers/tmdb.provider";
 import type { IgdbProvider } from "../games/providers/igdb.provider";
+import type { TmdbProvider } from "../media/providers/tmdb.provider";
 import type { PrismaService } from "../prisma/prisma.service";
 import { SHOWCASE_MIN_FOLLOWERS, ShowcaseService } from "./showcase.service";
 
