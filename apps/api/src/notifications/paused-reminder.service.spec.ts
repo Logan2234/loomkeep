@@ -182,4 +182,23 @@ describe("PausedReminderService.run", () => {
     expect(mail.sendPausedReminder).not.toHaveBeenCalled();
     expect(push.sendToUser).not.toHaveBeenCalled();
   });
+
+  // The opt-in query scanned every account each hour, for a reminder only
+  // due on the first Monday of the month (audit 2026-11-17, PRF-18).
+  it("doesn't query the accounts in an hour no time zone is in the slot", async () => {
+    const { service, prisma } = make();
+
+    // Wednesday 18 November 2026, noon UTC: Wednesday everywhere.
+    await expect(service.run(new Date("2026-11-18T12:00:00Z"))).resolves.toBe(
+      0,
+    );
+    expect(prisma.user.findMany).not.toHaveBeenCalled();
+  });
+
+  it("queries them in an hour some time zone is in the slot", async () => {
+    const { service, prisma } = make();
+
+    await service.run(FIRST_MONDAY_9H_PARIS);
+    expect(prisma.user.findMany).toHaveBeenCalled();
+  });
 });

@@ -25,6 +25,7 @@ import { notificationCopy } from "./notification-copy";
 import { PushService } from "./push.service";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+const QUARTER_HOUR_MS = 15 * 60 * 1000;
 const MAX_ITEMS = 3;
 
 interface PausedWork extends PausedReminderItem {
@@ -43,6 +44,29 @@ export function isPausedReminderDue(timezone: string, now: Date): boolean {
   return (
     parts.weekday === "Mon" && parts.hour === 9 && Number(day.slice(8)) <= 7
   );
+}
+
+/**
+ * Whether some UTC offset in use (-12h to +14h, by quarter hours) is in
+ * {@link isPausedReminderDue}'s slot at `now`. Outside, no account can be
+ * due, which spares the hourly job its scan of every account's preferences
+ * on all but a day or two a month. Offsets rather than zone names, so an
+ * account whose zone is an alias isn't left out.
+ */
+export function isPausedReminderDueAnywhere(now: Date): boolean {
+  for (let quarter = -12 * 4; quarter <= 14 * 4; quarter++) {
+    const local = new Date(now.getTime() + quarter * QUARTER_HOUR_MS);
+
+    if (
+      local.getUTCDay() === 1 &&
+      local.getUTCHours() === 9 &&
+      local.getUTCDate() <= 7
+    ) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 /**
@@ -71,6 +95,8 @@ export class PausedReminderService {
   }
 
   async run(now: Date): Promise<number> {
+    if (!isPausedReminderDueAnywhere(now)) return 0;
+
     const optedIn = await this.prisma.user.findMany({
       where: {
         preferences: {
