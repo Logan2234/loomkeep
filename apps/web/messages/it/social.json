@@ -493,5 +493,8 @@
   "chat_format_code": "Codice · Ctrl+E",
   "chat_format_spoiler": "Spoiler · Ctrl+Maiusc+S",
   "chat_write_to": "Scrivi a {name}",
-  "report_target_message": "Messaggio"
+  "report_target_message": "Messaggio",
+  "profile_figures_title": "In cifre",
+  "profile_figures_period": "Periodo delle cifre",
+  "profile_figures_all_time": "Da sempre"
 }

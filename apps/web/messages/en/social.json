@@ -493,5 +493,8 @@
   "chat_format_code": "Code · Ctrl+E",
   "chat_format_spoiler": "Spoiler · Ctrl+Shift+S",
   "chat_write_to": "Write to {name}",
-  "report_target_message": "Message"
+  "report_target_message": "Message",
+  "profile_figures_title": "In figures",
+  "profile_figures_period": "Period of the figures",
+  "profile_figures_all_time": "All time"
 }

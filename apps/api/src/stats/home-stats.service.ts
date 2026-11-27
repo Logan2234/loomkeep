@@ -1,6 +1,8 @@
 import {
+  type FiguresDto,
   type MyYearDto,
   type OnThisDayEntryDto,
+  type ProfileFiguresDto,
   type StatsDomain,
   Domain,
   TrackingCycleStatus,
@@ -31,12 +33,42 @@ export class HomeStatsService {
    * logged sessions only: Steam's playtime has no date to place it in a year.
    */
   async myYear(userId: string, year: number): Promise<MyYearDto> {
-    const enabled = await this.domainGate.getEnabledDomains(userId);
-    const within = {
-      gte: new Date(Date.UTC(year, 0, 1)),
-      lt: new Date(Date.UTC(year + 1, 0, 1)),
+    return {
+      year,
+      ...(await this.summarize(userId, {
+        gte: new Date(Date.UTC(year, 0, 1)),
+        lt: new Date(Date.UTC(year + 1, 0, 1)),
+      })),
     };
-    const summary: MyYearDto = { year };
+  }
+
+  /**
+   * The profile's « En chiffres » (PRV-05): `year` as « Mon année » counts
+   * it, and the same figures over the whole library.
+   */
+  async profileFigures(
+    userId: string,
+    year: number,
+  ): Promise<ProfileFiguresDto> {
+    const [thisYear, allTime] = await Promise.all([
+      this.myYear(userId, year),
+      this.summarize(userId, null),
+    ]);
+    return { thisYear, allTime };
+  }
+
+  /**
+   * One block per enabled domain, over `within` or, when null, everything:
+   * then a film or an album counts once finished, whatever its date.
+   */
+  private async summarize(
+    userId: string,
+    within: { gte: Date; lt: Date } | null,
+  ): Promise<FiguresDto> {
+    const enabled = await this.domainGate.getEnabledDomains(userId);
+    const finished = within ?? { not: null };
+    const dated = within ?? undefined;
+    const summary: FiguresDto = {};
     const tasks: Promise<void>[] = [];
 
     if (enabled.includes(Domain.MEDIA)) {
@@ -46,24 +78,33 @@ export class HomeStatsService {
             this.prisma.mediaEntry.findMany({
               where: {
                 userId,
-                finishedAt: within,
+                finishedAt: finished,
                 mediaItem: { type: "MOVIE" },
               },
               select: { mediaItem: { select: { runtimeMin: true } } },
             }),
             this.prisma.movieReplay.findMany({
-              where: { mediaEntry: { userId }, finishedAt: within },
+              where: { mediaEntry: { userId }, finishedAt: dated },
               select: {
                 mediaEntry: {
                   select: { mediaItem: { select: { runtimeMin: true } } },
                 },
               },
             }),
-            this.prisma.$queryRaw<{ count: bigint; minutes: bigint | null }[]>`
-              SELECT COUNT(*) AS count, SUM(e."runtimeMin") AS minutes
-              FROM "EpisodeWatch" w JOIN "Episode" e ON e.id = w."episodeId"
-              WHERE w."userId" = ${userId}
-                AND w."watchedAt" >= ${within.gte} AND w."watchedAt" < ${within.lt}`,
+            within
+              ? this.prisma.$queryRaw<
+                  { count: bigint; minutes: bigint | null }[]
+                >`
+                  SELECT COUNT(*) AS count, SUM(e."runtimeMin") AS minutes
+                  FROM "EpisodeWatch" w JOIN "Episode" e ON e.id = w."episodeId"
+                  WHERE w."userId" = ${userId}
+                    AND w."watchedAt" >= ${within.gte} AND w."watchedAt" < ${within.lt}`
+              : this.prisma.$queryRaw<
+                  { count: bigint; minutes: bigint | null }[]
+                >`
+                  SELECT COUNT(*) AS count, SUM(e."runtimeMin") AS minutes
+                  FROM "EpisodeWatch" w JOIN "Episode" e ON e.id = w."episodeId"
+                  WHERE w."userId" = ${userId}`,
           ]);
           const movieMinutes =
             movies.reduce((sum, m) => sum + (m.mediaItem.runtimeMin ?? 0), 0) +
@@ -88,11 +129,11 @@ export class HomeStatsService {
               where: {
                 gameEntry: { userId },
                 status: TrackingCycleStatus.COMPLETED,
-                finishedAt: within,
+                finishedAt: dated,
               },
             }),
             this.prisma.gameSession.aggregate({
-              where: { gameEntry: { userId }, occurredAt: within },
+              where: { gameEntry: { userId }, occurredAt: dated },
               _sum: { durationMinutes: true },
             }),
           ]);
@@ -112,11 +153,11 @@ export class HomeStatsService {
               where: {
                 bookEntry: { userId },
                 status: TrackingCycleStatus.COMPLETED,
-                finishedAt: within,
+                finishedAt: dated,
               },
             }),
             this.prisma.bookSession.aggregate({
-              where: { bookEntry: { userId }, occurredAt: within },
+              where: { bookEntry: { userId }, occurredAt: dated },
               _sum: { pagesRead: true },
             }),
           ]);
@@ -130,7 +171,7 @@ export class HomeStatsService {
         (async () => {
           summary.music = {
             listened: await this.prisma.musicEntry.count({
-              where: { userId, status: "LISTENED", finishedAt: within },
+              where: { userId, status: "LISTENED", finishedAt: dated },
             }),
           };
         })(),

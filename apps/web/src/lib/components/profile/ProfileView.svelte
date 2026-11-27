@@ -25,6 +25,7 @@
   import ListFormModal from "#lib/components/ListFormModal.svelte";
   import ProfileActivity from "#lib/components/ProfileActivity.svelte";
   import ProfileConnectionsModal from "#lib/components/profile/ProfileConnectionsModal.svelte";
+  import ProfileFiguresSection from "#lib/components/profile/ProfileFiguresSection.svelte";
   import ProfileHeader from "#lib/components/profile/ProfileHeader.svelte";
   import ProfileLibrarySection from "#lib/components/profile/ProfileLibrarySection.svelte";
   import ProfileListsSection from "#lib/components/profile/ProfileListsSection.svelte";
@@ -400,6 +401,7 @@
 
     <!-- What the viewer produces, one section under the other. -->
     <div class="mt-8 flex flex-col gap-8">
+      <ProfileFiguresSection username={profile.username} />
       <ProfileLibrarySection domains={profile.domains} {selfManage} />
 
       {#if appConfig.socialEnabled && listTiles.length > 0}

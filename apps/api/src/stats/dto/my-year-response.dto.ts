@@ -1,4 +1,4 @@
-import type { MyYearDto } from "@loomkeep/shared";
+import type { FiguresDto, MyYearDto } from "@loomkeep/shared";
 import { ApiPropertyOptional } from "@nestjs/swagger";
 
 class MyYearVideoResponseDto {
@@ -21,9 +21,7 @@ class MyYearMusicResponseDto {
   listened!: number;
 }
 
-export class MyYearResponseDto implements MyYearDto {
-  year!: number;
-
+export class FiguresResponseDto implements FiguresDto {
   @ApiPropertyOptional({ type: MyYearVideoResponseDto })
   video?: MyYearVideoResponseDto;
 
@@ -35,4 +33,8 @@ export class MyYearResponseDto implements MyYearDto {
 
   @ApiPropertyOptional({ type: MyYearMusicResponseDto })
   music?: MyYearMusicResponseDto;
+}
+
+export class MyYearResponseDto extends FiguresResponseDto implements MyYearDto {
+  year!: number;
 }

@@ -30,6 +30,11 @@ history from before it was started.
 
 ### Added
 
+- Search: hold a result (or press X on it) to select several, then add them
+  all to your library or to a list in one go.
+- Profiles: an « In figures » section with this year's films, episodes,
+  games, books and albums, or the same since the start. Each domain follows
+  its library's visibility.
 - An accessibility statement, linked from the footer: what is tested, what
   isn't yet, and where to report a barrier, with a form that emails the
   instance's support mailbox (`MAIL_SUPPORT_ADDRESS`) when it has one.
