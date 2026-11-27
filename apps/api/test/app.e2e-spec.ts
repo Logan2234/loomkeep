@@ -325,6 +325,46 @@ describe("Loomkeep API (e2e)", () => {
     expect(response.body[0].mediaItem.title).toBe("Test Anime");
   });
 
+  // Films are now picked in SQL, on a release date still to come in their
+  // JSON (audit 2026-11-17, PRF-13).
+  it("lists a tracked film's release to come, and not one already out", async () => {
+    const me = await request(http)
+      .get("/api/users/me")
+      .set("Cookie", sessionCookies)
+      .expect(200);
+    const film = (title: string, date: string) =>
+      prisma.mediaItem.create({
+        data: {
+          type: "MOVIE",
+          canonicalSource: "TMDB",
+          title,
+          status: "Released",
+          movieReleaseDates: [{ country: "FR", date, type: 3 }],
+          entries: { create: { userId: me.body.id, status: "PLANNED" } },
+        },
+      });
+    const coming = await film("Coming film", "2999-01-01");
+    const out = await film("Out film", "2001-01-01");
+
+    try {
+      const response = await request(http)
+        .get("/api/library/calendar")
+        .set("Cookie", sessionCookies)
+        .set("Accept-Language", "fr-FR")
+        .expect(200);
+      const titles = (
+        response.body as { mediaItem: { title: string } | null }[]
+      ).map((entry) => entry.mediaItem?.title);
+
+      expect(titles).toContain("Coming film");
+      expect(titles).not.toContain("Out film");
+    } finally {
+      await prisma.mediaItem.deleteMany({
+        where: { id: { in: [coming.id, out.id] } },
+      });
+    }
+  });
+
   it("serves the unified media page with metadata + the user's state", async () => {
     await request(http).get("/api/media/anime/4242").expect(401);
 
