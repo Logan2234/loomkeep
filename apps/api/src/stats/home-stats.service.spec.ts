@@ -142,3 +142,32 @@ describe("HomeStatsService.myYear", () => {
     });
   });
 });
+
+describe("HomeStatsService.profileFigures", () => {
+  it("counts the whole library beside the year: anything finished, whatever its date", async () => {
+    const albums = vi.fn().mockResolvedValue(27);
+    const movieEntries = vi.fn().mockResolvedValue([]);
+    const service = makeService(["MEDIA", "MUSIC"], {
+      mediaEntry: { findMany: movieEntries },
+      movieReplay: { findMany: vi.fn().mockResolvedValue([]) },
+      $queryRaw: vi.fn().mockResolvedValue([{ count: 0n, minutes: null }]),
+      musicEntry: { count: albums },
+    });
+
+    const figures = await service.profileFigures("user-1", 2026);
+
+    expect(figures.thisYear.year).toBe(2026);
+    expect(figures.allTime).toEqual({
+      video: { movies: 0, episodes: 0, minutes: 0 },
+      music: { listened: 27 },
+    });
+    expect(movieEntries).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({ finishedAt: { not: null } }),
+      }),
+    );
+    expect(albums).toHaveBeenCalledWith({
+      where: { userId: "user-1", status: "LISTENED", finishedAt: undefined },
+    });
+  });
+});

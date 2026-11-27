@@ -11,7 +11,7 @@
   import Modal from "#lib/ui/Modal.svelte";
   import { isNativeShareAvailable, shareNatively } from "#lib/native/share.js";
   import { m } from "#lib/paraglide/messages.js";
-  import { toast } from "#lib/ui/toast.svelte.js";
+  import { toast } from "#lib/ui/toast-store.svelte.js";
 
   // The member's own sign-up link (SOC-02): whoever signs up with it and the
   // member follow each other.

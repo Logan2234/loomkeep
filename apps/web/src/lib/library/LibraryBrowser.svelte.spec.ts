@@ -11,7 +11,7 @@ import { layout } from "#lib/shell/layout.svelte.js";
 import { apiUrl, server } from "#lib/test/msw.js";
 import { goto, visit } from "#lib/test/navigation.svelte.js";
 import { renderWithQuery } from "#lib/test/render.js";
-import { toast } from "#lib/ui/toast.svelte.js";
+import { toast } from "#lib/ui/toast-store.svelte.js";
 import { ErrorCode } from "@loomkeep/shared/catalog";
 import type { PileSummaryDto } from "@loomkeep/shared/contracts";
 import { type PagedResult } from "@loomkeep/shared/contracts";

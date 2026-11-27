@@ -9,7 +9,7 @@
   import Modal from "#lib/ui/Modal.svelte";
   import Tooltip from "#lib/ui/Tooltip.svelte";
   import { m } from "#lib/paraglide/messages.js";
-  import { toast } from "#lib/ui/toast.svelte.js";
+  import { toast } from "#lib/ui/toast-store.svelte.js";
 
   let panelOpen = $state(false);
   let nestedModalOpen = $state(false);

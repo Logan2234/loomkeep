@@ -3,7 +3,7 @@
   import { prefersReducedMotion } from "#lib/ui/motion.js";
   import { m } from "#lib/paraglide/messages.js";
   import { DragVelocity, isDismissed } from "#lib/ui/swipe-dismiss.js";
-  import { toast, type ToastVariant } from "#lib/ui/toast.svelte.js";
+  import { toast, type ToastVariant } from "#lib/ui/toast-store.svelte.js";
   import { flip } from "svelte/animate";
   import { fade, fly } from "svelte/transition";
   import Icon from "./Icon.svelte";

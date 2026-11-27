@@ -1,4 +1,11 @@
 <script lang="ts">
+  import { longpress } from "#lib/actions/longpress.js";
+  import {
+    getSearchSelection,
+    pressToSelect,
+    selectableWork,
+  } from "#lib/search/search-selection.svelte.js";
+  import SearchSelectMark from "./SearchSelectMark.svelte";
   import { inView } from "#lib/actions/inView.js";
 
   import { MEDIA_TYPE_LABEL } from "#lib/constants/media-types.js";
@@ -129,6 +136,9 @@
   });
 
   // Infinite scroll: load the next page when the sentinel nears the viewport.
+
+  // Only on the search page itself: a library page's preview has none.
+  const selection = getSearchSelection();
 </script>
 
 {#if searchQuery.error}
@@ -148,50 +158,63 @@
     {/each}
   </PosterGrid>
 {:else if results.length > 0}
-  <PosterGrid>
-    {#each shown as media (keyOf(media))}
-      {@const status = trackedStatus(media)}
-      <div
-        in:fly|global={{ y: 8, duration: reduced ? 0 : 220 }}
-        class="card group hover:border-accent relative flex flex-col transition-[transform,border-color] duration-150 hover:-translate-y-0.5">
-        <a
-          href={`/app/media/${media.type.toLowerCase()}/${media.sourceId}`}
-          class="absolute inset-0 z-1"
-          aria-label={media.title}></a>
-        <Poster
-          src={media.posterUrl}
-          title={media.title}
-          alt=""
-          adult={media.isAdult} />
-        <div class="flex flex-1 flex-col gap-1.5 p-3">
-          <span class="font-display text-sm leading-tight font-semibold">
-            {media.title}
-          </span>
-          <span class="timecode text-xs">
-            {MEDIA_TYPE_LABEL[media.type]}{#if media.year}
-              &nbsp;· {media.year}{/if}
-          </span>
+  <div use:longpress={pressToSelect(selection)}>
+    <PosterGrid>
+      {#each shown as media (keyOf(media))}
+        {@const status = trackedStatus(media)}
+        {@const href = `/app/media/${media.type.toLowerCase()}/${media.sourceId}`}
+        <div
+          in:fly|global={{ y: 8, duration: reduced ? 0 : 220 }}
+          data-search-work={href}
+          data-tracked={status ? "" : undefined}
+          class="card group hover:border-accent relative flex flex-col transition-[transform,border-color,opacity] duration-150 hover:-translate-y-0.5 {selection?.has(
+            href,
+          )
+            ? 'ring-accent ring-3'
+            : ''} {selection?.active && status ? 'opacity-40' : ''}">
+          <a
+            {href}
+            use:selectableWork={{ selection, href, tracked: !!status }}
+            class="absolute inset-0 z-1"
+            aria-label={media.title}></a>
+          <Poster
+            src={media.posterUrl}
+            title={media.title}
+            alt=""
+            adult={media.isAdult} />
+          <div class="flex flex-1 flex-col gap-1.5 p-3">
+            <span class="font-display text-sm leading-tight font-semibold">
+              {media.title}
+            </span>
+            <span class="timecode text-xs">
+              {MEDIA_TYPE_LABEL[media.type]}{#if media.year}
+                &nbsp;· {media.year}{/if}
+            </span>
+          </div>
+          {#if status}
+            <span
+              role="img"
+              title={m.search_result_already_added()}
+              aria-label={m.search_result_already_added()}
+              class="bg-accent text-accent-fg absolute top-2 right-2 z-10 grid h-8 w-8 place-items-center rounded-full shadow">
+              <Icon name="check" class="h-4 w-4" />
+            </span>
+          {:else if selection?.active}
+            <SearchSelectMark on={selection.has(href)} />
+          {:else}
+            <button
+              type="button"
+              onclick={() => addMut.mutate(media)}
+              title={m.search_result_add()}
+              aria-label={m.search_result_add()}
+              class="bg-surface/80 absolute top-2 right-2 z-10 grid h-8 w-8 place-items-center rounded-full opacity-100 backdrop-blur-sm transition-opacity md:opacity-0 md:group-hover:opacity-100 md:focus-visible:opacity-100">
+              <Icon name="plus" class="h-4 w-4" />
+            </button>
+          {/if}
         </div>
-        {#if status}
-          <span
-            title={m.search_result_already_added()}
-            aria-label={m.search_result_already_added()}
-            class="bg-accent text-accent-fg absolute top-2 right-2 z-10 grid h-8 w-8 place-items-center rounded-full shadow">
-            <Icon name="check" class="h-4 w-4" />
-          </span>
-        {:else}
-          <button
-            type="button"
-            onclick={() => addMut.mutate(media)}
-            title={m.search_result_add()}
-            aria-label={m.search_result_add()}
-            class="bg-surface/80 absolute top-2 right-2 z-10 grid h-8 w-8 place-items-center rounded-full opacity-100 backdrop-blur-sm transition-opacity md:opacity-0 md:group-hover:opacity-100 md:focus-visible:opacity-100">
-            <Icon name="plus" class="h-4 w-4" />
-          </button>
-        {/if}
-      </div>
-    {/each}
-  </PosterGrid>
+      {/each}
+    </PosterGrid>
+  </div>
 
   {#if searchQuery.hasNextPage && !limit}
     <!-- Sentinel: entering the viewport triggers the next page. -->

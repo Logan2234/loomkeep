@@ -106,5 +106,12 @@
   "push_channel_releases": "Releases",
   "push_channel_announcements": "Announcements",
   "open_in_app_prompt": "Do you use the Loomkeep app? Open this page in it.",
-  "open_in_app_action": "Open"
+  "open_in_app_action": "Open",
+  "search_selection_toolbar": "Selected results",
+  "search_selection_list": "List",
+  "search_selection_added_one": "1 added to your library",
+  "search_selection_added_many": "{count} added to your library",
+  "search_selection_listed_one": "1 added to “{list}” and your library",
+  "search_selection_listed_many": "{count} added to “{list}” and your library",
+  "search_selection_partial": "{done} of {total} added: the others couldn't be. Try again."
 }

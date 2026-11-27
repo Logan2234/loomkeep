@@ -21,7 +21,7 @@
   import { prefersReducedMotion } from "#lib/ui/motion.js";
   import { m } from "#lib/paraglide/messages.js";
   import { reauth } from "#lib/auth/reauth.svelte.js";
-  import { toast } from "#lib/ui/toast.svelte.js";
+  import { toast } from "#lib/ui/toast-store.svelte.js";
   import { type AccountDeletionReason } from "@loomkeep/shared/enums";
   import {
     ACCOUNT_DELETION_GRACE_DAYS,

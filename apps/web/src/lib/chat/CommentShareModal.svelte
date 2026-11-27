@@ -9,7 +9,7 @@
   import Icon from "#lib/ui/Icon.svelte";
   import Modal from "#lib/ui/Modal.svelte";
   import { m } from "#lib/paraglide/messages.js";
-  import { toast } from "#lib/ui/toast.svelte.js";
+  import { toast } from "#lib/ui/toast-store.svelte.js";
   import type { CommentTargetType } from "@loomkeep/shared/enums";
   import type { CommentDto } from "@loomkeep/shared/contracts";
   import ChatFriendPicker from "./ChatFriendPicker.svelte";

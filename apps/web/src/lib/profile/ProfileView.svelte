@@ -25,6 +25,7 @@
   import ListFormModal from "#lib/lists/ListFormModal.svelte";
   import ProfileActivity from "#lib/profile/ProfileActivity.svelte";
   import ProfileConnectionsModal from "#lib/profile/ProfileConnectionsModal.svelte";
+  import ProfileFiguresSection from "#lib/profile/ProfileFiguresSection.svelte";
   import ProfileHeader from "#lib/profile/ProfileHeader.svelte";
   import ProfileLibrarySection from "#lib/profile/ProfileLibrarySection.svelte";
   import ProfileListsSection from "#lib/profile/ProfileListsSection.svelte";
@@ -41,7 +42,7 @@
     scanNatively,
   } from "#lib/native/scan.js";
   import { profileUsernameFromQr } from "#lib/share/scan-codes.js";
-  import { toast } from "#lib/ui/toast.svelte.js";
+  import { toast } from "#lib/ui/toast-store.svelte.js";
   import { goto } from "$app/navigation";
   import type {
     RelationshipDto,
@@ -403,7 +404,12 @@
 
     <!-- What the viewer produces, one section under the other. -->
     <div class="mt-8 flex flex-col gap-8">
-      <ProfileLibrarySection domains={profile.domains} {selfManage} />
+      <!-- On a phone the figures follow the library; on a wide screen they
+           sit beside it, in the level card's column. -->
+      <div class="grid gap-8 lg:grid-cols-[minmax(0,1fr)_358px] lg:gap-7">
+        <ProfileLibrarySection domains={profile.domains} {selfManage} />
+        <ProfileFiguresSection username={profile.username} />
+      </div>
 
       {#if appConfig.socialEnabled && listTiles.length > 0}
         <div class="min-w-0">

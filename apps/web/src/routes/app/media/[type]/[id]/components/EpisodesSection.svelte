@@ -30,7 +30,7 @@
   import { prefersReducedMotion } from "#lib/ui/motion.js";
   import { m } from "#lib/paraglide/messages.js";
   import { listenTabSwipe } from "#lib/ui/tab-swipe.js";
-  import { toast } from "#lib/ui/toast.svelte.js";
+  import { toast } from "#lib/ui/toast-store.svelte.js";
   import { useQueryClient } from "@tanstack/svelte-query";
   import type { MediaType, ReviewTargetType } from "@loomkeep/shared/enums";
   import type {

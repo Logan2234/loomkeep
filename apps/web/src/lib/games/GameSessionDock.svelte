@@ -30,7 +30,7 @@
     localDateInput,
     sessionDateToIso,
   } from "#lib/sessions/session-presentation.js";
-  import { toast } from "#lib/ui/toast.svelte.js";
+  import { toast } from "#lib/ui/toast-store.svelte.js";
 
   import type { QueryKey } from "@tanstack/svelte-query";
   import { fly, fade } from "svelte/transition";

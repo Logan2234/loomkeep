@@ -15,7 +15,7 @@
     shareWorkNatively,
     workUrl,
   } from "#lib/share/share-work.js";
-  import { toast } from "#lib/ui/toast.svelte.js";
+  import { toast } from "#lib/ui/toast-store.svelte.js";
   import {
     MESSAGE_TEXT_MAX_LENGTH,
     type MessageWorkDto,

@@ -372,11 +372,10 @@ export interface OnThisDayEntryDto {
 }
 
 /**
- * One calendar year at a glance (the « Mon année » widget): counters only,
- * for the domains the user keeps on.
+ * Counters per domain the user keeps on, over a year or the whole library.
+ * A domain left out is off, or hidden from whoever asks.
  */
-export interface MyYearDto {
-  year: number;
+export interface FiguresDto {
   /** Films watched (rewatches included), episodes watched, minutes in front of them. */
   video?: { movies: number; episodes: number; minutes: number };
   /** Playthroughs finished, minutes of logged sessions. */
@@ -385,6 +384,21 @@ export interface MyYearDto {
   books?: { read: number; pages: number };
   /** Albums marked listened. */
   music?: { listened: number };
+}
+
+/** One calendar year at a glance (the « Mon année » widget). */
+export interface MyYearDto extends FiguresDto {
+  year: number;
+}
+
+/**
+ * A profile's « En chiffres » (PRV-05): the year as « Mon année » counts it,
+ * and the same counters over the whole library. Each follows its domain's
+ * library visibility for the viewer.
+ */
+export interface ProfileFiguresDto {
+  thisYear: MyYearDto;
+  allTime: FiguresDto;
 }
 
 /**

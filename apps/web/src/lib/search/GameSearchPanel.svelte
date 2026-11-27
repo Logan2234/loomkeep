@@ -1,4 +1,11 @@
 <script lang="ts">
+  import { longpress } from "#lib/actions/longpress.js";
+  import {
+    getSearchSelection,
+    pressToSelect,
+    selectableWork,
+  } from "#lib/search/search-selection.svelte.js";
+  import SearchSelectMark from "./SearchSelectMark.svelte";
   import {
     fetchAllPages,
     listGames,
@@ -106,6 +113,9 @@
   function addGame(game: GameSummaryDto) {
     addMut.mutate(game);
   }
+
+  // Only on the search page itself: a library page's preview has none.
+  const selection = getSearchSelection();
 </script>
 
 {#if searchQuery.error}
@@ -125,49 +135,62 @@
     {/each}
   </PosterGrid>
 {:else if results.length > 0}
-  <PosterGrid>
-    {#each shown as game (game.sourceId)}
-      {@const entry = tracked.get(game.sourceId)}
-      <div
-        class="card group hover:border-accent relative flex flex-col transition-[transform,border-color] duration-150 hover:-translate-y-0.5">
-        <a
-          href={`/app/games/${game.sourceId}`}
-          class="absolute inset-0 z-1"
-          aria-label={game.title}></a>
-        <Poster
-          src={game.coverUrl}
-          title={game.title}
-          alt=""
-          adult={game.isAdult} />
-        <div class="flex flex-1 flex-col gap-2 p-3">
-          <span class="font-display text-sm leading-tight font-semibold">
-            {game.title}
-          </span>
-          <span class="timecode text-xs">
-            {m.game_type()}{#if game.year}
-              &nbsp;· {game.year}{/if}
-          </span>
+  <div use:longpress={pressToSelect(selection)}>
+    <PosterGrid>
+      {#each shown as game (game.sourceId)}
+        {@const entry = tracked.get(game.sourceId)}
+        {@const href = `/app/games/${game.sourceId}`}
+        <div
+          data-search-work={href}
+          data-tracked={entry ? "" : undefined}
+          class="card group hover:border-accent relative flex flex-col transition-[transform,border-color,opacity] duration-150 hover:-translate-y-0.5 {selection?.has(
+            href,
+          )
+            ? 'ring-accent ring-3'
+            : ''} {selection?.active && entry ? 'opacity-40' : ''}">
+          <a
+            {href}
+            use:selectableWork={{ selection, href, tracked: !!entry }}
+            class="absolute inset-0 z-1"
+            aria-label={game.title}></a>
+          <Poster
+            src={game.coverUrl}
+            title={game.title}
+            alt=""
+            adult={game.isAdult} />
+          <div class="flex flex-1 flex-col gap-2 p-3">
+            <span class="font-display text-sm leading-tight font-semibold">
+              {game.title}
+            </span>
+            <span class="timecode text-xs">
+              {m.game_type()}{#if game.year}
+                &nbsp;· {game.year}{/if}
+            </span>
+          </div>
+          {#if entry}
+            <span
+              role="img"
+              title={m.search_result_already_added()}
+              aria-label={m.search_result_already_added()}
+              class="bg-accent text-accent-fg absolute top-2 right-2 z-10 grid h-8 w-8 place-items-center rounded-full shadow">
+              <Icon name="check" class="h-4 w-4" />
+            </span>
+          {:else if selection?.active}
+            <SearchSelectMark on={selection.has(href)} />
+          {:else}
+            <button
+              type="button"
+              onclick={() => addGame(game)}
+              title={m.search_result_add()}
+              aria-label={m.search_result_add()}
+              class="bg-surface/80 absolute top-2 right-2 z-10 grid h-8 w-8 place-items-center rounded-full opacity-100 backdrop-blur-sm transition-opacity md:opacity-0 md:group-hover:opacity-100 md:focus-visible:opacity-100">
+              <Icon name="plus" class="h-4 w-4" />
+            </button>
+          {/if}
         </div>
-        {#if entry}
-          <span
-            title={m.search_result_already_added()}
-            aria-label={m.search_result_already_added()}
-            class="bg-accent text-accent-fg absolute top-2 right-2 z-10 grid h-8 w-8 place-items-center rounded-full shadow">
-            <Icon name="check" class="h-4 w-4" />
-          </span>
-        {:else}
-          <button
-            type="button"
-            onclick={() => addGame(game)}
-            title={m.search_result_add()}
-            aria-label={m.search_result_add()}
-            class="bg-surface/80 absolute top-2 right-2 z-10 grid h-8 w-8 place-items-center rounded-full opacity-100 backdrop-blur-sm transition-opacity md:opacity-0 md:group-hover:opacity-100 md:focus-visible:opacity-100">
-            <Icon name="plus" class="h-4 w-4" />
-          </button>
-        {/if}
-      </div>
-    {/each}
-  </PosterGrid>
+      {/each}
+    </PosterGrid>
+  </div>
 
   {#if !limit}
     <!-- Attribution required by the IGDB API/Data Commercial Usage

@@ -1,4 +1,11 @@
 <script lang="ts">
+  import { longpress } from "#lib/actions/longpress.js";
+  import {
+    getSearchSelection,
+    pressToSelect,
+    selectableWork,
+  } from "#lib/search/search-selection.svelte.js";
+  import SearchSelectMark from "./SearchSelectMark.svelte";
   import { keys } from "#lib/api/keys.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import { addWorkToLibrary } from "#lib/chat/work-library.js";
@@ -33,6 +40,8 @@
   const list = $derived(
     search.enabled ? shelves(order, search.answer, search.settled) : [],
   );
+
+  const selection = getSearchSelection();
 
   const addMut = createApiMutation(() => ({
     mutate: (hit: WorkSearchHitDto) => addWorkToLibrary(hit),
@@ -73,14 +82,25 @@
         </header>
 
         {#if shelf.state === "results"}
-          <ul class="flex flex-col">
+          <ul class="flex flex-col" use:longpress={pressToSelect(selection)}>
             {#each shelf.hits as hit (hit.href)}
               {@const status = statusLabel(hit)}
               <li
                 in:fly={{ y: 6, duration: reduced ? 0 : 200 }}
-                class="hover:bg-surface-2 relative grid grid-cols-[2.5rem_minmax(0,1fr)_auto] items-center gap-3 rounded-xl px-2 py-2 transition-colors duration-150">
+                data-search-work={hit.href}
+                data-tracked={hit.status ? "" : undefined}
+                class="hover:bg-surface-2 relative grid grid-cols-[2.5rem_minmax(0,1fr)_auto] items-center gap-3 rounded-xl px-2 py-2 transition-[background-color,opacity] duration-150 {selection?.has(
+                  hit.href,
+                )
+                  ? 'bg-accent/10 ring-accent ring-2'
+                  : ''} {selection?.active && hit.status ? 'opacity-40' : ''}">
                 <a
                   href={hit.href}
+                  use:selectableWork={{
+                    selection,
+                    href: hit.href,
+                    tracked: !!hit.status,
+                  }}
                   class="absolute inset-0 rounded-xl"
                   aria-label={hit.title}></a>
                 <span class="overflow-hidden rounded-md">
@@ -109,11 +129,17 @@
                 </span>
                 {#if hit.status}
                   <span
+                    role="img"
                     title={m.search_result_already_added()}
                     aria-label={m.search_result_already_added()}
                     class="bg-accent text-accent-fg relative z-10 grid h-8 w-8 place-items-center rounded-full">
                     <Icon name="check" class="h-4 w-4" />
                   </span>
+                {:else if selection?.active}
+                  <SearchSelectMark
+                    on={selection.has(hit.href)}
+                    overArtwork={false}
+                    class="relative" />
                 {:else}
                   <button
                     type="button"

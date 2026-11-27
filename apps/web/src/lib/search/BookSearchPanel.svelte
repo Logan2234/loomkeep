@@ -1,4 +1,11 @@
 <script lang="ts">
+  import { longpress } from "#lib/actions/longpress.js";
+  import {
+    getSearchSelection,
+    pressToSelect,
+    selectableWork,
+  } from "#lib/search/search-selection.svelte.js";
+  import SearchSelectMark from "./SearchSelectMark.svelte";
   import {
     fetchAllPages,
     listBooks,
@@ -113,6 +120,9 @@
   function addBook(book: BookSummaryDto) {
     addMut.mutate(book);
   }
+
+  // Only on the search page itself: a library page's preview has none.
+  const selection = getSearchSelection();
 </script>
 
 {#if searchQuery.error}
@@ -132,55 +142,68 @@
     {/each}
   </PosterGrid>
 {:else if results.length > 0}
-  <PosterGrid>
-    {#each shown as book (book.sourceId)}
-      {@const entry = tracked.get(book.sourceId)}
-      <div
-        class="card group hover:border-accent relative flex flex-col transition-[transform,border-color] duration-150 hover:-translate-y-0.5">
-        <a
-          href={`/app/books/${book.sourceId}`}
-          class="absolute inset-0 z-1"
-          aria-label={book.title}></a>
-        <Poster
-          src={book.coverUrl}
-          title={book.title}
-          alt=""
-          adult={book.isAdult} />
-        <div class="flex flex-1 flex-col gap-2 p-3">
-          <span class="font-display text-sm leading-tight font-semibold">
-            {book.title}
-          </span>
-          <span class="timecode text-xs">
-            {#if book.authors.length > 0}
-              {book.authors[0]}{#if book.year}
-                &nbsp;· {book.year}{/if}
-            {:else if book.year}
-              {book.year}
-            {:else}
-              {m.common_Book()}
-            {/if}
-          </span>
+  <div use:longpress={pressToSelect(selection)}>
+    <PosterGrid>
+      {#each shown as book (book.sourceId)}
+        {@const entry = tracked.get(book.sourceId)}
+        {@const href = `/app/books/${book.sourceId}`}
+        <div
+          data-search-work={href}
+          data-tracked={entry ? "" : undefined}
+          class="card group hover:border-accent relative flex flex-col transition-[transform,border-color,opacity] duration-150 hover:-translate-y-0.5 {selection?.has(
+            href,
+          )
+            ? 'ring-accent ring-3'
+            : ''} {selection?.active && entry ? 'opacity-40' : ''}">
+          <a
+            {href}
+            use:selectableWork={{ selection, href, tracked: !!entry }}
+            class="absolute inset-0 z-1"
+            aria-label={book.title}></a>
+          <Poster
+            src={book.coverUrl}
+            title={book.title}
+            alt=""
+            adult={book.isAdult} />
+          <div class="flex flex-1 flex-col gap-2 p-3">
+            <span class="font-display text-sm leading-tight font-semibold">
+              {book.title}
+            </span>
+            <span class="timecode text-xs">
+              {#if book.authors.length > 0}
+                {book.authors[0]}{#if book.year}
+                  &nbsp;· {book.year}{/if}
+              {:else if book.year}
+                {book.year}
+              {:else}
+                {m.common_Book()}
+              {/if}
+            </span>
+          </div>
+          {#if entry}
+            <span
+              role="img"
+              title={m.search_result_already_added()}
+              aria-label={m.search_result_already_added()}
+              class="bg-accent text-accent-fg absolute top-2 right-2 z-10 grid h-8 w-8 place-items-center rounded-full shadow">
+              <Icon name="check" class="h-4 w-4" />
+            </span>
+          {:else if selection?.active}
+            <SearchSelectMark on={selection.has(href)} />
+          {:else}
+            <button
+              type="button"
+              onclick={() => addBook(book)}
+              title={m.search_result_add()}
+              aria-label={m.search_result_add()}
+              class="bg-surface/80 absolute top-2 right-2 z-10 grid h-8 w-8 place-items-center rounded-full opacity-100 backdrop-blur-sm transition-opacity md:opacity-0 md:group-hover:opacity-100 md:focus-visible:opacity-100">
+              <Icon name="plus" class="h-4 w-4" />
+            </button>
+          {/if}
         </div>
-        {#if entry}
-          <span
-            title={m.search_result_already_added()}
-            aria-label={m.search_result_already_added()}
-            class="bg-accent text-accent-fg absolute top-2 right-2 z-10 grid h-8 w-8 place-items-center rounded-full shadow">
-            <Icon name="check" class="h-4 w-4" />
-          </span>
-        {:else}
-          <button
-            type="button"
-            onclick={() => addBook(book)}
-            title={m.search_result_add()}
-            aria-label={m.search_result_add()}
-            class="bg-surface/80 absolute top-2 right-2 z-10 grid h-8 w-8 place-items-center rounded-full opacity-100 backdrop-blur-sm transition-opacity md:opacity-0 md:group-hover:opacity-100 md:focus-visible:opacity-100">
-            <Icon name="plus" class="h-4 w-4" />
-          </button>
-        {/if}
-      </div>
-    {/each}
-  </PosterGrid>
+      {/each}
+    </PosterGrid>
+  </div>
 {:else if !limit}
   {#if searched}
     <EmptyState art="search" title={m.search_books_empty()} />

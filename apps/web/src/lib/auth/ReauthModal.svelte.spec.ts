@@ -4,7 +4,7 @@ import { m } from "#lib/paraglide/messages.js";
 import { apiUrl, server } from "#lib/test/msw.js";
 import { goto, page } from "#lib/test/navigation.svelte.js";
 import { renderWithQuery } from "#lib/test/render.js";
-import { toast } from "#lib/ui/toast.svelte.js";
+import { toast } from "#lib/ui/toast-store.svelte.js";
 import { ErrorCode } from "@loomkeep/shared/catalog";
 import { type ReauthMethod } from "@loomkeep/shared/contracts";
 import { screen, waitFor } from "@testing-library/svelte";

@@ -224,6 +224,8 @@ export const keys = {
     activity: (username: string) => ["profile", "activity", username] as const,
     myReviews: () => ["profile", "my-reviews"] as const,
     detail: (username: string) => ["profile", "detail", username] as const,
+    figures: (username: string, year: number) =>
+      ["profile", "figures", username, year] as const,
     connections: (username: string, kind: "followers" | "following") =>
       ["profile", "connections", username, kind] as const,
   },

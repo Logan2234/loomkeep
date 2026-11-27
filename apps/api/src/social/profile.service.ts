@@ -261,6 +261,40 @@ export class ProfileService {
    * profile is only a locked preview (reachable identity, no content), and a
    * 404 when it must stay hidden (GHOST or a block).
    */
+  /**
+   * Whose library `username` is, and which of its domains the viewer may
+   * see: the same LIBRARY facet as the profile's per-domain counts. A locked
+   * private profile shows none; 404 when the profile must stay hidden.
+   */
+  async libraryVisibility(
+    viewerId: string,
+    username: string,
+  ): Promise<{ userId: string; isSelf: boolean; domains: Domain[] }> {
+    const target = await this.prisma.user.findUnique({
+      where: { username: username.toLowerCase() },
+      select: { id: true, profileAccess: true, suspendedUntil: true },
+    });
+    if (!target || isSuspended(target))
+      throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.UserNotFound);
+
+    const relation = await this.visibility.getRelation(viewerId, target);
+    const visibility = resolveProfileVisibility(target.profileAccess, relation);
+    if (visibility === "hidden")
+      throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.UserNotFound);
+    if (visibility === "locked")
+      return { userId: target.id, isSelf: relation.isSelf, domains: [] };
+
+    const settings = await this.visibility.getSettingsMap(target.id);
+    const domains = SOCIAL_DOMAINS.filter((domain) =>
+      resolveFacet(
+        target.profileAccess,
+        this.visibility.audienceFor(settings, domain, VisibilityFacet.LIBRARY),
+        relation,
+      ),
+    );
+    return { userId: target.id, isSelf: relation.isSelf, domains };
+  }
+
   async resolveTimelineTarget(
     viewerId: string,
     username: string,

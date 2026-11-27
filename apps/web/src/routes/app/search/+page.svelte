@@ -24,6 +24,7 @@
   import MusicSearchPanel from "#lib/search/MusicSearchPanel.svelte";
   import UnifiedSearchPanel from "#lib/search/UnifiedSearchPanel.svelte";
   import QuickAddPanel from "#lib/library/QuickAddPanel.svelte";
+  import SearchSelectionBar from "#lib/search/SearchSelectionBar.svelte";
   import ScanIsbnModal from "#lib/books/ScanIsbnModal.svelte";
   import { DOMAINS, DOMAIN_IDS } from "#lib/constants/domains.js";
   import { debounce, SEARCH_DEBOUNCE_MS } from "#lib/ui/debounce.js";
@@ -40,8 +41,12 @@
     scanNatively,
   } from "#lib/native/scan.js";
   import { isIsbnBarcode } from "#lib/share/scan-codes.js";
-  import { toast } from "#lib/ui/toast.svelte.js";
+  import { toast } from "#lib/ui/toast-store.svelte.js";
   import { quickAddTarget } from "#lib/library/quick-add.js";
+  import {
+    SearchSelection,
+    setSearchSelection,
+  } from "#lib/search/search-selection.svelte.js";
   import { isPastedLink } from "#lib/share/share-link.js";
   import { Domain, type MediaType } from "@loomkeep/shared/enums";
   import { untrack } from "svelte";
@@ -126,12 +131,23 @@
     debouncedSyncUrl.call();
   });
 
+  // Long press on a result (PRV-09). Other results mean another selection:
+  // one made for the previous search would act on works no longer shown.
+  const selection = new SearchSelection();
+  setSearchSelection(selection);
+  $effect(() => {
+    void query;
+    void domain;
+    untrack(() => selection.exit());
+  });
+
   let recent = $state(readRecentSearches());
   const reducedMotion = prefersReducedMotion();
 
   // Results come as you type, so a term counts once it's been acted on, not
   // at each letter: Enter, or opening one of its results.
   function rememberOnOpen(event: MouseEvent) {
+    if (selection.active) return;
     if ((event.target as Element).closest("a")) rememberSearch(query);
   }
 
@@ -488,6 +504,20 @@
     </div>
   {/if}
 </div>
+
+<svelte:window
+  onkeydown={(event) => {
+    if (event.key !== "Escape" || !selection.active) return;
+    // The bar's List menu closes on the same Escape, from a listener that
+    // runs after this one: only once the event is over does it say so.
+    setTimeout(() => {
+      if (!event.defaultPrevented) selection.exit();
+    });
+  }} />
+
+{#if selection.active}
+  <SearchSelectionBar {selection} />
+{/if}
 
 {#if scanOpen}
   <ScanIsbnModal onclose={() => (scanOpen = false)} ondetect={onIsbnScanned} />

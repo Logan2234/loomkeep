@@ -23,7 +23,7 @@
   import { formatDate, formatTime } from "#lib/ui/format.js";
   import { prefersReducedMotion } from "#lib/ui/motion.js";
   import { m } from "#lib/paraglide/messages.js";
-  import { toast } from "#lib/ui/toast.svelte.js";
+  import { toast } from "#lib/ui/toast-store.svelte.js";
   import { localDayKey } from "#lib/gamification/xp-history.js";
   import type {
     ConversationDto,

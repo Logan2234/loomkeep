@@ -27,7 +27,7 @@
   import { prefersReducedMotion } from "#lib/ui/motion.js";
   import { m } from "#lib/paraglide/messages.js";
   import { onRealtimeEvent } from "#lib/realtime/socket.js";
-  import { toast } from "#lib/ui/toast.svelte.js";
+  import { toast } from "#lib/ui/toast-store.svelte.js";
   import {
     type Emote,
     type CommentTargetType,
