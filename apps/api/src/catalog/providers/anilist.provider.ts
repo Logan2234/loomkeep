@@ -1,14 +1,11 @@
+import { ErrorCode } from "@loomkeep/shared/catalog";
 import type {
   CastDetailDto,
   MediaExtrasDto,
   MediaSagaDto,
-} from "@loomkeep/shared";
-import {
-  CatalogSource,
-  ErrorCode,
-  MediaSummaryDto,
-  MediaType,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import { MediaSummaryDto } from "@loomkeep/shared/contracts";
+import { CatalogSource, MediaType } from "@loomkeep/shared/enums";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { AppException } from "../../common/app.exception";
 import { fetchJson, HTTP_TIMEOUT_MS } from "../../common/http.util";

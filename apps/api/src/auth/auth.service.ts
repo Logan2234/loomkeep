@@ -1,22 +1,18 @@
+import type { Locale } from "@loomkeep/shared/catalog";
+import { ErrorCode, LEGAL_VERSION } from "@loomkeep/shared/catalog";
 import type {
   AuthTokensDto,
   ListenService,
-  Locale,
   LoginResponseDto,
   MfaMethod,
   SessionDto,
   UserDto,
   WebauthnLoginOptionsResponseDto,
   WebauthnMfaOptionsResponseDto,
-} from "@loomkeep/shared";
-import {
-  deviceLabel,
-  ErrorCode,
-  LEGAL_VERSION,
-  NotificationType,
-  OTP_CODE_LENGTH,
-  RealtimeEvent,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import { OTP_CODE_LENGTH, RealtimeEvent } from "@loomkeep/shared/contracts";
+import { NotificationType } from "@loomkeep/shared/enums";
+import { deviceLabel } from "@loomkeep/shared/rules";
 import { HttpStatus, Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { EventEmitter2 } from "@nestjs/event-emitter";

@@ -1,4 +1,5 @@
-import { ErrorCode, SAVED_VIEW_LIMITS } from "@loomkeep/shared";
+import { ErrorCode } from "@loomkeep/shared/catalog";
+import { SAVED_VIEW_LIMITS } from "@loomkeep/shared/contracts";
 import { vi } from "vitest";
 import type { EntitlementService } from "../entitlements/entitlement.service";
 import type { PrismaService } from "../prisma/prisma.service";

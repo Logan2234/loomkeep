@@ -1,4 +1,4 @@
-import type { ShowcaseDto } from "@loomkeep/shared";
+import type { ShowcaseDto } from "@loomkeep/shared/contracts";
 import { Injectable, Logger } from "@nestjs/common";
 import { TmdbProvider } from "../catalog/providers/tmdb.provider";
 import { IgdbProvider } from "../games/providers/igdb.provider";

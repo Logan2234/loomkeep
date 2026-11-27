@@ -1,4 +1,4 @@
-import type { WebauthnMfaVerifyRequestDto } from "@loomkeep/shared";
+import type { WebauthnMfaVerifyRequestDto } from "@loomkeep/shared/contracts";
 import type { AuthenticationResponseJSON } from "@simplewebauthn/server";
 import { IsObject, IsString, MinLength } from "class-validator";
 

@@ -1,4 +1,4 @@
-import type { EntryStatus } from "@loomkeep/shared";
+import type { EntryStatus } from "@loomkeep/shared/enums";
 import { parseDateOrNull } from "../../import-date.util";
 import type { ImportMovie, ImportShow } from "../../media-import-model";
 import type {

@@ -1,4 +1,4 @@
-import type { WebauthnLoginOptionsRequestDto } from "@loomkeep/shared";
+import type { WebauthnLoginOptionsRequestDto } from "@loomkeep/shared/contracts";
 import { Transform } from "class-transformer";
 import { IsString, MinLength } from "class-validator";
 import { normalizeEmail } from "../../common/email.util";

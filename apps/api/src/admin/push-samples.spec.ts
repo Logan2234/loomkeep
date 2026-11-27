@@ -1,4 +1,4 @@
-import { ALERTS, PUSH_SAMPLE_KEYS } from "@loomkeep/shared";
+import { ALERTS, PUSH_SAMPLE_KEYS } from "@loomkeep/shared/catalog";
 import { NotificationAction } from "../notifications/notification-action";
 import { notificationCopy } from "../notifications/notification-copy";
 import { samplePush } from "./push-samples";

@@ -1,4 +1,4 @@
-import type { ApiV1MeDto } from "@loomkeep/shared";
+import type { ApiV1MeDto } from "@loomkeep/shared/contracts";
 import { Controller, Get } from "@nestjs/common";
 import { ApiOperation } from "@nestjs/swagger";
 import { PublicApi } from "../../api-keys/public-api.decorator";

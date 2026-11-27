@@ -1,4 +1,4 @@
-import type { ModerationTransparencyDto } from "@loomkeep/shared";
+import type { ModerationTransparencyDto } from "@loomkeep/shared/contracts";
 import { Injectable } from "@nestjs/common";
 import { utcYearRange } from "../common/date.util";
 import { PrismaService } from "../prisma/prisma.service";

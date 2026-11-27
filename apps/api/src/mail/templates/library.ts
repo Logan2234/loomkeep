@@ -1,4 +1,4 @@
-import type { Locale } from "@loomkeep/shared";
+import type { Locale } from "@loomkeep/shared/catalog";
 import { resolveCopyLocale } from "../../common/copy-locale.util";
 import {
   COLOR_ACCENT,

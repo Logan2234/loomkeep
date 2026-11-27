@@ -1,10 +1,10 @@
 import type {
   ListenLinkDto,
   MusicExternalLinkDto,
-  MusicSource,
   MusicSummaryDto,
   MusicTrackDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import type { MusicSource } from "@loomkeep/shared/enums";
 import type { ProviderExternalId } from "../../common/provider-external-id";
 
 /** Everything a provider knows about one album, in canonical form. */

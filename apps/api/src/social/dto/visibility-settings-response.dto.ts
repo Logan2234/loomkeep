@@ -1,4 +1,5 @@
-import type { ProfileAccess, VisibilitySettingsDto } from "@loomkeep/shared";
+import type { VisibilitySettingsDto } from "@loomkeep/shared/contracts";
+import type { ProfileAccess } from "@loomkeep/shared/enums";
 import { VisibilitySettingItemResponseDto } from "./visibility-setting-item-response.dto";
 
 export class VisibilitySettingsResponseDto implements VisibilitySettingsDto {

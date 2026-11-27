@@ -1,11 +1,11 @@
 import type {
   BookSagaDto,
   BookSagaMemberDto,
-  BookStatus,
   LibraryBookSagasDto,
   LibrarySagaSort,
-} from "@loomkeep/shared";
-import { type SortOrder } from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import { type SortOrder } from "@loomkeep/shared/contracts";
+import type { BookStatus } from "@loomkeep/shared/enums";
 import { Injectable, Logger } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
 import { mapWithConcurrency } from "../common/concurrency.util";

@@ -8,7 +8,7 @@
   import { HOME_WIDGET_GROUPS, HOME_WIDGETS } from "#lib/home/widgets.js";
   import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
-  import type { HomeWidgetType } from "@loomkeep/shared";
+  import type { HomeWidgetType } from "@loomkeep/shared/contracts";
   import { fly } from "svelte/transition";
 
   let {

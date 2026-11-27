@@ -4,7 +4,10 @@
   import Poster from "#lib/components/Poster.svelte";
   import { DOMAINS } from "#lib/constants/domains.js";
   import { m } from "#lib/paraglide/messages.js";
-  import type { MessagePickDto, MessageWorkDto } from "@loomkeep/shared";
+  import type {
+    MessagePickDto,
+    MessageWorkDto,
+  } from "@loomkeep/shared/contracts";
 
   let { pick, work }: { pick: MessagePickDto; work: MessageWorkDto } = $props();
 

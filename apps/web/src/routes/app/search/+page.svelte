@@ -45,7 +45,7 @@
     setSearchSelection,
   } from "#lib/search/search-selection.svelte.js";
   import { isPastedLink } from "#lib/share-link.js";
-  import { Domain, type MediaType } from "@loomkeep/shared";
+  import { Domain, type MediaType } from "@loomkeep/shared/enums";
   import { untrack } from "svelte";
 
   // The "Tout" tab: every domain at once, by shelves (UnifiedSearchPanel).

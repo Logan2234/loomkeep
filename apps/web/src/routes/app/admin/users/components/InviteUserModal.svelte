@@ -23,7 +23,7 @@
     INVITATION_VALIDITY_DAYS,
     type AdminInvitationLinkDto,
     INVITATION_LABEL_MAX_LENGTH,
-  } from "@loomkeep/shared";
+  } from "@loomkeep/shared/contracts";
   import { untrack } from "svelte";
   import { backOut, cubicOut } from "svelte/easing";
   import { fade, fly, scale } from "svelte/transition";

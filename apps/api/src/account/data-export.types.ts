@@ -1,3 +1,5 @@
+import type { SavedViewDto } from "@loomkeep/shared/contracts";
+import { UserDto } from "@loomkeep/shared/contracts";
 import type {
   BookOwnershipStatus,
   BookSource,
@@ -27,14 +29,12 @@ import type {
   ReviewTargetType,
   ReviewVisibility,
   ReviewVoteValue,
-  SavedViewDto,
   SecurityEventType,
   SessionSource,
   TrackingCycleStatus,
   VisibilityAudience,
   VisibilityFacet,
-} from "@loomkeep/shared";
-import { UserDto } from "@loomkeep/shared";
+} from "@loomkeep/shared/enums";
 
 export interface DataExportEntry {
   media: {

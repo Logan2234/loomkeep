@@ -5,12 +5,12 @@ import { onboardingReplay } from "#lib/onboarding-replay.svelte.js";
 import { m } from "#lib/paraglide/messages.js";
 import { apiUrl, server } from "#lib/test/msw.js";
 import { renderWithQuery } from "#lib/test/render.js";
+import { type UserDto } from "@loomkeep/shared/contracts";
 import {
   AcquisitionSource,
   DigestCadence,
   Domain,
-  type UserDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/enums";
 import { fireEvent, screen } from "@testing-library/svelte";
 import { http, HttpResponse } from "msw";
 import { afterEach, describe, expect, it, vi } from "vitest";

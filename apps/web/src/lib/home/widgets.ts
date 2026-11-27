@@ -1,7 +1,11 @@
 import { m } from "#lib/paraglide/messages.js";
 import type { IconName } from "#lib/types/icon-name.js";
-import type { HomeWidgetSort, HomeWidgetType } from "@loomkeep/shared";
-import { Domain, HOME_GRID_COLUMNS } from "@loomkeep/shared";
+import type {
+  HomeWidgetSort,
+  HomeWidgetType,
+} from "@loomkeep/shared/contracts";
+import { HOME_GRID_COLUMNS } from "@loomkeep/shared/contracts";
+import { Domain } from "@loomkeep/shared/enums";
 
 /** What decides whether a widget can show on this deployment, for this user. */
 export interface HomeGate {

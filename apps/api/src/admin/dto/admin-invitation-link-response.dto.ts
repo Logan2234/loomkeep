@@ -1,4 +1,4 @@
-import type { AdminInvitationLinkDto } from "@loomkeep/shared";
+import type { AdminInvitationLinkDto } from "@loomkeep/shared/contracts";
 import { AdminInvitationResponseDto } from "./admin-invitation-response.dto";
 
 export class AdminInvitationLinkResponseDto implements AdminInvitationLinkDto {

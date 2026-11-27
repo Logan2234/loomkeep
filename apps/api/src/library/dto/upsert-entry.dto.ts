@@ -1,10 +1,8 @@
 import {
-  CatalogSource,
   ENTRY_NOTES_MAX_LENGTH,
-  EntryStatus,
-  MediaType,
   UpsertLibraryEntryDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import { CatalogSource, EntryStatus, MediaType } from "@loomkeep/shared/enums";
 import {
   IsBoolean,
   IsIn,

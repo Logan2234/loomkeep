@@ -1,4 +1,4 @@
-import type { CalendarEntryDto } from "@loomkeep/shared";
+import type { CalendarEntryDto } from "@loomkeep/shared/contracts";
 import { GameItemResponseDto } from "../../games/dto/game-item-response.dto";
 import { MediaItemResponseDto } from "./media-item-response.dto";
 

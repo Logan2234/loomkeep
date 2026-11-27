@@ -1,5 +1,5 @@
-import type { RatingVsCommunityDto } from "@loomkeep/shared";
-import { RATING_VS_COMMUNITY_MIN_SAMPLE } from "@loomkeep/shared";
+import type { RatingVsCommunityDto } from "@loomkeep/shared/contracts";
+import { RATING_VS_COMMUNITY_MIN_SAMPLE } from "@loomkeep/shared/contracts";
 
 export function computeAvgReviewLength(
   texts: (string | null)[],

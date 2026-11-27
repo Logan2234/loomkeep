@@ -5,12 +5,11 @@ import {
   upsertMusicEntry,
 } from "#lib/api/client.js";
 import {
-  Domain,
   type ListItemTargetType,
-  type MediaType,
   type MessageWorkDto,
   type MessageWorkKind,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import { Domain, type MediaType } from "@loomkeep/shared/enums";
 
 const DOMAIN_OF: Record<MessageWorkKind, Domain> = {
   MOVIE: Domain.MEDIA,

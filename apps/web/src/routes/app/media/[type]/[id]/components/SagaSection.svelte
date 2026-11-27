@@ -6,7 +6,8 @@
   import SagaBlock from "#lib/components/saga/SagaBlock.svelte";
   import { m } from "#lib/paraglide/messages.js";
   import { mediaSagaMember } from "#lib/saga.js";
-  import type { EntryStatus, MediaType, SagaMemberDto } from "@loomkeep/shared";
+  import type { EntryStatus, MediaType } from "@loomkeep/shared/enums";
+  import type { SagaMemberDto } from "@loomkeep/shared/contracts";
 
   let {
     type,

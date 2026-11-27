@@ -1,4 +1,4 @@
-import type { MyReviewDto } from "@loomkeep/shared";
+import type { MyReviewDto } from "@loomkeep/shared/contracts";
 import { ReviewResponseDto } from "./review-response.dto";
 import { ReviewTargetSummaryResponseDto } from "./review-target-summary-response.dto";
 

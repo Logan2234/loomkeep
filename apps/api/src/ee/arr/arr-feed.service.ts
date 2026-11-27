@@ -1,5 +1,5 @@
-import type { ArrTokenDto } from "@loomkeep/shared";
-import { ErrorCode } from "@loomkeep/shared";
+import { ErrorCode } from "@loomkeep/shared/catalog";
+import type { ArrTokenDto } from "@loomkeep/shared/contracts";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { AppException } from "../../common/app.exception";
 import { randomToken } from "../../common/crypto.util";

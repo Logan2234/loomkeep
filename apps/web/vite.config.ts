@@ -2,7 +2,11 @@ import { paraglideVitePlugin } from "@inlang/paraglide-js";
 import adapter from "@sveltejs/adapter-node";
 import { sveltekit } from "@sveltejs/kit/vite";
 import tailwindcss from "@tailwindcss/vite";
-import { defineConfig } from "vite";
+import {
+  defaultClientConditions,
+  defaultServerConditions,
+  defineConfig,
+} from "vite";
 
 export default defineConfig(() => ({
   server: { host: true, allowedHosts: ["dev.loomkeep.app"] },
@@ -79,27 +83,10 @@ export default defineConfig(() => ({
       serviceWorker: { register: false },
     }),
   ],
-  // @loomkeep/shared is a linked workspace package, so Vite treats it as
-  // source and skips its usual CJS→ESM pre-bundling — but it's compiled to
-  // CommonJS (consumed as dist/, see docs/adr/0007), so named imports break
-  // in dev without forcing that conversion explicitly. The pre-bundle isn't
-  // rebuilt when dist/ changes, only when the lockfile or this config does:
-  // the dev script passes --force so each `pnpm dev`, which rebuilds the
-  // package first, serves the current one.
-  optimizeDeps: {
-    include: ["@loomkeep/shared"],
-  },
-  build: {
-    commonjsOptions: {
-      include: [/@loomkeep\/shared/, /node_modules/],
-    },
-  },
-  // SSR has its own module resolution, separate from the client optimizeDeps
-  // above: left to Vite's default, a linked workspace package gets inlined
-  // and evaluated as ESM, which crashes on this CJS dist/ build ("exports is
-  // not defined"). external forces SSR to load it the normal Node way
-  // (require()), which handles CJS correctly.
-  ssr: {
-    external: ["@loomkeep/shared"],
-  },
+  // @loomkeep/shared is read from its TypeScript source (the `source`
+  // export condition, docs/adr/0007), not its compiled dist/: a change there
+  // shows up on save, with nothing to rebuild. A linked workspace package,
+  // it is bundled into the SSR build rather than loaded at runtime.
+  resolve: { conditions: ["source", ...defaultClientConditions] },
+  ssr: { resolve: { conditions: ["source", ...defaultServerConditions] } },
 }));

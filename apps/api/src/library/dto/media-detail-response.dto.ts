@@ -1,8 +1,5 @@
-import type {
-  CatalogSource,
-  MediaDetailDto,
-  MediaType,
-} from "@loomkeep/shared";
+import type { MediaDetailDto } from "@loomkeep/shared/contracts";
+import type { CatalogSource, MediaType } from "@loomkeep/shared/enums";
 import { LibraryEntryResponseDto } from "./library-entry-response.dto";
 import { MediaDetailSeasonResponseDto } from "./media-detail-season-response.dto";
 import { MovieReleaseResponseDto } from "./movie-release-response.dto";

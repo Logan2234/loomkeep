@@ -1,4 +1,5 @@
-import type { ReviewTargetType, StatsDomain } from "@loomkeep/shared";
+import type { StatsDomain } from "@loomkeep/shared/contracts";
+import type { ReviewTargetType } from "@loomkeep/shared/enums";
 import { Controller, Get, Param, Query, UseGuards } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { ApiOperation, ApiParam } from "@nestjs/swagger";

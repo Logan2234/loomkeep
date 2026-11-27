@@ -2,7 +2,7 @@ import type {
   CreatorSource,
   StudioKind,
   StudioWorkOrder,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 import { getLocale } from "../paraglide/runtime.js";
 import { typedRequest } from "./generated/typed-request";
 

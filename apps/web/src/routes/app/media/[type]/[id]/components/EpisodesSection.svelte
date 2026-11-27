@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { episodeCode } from "@loomkeep/shared";
+  import { episodeCode } from "@loomkeep/shared/contracts";
 
   import {
     batchEpisodeWatches,
@@ -32,15 +32,14 @@
   import { listenTabSwipe } from "#lib/tab-swipe.js";
   import { toast } from "#lib/toast.svelte.js";
   import { useQueryClient } from "@tanstack/svelte-query";
+  import type { MediaType, ReviewTargetType } from "@loomkeep/shared/enums";
   import type {
     EpisodeWatchBatchAction,
     EpisodeWatchRestoreDto,
     LibraryEntryDto,
     MediaDetailEpisodeDto,
     MediaDetailSeasonDto,
-    MediaType,
-    ReviewTargetType,
-  } from "@loomkeep/shared";
+  } from "@loomkeep/shared/contracts";
   import { tick, untrack } from "svelte";
   import { fly } from "svelte/transition";
   import { upcomingLabel } from "./episode-format";

@@ -1,7 +1,7 @@
 import type {
   MediaDetailEpisodeDto,
   MediaDetailSeasonDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 import { describe, expect, it } from "vitest";
 import { mediaCompletionEstimate } from "./media-completion-estimate";
 

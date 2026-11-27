@@ -1,9 +1,9 @@
+import { ErrorCode } from "@loomkeep/shared/catalog";
 import {
-  ErrorCode,
   isAnimeUnaired,
   movieReleaseDates,
   movieReleaseInfo,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/rules";
 import { HttpStatus } from "@nestjs/common";
 import { AppException } from "../common/app.exception";
 import type { PrismaService } from "../prisma/prisma.service";

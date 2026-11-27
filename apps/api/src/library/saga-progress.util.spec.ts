@@ -1,4 +1,5 @@
-import type { EntryStatus, SagaMemberDto } from "@loomkeep/shared";
+import type { SagaMemberDto } from "@loomkeep/shared/contracts";
+import type { EntryStatus } from "@loomkeep/shared/enums";
 import {
   completedSagaWorks,
   MEDIA_SAGA_STATUS,

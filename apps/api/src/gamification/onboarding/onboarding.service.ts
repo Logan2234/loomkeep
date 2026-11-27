@@ -1,10 +1,10 @@
+import { ErrorCode } from "@loomkeep/shared/catalog";
 import {
-  ErrorCode,
   ONBOARDING_SOCIAL_STEPS,
   ONBOARDING_STEP_KEYS,
   type OnboardingChecklistDto,
   type OnboardingStepKey,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { AppException } from "../../common/app.exception";

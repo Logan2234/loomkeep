@@ -1,14 +1,13 @@
+import { ErrorCode } from "@loomkeep/shared/catalog";
 import {
   type ConnectionDto,
-  ErrorCode,
   type FollowRequestDto,
-  NotificationType,
   type PagedResult,
-  ProfileAccess,
   RealtimeEvent,
   type RelationshipDto,
   type UserSummaryDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import { NotificationType, ProfileAccess } from "@loomkeep/shared/enums";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { AppException } from "../common/app.exception";
 import { type ParsedPage, toPagedResult } from "../common/pagination.util";

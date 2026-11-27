@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { type AlertKey, PUSH_LIMITS } from "@loomkeep/shared";
+  import { PUSH_LIMITS } from "@loomkeep/shared/contracts";
+  import { type AlertKey } from "@loomkeep/shared/catalog";
   import { fly } from "svelte/transition";
 
   import { page } from "$app/state";

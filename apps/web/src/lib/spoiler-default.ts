@@ -1,5 +1,5 @@
 import { auth } from "#lib/auth.svelte.js";
-import { SpoilerSensitivity } from "@loomkeep/shared";
+import { SpoilerSensitivity } from "@loomkeep/shared/enums";
 
 /**
  * Whether a discussion opens with its spoilers shown: the member's explicit

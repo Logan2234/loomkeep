@@ -1,4 +1,4 @@
-import type { PremiereDto } from "@loomkeep/shared";
+import type { PremiereDto } from "@loomkeep/shared/contracts";
 
 export class PremiereResponseDto implements PremiereDto {
   sourceId!: string;

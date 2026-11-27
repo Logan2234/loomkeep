@@ -2,7 +2,7 @@ import type {
   LibraryEntryDto,
   MediaDetailEpisodeDto,
   MediaDetailSeasonDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 
 /** Aired by `now` — an unknown date counts as aired, like the API does. */
 export function isAired(

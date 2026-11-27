@@ -38,12 +38,14 @@
   import { m } from "#lib/paraglide/messages.js";
   import { seasonEpisodeLabel } from "#lib/review-target-label.js";
   import {
-    type MyReviewDto,
     type ReviewTargetType,
     type ReviewVisibility,
-    REVIEW_TARGET_DOMAIN,
     type Domain,
-  } from "@loomkeep/shared";
+  } from "@loomkeep/shared/enums";
+  import {
+    type MyReviewDto,
+    REVIEW_TARGET_DOMAIN,
+  } from "@loomkeep/shared/contracts";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { flip } from "svelte/animate";
   import { fade, fly, slide } from "svelte/transition";

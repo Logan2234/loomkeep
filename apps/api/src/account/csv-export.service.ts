@@ -1,4 +1,5 @@
-import { Domain, ErrorCode, ReviewTargetType } from "@loomkeep/shared";
+import { ErrorCode } from "@loomkeep/shared/catalog";
+import { Domain, ReviewTargetType } from "@loomkeep/shared/enums";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { AppException } from "../common/app.exception";
 import { toCsv } from "../common/csv.util";

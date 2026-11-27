@@ -1,5 +1,6 @@
 import { paraglideVitePlugin } from "@inlang/paraglide-js";
 import { sveltekit } from "@sveltejs/kit/vite";
+import { defaultClientConditions, defaultServerConditions } from "vite";
 import { defineConfig } from "vitest/config";
 
 // The sveltekit() plugin (not the full vite.config.ts stack — no PWA/
@@ -8,6 +9,9 @@ import { defineConfig } from "vitest/config";
 // $app/*. apps/lib/api/errors.spec.ts needs both (#lib/paraglide/messages
 // and $app/env/public via core.ts's ApiError).
 export default defineConfig({
+  // @loomkeep/shared from its source, as in vite.config.ts.
+  resolve: { conditions: ["source", ...defaultClientConditions] },
+  ssr: { resolve: { conditions: ["source", ...defaultServerConditions] } },
   plugins: [
     // The dev server and the build leave messages.js pointing at the
     // plugin's virtual modules, so tests compile through the plugin too.

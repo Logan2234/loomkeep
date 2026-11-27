@@ -18,7 +18,7 @@
   import { inlineSegments } from "#lib/markdown-inline.js";
   import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
-  import type { AdminUpdateStatusDto } from "@loomkeep/shared";
+  import type { AdminUpdateStatusDto } from "@loomkeep/shared/contracts";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { fade } from "svelte/transition";
 

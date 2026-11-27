@@ -1,4 +1,4 @@
-import { Domain } from "@loomkeep/shared";
+import { Domain } from "@loomkeep/shared/enums";
 import { vi } from "vitest";
 import type { PrismaService } from "../prisma/prisma.service";
 import type { ReviewService } from "../reviews/review.service";

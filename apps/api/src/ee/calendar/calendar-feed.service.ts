@@ -1,11 +1,11 @@
-import type { CalendarTokenDto } from "@loomkeep/shared";
+import { ErrorCode } from "@loomkeep/shared/catalog";
+import type { CalendarTokenDto } from "@loomkeep/shared/contracts";
+import { episodeCode } from "@loomkeep/shared/contracts";
 import {
-  episodeCode,
-  ErrorCode,
   gameReleaseAlertDay,
   movieReleaseDates,
   movieReleaseInfo,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/rules";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { TmdbProvider } from "../../catalog/providers/tmdb.provider";

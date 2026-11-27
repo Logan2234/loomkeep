@@ -1,5 +1,5 @@
-import type { UpdateInstanceSettingsDto } from "@loomkeep/shared";
-import { API_RATE_LIMIT_BOUNDS } from "@loomkeep/shared";
+import type { UpdateInstanceSettingsDto } from "@loomkeep/shared/contracts";
+import { API_RATE_LIMIT_BOUNDS } from "@loomkeep/shared/contracts";
 import { IsBoolean, IsInt, IsOptional, Max, Min } from "class-validator";
 
 export class UpdateInstanceSettingsRequestDto implements UpdateInstanceSettingsDto {

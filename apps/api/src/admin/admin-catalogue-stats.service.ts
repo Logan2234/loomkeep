@@ -3,8 +3,8 @@ import type {
   AdminCatalogueSectionDto,
   AdminPopularWorkDto,
   StatsDomain,
-} from "@loomkeep/shared";
-import { Domain } from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import { Domain } from "@loomkeep/shared/enums";
 import { Injectable } from "@nestjs/common";
 import { CATALOG_SYNC_TTL_MS } from "../common/catalog-sync.util";
 import { PrismaService } from "../prisma/prisma.service";

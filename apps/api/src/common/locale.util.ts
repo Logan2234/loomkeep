@@ -1,4 +1,4 @@
-import { Locale } from "@loomkeep/shared";
+import { Locale } from "@loomkeep/shared/catalog";
 
 /**
  * Narrows a client-supplied `?lang=` to a locale the app actually ships.

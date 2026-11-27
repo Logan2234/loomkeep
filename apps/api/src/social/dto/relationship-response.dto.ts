@@ -1,4 +1,4 @@
-import type { RelationshipDto } from "@loomkeep/shared";
+import type { RelationshipDto } from "@loomkeep/shared/contracts";
 
 export class RelationshipResponseDto implements RelationshipDto {
   isSelf!: boolean;

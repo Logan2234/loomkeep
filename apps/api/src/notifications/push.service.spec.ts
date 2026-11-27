@@ -1,4 +1,4 @@
-import { AlertGroup, ErrorCode } from "@loomkeep/shared";
+import { AlertGroup, ErrorCode } from "@loomkeep/shared/catalog";
 import { vi } from "vitest";
 import * as webpush from "web-push";
 import { AppException } from "../common/app.exception";

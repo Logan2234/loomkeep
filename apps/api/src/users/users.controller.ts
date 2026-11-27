@@ -6,7 +6,7 @@ import type {
   UserDto,
   UsernameAvailabilityDto,
   WidgetTokenDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 import {
   Body,
   Controller,

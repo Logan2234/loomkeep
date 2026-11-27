@@ -1,4 +1,4 @@
-import type { CommentMentionInputDto } from "@loomkeep/shared";
+import type { CommentMentionInputDto } from "@loomkeep/shared/contracts";
 import { Type } from "class-transformer";
 import { IsInt, IsString, Min } from "class-validator";
 

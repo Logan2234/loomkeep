@@ -1,7 +1,7 @@
-import type { StatsDomain } from "@loomkeep/shared";
+import type { StatsDomain } from "@loomkeep/shared/contracts";
 import type { ApiV1DomainStatsDto } from "../api-v1.types";
 
-import { STATS_DOMAINS } from "@loomkeep/shared";
+import { STATS_DOMAINS } from "@loomkeep/shared/contracts";
 
 import { ApiProperty } from "@nestjs/swagger";
 import { ApiV1PhaseCountsResponseDto } from "./api-v1-phase-counts-response.dto";

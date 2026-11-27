@@ -32,7 +32,7 @@
     type HomeWidgetConfigDto,
     type HomeWidgetDto,
     type HomeWidgetType,
-  } from "@loomkeep/shared";
+  } from "@loomkeep/shared/contracts";
   import { tick, untrack } from "svelte";
   import { fade, scale } from "svelte/transition";
   import HomeWidget from "./HomeWidget.svelte";

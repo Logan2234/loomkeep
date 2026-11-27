@@ -1,13 +1,13 @@
+import { ErrorCode } from "@loomkeep/shared/catalog";
 import {
-  ErrorCode,
   type MyReviewDto,
   type ReviewBatchResultDto,
   type ReviewDto,
   type ReviewRevisionDto,
-  ReviewTargetType,
   type ReviewUnvoteResultDto,
   type ReviewVoteResultDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import { ReviewTargetType } from "@loomkeep/shared/enums";
 import {
   Body,
   Controller,

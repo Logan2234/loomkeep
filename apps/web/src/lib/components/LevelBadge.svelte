@@ -1,6 +1,6 @@
 <script lang="ts">
   import { m } from "#lib/paraglide/messages.js";
-  import { levelProgress } from "@loomkeep/shared";
+  import { levelProgress } from "@loomkeep/shared/rules";
 
   let { xp }: { xp: number | null | undefined } = $props();
 

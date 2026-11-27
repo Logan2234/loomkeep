@@ -1,4 +1,4 @@
-import { DigestCadence, NotificationType } from "@loomkeep/shared";
+import { DigestCadence, NotificationType } from "@loomkeep/shared/enums";
 import type { Prisma } from "@prisma/client";
 import { vi, type Mock } from "vitest";
 import { AppException } from "../common/app.exception";

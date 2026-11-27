@@ -1,4 +1,4 @@
-import { ErrorCode } from "@loomkeep/shared";
+import { ErrorCode } from "@loomkeep/shared/catalog";
 import * as bcrypt from "bcryptjs";
 import { type Mock, vi } from "vitest";
 import type { PrismaService } from "../prisma/prisma.service";

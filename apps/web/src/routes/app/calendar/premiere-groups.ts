@@ -1,4 +1,4 @@
-import type { PremiereDto } from "@loomkeep/shared";
+import type { PremiereDto } from "@loomkeep/shared/contracts";
 
 const DAY_MS = 86_400_000;
 const WEEK_DAYS = 7;

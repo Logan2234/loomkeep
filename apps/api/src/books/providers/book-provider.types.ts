@@ -1,10 +1,10 @@
 import type {
   BookEditionDto,
-  BookSource,
   BookSummaryDto,
   CreatorRefDto,
   RatingDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import type { BookSource } from "@loomkeep/shared/enums";
 import type { ProviderExternalId } from "../../common/provider-external-id";
 
 /** Everything a provider knows about one book, in canonical form. */

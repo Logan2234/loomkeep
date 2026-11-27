@@ -1,4 +1,5 @@
-import type { SecurityEventDto, SecurityEventType } from "@loomkeep/shared";
+import type { SecurityEventDto } from "@loomkeep/shared/contracts";
+import type { SecurityEventType } from "@loomkeep/shared/enums";
 
 export class SecurityEventResponseDto implements SecurityEventDto {
   id!: string;

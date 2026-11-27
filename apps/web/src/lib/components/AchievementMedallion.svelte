@@ -1,7 +1,7 @@
 <script lang="ts">
   import Icon from "#lib/components/Icon.svelte";
   import type { IconName } from "#lib/types/icon-name.js";
-  import type { AchievementTier } from "@loomkeep/shared";
+  import type { AchievementTier } from "@loomkeep/shared/contracts";
 
   let {
     icon,

@@ -1,5 +1,5 @@
+import { ErrorCode } from "@loomkeep/shared/catalog";
 import {
-  ErrorCode,
   type ListDetailDto,
   type ListDto,
   type ListItemDto,
@@ -8,7 +8,7 @@ import {
   type ListMembershipDto,
   type MyListDto,
   type UserSummaryDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 import {
   Body,
   Controller,

@@ -1,4 +1,4 @@
-import type { RatingByGroupDto } from "@loomkeep/shared";
+import type { RatingByGroupDto } from "@loomkeep/shared/contracts";
 
 export interface RatingByGroupInput {
   /** e.g. a game's platforms or genres — one row contributes to every group it's in. */

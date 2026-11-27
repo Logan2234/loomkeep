@@ -40,10 +40,10 @@
   import SettingRow from "./SettingRow.svelte";
   import { getLocale, setLocale } from "#lib/paraglide/runtime.js";
   import {
-    type Locale,
     MOBILE_NAV_SHORTCUT_LIMITS,
     REQUIRED_SHORTCUT,
-  } from "@loomkeep/shared";
+  } from "@loomkeep/shared/contracts";
+  import { type Locale } from "@loomkeep/shared/catalog";
   import { dragHandle, dragHandleZone } from "svelte-dnd-action";
   import { flip } from "svelte/animate";
   import { cubicOut } from "svelte/easing";

@@ -5,7 +5,7 @@ import {
   type ReportCategory,
   type ReportMotif,
   type ReportTargetType,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/enums";
 import { Injectable } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
 import { MailService } from "../mail/mail.service";

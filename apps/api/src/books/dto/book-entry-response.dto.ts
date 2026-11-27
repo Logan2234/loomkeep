@@ -1,9 +1,5 @@
-import type {
-  BookEntryDto,
-  BookOwnershipStatus,
-  BookReadingDto,
-  BookStatus,
-} from "@loomkeep/shared";
+import type { BookEntryDto, BookReadingDto } from "@loomkeep/shared/contracts";
+import type { BookOwnershipStatus, BookStatus } from "@loomkeep/shared/enums";
 import { BookItemResponseDto } from "./book-item-response.dto";
 
 export class BookReadingResponseDto implements BookReadingDto {

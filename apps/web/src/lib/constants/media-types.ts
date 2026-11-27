@@ -1,5 +1,5 @@
 import { m } from "#lib/paraglide/messages.js";
-import { MediaType } from "@loomkeep/shared";
+import { MediaType } from "@loomkeep/shared/enums";
 export const MEDIA_TYPE_LABEL: Record<MediaType, string> = {
   get MOVIE() {
     return m.media_movie();

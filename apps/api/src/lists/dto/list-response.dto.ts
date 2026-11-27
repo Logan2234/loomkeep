@@ -1,4 +1,5 @@
-import type { ListDto, ListKind, ListVisibility } from "@loomkeep/shared";
+import type { ListDto } from "@loomkeep/shared/contracts";
+import type { ListKind, ListVisibility } from "@loomkeep/shared/enums";
 import { UserSummaryResponseDto } from "../../common/dto/user-summary-response.dto";
 
 export class ListResponseDto implements ListDto {

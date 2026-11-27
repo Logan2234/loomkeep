@@ -8,7 +8,7 @@
   import type { LibraryBulkActions } from "#lib/library-view.js";
   import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
-  import type { BulkUpdateEntriesDto } from "@loomkeep/shared";
+  import type { BulkUpdateEntriesDto } from "@loomkeep/shared/contracts";
   import type { Snippet } from "svelte";
   import { fly } from "svelte/transition";
   import Dropdown from "./Dropdown.svelte";

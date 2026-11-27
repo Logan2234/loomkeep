@@ -1,8 +1,8 @@
 import type {
-  Domain,
   MediaSummaryDto,
   MusicSummaryDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import type { Domain } from "@loomkeep/shared/enums";
 import type { Prisma } from "@prisma/client";
 import { vi } from "vitest";
 import type { BookItemService } from "../books/book-item.service";

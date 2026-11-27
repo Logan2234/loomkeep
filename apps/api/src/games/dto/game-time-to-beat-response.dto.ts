@@ -1,4 +1,4 @@
-import type { GameTimeToBeatDto } from "@loomkeep/shared";
+import type { GameTimeToBeatDto } from "@loomkeep/shared/contracts";
 
 export class GameTimeToBeatResponseDto implements GameTimeToBeatDto {
   hastilyMin!: number | null;

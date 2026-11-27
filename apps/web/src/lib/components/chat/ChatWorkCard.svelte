@@ -7,7 +7,7 @@
   import Poster from "#lib/components/Poster.svelte";
   import { isDomainEnabled } from "#lib/domain-availability.js";
   import { m } from "#lib/paraglide/messages.js";
-  import type { MessageWorkDto } from "@loomkeep/shared";
+  import type { MessageWorkDto } from "@loomkeep/shared/contracts";
   import { workKindLabel } from "./conversation-presentation";
 
   let { work }: { work: MessageWorkDto } = $props();

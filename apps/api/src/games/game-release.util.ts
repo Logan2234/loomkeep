@@ -1,8 +1,6 @@
-import {
-  ErrorCode,
-  isGameUpcoming,
-  type ReleaseDatePrecision,
-} from "@loomkeep/shared";
+import { ErrorCode } from "@loomkeep/shared/catalog";
+import { type ReleaseDatePrecision } from "@loomkeep/shared/enums";
+import { isGameUpcoming } from "@loomkeep/shared/rules";
 import { HttpStatus } from "@nestjs/common";
 import { AppException } from "../common/app.exception";
 import { utcDateKey } from "../common/date.util";

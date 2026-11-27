@@ -1,7 +1,8 @@
 import { DOMAINS } from "#lib/constants/domains.js";
 import { recordFrom } from "#lib/object.js";
 import { m } from "#lib/paraglide/messages.js";
-import { REVIEW_TARGET_DOMAIN, ReviewTargetType } from "@loomkeep/shared";
+import { REVIEW_TARGET_DOMAIN } from "@loomkeep/shared/contracts";
+import { ReviewTargetType } from "@loomkeep/shared/enums";
 
 export const REVIEW_TARGET_LABEL: Record<ReviewTargetType, string> = {
   get MEDIA() {

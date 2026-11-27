@@ -1,4 +1,4 @@
-import type { AdjustAdminUserXpRequestDto } from "@loomkeep/shared";
+import type { AdjustAdminUserXpRequestDto } from "@loomkeep/shared/contracts";
 import { IsInt, Max, Min, NotEquals } from "class-validator";
 
 // No business cap on an adjustment. The bounds are the database's: XP is

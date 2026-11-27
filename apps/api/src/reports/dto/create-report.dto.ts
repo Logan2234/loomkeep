@@ -1,9 +1,9 @@
+import { REPORT_REASON_MAX_LENGTH } from "@loomkeep/shared/contracts";
 import {
-  REPORT_REASON_MAX_LENGTH,
   ReportCategory,
   ReportMotif,
   ReportProfilePart,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/enums";
 import { IsIn, IsOptional, IsString, MaxLength } from "class-validator";
 
 export class CreateReportBody {

@@ -2,7 +2,7 @@ import {
   GAME_STORES,
   type GameStore,
   type GameStoreLinkDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 
 // Matched on the link rather than IGDB's website type, which IGDB is
 // renumbering (`category` → `type`). Some hosts also serve the brand's own

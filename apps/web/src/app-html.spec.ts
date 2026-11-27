@@ -1,4 +1,4 @@
-import { Locale, regionalLocale } from "@loomkeep/shared";
+import { Locale, regionalLocale } from "@loomkeep/shared/catalog";
 import { readFileSync } from "node:fs";
 import { runInNewContext } from "node:vm";
 import { describe, expect, it } from "vitest";

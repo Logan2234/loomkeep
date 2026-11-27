@@ -3,7 +3,7 @@ import {
   type LeaderboardScope,
   LEADERBOARD_PERIODS,
   LEADERBOARD_SCOPES,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 import { IsIn, IsOptional } from "class-validator";
 
 export class LeaderboardQueryDto {

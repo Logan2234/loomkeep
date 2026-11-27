@@ -1,4 +1,4 @@
-import type { WebauthnRegistrationOptionsDto } from "@loomkeep/shared";
+import type { WebauthnRegistrationOptionsDto } from "@loomkeep/shared/contracts";
 import type { PublicKeyCredentialCreationOptionsJSON } from "@simplewebauthn/server";
 
 export class WebauthnRegistrationOptionsResponseDto implements WebauthnRegistrationOptionsDto {

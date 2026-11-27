@@ -8,7 +8,7 @@ import {
   type InstanceSettingsDto,
   type UpdateInstanceSettingsDto,
   type UserDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 import { screen, waitFor } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";

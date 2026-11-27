@@ -10,9 +10,8 @@ on:
       - apps/docs/**
       - apps/api/src/public-api/**
       - apps/api/src/api-keys/**
-      - packages/shared/src/dto/api-v1.ts
-      - packages/shared/src/dto/api-key.ts
-      - packages/shared/src/alerts.ts
+      - packages/shared/src/contracts/api-key.ts
+      - packages/shared/src/catalog/alerts.ts
       - .github/workflows/docs.yml
       - .github/workflows/generate-openapi-artifact.yml
   push:
@@ -21,9 +20,8 @@ on:
       - apps/docs/**
       - apps/api/src/public-api/**
       - apps/api/src/api-keys/**
-      - packages/shared/src/dto/api-v1.ts
-      - packages/shared/src/dto/api-key.ts
-      - packages/shared/src/alerts.ts
+      - packages/shared/src/contracts/api-key.ts
+      - packages/shared/src/catalog/alerts.ts
       - .github/workflows/docs.yml
       - .github/workflows/generate-openapi-artifact.yml
   workflow_dispatch:
@@ -47,10 +45,11 @@ jobs:
         with:
           # Full history: each page shows when it last changed (lastUpdated).
           fetch-depth: 0
-      # packages/shared is built (the setup's default): the alert table
-      # imports @loomkeep/shared, consumed through its dist/.
+      # The alert table reads @loomkeep/shared from its source
+      # (docs/adr/0007): nothing to build.
       - uses: ./.github/actions/setup
         with:
+          build-shared: false
           # Astro raises its minimum Node patch faster than the runner's
           # cached Node moves, and refuses to build below it.
           check-latest: true

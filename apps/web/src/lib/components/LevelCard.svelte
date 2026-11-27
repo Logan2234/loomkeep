@@ -1,7 +1,7 @@
 <script lang="ts">
   import Icon from "#lib/components/Icon.svelte";
   import { m } from "#lib/paraglide/messages.js";
-  import { levelProgress, xpForLevel } from "@loomkeep/shared";
+  import { levelProgress, xpForLevel } from "@loomkeep/shared/rules";
 
   let {
     xp,

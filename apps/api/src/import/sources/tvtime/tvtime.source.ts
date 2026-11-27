@@ -1,4 +1,5 @@
-import { ErrorCode, type TvTimeImportFilesDto } from "@loomkeep/shared";
+import { ErrorCode } from "@loomkeep/shared/catalog";
+import { type TvTimeImportFilesDto } from "@loomkeep/shared/contracts";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { MediaItemService } from "../../../catalog/media-item.service";
 import { AppException } from "../../../common/app.exception";

@@ -1,5 +1,5 @@
 import { apiUrl, server } from "#lib/test/msw.js";
-import { ErrorCode } from "@loomkeep/shared";
+import { ErrorCode } from "@loomkeep/shared/catalog";
 import { http, HttpResponse } from "msw";
 import {
   afterAll,

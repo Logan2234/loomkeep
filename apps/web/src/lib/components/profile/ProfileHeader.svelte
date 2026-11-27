@@ -12,7 +12,10 @@
   import StreakBadge from "#lib/components/StreakBadge.svelte";
   import { appConfig } from "#lib/config.svelte.js";
   import { m } from "#lib/paraglide/messages.js";
-  import type { RelationshipDto, SocialProfileDto } from "@loomkeep/shared";
+  import type {
+    RelationshipDto,
+    SocialProfileDto,
+  } from "@loomkeep/shared/contracts";
   import { useQueryClient } from "@tanstack/svelte-query";
 
   let {

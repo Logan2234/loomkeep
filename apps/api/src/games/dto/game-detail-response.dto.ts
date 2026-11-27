@@ -2,10 +2,11 @@ import type {
   GameDetailDto,
   GameLanguageDto,
   GameStoreLinkDto,
-  ReleaseDatePrecision,
   StoredGameDetailDto,
-} from "@loomkeep/shared";
-import { GAME_STORES, GameSource } from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import { GAME_STORES } from "@loomkeep/shared/contracts";
+import type { ReleaseDatePrecision } from "@loomkeep/shared/enums";
+import { GameSource } from "@loomkeep/shared/enums";
 import { ApiProperty } from "@nestjs/swagger";
 import { CreatorRefResponseDto } from "../../catalog/dto/creator-ref-response.dto";
 import { RatingResponseDto } from "../../catalog/dto/rating-response.dto";

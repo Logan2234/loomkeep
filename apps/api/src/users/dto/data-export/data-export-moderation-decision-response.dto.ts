@@ -4,7 +4,7 @@ import type {
   ReportCategory,
   ReportMotif,
   ReportTargetType,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/enums";
 import type { DataExportModerationDecision } from "../../../account/data-export.types";
 
 export class DataExportModerationDecisionResponseDto implements DataExportModerationDecision {

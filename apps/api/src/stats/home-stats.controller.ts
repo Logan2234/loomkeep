@@ -1,10 +1,11 @@
+import { ErrorCode } from "@loomkeep/shared/catalog";
 import type {
   FiguresDto,
   MyYearDto,
   OnThisDayEntryDto,
   ProfileFiguresDto,
-} from "@loomkeep/shared";
-import { Domain, ErrorCode } from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import { Domain } from "@loomkeep/shared/enums";
 import { Controller, Get, HttpStatus, Param, Query } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { ApiOkResponse } from "@nestjs/swagger";

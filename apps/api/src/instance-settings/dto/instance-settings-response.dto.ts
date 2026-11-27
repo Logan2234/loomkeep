@@ -3,7 +3,7 @@ import type {
   InstanceSettingKey,
   InstanceSettingsDto,
   InstanceSettingsValues,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 
 class InstanceSettingsValuesResponseDto implements InstanceSettingsValues {
   socialEnabled!: boolean;

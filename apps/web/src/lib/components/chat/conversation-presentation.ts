@@ -9,7 +9,7 @@ import {
   type MessageDto,
   type MessageWorkKind,
   type WorkThreadDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 import { typingInField } from "./MarkdownField.svelte";
 
 export function conversationName(conversation: ConversationDto): string {

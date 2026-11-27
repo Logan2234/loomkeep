@@ -1,4 +1,4 @@
-import type { ApiKeyResource } from "@loomkeep/shared";
+import type { ApiKeyResource } from "@loomkeep/shared/contracts";
 import { SetMetadata } from "@nestjs/common";
 
 export const API_KEY_ACCESS_KEY = "apiKeyAccess";

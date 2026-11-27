@@ -2,8 +2,8 @@ import type {
   GameSessionDto,
   GameSessionMutationDto,
   GameSessionSummaryDto,
-  SessionSource,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import type { SessionSource } from "@loomkeep/shared/enums";
 import { ApiProperty } from "@nestjs/swagger";
 import { SessionWeekDayResponseDto } from "../../common/dto/session-week-day-response.dto";
 import { GamePlaythroughResponseDto } from "./game-entry-response.dto";

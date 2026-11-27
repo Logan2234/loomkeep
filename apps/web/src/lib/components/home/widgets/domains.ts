@@ -1,5 +1,6 @@
 import { isDomainEnabled } from "#lib/domain-availability.js";
-import type { Domain, HomeWidgetDto } from "@loomkeep/shared";
+import type { HomeWidgetDto } from "@loomkeep/shared/contracts";
+import type { Domain } from "@loomkeep/shared/enums";
 
 /**
  * The domains a widget was set to show, still enabled — or null for "all of

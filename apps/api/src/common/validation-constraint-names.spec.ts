@@ -1,4 +1,4 @@
-import { VALIDATION_CONSTRAINT_NAMES } from "@loomkeep/shared";
+import { VALIDATION_CONSTRAINT_NAMES } from "@loomkeep/shared/catalog";
 import { getMetadataStorage } from "class-validator";
 import { readdirSync } from "node:fs";
 import { join } from "node:path";

@@ -1,4 +1,4 @@
-import type { ConversationDto, MessageDto } from "@loomkeep/shared";
+import type { ConversationDto, MessageDto } from "@loomkeep/shared/contracts";
 import { describe, expect, it } from "vitest";
 import {
   applyToConversations,

@@ -1,4 +1,5 @@
-import { Domain, type HomeLayoutDto } from "@loomkeep/shared";
+import { type HomeLayoutDto } from "@loomkeep/shared/contracts";
+import { Domain } from "@loomkeep/shared/enums";
 import { describe, expect, it } from "vitest";
 import { defaultHomeLayout, hiddenWidgets, resolveHomeLayout } from "./layout";
 import { HOME_WIDGETS, type HomeGate } from "./widgets";

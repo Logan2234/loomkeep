@@ -1,9 +1,9 @@
 import {
   MAX_SESSION_DURATION_MINUTES,
   SESSION_NOTES_MAX_LENGTH,
-  SessionCycleAction,
   type CreateGameSessionDto as Contract,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import { SessionCycleAction } from "@loomkeep/shared/enums";
 import {
   IsDateString,
   IsIn,

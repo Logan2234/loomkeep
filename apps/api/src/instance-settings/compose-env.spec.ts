@@ -1,4 +1,4 @@
-import { INSTANCE_SETTING_ENV } from "@loomkeep/shared";
+import { INSTANCE_SETTING_ENV } from "@loomkeep/shared/contracts";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 

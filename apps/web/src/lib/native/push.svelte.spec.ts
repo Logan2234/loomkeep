@@ -1,7 +1,7 @@
 import { STORAGE_KEYS } from "#lib/constants/storage-keys.js";
 import { apiUrl, server } from "#lib/test/msw.js";
 import { goto } from "#lib/test/navigation.svelte.js";
-import { AlertGroup } from "@loomkeep/shared";
+import { AlertGroup } from "@loomkeep/shared/catalog";
 import { http, HttpResponse } from "msw";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {

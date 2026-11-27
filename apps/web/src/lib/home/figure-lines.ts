@@ -1,6 +1,7 @@
 import { formatHours, formatNumber } from "#lib/format.js";
 import { m } from "#lib/paraglide/messages.js";
-import { Domain, type FiguresDto } from "@loomkeep/shared";
+import type { FiguresDto } from "@loomkeep/shared/contracts";
+import { Domain } from "@loomkeep/shared/enums";
 
 export interface FigureLine {
   domain: Domain;

@@ -3,7 +3,7 @@
   import { m } from "#lib/paraglide/messages.js";
   import Modal from "#lib/components/Modal.svelte";
   import Poster from "#lib/components/Poster.svelte";
-  import type { StatsWorkDto } from "@loomkeep/shared";
+  import type { StatsWorkDto } from "@loomkeep/shared/contracts";
   import { STATS_DOMAIN_LABEL } from "./stats-domain";
 
   let {

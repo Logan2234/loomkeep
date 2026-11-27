@@ -1,4 +1,4 @@
-import type { EntryStatus, MediaOwnershipStatus } from "@loomkeep/shared";
+import type { EntryStatus, MediaOwnershipStatus } from "@loomkeep/shared/enums";
 import type { PrismaService } from "../prisma/prisma.service";
 import {
   LOAN_INCLUDE,

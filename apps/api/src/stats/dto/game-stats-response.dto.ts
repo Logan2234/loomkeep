@@ -1,4 +1,4 @@
-import type { GameStatsDto, GameTopEntryDto } from "@loomkeep/shared";
+import type { GameStatsDto, GameTopEntryDto } from "@loomkeep/shared/contracts";
 import { LabelCountResponseDto } from "../../common/dto/label-count-response.dto";
 
 class GameTopEntryResponseDto implements GameTopEntryDto {

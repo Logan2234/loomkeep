@@ -1,5 +1,5 @@
-import type { GameItemDto } from "@loomkeep/shared";
-import { GameSource } from "@loomkeep/shared";
+import type { GameItemDto } from "@loomkeep/shared/contracts";
+import { GameSource } from "@loomkeep/shared/enums";
 import { ApiProperty } from "@nestjs/swagger";
 
 export class GameItemResponseDto implements GameItemDto {

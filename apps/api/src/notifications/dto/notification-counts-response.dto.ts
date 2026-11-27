@@ -1,4 +1,4 @@
-import type { NotificationCountsDto } from "@loomkeep/shared";
+import type { NotificationCountsDto } from "@loomkeep/shared/contracts";
 
 export class NotificationCountsResponseDto implements NotificationCountsDto {
   unread!: number;

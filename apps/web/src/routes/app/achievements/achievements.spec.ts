@@ -1,4 +1,4 @@
-import type { AchievementDto } from "@loomkeep/shared";
+import type { AchievementDto } from "@loomkeep/shared/contracts";
 import { describe, expect, it } from "vitest";
 import { groupAchievements, sectionsByFamily, summarize } from "./achievements";
 

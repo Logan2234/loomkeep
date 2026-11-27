@@ -1,5 +1,8 @@
 import { m } from "#lib/paraglide/messages.js";
-import { ErrorCode, type ValidationConstraintName } from "@loomkeep/shared";
+import {
+  ErrorCode,
+  type ValidationConstraintName,
+} from "@loomkeep/shared/catalog";
 import { ApiError } from "./core";
 import { resolveApiError } from "./errors";
 
@@ -12,7 +15,7 @@ const asNumber = (param: ConstraintParam | undefined) =>
  * One translated message per class-validator constraint name — interpolated
  * positionally the same way class-validator's own `$constraint1`/
  * `$constraint2` templates work (see ApiErrorBody.details[].params' doc
- * comment in packages/shared/src/error-codes.ts): `params[0]` is always the
+ * comment in packages/shared/src/catalog/error-codes.ts): `params[0]` is always the
  * decorator's first argument, `params[1]` its second, etc. `satisfies
  * Record<ValidationConstraintName, ...>` makes adding a name to
  * VALIDATION_CONSTRAINT_NAMES without a matching entry here a typecheck

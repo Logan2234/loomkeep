@@ -19,11 +19,11 @@
     type XpRun,
   } from "#lib/xp-history.js";
   import {
-    levelProgress,
     type PagedResult,
     type XpHistoryDayDto,
     type XpHistoryItemDto,
-  } from "@loomkeep/shared";
+  } from "@loomkeep/shared/contracts";
+  import { levelProgress } from "@loomkeep/shared/rules";
   import { SvelteSet } from "svelte/reactivity";
   import { slide } from "svelte/transition";
 

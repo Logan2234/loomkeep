@@ -1,4 +1,4 @@
-import type { CreatorRefDto, StudioKind } from "@loomkeep/shared";
+import type { CreatorRefDto, StudioKind } from "@loomkeep/shared/contracts";
 import { PeekTimer } from "./peek-timer";
 
 export interface PeekTarget {

@@ -2,7 +2,7 @@ import type {
   AdminBackupInventoryDto,
   JobDto,
   ServiceStatusDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 
 export function adminAttentionData(
   services: ServiceStatusDto[] | null,

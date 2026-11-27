@@ -1,6 +1,9 @@
 import { DOMAINS } from "#lib/constants/domains.js";
 import { m } from "#lib/paraglide/messages.js";
-import type { StatsDomain, StatsStatusBucket } from "@loomkeep/shared";
+import type {
+  StatsDomain,
+  StatsStatusBucket,
+} from "@loomkeep/shared/contracts";
 
 export const STATS_DOMAIN_LABEL: Record<StatsDomain, string> = {
   get MEDIA() {

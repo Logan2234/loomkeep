@@ -2,7 +2,7 @@ import type {
   AdminInvitationDto,
   AdminInvitationRedeemerDto,
   AdminInvitationStatus,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 import { ApiProperty } from "@nestjs/swagger";
 
 class AdminInvitationRedeemerResponseDto implements AdminInvitationRedeemerDto {

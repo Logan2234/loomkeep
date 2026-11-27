@@ -1,5 +1,5 @@
 // Gamification: XP ledger, level curve and reward scale.
-// The level curve (xpForLevel/levelForXp, packages/shared/src/level.ts,
+// The level curve (xpForLevel/levelForXp, packages/shared/src/rules/level.ts,
 // shared with the web) and the full barème (amount/cap/source per reason,
 // apps/api/src/gamification/xp-rules.ts) are pure data, kept out of Prisma.
 

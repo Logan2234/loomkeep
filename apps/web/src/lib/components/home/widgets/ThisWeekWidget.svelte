@@ -17,7 +17,7 @@
   import { HOME_WIDGETS } from "#lib/home/widgets.js";
   import { bodyOf, rowsLayout, type BoxSize } from "#lib/home/sizing.js";
   import { m } from "#lib/paraglide/messages.js";
-  import type { CalendarEntryDto } from "@loomkeep/shared";
+  import type { CalendarEntryDto } from "@loomkeep/shared/contracts";
   import WidgetShell from "../WidgetShell.svelte";
 
   let { size }: { size: BoxSize } = $props();

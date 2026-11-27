@@ -10,7 +10,7 @@
     type GameSessionMutationDto,
     type UpdateGameSessionDto,
     timerMinutes,
-  } from "@loomkeep/shared";
+  } from "@loomkeep/shared/contracts";
 
   import {
     createGameSession,

@@ -1,4 +1,4 @@
-import { ActivityType, type Domain } from "@loomkeep/shared";
+import { ActivityType, type Domain } from "@loomkeep/shared/enums";
 
 /**
  * The role a domain status plays in the shared lifecycle. Each domain's status

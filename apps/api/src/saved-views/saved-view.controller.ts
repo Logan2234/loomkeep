@@ -1,4 +1,4 @@
-import type { SavedViewDto } from "@loomkeep/shared";
+import type { SavedViewDto } from "@loomkeep/shared/contracts";
 import {
   Body,
   Controller,

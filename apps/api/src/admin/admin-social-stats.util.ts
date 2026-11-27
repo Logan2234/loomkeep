@@ -2,8 +2,8 @@ import type {
   AdminReportCategoryCountDto,
   AdminTopContributorDto,
   AdminTopReporterDto,
-  ReportCategory,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import type { ReportCategory } from "@loomkeep/shared/enums";
 
 /** How many writers the "Top contributeurs" ranking carries. */
 const TOP_CONTRIBUTORS_LIMIT = 5;

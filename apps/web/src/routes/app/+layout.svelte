@@ -35,7 +35,7 @@
   import { navStyle } from "#lib/nav-style.svelte.js";
   import { m } from "#lib/paraglide/messages.js";
   import { reauth } from "#lib/reauth.svelte.js";
-  import { LEGAL_VERSION } from "@loomkeep/shared";
+  import { LEGAL_VERSION } from "@loomkeep/shared/catalog";
   import { fade } from "svelte/transition";
   import { scrollLock } from "#lib/actions/scroll-lock.js";
   import UnlockBubble from "./components/UnlockBubble.svelte";

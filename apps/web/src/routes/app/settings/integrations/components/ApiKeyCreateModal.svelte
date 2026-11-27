@@ -20,7 +20,7 @@
     type ApiKeyResource,
     type CreatedApiKeyDto,
     readScope,
-  } from "@loomkeep/shared";
+  } from "@loomkeep/shared/contracts";
   import { untrack } from "svelte";
   import {
     DEFAULT_EXPIRATION,

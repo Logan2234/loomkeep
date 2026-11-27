@@ -1,4 +1,4 @@
-import type { MailTemplatePreviewDto } from "@loomkeep/shared";
+import type { MailTemplatePreviewDto } from "@loomkeep/shared/contracts";
 
 export class MailTemplatePreviewResponseDto implements MailTemplatePreviewDto {
   subject!: string;

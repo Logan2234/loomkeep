@@ -1,4 +1,4 @@
-import type { GameItemDto } from "@loomkeep/shared";
+import type { GameItemDto } from "@loomkeep/shared/contracts";
 import type { GameExternalId, GameItem } from "@prisma/client";
 import { canonicalExternalId } from "../common/external-id.util";
 import { isGameItemUpcoming } from "./game-release.util";

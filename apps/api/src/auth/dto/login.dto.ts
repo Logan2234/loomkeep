@@ -1,4 +1,4 @@
-import type { LoginRequestDto } from "@loomkeep/shared";
+import type { LoginRequestDto } from "@loomkeep/shared/contracts";
 import { Transform } from "class-transformer";
 import { IsString, MinLength } from "class-validator";
 import { normalizeEmail } from "../../common/email.util";

@@ -4,7 +4,7 @@
   // true per-event log in the app). `period` narrows only the weekday/hour
   // curves; the heatmap and monthly/yearly bars always show their own
   // natural full range (see VideoTemporalDto).
-  import type { StatsWindow } from "@loomkeep/shared";
+  import type { StatsWindow } from "@loomkeep/shared/contracts";
   import { keys } from "#lib/api/keys.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
   import { getVideoTemporal } from "#lib/api/stats.js";

@@ -10,7 +10,7 @@
     type HomeWidgetDto,
     type HomeWidgetSort,
     type GameSortKey,
-  } from "@loomkeep/shared";
+  } from "@loomkeep/shared/contracts";
   import PosterRail from "../PosterRail.svelte";
   import WidgetShell from "../WidgetShell.svelte";
   import { ENTRY_SORTS } from "./sorts";

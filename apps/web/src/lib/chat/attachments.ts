@@ -5,7 +5,7 @@ import {
   type MyListDto,
   type MyReviewDto,
   type ReviewTargetSummaryDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 
 const fold = (text: string) =>
   text.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");

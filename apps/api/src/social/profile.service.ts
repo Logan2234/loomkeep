@@ -1,16 +1,18 @@
+import { ErrorCode } from "@loomkeep/shared/catalog";
 import {
   type AchievementDto,
   type ConnectionDto,
-  Domain,
-  ErrorCode,
-  type ListVisibility,
-  ProfileAccess,
   type ProfileActivityStatsDto,
   type ProfileDomainStatDto,
-  type ReviewVisibility,
   type SocialProfileDto,
+} from "@loomkeep/shared/contracts";
+import {
+  Domain,
+  type ListVisibility,
+  ProfileAccess,
+  type ReviewVisibility,
   VisibilityFacet,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/enums";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { AppException } from "../common/app.exception";

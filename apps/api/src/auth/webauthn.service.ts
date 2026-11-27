@@ -1,3 +1,4 @@
+import { ErrorCode } from "@loomkeep/shared/catalog";
 import type {
   RemoveWebauthnCredentialResponseDto,
   RenameWebauthnCredentialResponseDto,
@@ -6,8 +7,7 @@ import type {
   WebauthnMfaOptionsResponseDto,
   WebauthnRegistrationOptionsDto,
   WebauthnRegistrationVerifyRequestDto,
-} from "@loomkeep/shared";
-import { ErrorCode } from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 import { HttpStatus, Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import type { User, WebauthnCredential } from "@prisma/client";

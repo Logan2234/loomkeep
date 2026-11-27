@@ -1,5 +1,7 @@
-import type { GameDetailsDto, GameSource } from "@loomkeep/shared";
-import { Domain, isGameUpcoming } from "@loomkeep/shared";
+import type { GameDetailsDto } from "@loomkeep/shared/contracts";
+import type { GameSource } from "@loomkeep/shared/enums";
+import { Domain } from "@loomkeep/shared/enums";
+import { isGameUpcoming } from "@loomkeep/shared/rules";
 import { Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { Cron, CronExpression } from "@nestjs/schedule";

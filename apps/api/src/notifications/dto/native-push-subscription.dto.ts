@@ -1,4 +1,4 @@
-import type { NativePushSubscriptionRequestDto } from "@loomkeep/shared";
+import type { NativePushSubscriptionRequestDto } from "@loomkeep/shared/contracts";
 import { IsBoolean, IsOptional, Matches } from "class-validator";
 
 export class NativePushSubscriptionDto implements NativePushSubscriptionRequestDto {

@@ -1,4 +1,4 @@
-import type { Domain } from "@loomkeep/shared";
+import type { Domain } from "@loomkeep/shared/enums";
 import type { ResolvedLinkDto, ResolveLinkResultDto } from "../link.types";
 
 export class ResolvedLinkResponseDto implements ResolvedLinkDto {

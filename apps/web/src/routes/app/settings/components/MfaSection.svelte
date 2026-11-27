@@ -2,7 +2,7 @@
   import RecoveryCodesModal from "./RecoveryCodesModal.svelte";
   import MfaTotpSetupModal from "./MfaTotpSetupModal.svelte";
 
-  import { WEBAUTHN_NAME_MAX_LENGTH } from "@loomkeep/shared";
+  import { WEBAUTHN_NAME_MAX_LENGTH } from "@loomkeep/shared/contracts";
 
   import {
     confirmTotp,
@@ -31,7 +31,10 @@
 
   import { m } from "#lib/paraglide/messages.js";
   import { toast } from "#lib/toast.svelte.js";
-  import type { MfaStatusDto, WebauthnCredentialDto } from "@loomkeep/shared";
+  import type {
+    MfaStatusDto,
+    WebauthnCredentialDto,
+  } from "@loomkeep/shared/contracts";
   import { browserSupportsWebAuthn } from "@simplewebauthn/browser";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { RECOVERY_CODES_LOW_THRESHOLD } from "../nav";

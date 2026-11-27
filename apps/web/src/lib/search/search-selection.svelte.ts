@@ -1,7 +1,7 @@
 import { ApiError } from "#lib/api/core.js";
 import { addListItem } from "#lib/api/lists.js";
 import { addWorkToLibrary } from "#lib/chat/work-library.js";
-import { ErrorCode } from "@loomkeep/shared";
+import { ErrorCode } from "@loomkeep/shared/catalog";
 import { getContext, setContext } from "svelte";
 import { SvelteSet } from "svelte/reactivity";
 

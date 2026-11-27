@@ -1,4 +1,4 @@
-import type { CommentTargetType } from "@loomkeep/shared";
+import type { CommentTargetType } from "@loomkeep/shared/enums";
 import type { DataExportComment } from "../../../account/data-export.types";
 
 export class DataExportCommentResponseDto implements DataExportComment {

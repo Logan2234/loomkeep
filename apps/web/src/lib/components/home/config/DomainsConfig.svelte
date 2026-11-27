@@ -9,7 +9,7 @@
   import { auth } from "#lib/auth.svelte.js";
   import { isDomainEnabled, orderedDomains } from "#lib/domain-availability.js";
   import { m } from "#lib/paraglide/messages.js";
-  import type { Domain } from "@loomkeep/shared";
+  import type { Domain } from "@loomkeep/shared/enums";
 
   let { domains = $bindable() }: { domains: Domain[] } = $props();
 

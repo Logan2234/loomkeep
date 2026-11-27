@@ -1,4 +1,4 @@
-import type { RatingVsCommunityDto } from "@loomkeep/shared";
+import type { RatingVsCommunityDto } from "@loomkeep/shared/contracts";
 import { ApiProperty } from "@nestjs/swagger";
 
 type SufficientRatingVsCommunity = Extract<

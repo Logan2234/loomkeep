@@ -1,4 +1,4 @@
-import { ErrorCode } from "@loomkeep/shared";
+import { ErrorCode } from "@loomkeep/shared/catalog";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { m } from "../paraglide/messages.js";
 import { reauth } from "../reauth.svelte";

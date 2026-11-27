@@ -1,6 +1,10 @@
 import { localDateInput } from "#lib/date.js";
-import type { ApiKeyDto, ApiKeyResource, ApiKeyScope } from "@loomkeep/shared";
-import { API_KEY_EXPIRY_WARNING_DAYS } from "@loomkeep/shared";
+import type {
+  ApiKeyDto,
+  ApiKeyResource,
+  ApiKeyScope,
+} from "@loomkeep/shared/contracts";
+import { API_KEY_EXPIRY_WARNING_DAYS } from "@loomkeep/shared/contracts";
 
 export type ExpirationChoice = "30" | "90" | "365" | "custom" | "never";
 export const DEFAULT_EXPIRATION: ExpirationChoice = "90";

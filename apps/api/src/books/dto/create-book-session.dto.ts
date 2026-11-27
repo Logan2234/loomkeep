@@ -2,9 +2,9 @@ import {
   MAX_PAGE_NUMBER,
   MAX_SESSION_DURATION_MINUTES,
   SESSION_NOTES_MAX_LENGTH,
-  SessionCycleAction,
   type CreateBookSessionDto as Contract,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import { SessionCycleAction } from "@loomkeep/shared/enums";
 import {
   IsDateString,
   IsIn,

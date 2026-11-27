@@ -1,7 +1,7 @@
 import type {
   AdminBackupFileDto,
   AdminBackupInventoryDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 
 type LegacyBackupFileDto = Omit<AdminBackupFileDto, "status">;
 

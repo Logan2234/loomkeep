@@ -1,9 +1,9 @@
 <script lang="ts" module>
   import { type SelectOption } from "#lib/types/select-option.js";
 
-  import { type SortOrder } from "@loomkeep/shared";
+  import { type SortOrder } from "@loomkeep/shared/contracts";
 
-  import type { LibrarySagaSort } from "@loomkeep/shared";
+  import type { LibrarySagaSort } from "@loomkeep/shared/contracts";
 
   export interface SagaListFilters {
     query: string;

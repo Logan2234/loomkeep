@@ -1,4 +1,4 @@
-import type { SavedViewDomain } from "@loomkeep/shared";
+import type { SavedViewDomain } from "@loomkeep/shared/contracts";
 export const STORAGE_KEYS = {
   theme: "lk-theme",
   motion: "lk-a11y-motion",

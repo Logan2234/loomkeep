@@ -3,7 +3,7 @@ import {
   Domain,
   PREMIUM_DOMAINS,
   type ReviewTargetType,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/enums";
 import { auth } from "./auth.svelte";
 import { appConfig } from "./config.svelte";
 

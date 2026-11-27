@@ -1,4 +1,4 @@
-import type { WatchProvidersDto } from "@loomkeep/shared";
+import type { WatchProvidersDto } from "@loomkeep/shared/contracts";
 import { WatchProviderResponseDto } from "./watch-provider-response.dto";
 
 export class WatchProvidersResponseDto implements WatchProvidersDto {

@@ -1,5 +1,5 @@
-import type { MessageDto } from "./dto/chat";
-import type { CommentTargetType } from "./enums";
+import type { CommentTargetType } from "../enums";
+import type { MessageDto } from "./chat";
 
 // WebSocket event names, shared between the API's EventsGateway (emitter)
 // and the web client's realtime socket (listener). Payloads are kept minimal

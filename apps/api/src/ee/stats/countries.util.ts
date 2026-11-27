@@ -1,4 +1,5 @@
-import { runtimeFor, type VideoCountryDto } from "@loomkeep/shared";
+import { type VideoCountryDto } from "@loomkeep/shared/contracts";
+import { runtimeFor } from "@loomkeep/shared/rules";
 import type { VideoInput } from "../../stats/advanced-stats.source";
 
 /**

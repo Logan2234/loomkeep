@@ -1,4 +1,4 @@
-import { ErrorCode } from "@loomkeep/shared";
+import { ErrorCode } from "@loomkeep/shared/catalog";
 import { type Mock, vi } from "vitest";
 import type { BookSagaService } from "../books/book-saga.service";
 import type { MediaItemService } from "../catalog/media-item.service";

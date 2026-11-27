@@ -1,4 +1,4 @@
-import type { ApiKeyQuotaDto } from "@loomkeep/shared";
+import type { ApiKeyQuotaDto } from "@loomkeep/shared/contracts";
 
 export class ApiKeyQuotaResponseDto implements ApiKeyQuotaDto {
   perMinute!: number;

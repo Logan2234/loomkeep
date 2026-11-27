@@ -1,4 +1,4 @@
-import type { PossessionBreakdownDto } from "@loomkeep/shared";
+import type { PossessionBreakdownDto } from "@loomkeep/shared/contracts";
 import { ApiProperty } from "@nestjs/swagger";
 
 // PossessionBreakdownDto is a discriminated union — the swagger plugin can't

@@ -16,7 +16,10 @@
   import { createApiQuery } from "#lib/api/query.svelte.js";
   import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
-  import type { ListItemTargetType, MyListDto } from "@loomkeep/shared";
+  import type {
+    ListItemTargetType,
+    MyListDto,
+  } from "@loomkeep/shared/contracts";
   import { flip } from "svelte/animate";
   import { fade, slide } from "svelte/transition";
   import Icon from "./Icon.svelte";

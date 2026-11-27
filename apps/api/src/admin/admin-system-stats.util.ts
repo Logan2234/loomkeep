@@ -1,4 +1,4 @@
-import type { AdminProviderCallsDto } from "@loomkeep/shared";
+import type { AdminProviderCallsDto } from "@loomkeep/shared/contracts";
 
 /** A provider as declared by the services page: its label and documented daily cap. */
 export interface ProviderQuotaSpec {

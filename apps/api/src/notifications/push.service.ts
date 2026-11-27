@@ -1,4 +1,5 @@
-import { type AlertGroup, ErrorCode, PushPlatform } from "@loomkeep/shared";
+import { type AlertGroup, ErrorCode } from "@loomkeep/shared/catalog";
+import { PushPlatform } from "@loomkeep/shared/enums";
 import { HttpStatus, Injectable, Logger } from "@nestjs/common";
 import type { PushSubscription } from "@prisma/client";
 import * as webpush from "web-push";

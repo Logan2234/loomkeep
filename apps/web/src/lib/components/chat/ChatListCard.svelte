@@ -4,7 +4,10 @@
   import Poster from "#lib/components/Poster.svelte";
   import { formatDate } from "#lib/format.js";
   import { m } from "#lib/paraglide/messages.js";
-  import { MESSAGE_LIST_WORKS, type MessageListDto } from "@loomkeep/shared";
+  import {
+    MESSAGE_LIST_WORKS,
+    type MessageListDto,
+  } from "@loomkeep/shared/contracts";
 
   let { list }: { list: MessageListDto } = $props();
 

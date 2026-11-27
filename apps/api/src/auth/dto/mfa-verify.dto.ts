@@ -1,4 +1,4 @@
-import type { MfaVerifyRequestDto } from "@loomkeep/shared";
+import type { MfaVerifyRequestDto } from "@loomkeep/shared/contracts";
 import { IsString, MinLength } from "class-validator";
 
 export class MfaVerifyDto implements MfaVerifyRequestDto {

@@ -37,7 +37,7 @@ English and translate the missing ones.
    `locales` in `apps/web/project.inlang/settings.json`, and `Locale` in
    `packages/shared/src/enums.ts`.
 3. **Add its region** (`de: "de-DE"`) to `LOCALE_REGIONS` in
-   `packages/shared/src/locale.ts`, for dates and numbers.
+   `packages/shared/src/catalog/locale.ts`, for dates and numbers.
 4. **Optionally, translate emails and notifications**: add the code to
    `COPY_LOCALES` in `apps/api/src/common/copy-locale.util.ts`, and the
    compiler lists every table missing it. Without this step, emails and

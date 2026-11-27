@@ -16,11 +16,11 @@
     isPushEnabledHere,
     isPushSupported,
   } from "#lib/push.js";
+  import { DigestCadence } from "@loomkeep/shared/enums";
   import {
     COMMENT_REACTION_NOTIFY_THRESHOLD,
-    DigestCadence,
     REVIEW_VOTE_NOTIFY_THRESHOLD,
-  } from "@loomkeep/shared";
+  } from "@loomkeep/shared/contracts";
   import { onMount } from "svelte";
   import SettingRow from "../components/SettingRow.svelte";
   import SettingsSection from "../components/SettingsSection.svelte";

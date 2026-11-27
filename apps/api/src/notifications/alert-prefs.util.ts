@@ -3,7 +3,7 @@ import {
   isAlertToggleable,
   type AlertKey,
   type AlertPrefs,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/catalog";
 import { jsonObject } from "../common/json.util";
 
 export function readAlertPrefs(value: unknown): AlertPrefs {

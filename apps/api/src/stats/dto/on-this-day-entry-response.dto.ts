@@ -2,7 +2,7 @@ import type {
   OnThisDayEntryDto,
   OnThisDayKind,
   StatsDomain,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 
 export class OnThisDayEntryResponseDto implements OnThisDayEntryDto {
   domain!: StatsDomain;

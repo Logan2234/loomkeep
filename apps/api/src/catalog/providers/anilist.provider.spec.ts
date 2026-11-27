@@ -1,4 +1,4 @@
-import { MediaSource, MediaType } from "@loomkeep/shared";
+import { MediaSource, MediaType } from "@loomkeep/shared/enums";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { vi } from "vitest";

@@ -1,4 +1,4 @@
-import type { CreatorWorkDto, PersonPageDto } from "@loomkeep/shared";
+import type { CreatorWorkDto, PersonPageDto } from "@loomkeep/shared/contracts";
 import { describe, expect, it } from "vitest";
 import { peekWorks } from "./peek-works";
 

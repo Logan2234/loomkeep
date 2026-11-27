@@ -1,6 +1,6 @@
 <script lang="ts">
   import { formatDate } from "#lib/format.js";
-  import { LEGAL_VERSION } from "@loomkeep/shared";
+  import { LEGAL_VERSION } from "@loomkeep/shared/catalog";
 </script>
 
 <svelte:head>

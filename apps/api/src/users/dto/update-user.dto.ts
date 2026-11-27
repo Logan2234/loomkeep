@@ -1,24 +1,24 @@
+import type { AlertPrefs, Locale } from "@loomkeep/shared/catalog";
+import { Locale as LocaleValues } from "@loomkeep/shared/catalog";
 import type {
-  AlertPrefs,
+  ListenService,
+  UpdateUserRequestDto,
+} from "@loomkeep/shared/contracts";
+import { LISTEN_SERVICES, USER_LIMITS } from "@loomkeep/shared/contracts";
+import type {
   DigestCadence,
   Domain,
-  ListenService,
   ListVisibility,
-  Locale,
   ReviewVisibility,
   SpoilerSensitivity,
-  UpdateUserRequestDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/enums";
 import {
   DigestCadence as DigestCadenceValues,
   Domain as DomainValues,
-  LISTEN_SERVICES,
   ListVisibility as ListVisibilityValues,
-  Locale as LocaleValues,
   ReviewVisibility as ReviewVisibilityValues,
   SpoilerSensitivity as SpoilerSensitivityValues,
-  USER_LIMITS,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/enums";
 import {
   ArrayMaxSize,
   ArrayNotEmpty,

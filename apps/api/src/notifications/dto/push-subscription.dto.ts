@@ -1,4 +1,4 @@
-import type { PushSubscriptionRequestDto } from "@loomkeep/shared";
+import type { PushSubscriptionRequestDto } from "@loomkeep/shared/contracts";
 import { Type } from "class-transformer";
 import { IsString, MaxLength, ValidateNested } from "class-validator";
 import { IsPushEndpoint } from "../push-endpoint.validator";

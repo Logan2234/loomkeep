@@ -19,11 +19,11 @@
   import { reauth } from "#lib/reauth.svelte.js";
   import { toast } from "#lib/toast.svelte.js";
   import {
-    ErrorCode,
     OTP_CODE_LENGTH,
     type ReauthMethod,
     type ReauthResultDto,
-  } from "@loomkeep/shared";
+  } from "@loomkeep/shared/contracts";
+  import { ErrorCode } from "@loomkeep/shared/catalog";
   import { platformAuthenticatorIsAvailable } from "@simplewebauthn/browser";
   import { fly, scale } from "svelte/transition";
   import Icon from "./Icon.svelte";

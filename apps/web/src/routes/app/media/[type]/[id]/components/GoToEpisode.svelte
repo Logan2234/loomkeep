@@ -2,7 +2,7 @@
   import Modal from "#lib/components/Modal.svelte";
   import { formatNumber } from "#lib/format.js";
   import { m } from "#lib/paraglide/messages.js";
-  import type { MediaDetailEpisodeDto } from "@loomkeep/shared";
+  import type { MediaDetailEpisodeDto } from "@loomkeep/shared/contracts";
   import { isAired, type EpisodeTab } from "./episodes";
 
   let {

@@ -1,4 +1,4 @@
-import type { AdminUpgradeNoteDto } from "@loomkeep/shared";
+import type { AdminUpgradeNoteDto } from "@loomkeep/shared/contracts";
 import { isNewerVersion } from "./update-check.service";
 
 const VERSION_HEADING = /^## (\d+\.\d+\.\d+)\b/;

@@ -2,7 +2,7 @@
   import { DATE_MEDIUM_OPTIONS, formatDate } from "#lib/format.js";
   import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
-  import type { EpisodeWatchDto } from "@loomkeep/shared";
+  import type { EpisodeWatchDto } from "@loomkeep/shared/contracts";
   import { cubicOut } from "svelte/easing";
   import { fade } from "svelte/transition";
 

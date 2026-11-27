@@ -1,4 +1,4 @@
-import type { SessionTimerDto } from "@loomkeep/shared";
+import type { SessionTimerDto } from "@loomkeep/shared/contracts";
 import {
   Body,
   Controller,

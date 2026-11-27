@@ -6,7 +6,7 @@ import type {
   StatsWindow,
   WeekdayCountDto,
   YearMinutesDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 import { utcDateKey } from "../common/date.util";
 
 const DAY_MS = 24 * 60 * 60 * 1000;

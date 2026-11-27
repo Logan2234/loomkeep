@@ -1,4 +1,5 @@
-import { ProfileAccess, type UserSummaryDto } from "@loomkeep/shared";
+import { type UserSummaryDto } from "@loomkeep/shared/contracts";
+import { ProfileAccess } from "@loomkeep/shared/enums";
 import { vi } from "vitest";
 import type { PrismaService } from "../prisma/prisma.service";
 import { fetchXpByUser, withXp } from "./xp-lookup.util";

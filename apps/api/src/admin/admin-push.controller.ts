@@ -1,11 +1,10 @@
+import { AlertGroup, ErrorCode } from "@loomkeep/shared/catalog";
 import {
-  AlertGroup,
-  ErrorCode,
   type AdminPushBroadcastResponseDto,
   type AdminPushDeviceDto,
   type AdminPushSendResponseDto,
   type AdminPushSummaryDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 import { Body, Controller, Get, HttpStatus, Post, Query } from "@nestjs/common";
 import { ApiCreatedResponse, ApiOkResponse } from "@nestjs/swagger";
 import { AppException } from "../common/app.exception";

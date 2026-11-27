@@ -1,4 +1,4 @@
-import { ErrorCode } from "@loomkeep/shared";
+import { ErrorCode } from "@loomkeep/shared/catalog";
 import { HttpStatus } from "@nestjs/common";
 import { vi } from "vitest";
 import { fakeReply } from "../../test-utils/fake-reply";

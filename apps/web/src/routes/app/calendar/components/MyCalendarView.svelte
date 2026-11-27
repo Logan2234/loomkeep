@@ -28,7 +28,7 @@
   import { formatDate } from "#lib/format.js";
   import { layout } from "#lib/layout.svelte.js";
   import { m } from "#lib/paraglide/messages.js";
-  import type { CalendarEntryDto } from "@loomkeep/shared";
+  import type { CalendarEntryDto } from "@loomkeep/shared/contracts";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { SvelteSet } from "svelte/reactivity";
   import {

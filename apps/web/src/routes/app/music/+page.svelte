@@ -42,12 +42,11 @@
     COMMON_LIBRARY_SORTS,
   } from "#lib/library-view.js";
   import { m } from "#lib/paraglide/messages.js";
+  import { Domain, type MusicStatus } from "@loomkeep/shared/enums";
   import {
-    Domain,
     type MusicEntryDto,
     type MusicSortKey,
-    type MusicStatus,
-  } from "@loomkeep/shared";
+  } from "@loomkeep/shared/contracts";
 
   const STATUS_OPTIONS = labeledOptions(
     MUSIC_STATUS_LABELS,

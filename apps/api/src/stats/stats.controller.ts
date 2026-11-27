@@ -1,3 +1,4 @@
+import { ErrorCode } from "@loomkeep/shared/catalog";
 import {
   type BookStatsDto,
   type DomainPileDto,
@@ -11,12 +12,11 @@ import {
   type VideoStatsDto,
   type VideoTemporalDto,
   type WatchStaleness,
-  Domain,
-  ErrorCode,
   STATS_DOMAINS,
   STATS_WINDOWS,
   WATCH_STALENESS,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import { Domain } from "@loomkeep/shared/enums";
 
 import { Controller, Get, HttpStatus, Query, UseGuards } from "@nestjs/common";
 import { ApiOkResponse } from "@nestjs/swagger";

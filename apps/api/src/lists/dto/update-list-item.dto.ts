@@ -1,4 +1,7 @@
-import { LIST_LIMITS, type UpdateListItemDto } from "@loomkeep/shared";
+import {
+  LIST_LIMITS,
+  type UpdateListItemDto,
+} from "@loomkeep/shared/contracts";
 import { IsOptional, IsString, MaxLength } from "class-validator";
 
 export class UpdateListItemBody implements UpdateListItemDto {

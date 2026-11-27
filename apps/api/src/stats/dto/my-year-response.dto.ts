@@ -1,4 +1,4 @@
-import type { FiguresDto, MyYearDto } from "@loomkeep/shared";
+import type { FiguresDto, MyYearDto } from "@loomkeep/shared/contracts";
 import { ApiPropertyOptional } from "@nestjs/swagger";
 
 class MyYearVideoResponseDto {

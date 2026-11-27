@@ -1,4 +1,4 @@
-import { ProfileAccess } from "@loomkeep/shared";
+import { ProfileAccess } from "@loomkeep/shared/enums";
 import { vi } from "vitest";
 import type { PrismaService } from "../../prisma/prisma.service";
 import type { FollowService } from "../follow.service";

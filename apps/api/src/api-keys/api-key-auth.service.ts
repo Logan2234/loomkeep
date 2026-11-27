@@ -1,4 +1,4 @@
-import type { ApiKeyScope } from "@loomkeep/shared";
+import type { ApiKeyScope } from "@loomkeep/shared/contracts";
 import { Injectable } from "@nestjs/common";
 import { sha256Hex } from "../common/crypto.util";
 import { PrismaService } from "../prisma/prisma.service";

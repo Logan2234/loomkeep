@@ -1,4 +1,4 @@
-import { MusicStatus, ReviewVoteValue, XpReason } from "@loomkeep/shared";
+import { MusicStatus, ReviewVoteValue, XpReason } from "@loomkeep/shared/enums";
 import { isAiringFinished } from "../catalog/airing-status.util";
 import type { PrismaService } from "../prisma/prisma.service";
 

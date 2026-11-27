@@ -1,4 +1,7 @@
-import type { DecadeBucketDto, LabelCountDto } from "@loomkeep/shared";
+import type {
+  DecadeBucketDto,
+  LabelCountDto,
+} from "@loomkeep/shared/contracts";
 import { decadeOf } from "../../stats/decade.util";
 
 /**

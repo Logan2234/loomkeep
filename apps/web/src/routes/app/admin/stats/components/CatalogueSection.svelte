@@ -7,7 +7,7 @@
     STATS_DOMAIN_LABEL,
   } from "#lib/components/stats/stats-domain.js";
   import { formatNumber, formatPercent } from "#lib/format.js";
-  import type { AdminCatalogueSectionDto } from "@loomkeep/shared";
+  import type { AdminCatalogueSectionDto } from "@loomkeep/shared/contracts";
   import { m } from "#lib/paraglide/messages.js";
   import Sparkline from "./Sparkline.svelte";
   import StatFigure from "#lib/components/stats/StatFigure.svelte";

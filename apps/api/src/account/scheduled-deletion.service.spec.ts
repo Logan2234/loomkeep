@@ -1,4 +1,5 @@
-import { ACCOUNT_DELETION_GRACE_DAYS, ErrorCode } from "@loomkeep/shared";
+import { ErrorCode } from "@loomkeep/shared/catalog";
+import { ACCOUNT_DELETION_GRACE_DAYS } from "@loomkeep/shared/contracts";
 import { vi, type Mock } from "vitest";
 import { sha256Hex } from "../common/crypto.util";
 import type { JobRunService } from "../jobs/job-run.service";

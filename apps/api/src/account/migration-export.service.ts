@@ -1,5 +1,5 @@
-import type { MigrationExportFileDto } from "@loomkeep/shared";
-import { ReviewTargetType } from "@loomkeep/shared";
+import type { MigrationExportFileDto } from "@loomkeep/shared/contracts";
+import { ReviewTargetType } from "@loomkeep/shared/enums";
 import { Injectable } from "@nestjs/common";
 import type { BookStatus } from "@prisma/client";
 import { toCsv } from "../common/csv.util";

@@ -1,23 +1,23 @@
+import { ErrorCode } from "@loomkeep/shared/catalog";
 import type {
-  CatalogSource,
-  EntryStatus,
   ImportPlan,
   ImportPlanGroup,
   ImportPlanItem,
   ImportPlanList,
   ImportReport,
   ImportSource,
-  MediaType,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 import {
-  Domain,
-  ErrorCode,
   type ImportMatch,
   LIST_LIMITS,
-  ListKind,
   REVIEW_TEXT_MAX_LENGTH,
-  ReviewTargetType,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import type {
+  CatalogSource,
+  EntryStatus,
+  MediaType,
+} from "@loomkeep/shared/enums";
+import { Domain, ListKind, ReviewTargetType } from "@loomkeep/shared/enums";
 import { Logger } from "@nestjs/common";
 import type { ExternalSource as DbExternalSource } from "@prisma/client";
 import { MediaItemService } from "../../../catalog/media-item.service";

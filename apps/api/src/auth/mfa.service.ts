@@ -1,8 +1,8 @@
+import { ErrorCode } from "@loomkeep/shared/catalog";
 import {
-  ErrorCode,
   OTP_CODE_LENGTH,
   RECOVERY_CODE_LENGTH,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { EventEmitter2 } from "@nestjs/event-emitter";

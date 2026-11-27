@@ -26,7 +26,7 @@
     type CommentPresenceEvent,
     type WorkThreadDto,
     RealtimeCommand,
-  } from "@loomkeep/shared";
+  } from "@loomkeep/shared/contracts";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { untrack } from "svelte";
   import ChatSearchBar from "./ChatSearchBar.svelte";

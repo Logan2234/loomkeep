@@ -9,7 +9,7 @@
   import Modal from "#lib/components/Modal.svelte";
   import { m } from "#lib/paraglide/messages.js";
   import { toast } from "#lib/toast.svelte.js";
-  import type { ConversationDto, MessageDto } from "@loomkeep/shared";
+  import type { ConversationDto, MessageDto } from "@loomkeep/shared/contracts";
   import { useQueryClient } from "@tanstack/svelte-query";
   import ChatFriendPicker from "./ChatFriendPicker.svelte";
 

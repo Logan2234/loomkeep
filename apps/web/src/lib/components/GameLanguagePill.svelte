@@ -6,7 +6,7 @@
   } from "#lib/game-languages.js";
   import { getLocale } from "#lib/paraglide/runtime.js";
   import { m } from "#lib/paraglide/messages.js";
-  import type { GameLanguageDto } from "@loomkeep/shared";
+  import type { GameLanguageDto } from "@loomkeep/shared/contracts";
   import { isFeatureNew } from "#lib/feature-badges.js";
   import Icon from "./Icon.svelte";
   import Modal from "./Modal.svelte";

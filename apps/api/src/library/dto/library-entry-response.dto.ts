@@ -1,8 +1,5 @@
-import type {
-  EntryStatus,
-  LibraryEntryDto,
-  MediaOwnershipStatus,
-} from "@loomkeep/shared";
+import type { LibraryEntryDto } from "@loomkeep/shared/contracts";
+import type { EntryStatus, MediaOwnershipStatus } from "@loomkeep/shared/enums";
 import { MediaItemResponseDto } from "./media-item-response.dto";
 import { MovieReplayResponseDto } from "./movie-replay-response.dto";
 import { ProgressResponseDto } from "./progress-response.dto";

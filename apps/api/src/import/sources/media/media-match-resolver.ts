@@ -1,4 +1,4 @@
-import type { ImportMatch, MediaSummaryDto } from "@loomkeep/shared";
+import type { ImportMatch, MediaSummaryDto } from "@loomkeep/shared/contracts";
 import { Injectable } from "@nestjs/common";
 import { TmdbProvider } from "../../../catalog/providers/tmdb.provider";
 import type { ImportMovie, ImportShow } from "../../media-import-model";

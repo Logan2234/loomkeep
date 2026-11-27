@@ -1,4 +1,5 @@
-import type { ImportMatch, MediaType } from "@loomkeep/shared";
+import type { ImportMatch } from "@loomkeep/shared/contracts";
+import type { MediaType } from "@loomkeep/shared/enums";
 
 export class ImportMatchResponseDto implements ImportMatch {
   source!: string;

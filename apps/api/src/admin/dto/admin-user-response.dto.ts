@@ -1,13 +1,15 @@
 import type {
-  AccountDeletionReason,
   AdminUserDto,
   AdminUserInvitationDto,
   AdminUserLibraryCountsDto,
   AdminUserSecondFactor,
+} from "@loomkeep/shared/contracts";
+import type {
+  AccountDeletionReason,
   Domain,
   Plan,
   Role,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/enums";
 
 class AdminUserInvitationResponseDto implements AdminUserInvitationDto {
   label!: string | null;

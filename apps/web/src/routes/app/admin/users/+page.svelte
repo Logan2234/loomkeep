@@ -31,6 +31,7 @@
   import { isFeatureNew } from "#lib/feature-badges.js";
   import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
+  import { Domain } from "@loomkeep/shared/enums";
   import {
     type AdminInvitationLinkDto,
     type AdminInvitationRedeemerDto,
@@ -40,8 +41,7 @@
     type PagedResult,
     ADMIN_USER_FILTERS,
     ADMIN_USER_SORTS,
-    Domain,
-  } from "@loomkeep/shared";
+  } from "@loomkeep/shared/contracts";
   import { onDestroy } from "svelte";
   import { flip } from "svelte/animate";
   import { fade, slide } from "svelte/transition";

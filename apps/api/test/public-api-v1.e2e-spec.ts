@@ -1,4 +1,4 @@
-import { API_KEY_SCOPES } from "@loomkeep/shared";
+import { API_KEY_SCOPES } from "@loomkeep/shared/contracts";
 import { INestApplication } from "@nestjs/common";
 import request from "supertest";
 import { App } from "supertest/types";

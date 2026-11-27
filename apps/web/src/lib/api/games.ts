@@ -4,16 +4,18 @@ import {
   type BulkUpdateEntriesDto,
   type CreateGameSessionDto,
   type GameFilterStatus,
-  type GameOwnershipStatus,
   type GameSortKey,
-  type GameStatus,
   type LibrarySagaSort,
   type LoanFilter,
   type SortOrder,
   type UpdateGameEntryDto,
   type UpdateGameSessionDto,
   type UpsertGameEntryDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import {
+  type GameOwnershipStatus,
+  type GameStatus,
+} from "@loomkeep/shared/enums";
 import { pageParam } from "./query-params";
 
 import { typedRequest } from "./generated/typed-request";

@@ -11,7 +11,7 @@
     HomeWidgetDto,
     LeaderboardEntryDto,
     LeaderboardPeriod,
-  } from "@loomkeep/shared";
+  } from "@loomkeep/shared/contracts";
   import WidgetShell from "../WidgetShell.svelte";
 
   let { widget }: { widget: HomeWidgetDto } = $props();

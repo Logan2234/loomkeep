@@ -6,13 +6,14 @@
 
   import { type SelectOption } from "#lib/types/select-option.js";
 
-  import { LIST_LIMITS } from "@loomkeep/shared";
+  import { LIST_LIMITS } from "@loomkeep/shared/contracts";
 
   import { createList, deleteList, updateList } from "#lib/api/client.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import { appConfig } from "#lib/config.svelte.js";
   import { m } from "#lib/paraglide/messages.js";
-  import type { ListDto, ListKind, ListVisibility } from "@loomkeep/shared";
+  import type { ListKind, ListVisibility } from "@loomkeep/shared/enums";
+  import type { ListDto } from "@loomkeep/shared/contracts";
   import { prefersReducedMotion } from "#lib/motion.js";
   import { fade } from "svelte/transition";
   import Modal from "./Modal.svelte";

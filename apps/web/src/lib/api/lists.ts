@@ -2,10 +2,9 @@ import type {
   AddListMemberDto,
   CreateListDto,
   ListItemTargetType,
-  ReportCategory,
-  ReportMotif,
   UpdateListDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import type { ReportCategory, ReportMotif } from "@loomkeep/shared/enums";
 import { typedRequest } from "./generated/typed-request";
 
 /** Lists the user can add items to — owned, or edit access via a collaborator grant. */

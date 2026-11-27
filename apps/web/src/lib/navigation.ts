@@ -1,7 +1,7 @@
 import { appConfig } from "#lib/config.svelte.js";
 import { DOMAINS } from "#lib/constants/domains.js";
 import { type FeatureBadgeKey } from "#lib/feature-badges.js";
-import { Domain } from "@loomkeep/shared";
+import { Domain } from "@loomkeep/shared/enums";
 import { auth } from "./auth.svelte";
 import { orderedDomains } from "./domain-availability";
 import { m } from "./paraglide/messages.js";

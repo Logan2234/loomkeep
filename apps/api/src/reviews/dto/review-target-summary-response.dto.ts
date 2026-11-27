@@ -1,4 +1,4 @@
-import type { ReviewTargetSummaryDto } from "@loomkeep/shared";
+import type { ReviewTargetSummaryDto } from "@loomkeep/shared/contracts";
 
 export class ReviewTargetSummaryResponseDto implements ReviewTargetSummaryDto {
   title!: string;

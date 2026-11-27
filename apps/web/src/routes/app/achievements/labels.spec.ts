@@ -1,6 +1,6 @@
 import { formatNumber } from "#lib/format.js";
 import { m } from "#lib/paraglide/messages.js";
-import type { AchievementDto } from "@loomkeep/shared";
+import type { AchievementDto } from "@loomkeep/shared/contracts";
 import { describe, expect, it } from "vitest";
 import { groupAchievements } from "./achievements";
 import { contextNote, rarityLabel, rarityPercent } from "./labels";

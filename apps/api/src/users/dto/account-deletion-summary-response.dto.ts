@@ -4,7 +4,7 @@ import type {
   AccountDeletionKeptCategory,
   AccountDeletionSummaryDto,
   AccountDeletionTransferredListDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 
 // `AccountDeletionCategoryCount<T>` itself isn't exported from
 // packages/shared — pull the element type back out of the array field

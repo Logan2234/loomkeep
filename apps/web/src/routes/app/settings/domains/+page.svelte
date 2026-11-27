@@ -16,7 +16,7 @@
   import { isDomainOffered, orderedDomains } from "#lib/domain-availability.js";
   import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
-  import { Domain, PREMIUM_DOMAINS } from "@loomkeep/shared";
+  import { Domain, PREMIUM_DOMAINS } from "@loomkeep/shared/enums";
   import { dragHandle, dragHandleZone } from "svelte-dnd-action";
   import { flip } from "svelte/animate";
   import { cubicOut } from "svelte/easing";

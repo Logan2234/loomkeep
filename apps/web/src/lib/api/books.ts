@@ -1,8 +1,6 @@
 import {
   type BookFilterStatus,
-  type BookOwnershipStatus,
   type BookSortKey,
-  type BookStatus,
   type BulkEntriesTargetDto,
   type BulkUpdateEntriesDto,
   type CreateBookSessionDto,
@@ -13,7 +11,11 @@ import {
   type UpdateBookSessionDto,
   type UpsertBookEntryDto,
   type UpsertReadingGoalDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import {
+  type BookOwnershipStatus,
+  type BookStatus,
+} from "@loomkeep/shared/enums";
 import { pageParam } from "./query-params";
 
 import { getLocale } from "../paraglide/runtime.js";

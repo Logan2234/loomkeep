@@ -1,5 +1,8 @@
-import type { ApiKeyScope, CreateApiKeyDto } from "@loomkeep/shared";
-import { API_KEY_NAME_MAX_LENGTH, API_KEY_SCOPES } from "@loomkeep/shared";
+import type { ApiKeyScope, CreateApiKeyDto } from "@loomkeep/shared/contracts";
+import {
+  API_KEY_NAME_MAX_LENGTH,
+  API_KEY_SCOPES,
+} from "@loomkeep/shared/contracts";
 import { ApiProperty } from "@nestjs/swagger";
 import {
   ArrayNotEmpty,

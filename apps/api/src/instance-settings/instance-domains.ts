@@ -1,9 +1,9 @@
 import {
   DOMAIN_SETTING,
-  Domain,
   type DomainSettingKey,
   type InstanceDomain,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import { Domain } from "@loomkeep/shared/enums";
 import type { ConfigService } from "@nestjs/config";
 import { instanceSetting } from "./instance-settings.store";
 

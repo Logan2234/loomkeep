@@ -1,4 +1,4 @@
-import { DORMANT_AFTER_DAYS } from "@loomkeep/shared";
+import { DORMANT_AFTER_DAYS } from "@loomkeep/shared/contracts";
 import { vi, type Mock } from "vitest";
 import type { PrismaService } from "../prisma/prisma.service";
 import { AdminAccountsStatsService } from "./admin-accounts-stats.service";

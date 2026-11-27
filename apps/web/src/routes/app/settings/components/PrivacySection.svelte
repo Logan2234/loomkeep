@@ -36,8 +36,8 @@
     type ReviewVisibility,
     VisibilityAudience,
     VisibilityFacet,
-    type VisibilitySettingsDto,
-  } from "@loomkeep/shared";
+  } from "@loomkeep/shared/enums";
+  import { type VisibilitySettingsDto } from "@loomkeep/shared/contracts";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { flashAnchor } from "#lib/flash-anchor.js";
   import SettingRow from "./SettingRow.svelte";

@@ -4,9 +4,8 @@ import {
   type OnThisDayEntryDto,
   type ProfileFiguresDto,
   type StatsDomain,
-  Domain,
-  TrackingCycleStatus,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import { Domain, TrackingCycleStatus } from "@loomkeep/shared/enums";
 import { Injectable } from "@nestjs/common";
 import {
   CANONICAL_EXTERNAL_ID_SELECT,

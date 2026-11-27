@@ -1,5 +1,5 @@
 import { m } from "#lib/paraglide/messages.js";
-import type { ApiKeyResource, ApiKeyScope } from "@loomkeep/shared";
+import type { ApiKeyResource, ApiKeyScope } from "@loomkeep/shared/contracts";
 
 export const RESOURCE_LABELS: Record<
   ApiKeyResource,

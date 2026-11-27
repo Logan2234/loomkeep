@@ -1,22 +1,24 @@
+import { ErrorCode } from "@loomkeep/shared/catalog";
 import {
-  ActivityType,
-  ErrorCode,
   type ListDetailDto,
   type ListDto,
   type ListItemDto,
   type ListItemTargetType,
   type ListMemberDto,
   type ListViewerRole,
-  type ListVisibility,
   MESSAGE_LIST_WORKS,
   type MessageListDto,
   type MyListDto,
-  NotificationType,
   RealtimeEvent,
   type ReviewTargetSummaryDto,
   type UserSummaryDto,
+} from "@loomkeep/shared/contracts";
+import {
+  ActivityType,
+  type ListVisibility,
+  NotificationType,
   XpReason,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/enums";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import type { Prisma } from "@prisma/client";

@@ -3,7 +3,7 @@ import type {
   AdminInvitationLinkDto,
   AdminInvitationStatus,
   PagedResult,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 import {
   Body,
   Controller,

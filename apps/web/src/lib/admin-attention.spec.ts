@@ -2,7 +2,7 @@ import type {
   AdminBackupInventoryDto,
   JobDto,
   ServiceStatusDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 import { expect, it } from "vitest";
 import { adminAttentionData } from "./admin-attention";
 

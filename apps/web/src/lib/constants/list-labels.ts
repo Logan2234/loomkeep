@@ -1,5 +1,5 @@
 import { m } from "#lib/paraglide/messages.js";
-import { ListKind, ListVisibility } from "@loomkeep/shared";
+import { ListKind, ListVisibility } from "@loomkeep/shared/enums";
 
 export const LIST_KIND_LABEL: Record<ListKind, string> = {
   get RANKED() {

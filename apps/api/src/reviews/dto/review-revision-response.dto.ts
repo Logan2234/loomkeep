@@ -1,4 +1,4 @@
-import type { ReviewRevisionDto } from "@loomkeep/shared";
+import type { ReviewRevisionDto } from "@loomkeep/shared/contracts";
 
 export class ReviewRevisionResponseDto implements ReviewRevisionDto {
   rating!: number;

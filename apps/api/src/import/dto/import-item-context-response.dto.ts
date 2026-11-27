@@ -1,4 +1,5 @@
-import { EntryStatus, type ImportItemContext } from "@loomkeep/shared";
+import { type ImportItemContext } from "@loomkeep/shared/contracts";
+import { EntryStatus } from "@loomkeep/shared/enums";
 import { ApiProperty } from "@nestjs/swagger";
 
 // ImportItemContext is a 4-branch discriminated union — each branch gets its

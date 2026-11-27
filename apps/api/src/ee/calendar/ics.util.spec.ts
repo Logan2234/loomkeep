@@ -1,4 +1,4 @@
-import type { CalendarEntryDto, PremiereDto } from "@loomkeep/shared";
+import type { CalendarEntryDto, PremiereDto } from "@loomkeep/shared/contracts";
 import { buildCalendarIcs, buildPremieresIcs } from "./ics.util";
 
 function entry(overrides: Partial<CalendarEntryDto> = {}): CalendarEntryDto {

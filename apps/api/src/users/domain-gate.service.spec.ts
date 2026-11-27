@@ -1,4 +1,4 @@
-import { Domain } from "@loomkeep/shared";
+import { Domain } from "@loomkeep/shared/enums";
 import type { ConfigService } from "@nestjs/config";
 import { vi } from "vitest";
 import { AppException } from "../common/app.exception";

@@ -19,7 +19,7 @@
     adminJobSchedule,
   } from "#lib/constants/admin-presentation.js";
   import { m } from "#lib/paraglide/messages.js";
-  import type { JobDto } from "@loomkeep/shared";
+  import type { JobDto } from "@loomkeep/shared/contracts";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { slide } from "svelte/transition";
 

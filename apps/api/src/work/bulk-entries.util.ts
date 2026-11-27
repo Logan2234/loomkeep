@@ -1,10 +1,10 @@
+import { ErrorCode } from "@loomkeep/shared/catalog";
 import {
-  ErrorCode,
   type BulkEntriesResultDto,
   type BulkEntriesTargetDto,
   type BulkUpdateEntriesDto,
   type ListItemTargetType,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 import { HttpStatus } from "@nestjs/common";
 import { AppException } from "../common/app.exception";
 import type { ListService } from "../lists/list.service";

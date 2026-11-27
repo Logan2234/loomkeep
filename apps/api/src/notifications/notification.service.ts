@@ -1,21 +1,27 @@
 import {
   ALERTS,
-  DigestCadence,
-  Domain,
-  episodeCode,
   ErrorCode,
-  gameReleaseAlertDay,
   isAlertEnabled,
   isAlertToggleable,
-  type MediaType,
-  movieReleaseDates,
-  movieReleaseInfo,
+} from "@loomkeep/shared/catalog";
+import {
+  episodeCode,
   type NotificationCountsDto,
   type NotificationDto,
-  NotificationType,
   type PagedResult,
   RealtimeEvent,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import {
+  DigestCadence,
+  Domain,
+  type MediaType,
+  NotificationType,
+} from "@loomkeep/shared/enums";
+import {
+  gameReleaseAlertDay,
+  movieReleaseDates,
+  movieReleaseInfo,
+} from "@loomkeep/shared/rules";
 import { HttpStatus, Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { Cron, CronExpression } from "@nestjs/schedule";

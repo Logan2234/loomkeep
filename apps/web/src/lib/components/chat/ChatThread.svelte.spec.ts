@@ -3,7 +3,7 @@ import { m } from "#lib/paraglide/messages.js";
 import { apiUrl, server } from "#lib/test/msw.js";
 import QueryHarness from "#lib/test/QueryHarness.svelte";
 import { renderWithQuery } from "#lib/test/render.js";
-import type { ConversationDto, MessageDto } from "@loomkeep/shared";
+import type { ConversationDto, MessageDto } from "@loomkeep/shared/contracts";
 import { render, screen, waitFor, within } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";

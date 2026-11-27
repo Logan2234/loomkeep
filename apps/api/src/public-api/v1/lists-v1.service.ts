@@ -1,5 +1,6 @@
-import type { ListDto, Locale } from "@loomkeep/shared";
-import { ErrorCode } from "@loomkeep/shared";
+import type { Locale } from "@loomkeep/shared/catalog";
+import { ErrorCode } from "@loomkeep/shared/catalog";
+import type { ListDto } from "@loomkeep/shared/contracts";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { AppException } from "../../common/app.exception";

@@ -1,4 +1,4 @@
-import { RECOVERY_CODE_LENGTH } from "@loomkeep/shared";
+import { RECOVERY_CODE_LENGTH } from "@loomkeep/shared/contracts";
 
 /**
  * Cleans a one-time code field as it's typed or pasted into, and returns the

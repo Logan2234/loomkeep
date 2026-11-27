@@ -1,4 +1,7 @@
-import type { CreateSavedViewDto, UpdateSavedViewDto } from "@loomkeep/shared";
+import type {
+  CreateSavedViewDto,
+  UpdateSavedViewDto,
+} from "@loomkeep/shared/contracts";
 import { typedRequest } from "./generated/typed-request";
 
 export const getSavedViews = () => typedRequest("/saved-views");

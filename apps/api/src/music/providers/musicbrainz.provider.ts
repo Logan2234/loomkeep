@@ -2,9 +2,9 @@ import {
   LISTEN_SERVICES,
   type ListenLinkDto,
   type ListenService,
-  MusicSource,
   MusicSummaryDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import { MusicSource } from "@loomkeep/shared/enums";
 import { Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import {

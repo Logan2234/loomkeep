@@ -1,9 +1,9 @@
 import { m } from "#lib/paraglide/messages.js";
 import {
-  xpForLevel,
   type XpHistoryDayDto,
   type XpHistoryItemDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import { xpForLevel } from "@loomkeep/shared/rules";
 import { describe, expect, it } from "vitest";
 import {
   buildTimeline,

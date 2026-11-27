@@ -1,7 +1,7 @@
 import type {
   MailTemplatePreviewDto,
   NewsletterSendDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 import { Controller, Get, Param, Query } from "@nestjs/common";
 import { ApiOkResponse } from "@nestjs/swagger";
 import { AdminOnly } from "../admin/admin-only.decorator";

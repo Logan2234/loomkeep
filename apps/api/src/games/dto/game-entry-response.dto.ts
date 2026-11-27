@@ -1,9 +1,8 @@
 import type {
   GameEntryDto,
-  GameOwnershipStatus,
   GamePlaythroughDto,
-  GameStatus,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import type { GameOwnershipStatus, GameStatus } from "@loomkeep/shared/enums";
 import { GameItemResponseDto } from "./game-item-response.dto";
 
 export class GamePlaythroughResponseDto implements GamePlaythroughDto {

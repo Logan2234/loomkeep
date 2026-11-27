@@ -6,7 +6,7 @@ import type {
   AdminUpgradeNotesDto,
   SchemaGraphResponseDto,
   ServiceStatusResponseDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 import {
   Body,
   Controller,

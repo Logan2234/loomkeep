@@ -1,5 +1,5 @@
 import { apiUrl, server } from "#lib/test/msw.js";
-import type { ActivityEventDto } from "@loomkeep/shared";
+import type { ActivityEventDto } from "@loomkeep/shared/contracts";
 import { http, HttpResponse } from "msw";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import { loadActivity } from "./activity";

@@ -9,7 +9,7 @@
     previewLinkedWork,
     typedLinks,
   } from "#lib/chat/work-search.js";
-  import type { MessageWorkDto } from "@loomkeep/shared";
+  import type { MessageWorkDto } from "@loomkeep/shared/contracts";
   import { useQueryClient } from "@tanstack/svelte-query";
   import ChatWorkCard from "./chat/ChatWorkCard.svelte";
 

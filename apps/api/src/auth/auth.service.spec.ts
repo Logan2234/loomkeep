@@ -1,4 +1,5 @@
-import { ErrorCode, RealtimeEvent } from "@loomkeep/shared";
+import { ErrorCode } from "@loomkeep/shared/catalog";
+import { RealtimeEvent } from "@loomkeep/shared/contracts";
 import type { ConfigService } from "@nestjs/config";
 import type { EventEmitter2 } from "@nestjs/event-emitter";
 import type { JwtService } from "@nestjs/jwt";

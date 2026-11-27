@@ -47,14 +47,14 @@
     COMMON_LIBRARY_SORTS,
   } from "#lib/library-view.js";
   import { m } from "#lib/paraglide/messages.js";
+  import { Domain } from "@loomkeep/shared/enums";
   import {
-    Domain,
     isSessionPaused,
     type BookEntryDto,
     type BookSortKey,
     type BookFilterStatus,
     SESSION_FILTER_PAUSED,
-  } from "@loomkeep/shared";
+  } from "@loomkeep/shared/contracts";
 
   const STATUS_OPTIONS = [
     ...labeledOptions(BOOK_STATUS_LABELS, BOOK_STATUS_ORDER),

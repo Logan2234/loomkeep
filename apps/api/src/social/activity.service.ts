@@ -1,17 +1,19 @@
 import {
-  VisibilityFacet,
   type ActivityActorDto,
   type ActivityDomain,
   type ActivityEventDto,
   type ActivityLevel,
+  type PagedResult,
+} from "@loomkeep/shared/contracts";
+import {
+  VisibilityFacet,
   type ActivityType,
   type Domain,
   type ListVisibility,
-  type PagedResult,
   type ProfileAccess,
   type ReviewTargetType,
   type ReviewVisibility,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/enums";
 import { Injectable, Logger } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
 import {

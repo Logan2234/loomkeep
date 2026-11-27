@@ -2,7 +2,7 @@ import type {
   MyProgressionDto,
   PagedResult,
   XpHistoryDayDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 import { Controller, Get, Query } from "@nestjs/common";
 import { ApiOkResponse } from "@nestjs/swagger";
 import {

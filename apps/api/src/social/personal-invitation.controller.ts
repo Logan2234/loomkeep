@@ -1,4 +1,4 @@
-import type { PersonalInvitationDto } from "@loomkeep/shared";
+import type { PersonalInvitationDto } from "@loomkeep/shared/contracts";
 import { Controller, Get, Post, UseGuards } from "@nestjs/common";
 import { ApiCreatedResponse, ApiOkResponse } from "@nestjs/swagger";
 import type { JwtPayload } from "../auth/decorators/current-user.decorator";

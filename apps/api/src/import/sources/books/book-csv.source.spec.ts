@@ -1,9 +1,9 @@
+import { ErrorCode } from "@loomkeep/shared/catalog";
 import type {
   BookSummaryDto,
   ImportPlan,
   ImportPlanItem,
-} from "@loomkeep/shared";
-import { ErrorCode } from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 import { HttpStatus } from "@nestjs/common";
 import { vi, type Mock } from "vitest";
 import type { BookItemService } from "../../../books/book-item.service";

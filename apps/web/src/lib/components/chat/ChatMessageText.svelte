@@ -7,7 +7,7 @@
   import { chat } from "#lib/chat/chat.svelte.js";
   import { isDomainEnabled } from "#lib/domain-availability.js";
   import { m } from "#lib/paraglide/messages.js";
-  import { Domain } from "@loomkeep/shared";
+  import { Domain } from "@loomkeep/shared/enums";
 
   let {
     text,

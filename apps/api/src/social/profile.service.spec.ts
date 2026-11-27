@@ -1,4 +1,4 @@
-import { VisibilityAudience } from "@loomkeep/shared";
+import { VisibilityAudience } from "@loomkeep/shared/enums";
 import type { ConfigService } from "@nestjs/config";
 import { vi } from "vitest";
 import type { PrismaService } from "../prisma/prisma.service";

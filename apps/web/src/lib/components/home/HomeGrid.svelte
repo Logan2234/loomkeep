@@ -13,7 +13,10 @@
     rowsToPixels,
   } from "#lib/home/widgets.js";
   import { prefersReducedMotion } from "#lib/motion.js";
-  import { HOME_GRID_COLUMNS, type HomeWidgetDto } from "@loomkeep/shared";
+  import {
+    HOME_GRID_COLUMNS,
+    type HomeWidgetDto,
+  } from "@loomkeep/shared/contracts";
   import { fly } from "svelte/transition";
   import HomeWidget from "./HomeWidget.svelte";
 

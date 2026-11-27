@@ -11,7 +11,7 @@ import type {
   AchievementFamily,
   AchievementRarityDto,
   AchievementTier,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 import type { AchievementGroup } from "./achievements";
 
 export {

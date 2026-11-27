@@ -1,4 +1,4 @@
-import type { ProgressDto } from "@loomkeep/shared";
+import type { ProgressDto } from "@loomkeep/shared/contracts";
 import { NextEpisodeResponseDto } from "./next-episode-response.dto";
 
 export class ProgressResponseDto implements ProgressDto {

@@ -8,7 +8,7 @@
   import { REPORT_CATEGORY_LABELS } from "#lib/constants/report-labels.js";
   import { formatNumber, formatPercent } from "#lib/format.js";
   import { m } from "#lib/paraglide/messages.js";
-  import type { AdminSocialStatsDto } from "@loomkeep/shared";
+  import type { AdminSocialStatsDto } from "@loomkeep/shared/contracts";
   import TrendPeriodCard from "./TrendPeriodCard.svelte";
 
   let { stats }: { stats: AdminSocialStatsDto } = $props();

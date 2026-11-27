@@ -5,7 +5,7 @@ import type {
   ServiceProbeFailure,
   ServiceStatusDto,
   ServiceStatusResponseDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { readFile } from "node:fs/promises";

@@ -1,10 +1,8 @@
 import {
-  CatalogSource,
-  Domain,
-  type MediaType,
   type MessageWorkKind,
   type WorkSearchResultDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import { CatalogSource, Domain, type MediaType } from "@loomkeep/shared/enums";
 import { Injectable } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
 import { BookItemService } from "../books/book-item.service";

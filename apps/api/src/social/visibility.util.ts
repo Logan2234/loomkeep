@@ -2,7 +2,7 @@ import {
   ProfileAccess,
   type ReviewVisibility,
   VisibilityAudience,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/enums";
 
 /**
  * The viewer's raw relationship to a target user (viewer's point of view).

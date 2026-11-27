@@ -7,13 +7,13 @@ import { m } from "#lib/paraglide/messages.js";
 import { apiUrl, server } from "#lib/test/msw.js";
 import { renderWithQuery } from "#lib/test/render.js";
 import { toast } from "#lib/toast.svelte.js";
+import { ErrorCode } from "@loomkeep/shared/catalog";
 import {
-  ErrorCode,
   type LibraryEntryDto,
   type MediaDetailEpisodeDto,
   type MediaDetailSeasonDto,
-  type MediaType,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import { type MediaType } from "@loomkeep/shared/enums";
 import { fireEvent, screen, waitFor, within } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";

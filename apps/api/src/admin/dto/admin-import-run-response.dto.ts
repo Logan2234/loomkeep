@@ -3,7 +3,7 @@ import type {
   AdminImportDetails,
   AdminImportRunDto,
   AdminImportStatus,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 
 import { ApiProperty } from "@nestjs/swagger";
 import { ImportReportResponseDto } from "../../import/dto/import-report-response.dto";

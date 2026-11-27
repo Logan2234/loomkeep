@@ -1,5 +1,5 @@
-import type { ApiErrorBody } from "@loomkeep/shared";
-import { ErrorCode } from "@loomkeep/shared";
+import type { ApiErrorBody } from "@loomkeep/shared/catalog";
+import { ErrorCode } from "@loomkeep/shared/catalog";
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 
 /** The codes the public API can answer with; the rest are the web app's. */

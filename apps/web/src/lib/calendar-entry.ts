@@ -1,6 +1,6 @@
 import { m } from "#lib/paraglide/messages.js";
-import type { CalendarEntryDto } from "@loomkeep/shared";
-import { episodeCode } from "@loomkeep/shared";
+import type { CalendarEntryDto } from "@loomkeep/shared/contracts";
+import { episodeCode } from "@loomkeep/shared/contracts";
 
 // A calendar entry holds either a show/movie or a game; these read it whichever.
 

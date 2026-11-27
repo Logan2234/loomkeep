@@ -1,4 +1,4 @@
-import type { ImportMatch } from "@loomkeep/shared";
+import type { ImportMatch } from "@loomkeep/shared/contracts";
 import { Injectable } from "@nestjs/common";
 import { AnilistProvider } from "../../../catalog/providers/anilist.provider";
 import type { ImportMovie, ImportShow } from "../../media-import-model";

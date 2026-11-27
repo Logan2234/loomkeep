@@ -4,7 +4,7 @@ import type {
   ServiceProbeFailure,
   ServiceStatusDto,
   ServiceStatusResponseDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 
 class ServiceStatusLimitResponseDto {
   max!: number;

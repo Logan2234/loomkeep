@@ -1,4 +1,4 @@
-import { ReportStatus } from "@loomkeep/shared";
+import { ReportStatus } from "@loomkeep/shared/enums";
 import type { ConfigService } from "@nestjs/config";
 import { vi, type Mock } from "vitest";
 import type { PrismaService } from "../prisma/prisma.service";

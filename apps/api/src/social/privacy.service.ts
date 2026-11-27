@@ -1,10 +1,10 @@
 import {
   type GhostSwitchImpactDto,
-  ProfileAccess,
   type UpdateVisibilitySettingsDto,
   type VisibilitySettingItemDto,
   type VisibilitySettingsDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import { ProfileAccess } from "@loomkeep/shared/enums";
 import { Injectable } from "@nestjs/common";
 import type { Prisma } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";

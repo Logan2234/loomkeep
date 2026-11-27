@@ -1,7 +1,7 @@
 import {
   type ReviewVoteValue,
   ReviewVoteValue as ReviewVoteValueEnum,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/enums";
 import { IsIn } from "class-validator";
 
 export class VoteReviewBody {

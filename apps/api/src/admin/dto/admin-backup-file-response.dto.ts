@@ -1,4 +1,4 @@
-import type { AdminBackupFileDto } from "@loomkeep/shared";
+import type { AdminBackupFileDto } from "@loomkeep/shared/contracts";
 
 export class AdminBackupFileResponseDto implements AdminBackupFileDto {
   id!: string;

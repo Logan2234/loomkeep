@@ -1,6 +1,6 @@
 import { DATE_MEDIUM_OPTIONS, formatDate } from "#lib/format.js";
 import { m } from "#lib/paraglide/messages.js";
-import type { ServiceArea, ServiceStatusDto } from "@loomkeep/shared";
+import type { ServiceArea, ServiceStatusDto } from "@loomkeep/shared/contracts";
 
 // These French strings are wire identifiers in ServiceArea, not display labels.
 const AREA_LABELS = {

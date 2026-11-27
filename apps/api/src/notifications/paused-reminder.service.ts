@@ -1,9 +1,8 @@
+import { AlertGroup, isAlertEnabled } from "@loomkeep/shared/catalog";
 import {
-  AlertGroup,
   DORMANT_AFTER_DAYS,
   GHOST_AFTER_DAYS,
-  isAlertEnabled,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 import { Injectable, Logger } from "@nestjs/common";
 import { Cron, CronExpression } from "@nestjs/schedule";
 import {

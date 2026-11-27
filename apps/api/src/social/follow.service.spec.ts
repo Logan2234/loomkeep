@@ -1,4 +1,4 @@
-import { NotificationType } from "@loomkeep/shared";
+import { NotificationType } from "@loomkeep/shared/enums";
 import { vi, type Mock } from "vitest";
 import { parsePageQuery } from "../common/pagination.util";
 import type { EventsGateway } from "../events/events.gateway";

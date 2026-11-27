@@ -1,4 +1,4 @@
-import type { ListDetailDto, ListViewerRole } from "@loomkeep/shared";
+import type { ListDetailDto, ListViewerRole } from "@loomkeep/shared/contracts";
 import { ListItemResponseDto } from "./list-item-response.dto";
 import { ListResponseDto } from "./list-response.dto";
 

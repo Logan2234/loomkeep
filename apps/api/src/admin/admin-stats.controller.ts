@@ -7,7 +7,7 @@ import {
   type AdminSystemSectionDto,
   type TrendPeriod,
   TREND_PERIODS,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 import { Controller, Get, Query } from "@nestjs/common";
 import { ApiExtraModels, ApiOkResponse, getSchemaPath } from "@nestjs/swagger";
 import { AdminAccountsStatsService } from "./admin-accounts-stats.service";

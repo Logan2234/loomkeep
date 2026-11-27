@@ -16,7 +16,7 @@
   import { m } from "#lib/paraglide/messages.js";
   import { theme } from "#lib/theme.svelte.js";
   import type { IconName } from "#lib/types/icon-name.js";
-  import { ACCOUNT_DELETION_GRACE_DAYS } from "@loomkeep/shared";
+  import { ACCOUNT_DELETION_GRACE_DAYS } from "@loomkeep/shared/contracts";
   import { slide } from "svelte/transition";
   import LandingFooter from "./components/LandingFooter.svelte";
   import { LANDING_LIBRARY } from "./components/landing-mock-data";

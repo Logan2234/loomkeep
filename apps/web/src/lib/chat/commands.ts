@@ -2,12 +2,12 @@ import { DOMAINS } from "#lib/constants/domains.js";
 import { m } from "#lib/paraglide/messages.js";
 import {
   POLL_OPTIONS_MIN,
-  type Domain,
   type LibrarySagasDto,
   type MessageWorkDto,
   type PickDomain,
   type SagaDomain,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import { type Domain } from "@loomkeep/shared/enums";
 import { matchingTitle } from "./attachments";
 
 /** `/pick <name>`: the names are English, like the commands themselves. */

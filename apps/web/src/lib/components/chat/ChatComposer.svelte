@@ -68,7 +68,7 @@
     type PickReelWorkDto,
     type ReviewTargetSummaryDto,
     type SendMessageRequestDto,
-  } from "@loomkeep/shared";
+  } from "@loomkeep/shared/contracts";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { tick } from "svelte";
   import { fade, scale } from "svelte/transition";

@@ -1,9 +1,9 @@
+import type { ModerationTransparencyDto } from "@loomkeep/shared/contracts";
 import type {
   ModerationLegalBasis,
   ModerationMeasure,
-  ModerationTransparencyDto,
   ReportCategory,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/enums";
 
 class TransparencyCategoryCountResponseDto {
   category!: ReportCategory;

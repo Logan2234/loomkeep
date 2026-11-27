@@ -1,4 +1,4 @@
-import type { MusicTrackDto } from "@loomkeep/shared";
+import type { MusicTrackDto } from "@loomkeep/shared/contracts";
 
 export class MusicTrackResponseDto implements MusicTrackDto {
   position!: number;

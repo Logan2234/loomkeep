@@ -1,4 +1,4 @@
-import type { ImportAnalyzeRequest } from "@loomkeep/shared";
+import type { ImportAnalyzeRequest } from "@loomkeep/shared/contracts";
 import { IsNotEmpty, IsString, MaxLength } from "class-validator";
 
 // The request body's own ceiling (25MB on this route for a full TV Time

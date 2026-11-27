@@ -1,10 +1,9 @@
+import { ErrorCode } from "@loomkeep/shared/catalog";
 import {
   COMMENT_TEXT_MAX_LENGTH,
-  ErrorCode,
-  GameSource,
-  GameStatus,
   MESSAGE_TEXT_MAX_LENGTH,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import { GameSource, GameStatus } from "@loomkeep/shared/enums";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ChatService } from "../chat/chat.service";
 import type { CommentService } from "../comments/comment.service";

@@ -1,5 +1,5 @@
-import type { CalendarTokenDto } from "@loomkeep/shared";
-import { ErrorCode } from "@loomkeep/shared";
+import { ErrorCode } from "@loomkeep/shared/catalog";
+import type { CalendarTokenDto } from "@loomkeep/shared/contracts";
 import {
   Controller,
   Get,

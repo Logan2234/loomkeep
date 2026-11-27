@@ -1,4 +1,5 @@
-import { CatalogSource, ErrorCode, MediaType } from "@loomkeep/shared";
+import { ErrorCode } from "@loomkeep/shared/catalog";
+import { CatalogSource, MediaType } from "@loomkeep/shared/enums";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { MediaItemService } from "../../../catalog/media-item.service";
 import { AnilistProvider } from "../../../catalog/providers/anilist.provider";

@@ -1,9 +1,9 @@
-# Landing page aggregating every dashboard in this stack into one set of
-# link tiles. Homepage has no login of its own: keep it behind Cloudflare
-# Access (docker-compose.tunnel.yml) or off a public hostname — see
+# loomkeep.app only: its admin start page, aggregating every dashboard in
+# this stack into one set of link tiles. Homepage has no login of its own:
+# it sits behind Cloudflare Access (docker-compose.tunnel.yml) — see
 # docker/README.md § "Access control per public subdomain".
 #
-#   docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.tunnel.yml -f docker-compose.homepage.yml up -d --build
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.tunnel.yml -f hosted/docker-compose.homepage.yml up -d --build
 #
 # Static config only — no Docker socket mount, since Grafana/Prometheus/
 # cAdvisor already give per-container metrics with history.
@@ -31,12 +31,13 @@ services:
       HOMEPAGE_VAR_GITHUB_TOKEN: ${HOMEPAGE_GITHUB_TOKEN:-}
       HOMEPAGE_VAR_BREVO_API_KEY: ${BREVO_API_KEY:-}
       HOMEPAGE_VAR_QUACKBACK_API_KEY: ${QUACKBACK_API_KEY:-}
+    # Relative to docker/, like every path of an override (see docker/README.md).
     volumes:
-      - ./homepage/services.yaml:/app/config/services.yaml:ro
-      - ./homepage/settings.yaml:/app/config/settings.yaml:ro
-      - ./homepage/widgets.yaml:/app/config/widgets.yaml:ro
-      - ./homepage/bookmarks.yaml:/app/config/bookmarks.yaml:ro
-      - ./homepage/custom.css:/app/config/custom.css:ro
+      - ./hosted/homepage/services.yaml:/app/config/services.yaml:ro
+      - ./hosted/homepage/settings.yaml:/app/config/settings.yaml:ro
+      - ./hosted/homepage/widgets.yaml:/app/config/widgets.yaml:ro
+      - ./hosted/homepage/bookmarks.yaml:/app/config/bookmarks.yaml:ro
+      - ./hosted/homepage/custom.css:/app/config/custom.css:ro
       - ../apps/web/static/favicon.svg:/app/public/images/favicon.svg:ro
       # Read-only, so the top-bar "resources" widget's disk field reports
       # the real host disk instead of the container's own writable layer
@@ -49,6 +50,6 @@ services:
     environment:
       HOMEPAGE_SITE_ADDRESS: home.${DOMAIN:?set DOMAIN in .env}
     volumes:
-      - ./homepage/homepage.caddy:/etc/caddy/sites-enabled/homepage.caddy:ro
+      - ./hosted/homepage/homepage.caddy:/etc/caddy/sites-enabled/homepage.caddy:ro
     depends_on:
       - homepage

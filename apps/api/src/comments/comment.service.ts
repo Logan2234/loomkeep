@@ -1,20 +1,22 @@
+import { ErrorCode } from "@loomkeep/shared/catalog";
 import {
   CHAT_SEARCH_MIN_LENGTH,
   COMMENT_REACTION_NOTIFY_THRESHOLD,
-  ErrorCode,
-  NotificationType,
-  ProfileAccess,
   RealtimeEvent,
-  XpReason,
   type AdminUserCommentDto,
   type CommentDto,
   type CommentMentionDto,
   type CommentMentionInputDto,
   type CommentReactionSummaryDto,
+  type PagedResult,
+} from "@loomkeep/shared/contracts";
+import {
+  NotificationType,
+  ProfileAccess,
+  XpReason,
   type CommentTargetType,
   type Emote,
-  type PagedResult,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/enums";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import type { Prisma } from "@prisma/client";

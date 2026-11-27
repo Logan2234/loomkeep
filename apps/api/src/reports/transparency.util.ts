@@ -1,10 +1,10 @@
+import { type ModerationTransparencyDto } from "@loomkeep/shared/contracts";
 import {
   ModerationLegalBasis,
   ModerationMeasure,
-  type ModerationTransparencyDto,
   type ReportCategory,
   type ReportStatus,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/enums";
 import { medianResolutionHours } from "../admin/admin-social-stats.util";
 
 export interface TransparencyReportRow {

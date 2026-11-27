@@ -1,4 +1,4 @@
-import { Locale } from "@loomkeep/shared";
+import { Locale } from "@loomkeep/shared/catalog";
 
 /**
  * The languages the API writes its own copy in (emails, push, notifications,

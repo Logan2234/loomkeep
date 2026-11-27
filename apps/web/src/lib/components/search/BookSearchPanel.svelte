@@ -22,7 +22,7 @@
   import PosterGrid from "#lib/components/PosterGrid.svelte";
   import { debounce, SEARCH_DEBOUNCE_MS } from "#lib/debounce.js";
   import { m } from "#lib/paraglide/messages.js";
-  import type { BookSummaryDto } from "@loomkeep/shared";
+  import type { BookSummaryDto } from "@loomkeep/shared/contracts";
   import { SvelteMap } from "svelte/reactivity";
 
   // The search query is owned by the page and shared across domain panels.

@@ -7,7 +7,7 @@
   import { prefersReducedMotion } from "#lib/motion.js";
   import { rowIn, rowOut } from "#lib/notifications/transitions.js";
   import { m } from "#lib/paraglide/messages.js";
-  import type { FollowRequestDto } from "@loomkeep/shared";
+  import type { FollowRequestDto } from "@loomkeep/shared/contracts";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { fly } from "svelte/transition";
   import Avatar from "../Avatar.svelte";

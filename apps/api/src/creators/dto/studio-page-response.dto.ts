@@ -1,5 +1,5 @@
-import type { StudioPageDto } from "@loomkeep/shared";
-import { CreatorSource, StudioKind } from "@loomkeep/shared";
+import type { StudioPageDto } from "@loomkeep/shared/contracts";
+import { CreatorSource, StudioKind } from "@loomkeep/shared/contracts";
 import { ApiProperty } from "@nestjs/swagger";
 import { CreatorRefResponseDto } from "../../catalog/dto/creator-ref-response.dto";
 import { CreatorWorkResponseDto } from "./person-page-response.dto";

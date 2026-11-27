@@ -1,9 +1,6 @@
-import {
-  Domain,
-  ErrorCode,
-  type SessionTimerDto,
-  timerMinutes,
-} from "@loomkeep/shared";
+import { ErrorCode } from "@loomkeep/shared/catalog";
+import { type SessionTimerDto, timerMinutes } from "@loomkeep/shared/contracts";
+import { Domain } from "@loomkeep/shared/enums";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { SessionSource, type SessionTimer } from "@prisma/client";
 import { BookSessionService } from "../books/book-session.service";

@@ -72,7 +72,8 @@
     statusCorrectionLabel,
     cycleAwareStatusCorrections,
   } from "#lib/status-corrections.js";
-  import { isVagueGameRelease, type GameEntryDto } from "@loomkeep/shared";
+  import { type GameEntryDto } from "@loomkeep/shared/contracts";
+  import { isVagueGameRelease } from "@loomkeep/shared/rules";
   import { slide } from "svelte/transition";
   import GameSagaSection from "./components/GameSagaSection.svelte";
   import GameTimeToBeat from "./components/GameTimeToBeat.svelte";

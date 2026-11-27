@@ -1,4 +1,4 @@
-import type { WorkSearchHitDto } from "@loomkeep/shared";
+import type { WorkSearchHitDto } from "@loomkeep/shared/contracts";
 import { describe, expect, it } from "vitest";
 import { SHELF_SIZE, shelves, statusLabel } from "./unified-search";
 

@@ -1,5 +1,5 @@
-import type { MusicSummaryDto } from "@loomkeep/shared";
-import { MusicSource } from "@loomkeep/shared";
+import type { MusicSummaryDto } from "@loomkeep/shared/contracts";
+import { MusicSource } from "@loomkeep/shared/enums";
 import { ApiProperty } from "@nestjs/swagger";
 
 export class MusicSummaryResponseDto implements MusicSummaryDto {

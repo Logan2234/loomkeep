@@ -1,4 +1,5 @@
-import { Domain, ErrorCode, PREMIUM_DOMAINS } from "@loomkeep/shared";
+import { ErrorCode } from "@loomkeep/shared/catalog";
+import { Domain, PREMIUM_DOMAINS } from "@loomkeep/shared/enums";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { AppException } from "../common/app.exception";

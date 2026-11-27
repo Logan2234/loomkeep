@@ -1,19 +1,15 @@
+import { ErrorCode } from "@loomkeep/shared/catalog";
 import type {
-  BookStatus,
   CreatorWorkDto,
-  EntryStatus,
   PagedResult,
   PersonPageDto,
   StudioKind,
   StudioPageDto,
   StudioWorkOrder,
-} from "@loomkeep/shared";
-import {
-  CatalogSource,
-  CreatorSource,
-  ErrorCode,
-  MediaType,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import { CreatorSource } from "@loomkeep/shared/contracts";
+import type { BookStatus, EntryStatus } from "@loomkeep/shared/enums";
+import { CatalogSource, MediaType } from "@loomkeep/shared/enums";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { BookSagaService } from "../books/book-saga.service";
 import { OpenLibraryProvider } from "../books/providers/open-library.provider";

@@ -1,7 +1,10 @@
 import { updateMe } from "#lib/api/client.js";
 import { createApiMutation } from "#lib/api/mutation.svelte.js";
 import { auth } from "#lib/auth.svelte.js";
-import { LISTEN_SERVICES, type ListenService } from "@loomkeep/shared";
+import {
+  LISTEN_SERVICES,
+  type ListenService,
+} from "@loomkeep/shared/contracts";
 
 /**
  * Adds or removes one of the user's music services, optimistically: same

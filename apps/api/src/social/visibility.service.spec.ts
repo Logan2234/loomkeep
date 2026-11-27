@@ -1,4 +1,4 @@
-import { ProfileAccess, VisibilityAudience } from "@loomkeep/shared";
+import { ProfileAccess, VisibilityAudience } from "@loomkeep/shared/enums";
 import { vi, type Mock } from "vitest";
 import type { PrismaService } from "../prisma/prisma.service";
 import type { BlockService } from "./block.service";

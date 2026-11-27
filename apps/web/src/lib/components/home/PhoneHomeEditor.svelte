@@ -15,7 +15,10 @@
   } from "#lib/home/phone-layout.js";
   import { HOME_WIDGETS, isWidgetShown } from "#lib/home/widgets.js";
   import { m } from "#lib/paraglide/messages.js";
-  import type { HomePhoneWidgetDto, HomeWidgetType } from "@loomkeep/shared";
+  import type {
+    HomePhoneWidgetDto,
+    HomeWidgetType,
+  } from "@loomkeep/shared/contracts";
   import { tick } from "svelte";
   import { flip } from "svelte/animate";
   import { prefersReducedMotion } from "#lib/motion.js";

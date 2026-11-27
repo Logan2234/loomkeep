@@ -19,7 +19,7 @@
   import {
     MESSAGE_TEXT_MAX_LENGTH,
     type MessageWorkDto,
-  } from "@loomkeep/shared";
+  } from "@loomkeep/shared/contracts";
   import { fade, slide } from "svelte/transition";
   import Icon from "./Icon.svelte";
   import Modal from "./Modal.svelte";

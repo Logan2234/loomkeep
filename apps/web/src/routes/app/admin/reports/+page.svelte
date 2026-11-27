@@ -9,7 +9,10 @@
 
   import { labeledOptions } from "#lib/options.js";
 
-  import { type ReportResolution, USER_LIMITS } from "@loomkeep/shared";
+  import {
+    type ReportResolution,
+    USER_LIMITS,
+  } from "@loomkeep/shared/contracts";
 
   import AdminFilterBar from "../AdminFilterBar.svelte";
   import AdminQueryError from "../AdminQueryError.svelte";
@@ -55,10 +58,9 @@
   import { m } from "#lib/paraglide/messages.js";
   import type {
     ModerationLegalBasis,
-    PagedResult,
-    ReportDto,
     ReportStatus,
-  } from "@loomkeep/shared";
+  } from "@loomkeep/shared/enums";
+  import type { PagedResult, ReportDto } from "@loomkeep/shared/contracts";
   import type { Snippet } from "svelte";
   import { flip } from "svelte/animate";
   import { fade, slide } from "svelte/transition";

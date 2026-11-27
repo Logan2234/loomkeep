@@ -1,4 +1,4 @@
-import type { TvTimeImportFilesDto } from "@loomkeep/shared";
+import type { TvTimeImportFilesDto } from "@loomkeep/shared/contracts";
 import { parseCsv } from "../../../common/csv.util";
 import { earlierOf } from "../../import-date.util";
 

@@ -1,5 +1,6 @@
-import type { BulkUpdateEntriesDto } from "@loomkeep/shared";
-import { MEDIA_BULK_STATUSES, MediaOwnershipStatus } from "@loomkeep/shared";
+import type { BulkUpdateEntriesDto } from "@loomkeep/shared/contracts";
+import { MEDIA_BULK_STATUSES } from "@loomkeep/shared/contracts";
+import { MediaOwnershipStatus } from "@loomkeep/shared/enums";
 import { IsIn, IsOptional } from "class-validator";
 import { BulkUpdateEntriesBaseBody } from "../../work/dto/bulk-entries.dto";
 

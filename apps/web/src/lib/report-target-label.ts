@@ -2,10 +2,8 @@
 // user's "reports against" tab). The API flags a deleted target rather than
 // wording it, so the admin reads it in their own language.
 import { m } from "#lib/paraglide/messages.js";
-import type {
-  ReportTargetSummaryDto,
-  ReportTargetType,
-} from "@loomkeep/shared";
+import type { ReportTargetSummaryDto } from "@loomkeep/shared/contracts";
+import type { ReportTargetType } from "@loomkeep/shared/enums";
 
 export function reportTargetLabel(
   targetType: ReportTargetType,

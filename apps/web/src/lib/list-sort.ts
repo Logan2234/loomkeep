@@ -1,5 +1,5 @@
 import { compareText } from "#lib/format.js";
-import type { MyListDto } from "@loomkeep/shared";
+import type { MyListDto } from "@loomkeep/shared/contracts";
 const comparators = {
   recent: (a: MyListDto, b: MyListDto) =>
     b.updatedAt.localeCompare(a.updatedAt),

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { type SelectOption } from "#lib/types/select-option.js";
 
-  import { OWNERSHIP_SOURCE_MAX_LENGTH } from "@loomkeep/shared";
+  import { OWNERSHIP_SOURCE_MAX_LENGTH } from "@loomkeep/shared/contracts";
 
   // The items of an ownership menu, for a Dropdown with role="menu": one
   // entry per way of owning a work, and a submenu for those that come with

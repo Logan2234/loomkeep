@@ -1,4 +1,5 @@
-import type { EntryStatus, MediaType, ProgressDto } from "@loomkeep/shared";
+import type { ProgressDto } from "@loomkeep/shared/contracts";
+import type { EntryStatus, MediaType } from "@loomkeep/shared/enums";
 import { isAiringFinished } from "../catalog/airing-status.util";
 import type { PrismaService } from "../prisma/prisma.service";
 

@@ -1,17 +1,13 @@
+import { ErrorCode } from "@loomkeep/shared/catalog";
 import type {
   CreatorRefDto,
   GameLanguageDto,
   GameTimeToBeatDto,
   RatingDto,
-} from "@loomkeep/shared";
-import {
-  CreatorSource,
-  ErrorCode,
-  GameSource,
-  GameSummaryDto,
-  isGameUpcoming,
-  ReleaseDatePrecision,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import { CreatorSource, GameSummaryDto } from "@loomkeep/shared/contracts";
+import { GameSource, ReleaseDatePrecision } from "@loomkeep/shared/enums";
+import { isGameUpcoming } from "@loomkeep/shared/rules";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { AppException } from "../../common/app.exception";

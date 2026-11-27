@@ -36,7 +36,7 @@
     AdminImportRunDto,
     AdminImportStatus,
     PagedResult,
-  } from "@loomkeep/shared";
+  } from "@loomkeep/shared/contracts";
 
   const sourceLabel = (id: string) =>
     Object.entries(IMPORTS_DEFINITION).find(([source, _]) => source === id)?.[1]

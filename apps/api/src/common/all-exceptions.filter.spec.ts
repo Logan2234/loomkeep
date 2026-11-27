@@ -1,4 +1,4 @@
-import { ErrorCode } from "@loomkeep/shared";
+import { ErrorCode } from "@loomkeep/shared/catalog";
 import type { ArgumentsHost } from "@nestjs/common";
 import { HttpStatus, NotFoundException } from "@nestjs/common";
 import type { HttpAdapterHost } from "@nestjs/core";

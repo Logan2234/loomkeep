@@ -1,4 +1,7 @@
-import { type ReportResolution, REPORT_RESOLUTIONS } from "@loomkeep/shared";
+import {
+  type ReportResolution,
+  REPORT_RESOLUTIONS,
+} from "@loomkeep/shared/contracts";
 import { IsIn } from "class-validator";
 
 export class ResolveReportBody {

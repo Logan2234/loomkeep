@@ -1,18 +1,16 @@
+import type { AlertPrefs, Locale } from "@loomkeep/shared/catalog";
+import type { ListenService, UserDto } from "@loomkeep/shared/contracts";
+import { LISTEN_SERVICES } from "@loomkeep/shared/contracts";
 import type {
   AcquisitionSource,
-  AlertPrefs,
   DigestCadence,
   Domain,
-  ListenService,
   ListVisibility,
-  Locale,
   ProfileAccess,
   ReviewVisibility,
   Role,
   SpoilerSensitivity,
-  UserDto,
-} from "@loomkeep/shared";
-import { LISTEN_SERVICES } from "@loomkeep/shared";
+} from "@loomkeep/shared/enums";
 import { ApiProperty } from "@nestjs/swagger";
 import { HomeLayoutBody, HomePhoneLayoutBody } from "./home-layout.dto";
 

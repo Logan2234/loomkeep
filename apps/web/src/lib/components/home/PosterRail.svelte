@@ -7,7 +7,7 @@
   // up whatever each work has to show.
   import EmptyState from "#lib/components/EmptyState.svelte";
   import type { EmptyArtName } from "#lib/components/EmptyArt.svelte";
-  import type { HomeWidgetDisplay } from "@loomkeep/shared";
+  import type { HomeWidgetDisplay } from "@loomkeep/shared/contracts";
   import Carousel from "#lib/components/Carousel.svelte";
   import Poster from "#lib/components/Poster.svelte";
   import {

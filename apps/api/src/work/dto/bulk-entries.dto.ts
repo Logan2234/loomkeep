@@ -1,10 +1,10 @@
-import type { BulkUpdateEntriesDto } from "@loomkeep/shared";
+import type { BulkUpdateEntriesDto } from "@loomkeep/shared/contracts";
 import {
   BULK_ENTRIES_MAX_IDS,
   type BulkEntriesResultDto,
   type BulkEntriesTargetDto,
   OWNERSHIP_SOURCE_MAX_LENGTH,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 import { Type } from "class-transformer";
 import {
   ArrayMaxSize,

@@ -2,7 +2,7 @@ import type {
   AdminAgeBucketDto,
   AdminCohortRowDto,
   AdminEnabledDomainsBucketDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 
 /**
  * How many signup-month cohorts the retention table shows. More than six

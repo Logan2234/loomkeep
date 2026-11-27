@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ReportMotif } from "./enums";
+import { ReportMotif } from "../enums";
 import {
   isReportCategoryAllowed,
   REPORT_CATEGORY_MOTIFS,

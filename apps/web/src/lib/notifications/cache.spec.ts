@@ -1,4 +1,4 @@
-import type { NotificationDto } from "@loomkeep/shared";
+import type { NotificationDto } from "@loomkeep/shared/contracts";
 import { describe, expect, it } from "vitest";
 import { daySection, entriesOf, groupByDay, mapEntries } from "./cache";
 

@@ -1,6 +1,6 @@
 import { formatRetryDelay } from "#lib/format.js";
 import { m } from "#lib/paraglide/messages.js";
-import { ErrorCode } from "@loomkeep/shared";
+import { ErrorCode } from "@loomkeep/shared/catalog";
 import { describe, expect, it } from "vitest";
 import { ApiError } from "./core";
 import { resolveApiError } from "./errors";

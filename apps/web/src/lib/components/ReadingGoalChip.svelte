@@ -1,7 +1,7 @@
 <script lang="ts">
   import { getReadingGoal } from "#lib/api/books.js";
   import { m } from "#lib/paraglide/messages.js";
-  import type { ReadingGoalDto } from "@loomkeep/shared";
+  import type { ReadingGoalDto } from "@loomkeep/shared/contracts";
   import ReadingGoalEditModal from "./ReadingGoalEditModal.svelte";
   import ReadingGoalGauge from "./ReadingGoalGauge.svelte";
 

@@ -1,4 +1,4 @@
-import type { EntryStatus } from "@loomkeep/shared";
+import type { EntryStatus } from "@loomkeep/shared/enums";
 import { utcDateKey } from "../../../common/date.util";
 import type { ImportShow, ParsedImport } from "../../media-import-model";
 

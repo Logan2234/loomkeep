@@ -1,13 +1,13 @@
-import type { Locale, PagedResult, StatsDomain } from "@loomkeep/shared";
+import type { Locale } from "@loomkeep/shared/catalog";
+import { ErrorCode } from "@loomkeep/shared/catalog";
+import type { PagedResult, StatsDomain } from "@loomkeep/shared/contracts";
+import { STATS_DOMAINS, type SortOrder } from "@loomkeep/shared/contracts";
 import {
   BookStatus,
   EntryStatus,
-  ErrorCode,
   GameStatus,
   MusicStatus,
-  STATS_DOMAINS,
-  type SortOrder,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/enums";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { BookLibraryService } from "../../books/book-library.service";

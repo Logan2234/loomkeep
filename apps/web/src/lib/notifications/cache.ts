@@ -1,4 +1,4 @@
-import type { NotificationDto, PagedResult } from "@loomkeep/shared";
+import type { NotificationDto, PagedResult } from "@loomkeep/shared/contracts";
 import type { InfiniteData } from "@tanstack/svelte-query";
 
 type Page = PagedResult<NotificationDto>;

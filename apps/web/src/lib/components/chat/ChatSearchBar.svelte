@@ -7,7 +7,7 @@
   import { formatDate } from "#lib/format.js";
   import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
-  import { CHAT_SEARCH_MIN_LENGTH } from "@loomkeep/shared";
+  import { CHAT_SEARCH_MIN_LENGTH } from "@loomkeep/shared/contracts";
   import { slide } from "svelte/transition";
   import type { SearchHit } from "./conversation-presentation";
 

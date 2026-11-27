@@ -1,4 +1,7 @@
-import type { DomainStatusBreakdownDto, StatsDomain } from "@loomkeep/shared";
+import type {
+  DomainStatusBreakdownDto,
+  StatsDomain,
+} from "@loomkeep/shared/contracts";
 import { StatusBucketCountResponseDto } from "./status-bucket-count-response.dto";
 
 export class DomainStatusBreakdownResponseDto implements DomainStatusBreakdownDto {

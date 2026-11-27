@@ -4,10 +4,10 @@ import { m } from "#lib/paraglide/messages.js";
 import { apiUrl, server } from "#lib/test/msw.js";
 import { renderWithQuery } from "#lib/test/render.js";
 import {
-  Domain,
   type HomePhoneLayoutDto,
   type UserDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import { Domain } from "@loomkeep/shared/enums";
 import { fireEvent, screen, waitFor } from "@testing-library/svelte";
 import { http, HttpResponse } from "msw";
 import { afterEach, beforeEach, expect, it } from "vitest";

@@ -1,4 +1,4 @@
-import { CatalogSource, MediaType } from "@loomkeep/shared";
+import { CatalogSource, MediaType } from "@loomkeep/shared/enums";
 import { vi } from "vitest";
 import { AnilistMatchResolver } from "./anilist-match-resolver";
 import { parseMyAnimeListXml } from "./myanimelist.parser";

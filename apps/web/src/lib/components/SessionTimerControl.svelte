@@ -12,7 +12,10 @@
   import { createApiQuery } from "#lib/api/query.svelte.js";
   import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
-  import { type SessionTimerDto, type SessionDomain } from "@loomkeep/shared";
+  import {
+    type SessionTimerDto,
+    type SessionDomain,
+  } from "@loomkeep/shared/contracts";
   import { untrack } from "svelte";
   import { slide } from "svelte/transition";
   import ConfirmationModal from "./ConfirmationModal.svelte";

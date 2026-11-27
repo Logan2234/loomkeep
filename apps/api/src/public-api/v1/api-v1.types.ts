@@ -1,12 +1,14 @@
 import type {
+  StatsDomain,
+  StatsStatusBucket,
+} from "@loomkeep/shared/contracts";
+import type {
   ListKind,
   ListVisibility,
   MediaType,
   ReviewTargetType,
   ReviewVisibility,
-  StatsDomain,
-  StatsStatusBucket,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/enums";
 
 // The public API's own shapes (`/api/v1`). They are a contract with scripts
 // Loomkeep doesn't control: internal DTOs can change freely, these only grow
