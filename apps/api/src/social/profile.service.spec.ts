@@ -302,3 +302,62 @@ describe("ProfileService.getProfile streak", () => {
     expect(activityStats.streakSecuredToday).toBe(true);
   });
 });
+
+describe("ProfileService.libraryVisibility", () => {
+  function makeWith(
+    access: "PUBLIC" | "PRIVATE" | "GHOST",
+    rel: ViewerRelation,
+    audiences: Record<string, VisibilityAudience>,
+  ) {
+    const prisma = {
+      user: {
+        findUnique: vi
+          .fn()
+          .mockResolvedValue({ id: "target", profileAccess: access }),
+      },
+    } as unknown as PrismaService;
+    const visibility = {
+      getRelation: vi.fn().mockResolvedValue(rel),
+      getSettingsMap: vi.fn().mockResolvedValue({}),
+      audienceFor: vi.fn(
+        (_settings: unknown, domain: string) =>
+          audiences[domain] ?? VisibilityAudience.PUBLIC,
+      ),
+    } as unknown as VisibilityService;
+    return new ProfileService(
+      prisma,
+      visibility,
+      {} as FollowService,
+      { get: vi.fn() } as unknown as ConfigService,
+    );
+  }
+
+  it("lists only the domains whose library the viewer may see", async () => {
+    const svc = makeWith("PUBLIC", relation({}), {
+      GAMES: VisibilityAudience.NONE,
+      BOOKS: VisibilityAudience.FRIENDS,
+    });
+
+    await expect(svc.libraryVisibility("viewer", "alice")).resolves.toEqual({
+      userId: "target",
+      isSelf: false,
+      domains: ["MEDIA", "MUSIC"],
+    });
+  });
+
+  it("shows nothing of a private profile to a stranger, without a 404", async () => {
+    const svc = makeWith("PRIVATE", relation({}), {});
+
+    await expect(svc.libraryVisibility("viewer", "alice")).resolves.toEqual({
+      userId: "target",
+      isSelf: false,
+      domains: [],
+    });
+  });
+
+  it("404s for a profile that must stay hidden", async () => {
+    const svc = makeWith("GHOST", relation({}), {});
+
+    await expect(svc.libraryVisibility("viewer", "alice")).rejects.toThrow();
+  });
+});
