@@ -24,6 +24,7 @@
   import MusicSearchPanel from "#lib/components/search/MusicSearchPanel.svelte";
   import UnifiedSearchPanel from "#lib/components/search/UnifiedSearchPanel.svelte";
   import QuickAddPanel from "#lib/components/QuickAddPanel.svelte";
+  import SearchSelectionBar from "#lib/components/search/SearchSelectionBar.svelte";
   import ScanIsbnModal from "#lib/components/ScanIsbnModal.svelte";
   import { DOMAINS, DOMAIN_IDS } from "#lib/constants/domains.js";
   import { debounce, SEARCH_DEBOUNCE_MS } from "#lib/debounce.js";
@@ -39,6 +40,10 @@
   import { isIsbnBarcode } from "#lib/scan-codes.js";
   import { toast } from "#lib/toast.svelte.js";
   import { quickAddTarget } from "#lib/quick-add.js";
+  import {
+    SearchSelection,
+    setSearchSelection,
+  } from "#lib/search/search-selection.svelte.js";
   import { isPastedLink } from "#lib/share-link.js";
   import { Domain, type MediaType } from "@loomkeep/shared";
   import { untrack } from "svelte";
@@ -123,12 +128,23 @@
     debouncedSyncUrl.call();
   });
 
+  // Long press on a result (PRV-09). Other results mean another selection:
+  // one made for the previous search would act on works no longer shown.
+  const selection = new SearchSelection();
+  setSearchSelection(selection);
+  $effect(() => {
+    void query;
+    void domain;
+    untrack(() => selection.exit());
+  });
+
   let recent = $state(readRecentSearches());
   const reducedMotion = prefersReducedMotion();
 
   // Results come as you type, so a term counts once it's been acted on, not
   // at each letter: Enter, or opening one of its results.
   function rememberOnOpen(event: MouseEvent) {
+    if (selection.active) return;
     if ((event.target as Element).closest("a")) rememberSearch(query);
   }
 
@@ -485,6 +501,15 @@
     </div>
   {/if}
 </div>
+
+<svelte:window
+  onkeydown={(event) => {
+    if (event.key === "Escape" && selection.active) selection.exit();
+  }} />
+
+{#if selection.active}
+  <SearchSelectionBar {selection} />
+{/if}
 
 {#if scanOpen}
   <ScanIsbnModal onclose={() => (scanOpen = false)} ondetect={onIsbnScanned} />
