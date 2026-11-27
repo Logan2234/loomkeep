@@ -40,7 +40,7 @@ function setup(
       bookItemId: string;
     }[];
     ownedEntries?: { bookItemId: string }[];
-    existingEntry?: { id: string } | null;
+    existingEntry?: ({ id: string } & Record<string, unknown>) | null;
     allowAdult?: boolean;
   } = {},
 ) {
@@ -341,6 +341,74 @@ describe("BookCsvSource (via StoryGraphImportSource)", () => {
     await runToEnd(service, "user-1", committed.id);
 
     expect(createMany).not.toHaveBeenCalled();
+  });
+
+  // A book being read at page 200 went back to "to read" at page 0, its notes
+  // and dates replaced, when a later export still listed it there (audit
+  // 2026-11-17, DET-01). Media already merged this way.
+  describe("re-importing a book the user already tracks", () => {
+    async function commitOver(
+      existingEntry: { id: string } & Record<string, unknown>,
+      readStatus: string,
+    ) {
+      const getStoredDetails = vi.fn().mockResolvedValue({
+        summary: summary({ sourceId: "OL1W" }),
+        overview: null,
+        genres: [],
+        pageCount: 320,
+        releaseDate: null,
+        externalIds: [{ source: "OPEN_LIBRARY", externalId: "OL1W" }],
+      });
+      const { service, upsert } = setup({
+        getStoredDetails,
+        existingEntry,
+        resolveByIsbns: vi.fn().mockResolvedValue({
+          matches: new Map([["9782228937597", summary({ sourceId: "OL1W" })]]),
+          failedIsbns: [],
+        }),
+      });
+      const csv = [
+        HEADER,
+        `Résister,Salomé Saqué,"",9782228937597,"",${readStatus},2025/07/23,2025/03/31,2025/02/01-2025/03/31,1,"",,,,,,,,their note,"","","",""`,
+      ].join("\n");
+      const analyzed = await analyze(service, csv);
+      const committed = service.commit("user-1", "storygraph", analyzed.id, {
+        include: ["b0"],
+      });
+      await runToEnd(service, "user-1", committed.id);
+      return upsert.mock.calls[0][0].update;
+    }
+
+    const READING = {
+      id: "entry-1",
+      status: "READING",
+      notes: "my note",
+      startedAt: new Date("2024-01-01T00:00:00.000Z"),
+      finishedAt: null,
+      ownershipStatus: "PHYSICAL",
+      currentPage: 200,
+      loans: [],
+    };
+
+    it("keeps its status, progress, notes and dates when the source is behind", async () => {
+      const update = await commitOver(READING, "to-read");
+
+      expect(update.status).toBe("READING");
+      expect(update.currentPage).toBeUndefined();
+      expect(update.readingBaselinePage).toBeUndefined();
+      expect(update.notes).toBeUndefined();
+      expect(update.startedAt).toBeUndefined();
+      // A source that says nothing about ownership leaves the user's copy alone.
+      expect(update.ownershipStatus).toBeUndefined();
+    });
+
+    it("moves it forward to read, fully progressed, and fills only the empty dates", async () => {
+      const update = await commitOver(READING, "read");
+
+      expect(update).toMatchObject({ status: "READ", currentPage: 320 });
+      expect(update.startedAt).toBeUndefined();
+      expect(update.finishedAt).toEqual(new Date("2025-03-31T00:00:00.000Z"));
+    });
   });
 
   it("commit skips adult titles even if their key is included", async () => {
