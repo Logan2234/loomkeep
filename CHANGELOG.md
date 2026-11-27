@@ -111,7 +111,7 @@ history from before it was started.
   to through the API: adding, editing, sessions and detail pages included,
   and reviews or list items of its works.
 - Re-importing books you already track no longer sends them back to the
-  export's status: progress, notes and dates you have stay, and a book only
+  export's status: progress, rating, notes and dates you have stay, and a book only
   moves forward.
 - An import analysis stays ready to confirm for 15 minutes; after that, the
   app asks you to analyze the file again.
