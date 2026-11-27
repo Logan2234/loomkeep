@@ -7,13 +7,11 @@ import { ACHIEVEMENT_KEYS_BY_XP_REASON } from "../gamification/achievements/regi
 import type { PrismaService } from "../prisma/prisma.service";
 import type { ReviewService } from "../reviews/review.service";
 import type { ActivityService } from "../social/activity.service";
+import { mediaFacade, mediaServices } from "../test-utils/media-services";
 import { stubAchievements, stubEvents, stubXp } from "../test-utils/stubs";
 import { AgeGateService } from "../users/age-gate.service";
+import { compareMediaEntries } from "./media-entries.util";
 import type { MediaItemService } from "./media-item.service";
-import {
-  compareMediaEntries,
-  MediaLibraryService,
-} from "./media-library.service";
 
 function makeRow(overrides: Partial<Record<string, unknown>> = {}) {
   const id = (overrides.id as string) ?? "entry-1";
@@ -80,7 +78,7 @@ describe("MediaLibraryService — finishedAt sync (comment-masking gate)", () =>
       setRating: vi.fn(),
     } as unknown as ReviewService;
     const activity = { emit: vi.fn() } as unknown as ActivityService;
-    const service = new MediaLibraryService(
+    const service = mediaFacade(
       prisma,
       {} as MediaItemService,
       {} as AgeGateService,
@@ -133,7 +131,7 @@ describe("MediaLibraryService — finishedAt sync (comment-masking gate)", () =>
       setRating: vi.fn(),
     } as unknown as ReviewService;
     const activity = { emit: vi.fn() } as unknown as ActivityService;
-    const service = new MediaLibraryService(
+    const service = mediaFacade(
       prisma,
       {} as MediaItemService,
       {} as AgeGateService,
@@ -192,7 +190,7 @@ describe("MediaLibraryService — finishedAt sync (comment-masking gate)", () =>
       },
     } as unknown as PrismaService;
     const activity = { emit: vi.fn() } as unknown as ActivityService;
-    const service = new MediaLibraryService(
+    const service = mediaFacade(
       prisma,
       {} as MediaItemService,
       {} as AgeGateService,
@@ -256,7 +254,7 @@ describe("MediaLibraryService.unwatchSeason", () => {
     } as unknown as PrismaService;
 
     const activity = { emit: vi.fn() } as unknown as ActivityService;
-    const service = new MediaLibraryService(
+    const service = mediaFacade(
       prisma,
       {} as MediaItemService,
       {} as AgeGateService,
@@ -284,7 +282,7 @@ describe("MediaLibraryService.unwatchSeason", () => {
     const prisma = {
       season: { findUnique: vi.fn().mockResolvedValue(null) },
     } as unknown as PrismaService;
-    const service = new MediaLibraryService(
+    const service = mediaFacade(
       prisma,
       {} as MediaItemService,
       {} as AgeGateService,
@@ -340,7 +338,7 @@ describe("MediaLibraryService.deleteEntry", () => {
       $transaction: vi.fn((ops: Promise<unknown>[]) => Promise.all(ops)),
     } as unknown as PrismaService;
 
-    const service = new MediaLibraryService(
+    const service = mediaFacade(
       prisma,
       {} as MediaItemService,
       {} as AgeGateService,
@@ -409,7 +407,7 @@ describe("MediaLibraryService.deleteEntry", () => {
       $transaction: vi.fn((ops: Promise<unknown>[]) => Promise.all(ops)),
     } as unknown as PrismaService;
 
-    const service = new MediaLibraryService(
+    const service = mediaFacade(
       prisma,
       {} as MediaItemService,
       {} as AgeGateService,
@@ -482,7 +480,7 @@ describe("MediaLibraryService — XP wiring", () => {
     const achievements = stubAchievements();
     const events = stubEvents();
 
-    const service = new MediaLibraryService(
+    const service = mediaFacade(
       prisma,
       {
         upsertFromSource: vi
@@ -515,7 +513,7 @@ describe("MediaLibraryService — XP wiring", () => {
     ["ANILIST", "SERIES"],
   ])("refuses a %s source paired with an %s type", async (source, type) => {
     const upsertFromSource = vi.fn();
-    const service = new MediaLibraryService(
+    const service = mediaFacade(
       {} as PrismaService,
       { upsertFromSource } as unknown as MediaItemService,
       {} as AgeGateService,
@@ -538,7 +536,7 @@ describe("MediaLibraryService — XP wiring", () => {
     const prisma = {
       mediaEntry: { findUnique: vi.fn(), upsert },
     } as unknown as PrismaService;
-    const service = new MediaLibraryService(
+    const service = mediaFacade(
       prisma,
       {
         upsertFromSource: vi
@@ -590,7 +588,7 @@ describe("MediaLibraryService — XP wiring", () => {
     const achievements = stubAchievements();
     const events = stubEvents();
 
-    const service = new MediaLibraryService(
+    const service = mediaFacade(
       prisma,
       {
         upsertFromSource: vi
@@ -649,7 +647,7 @@ describe("MediaLibraryService — XP wiring", () => {
     const xp = stubXp();
     const achievements = stubAchievements();
 
-    const service = new MediaLibraryService(
+    const service = mediaFacade(
       prisma,
       {} as MediaItemService,
       {} as AgeGateService,
@@ -692,7 +690,7 @@ describe("MediaLibraryService — XP wiring", () => {
     const xp = stubXp();
     const achievements = stubAchievements();
 
-    const service = new MediaLibraryService(
+    const service = mediaFacade(
       prisma,
       {
         upsertFromSource: vi
@@ -757,7 +755,7 @@ describe("MediaLibraryService — XP wiring", () => {
     const xp = stubXp();
     const achievements = stubAchievements();
 
-    const service = new MediaLibraryService(
+    const service = mediaFacade(
       prisma,
       {} as MediaItemService,
       {} as AgeGateService,
@@ -840,7 +838,7 @@ describe("MediaLibraryService — XP wiring", () => {
     const xp = stubXp();
     const achievements = stubAchievements();
 
-    const service = new MediaLibraryService(
+    const service = mediaFacade(
       prisma,
       {} as MediaItemService,
       {} as AgeGateService,
@@ -911,7 +909,7 @@ describe("MediaLibraryService — watch endpoints require a tracked entry", () =
       },
     } as unknown as PrismaService;
     const xp = stubXp();
-    const service = new MediaLibraryService(
+    const service = mediaFacade(
       prisma,
       {} as MediaItemService,
       {} as AgeGateService,
@@ -1027,7 +1025,7 @@ describe("MediaLibraryService — bulk episode watches", () => {
     } as unknown as PrismaService;
     const xp = stubXp();
     const activity = { emit: vi.fn() };
-    const service = new MediaLibraryService(
+    const service = mediaFacade(
       prisma,
       {} as MediaItemService,
       {} as AgeGateService,
@@ -1209,7 +1207,7 @@ describe("MediaLibraryService.getPile", () => {
         },
       ]),
     } as unknown as PrismaService;
-    const service = new MediaLibraryService(
+    const service = mediaFacade(
       prisma,
       {} as MediaItemService,
       {} as AgeGateService,
@@ -1281,7 +1279,7 @@ describe("MediaLibraryService.bulkUpdate", () => {
       // watchedEpisodeIds: nothing watched yet
       episodeWatch: { findMany: vi.fn().mockResolvedValue([]) },
     } as unknown as PrismaService;
-    const service = new MediaLibraryService(
+    const services = mediaServices(
       prisma,
       {} as MediaItemService,
       {} as AgeGateService,
@@ -1292,20 +1290,22 @@ describe("MediaLibraryService.bulkUpdate", () => {
       stubEvents(),
       {} as import("../lists/list.service").ListService,
     );
+    const service = services.library;
     const updateEntry = vi
       .spyOn(service, "updateEntry")
       .mockResolvedValue({} as never);
-    const watchSeason = vi.spyOn(service, "watchSeason");
-    const internals = service as unknown as OnePass;
+    const watchSeason = vi.spyOn(services.episodes, "watchSeason");
+    const episodeWatches = services.episodes as unknown as OnePass;
+    const progress = services.progress as unknown as OnePass;
     const markWatched = vi
-      .spyOn(internals, "markWatchedIfNew")
+      .spyOn(episodeWatches, "markWatchedIfNew")
       .mockResolvedValue(undefined);
     const syncFinished = vi
-      .spyOn(internals, "syncFinishedAt")
+      .spyOn(progress, "syncFinishedAt")
       .mockResolvedValue(null);
-    vi.spyOn(internals, "endFinishedRewatches").mockResolvedValue(undefined);
+    vi.spyOn(progress, "endFinishedRewatches").mockResolvedValue(undefined);
     const milestones = vi
-      .spyOn(internals, "emitSeasonFinishedMilestones")
+      .spyOn(episodeWatches, "emitSeasonFinishedMilestones")
       .mockResolvedValue(undefined);
     return {
       service,
@@ -1450,7 +1450,7 @@ describe("MediaLibraryService.trackedStatuses", () => {
       },
       $queryRaw: queryRaw,
     } as unknown as PrismaService;
-    const service = new MediaLibraryService(
+    const service = mediaFacade(
       prisma,
       {} as MediaItemService,
       {} as AgeGateService,

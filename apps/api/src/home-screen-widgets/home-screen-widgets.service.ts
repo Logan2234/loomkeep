@@ -12,6 +12,7 @@ import { canonicalExternalId } from "../common/external-id.util";
 import { localDay, localDayOrUtc } from "../common/local-day.util";
 import { XpService } from "../gamification/xp.service";
 import { CalendarService } from "../library/calendar.service";
+import { MediaEpisodesService } from "../media/media-episodes.service";
 import { MediaLibraryService } from "../media/media-library.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { SessionTimerService } from "../session-timer/session-timer.service";
@@ -79,6 +80,7 @@ export class HomeScreenWidgetsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly library: MediaLibraryService,
+    private readonly episodes: MediaEpisodesService,
     private readonly domains: DomainGateService,
     private readonly timers: SessionTimerService,
     private readonly xp: XpService,
@@ -161,7 +163,7 @@ export class HomeScreenWidgetsService {
   ): Promise<void> {
     const entry = await this.library.getEntry(userId, dto.entryId);
     if (entry.progress?.nextEpisode?.episodeId !== dto.episodeId) return;
-    await this.library.watchEpisode(userId, dto.episodeId, {});
+    await this.episodes.watchEpisode(userId, dto.episodeId, {});
   }
 
   startTimer(userId: string, dto: HomeScreenWidgetStartTimerDto) {

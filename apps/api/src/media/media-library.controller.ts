@@ -54,6 +54,7 @@ import { TrackedMediaResponseDto } from "./dto/tracked-media-response.dto";
 import { UpdateEntryDto } from "./dto/update-entry.dto";
 import { UpsertEntryDto } from "./dto/upsert-entry.dto";
 import { WatchEpisodeDto } from "./dto/watch-episode.dto";
+import { MediaEpisodesService } from "./media-episodes.service";
 import { MediaLibraryService } from "./media-library.service";
 import { MediaSagaService } from "./media-saga.service";
 
@@ -61,6 +62,7 @@ import { MediaSagaService } from "./media-saga.service";
 export class MediaLibraryController {
   constructor(
     private readonly libraryService: MediaLibraryService,
+    private readonly episodes: MediaEpisodesService,
     private readonly domainGate: DomainGateService,
     private readonly sagas: MediaSagaService,
   ) {}
@@ -245,7 +247,7 @@ export class MediaLibraryController {
     @CurrentUser() user: JwtPayload,
     @Param("id") entryId: string,
   ): Promise<EntryEpisodesResponseDto> {
-    return this.libraryService.getEntryEpisodes(user.sub, entryId);
+    return this.episodes.getEntryEpisodes(user.sub, entryId);
   }
 
   @HttpCode(HttpStatus.OK)
@@ -255,7 +257,7 @@ export class MediaLibraryController {
     @CurrentUser() user: JwtPayload,
     @Body() dto: EpisodeWatchesBatchDto,
   ): Promise<EpisodeWatchBatchResultDto> {
-    return this.libraryService.batchEpisodeWatches(
+    return this.episodes.batchEpisodeWatches(
       user.sub,
       dto.action,
       dto.episodeIds,
@@ -268,7 +270,7 @@ export class MediaLibraryController {
     @CurrentUser() user: JwtPayload,
     @Body() dto: UndoEpisodeWatchesDto,
   ): Promise<void> {
-    await this.libraryService.undoEpisodeWatches(user.sub, dto);
+    await this.episodes.undoEpisodeWatches(user.sub, dto);
   }
 
   @Post("episodes/:episodeId/watches")
@@ -278,7 +280,7 @@ export class MediaLibraryController {
     @Param("episodeId") episodeId: string,
     @Body() dto: WatchEpisodeDto,
   ): Promise<EpisodeWatchDto> {
-    return this.libraryService.watchEpisode(user.sub, episodeId, dto);
+    return this.episodes.watchEpisode(user.sub, episodeId, dto);
   }
 
   @HttpCode(HttpStatus.NO_CONTENT)
@@ -287,7 +289,7 @@ export class MediaLibraryController {
     @CurrentUser() user: JwtPayload,
     @Param("seasonId") seasonId: string,
   ): Promise<void> {
-    await this.libraryService.watchSeason(user.sub, seasonId);
+    await this.episodes.watchSeason(user.sub, seasonId);
   }
 
   @HttpCode(HttpStatus.NO_CONTENT)
@@ -296,7 +298,7 @@ export class MediaLibraryController {
     @CurrentUser() user: JwtPayload,
     @Param("seasonId") seasonId: string,
   ): Promise<void> {
-    await this.libraryService.unwatchSeason(user.sub, seasonId);
+    await this.episodes.unwatchSeason(user.sub, seasonId);
   }
 
   @HttpCode(HttpStatus.NO_CONTENT)
@@ -305,7 +307,7 @@ export class MediaLibraryController {
     @CurrentUser() user: JwtPayload,
     @Param("episodeId") episodeId: string,
   ): Promise<void> {
-    await this.libraryService.watchThrough(user.sub, episodeId);
+    await this.episodes.watchThrough(user.sub, episodeId);
   }
 
   @HttpCode(HttpStatus.NO_CONTENT)
@@ -314,6 +316,6 @@ export class MediaLibraryController {
     @CurrentUser() user: JwtPayload,
     @Param("episodeId") episodeId: string,
   ): Promise<void> {
-    await this.libraryService.unwatchEpisode(user.sub, episodeId);
+    await this.episodes.unwatchEpisode(user.sub, episodeId);
   }
 }

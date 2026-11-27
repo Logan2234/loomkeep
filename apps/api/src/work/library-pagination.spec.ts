@@ -37,7 +37,12 @@ describe("library pagination boundaries", () => {
         ),
         new MusicController(null!, service as never, gate as never),
       ],
-      media: new MediaLibraryController(service as never, gate as never, null!),
+      media: new MediaLibraryController(
+        service as never,
+        null!,
+        gate as never,
+        null!,
+      ),
     };
   };
 

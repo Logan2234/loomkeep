@@ -15,7 +15,7 @@ import type { SagaMember } from "@prisma/client";
 import { mapWithConcurrency } from "../common/concurrency.util";
 import { PrismaService } from "../prisma/prisma.service";
 import { AgeGateService } from "../users/age-gate.service";
-import { MediaLibraryService } from "./media-library.service";
+import { MediaProgressService } from "./media-progress.service";
 import {
   MEDIA_SAGA_STATUS,
   sagaComparator,
@@ -44,7 +44,7 @@ export class MediaSagaService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly sagas: SagaSyncService,
-    private readonly library: MediaLibraryService,
+    private readonly library: MediaProgressService,
     private readonly ageGate: AgeGateService,
   ) {}
 

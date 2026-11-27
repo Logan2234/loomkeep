@@ -14,7 +14,7 @@ import { HttpStatus, Injectable } from "@nestjs/common";
 import { BookSagaService } from "../books/book-saga.service";
 import { OpenLibraryProvider } from "../books/providers/open-library.provider";
 import { AppException } from "../common/app.exception";
-import { MediaLibraryService } from "../media/media-library.service";
+import { MediaProgressService } from "../media/media-progress.service";
 import { TmdbProvider } from "../media/providers/tmdb.provider";
 import { AgeGateService } from "../users/age-gate.service";
 
@@ -35,7 +35,7 @@ export class CreatorService {
   constructor(
     private readonly tmdb: TmdbProvider,
     private readonly openLibrary: OpenLibraryProvider,
-    private readonly library: MediaLibraryService,
+    private readonly library: MediaProgressService,
     private readonly bookSagas: BookSagaService,
     private readonly ageGate: AgeGateService,
   ) {}

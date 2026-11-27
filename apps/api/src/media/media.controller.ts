@@ -19,7 +19,7 @@ import { AppException } from "../common/app.exception";
 import { safeLang } from "../common/locale.util";
 import { MediaDetailResponseDto } from "./dto/media-detail-response.dto";
 import { MediaSagaResponseDto as MediaSagaResponse } from "./dto/media-saga-response.dto";
-import { MediaLibraryService } from "./media-library.service";
+import { MediaDetailService } from "./media-detail.service";
 import { MediaSagaService } from "./media-saga.service";
 
 /**
@@ -31,7 +31,7 @@ import { MediaSagaService } from "./media-saga.service";
 @Controller("media")
 export class MediaController {
   constructor(
-    private readonly libraryService: MediaLibraryService,
+    private readonly detail: MediaDetailService,
     private readonly sagas: MediaSagaService,
   ) {}
 
@@ -44,7 +44,7 @@ export class MediaController {
     @Query("lang") lang?: string,
     @Headers("accept-language") acceptLanguage?: string,
   ): Promise<MediaDetailDto> {
-    return this.libraryService.getMediaDetail(
+    return this.detail.getMediaDetail(
       user.sub,
       parseType(typeParam),
       id,

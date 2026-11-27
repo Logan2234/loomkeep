@@ -6,9 +6,12 @@ import { ListsModule } from "../lists/lists.module";
 import { ReviewsModule } from "../reviews/reviews.module";
 import { UserGatesModule } from "../users/user-gates.module";
 import { MediaCatalogController } from "./media-catalog.controller";
+import { MediaDetailService } from "./media-detail.service";
+import { MediaEpisodesService } from "./media-episodes.service";
 import { MediaItemService } from "./media-item.service";
 import { MediaLibraryController } from "./media-library.controller";
 import { MediaLibraryService } from "./media-library.service";
+import { MediaProgressService } from "./media-progress.service";
 import { MediaSagaService } from "./media-saga.service";
 import { MediaController } from "./media.controller";
 import { OmdbService } from "./omdb.service";
@@ -40,7 +43,10 @@ import { SagaSyncService } from "./saga-sync.service";
     AnilistProvider,
     OmdbService,
     SagaSyncService,
+    MediaProgressService,
     MediaLibraryService,
+    MediaEpisodesService,
+    MediaDetailService,
     MediaSagaService,
   ],
   // The providers are exported for import reconciliation; each source keeps
@@ -50,7 +56,9 @@ import { SagaSyncService } from "./saga-sync.service";
     TmdbProvider,
     AnilistProvider,
     SagaSyncService,
+    MediaProgressService,
     MediaLibraryService,
+    MediaEpisodesService,
     MediaSagaService,
   ],
 })

@@ -8,7 +8,7 @@ import { vi } from "vitest";
 import type { BookItemService } from "../books/book-item.service";
 import type { GameItemService } from "../games/game-item.service";
 import type { MediaItemService } from "../media/media-item.service";
-import type { MediaLibraryService } from "../media/media-library.service";
+import type { MediaProgressService } from "../media/media-progress.service";
 import type { MusicItemService } from "../music/music-item.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import type { AgeGateService } from "../users/age-gate.service";
@@ -71,7 +71,7 @@ function setup({
     {} as GameItemService,
     books as unknown as BookItemService,
     music as unknown as MusicItemService,
-    library as unknown as MediaLibraryService,
+    library as unknown as MediaProgressService,
   );
 
   return { service, tmdb, music, books, library };

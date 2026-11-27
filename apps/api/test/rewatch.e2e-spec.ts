@@ -1,6 +1,7 @@
 import { INestApplication } from "@nestjs/common";
 import request from "supertest";
 import { App } from "supertest/types";
+import { MediaDetailService } from "../src/media/media-detail.service";
 import { MediaLibraryService } from "../src/media/media-library.service";
 import type { PrismaService } from "../src/prisma/prisma.service";
 import { authCookies, createE2eApp, e2eUser } from "./e2e-app";
@@ -131,7 +132,7 @@ describe("Rewatch (e2e)", () => {
     const episodes = async () =>
       (
         await app
-          .get(MediaLibraryService)
+          .get(MediaDetailService)
           .getMediaDetail(userId, "SERIES", sourceId)
       ).seasons[0].episodes.map((e) => [e.seen, e.watchCount]);
 

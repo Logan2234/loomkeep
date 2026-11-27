@@ -2,7 +2,7 @@ import type { MediaSagaDto, SagaMemberDto } from "@loomkeep/shared/contracts";
 import { vi } from "vitest";
 import type { PrismaService } from "../prisma/prisma.service";
 import type { AgeGateService } from "../users/age-gate.service";
-import type { MediaLibraryService } from "./media-library.service";
+import type { MediaProgressService } from "./media-progress.service";
 import { MediaSagaService } from "./media-saga.service";
 import type { SagaSyncService } from "./saga-sync.service";
 
@@ -60,7 +60,7 @@ function makeService(allowAdult = false) {
   const service = new MediaSagaService(
     prisma as unknown as PrismaService,
     sagas as unknown as SagaSyncService,
-    library as unknown as MediaLibraryService,
+    library as unknown as MediaProgressService,
     ageGate as unknown as AgeGateService,
   );
   return { service, sagas, library, prisma };

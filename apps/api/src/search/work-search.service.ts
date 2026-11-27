@@ -9,7 +9,7 @@ import { BookItemService } from "../books/book-item.service";
 import { sleep } from "../common/async.util";
 import { GameItemService } from "../games/game-item.service";
 import { MediaItemService } from "../media/media-item.service";
-import { MediaLibraryService } from "../media/media-library.service";
+import { MediaProgressService } from "../media/media-progress.service";
 import { MusicItemService } from "../music/music-item.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { AgeGateService } from "../users/age-gate.service";
@@ -163,7 +163,7 @@ export class WorkSearchService {
     private readonly games: GameItemService,
     private readonly books: BookItemService,
     private readonly music: MusicItemService,
-    private readonly library: MediaLibraryService,
+    private readonly library: MediaProgressService,
   ) {}
 
   /** `catalogs: false`: the instance's own works only, for a first answer. */
@@ -406,7 +406,7 @@ export class WorkSearchService {
   /**
    * Fills in the viewer's library status of the works they track. A series'
    * status is derived from its episodes, as the library shows it: the media
-   * ones come from MediaLibraryService, not the stored column.
+   * ones come from MediaProgressService, not the stored column.
    */
   private async withStatuses(
     userId: string,
