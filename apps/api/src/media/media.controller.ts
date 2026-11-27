@@ -19,8 +19,8 @@ import { AppException } from "../common/app.exception";
 import { safeLang } from "../common/locale.util";
 import { MediaDetailResponseDto } from "./dto/media-detail-response.dto";
 import { MediaSagaResponseDto as MediaSagaResponse } from "./dto/media-saga-response.dto";
-import { LibraryService } from "./library.service";
-import { SagaService } from "./saga.service";
+import { MediaLibraryService } from "./media-library.service";
+import { MediaSagaService } from "./media-saga.service";
 
 /**
  * Unified media page, addressed by catalogue identity (`type` + source `id`).
@@ -31,8 +31,8 @@ import { SagaService } from "./saga.service";
 @Controller("media")
 export class MediaController {
   constructor(
-    private readonly libraryService: LibraryService,
-    private readonly sagas: SagaService,
+    private readonly libraryService: MediaLibraryService,
+    private readonly sagas: MediaSagaService,
   ) {}
 
   @Get(":type/:id")

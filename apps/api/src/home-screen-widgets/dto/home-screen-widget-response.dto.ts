@@ -1,5 +1,5 @@
 import type { SessionDomain } from "@loomkeep/shared/contracts";
-import { NextEpisodeResponseDto } from "../../library/dto/next-episode-response.dto";
+import { NextEpisodeResponseDto } from "../../media/dto/next-episode-response.dto";
 import type {
   HomeScreenWidgetAddedDto,
   HomeScreenWidgetFeedDto,

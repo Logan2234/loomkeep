@@ -12,7 +12,6 @@ import { AuthModule } from "./auth/auth.module";
 import { JwtAuthGuard } from "./auth/guards/jwt-auth.guard";
 import { SessionCacheModule } from "./auth/session-cache.module";
 import { BooksModule } from "./books/books.module";
-import { CatalogModule } from "./catalog/catalog.module";
 import { ChatApiModule } from "./chat/chat-api.module";
 import { CommentsModule } from "./comments/comments.module";
 import { AllExceptionsFilter } from "./common/all-exceptions.filter";
@@ -36,6 +35,7 @@ import { LinksModule } from "./links/links.module";
 import { ListWorksModule } from "./lists/list-works.module";
 import { ListsModule } from "./lists/lists.module";
 import { MailModule } from "./mail/mail.module";
+import { MediaModule } from "./media/media.module";
 import { MetricsModule } from "./metrics/metrics.module";
 import { MusicModule } from "./music/music.module";
 import { AdultImageKeysService } from "./native-app/adult-image-keys.service";
@@ -88,7 +88,7 @@ import { UsersModule } from "./users/users.module";
     AdminModule,
     EventsModule,
     UsersModule,
-    CatalogModule,
+    MediaModule,
     GamesModule,
     ShowcaseModule,
     GamificationModule,

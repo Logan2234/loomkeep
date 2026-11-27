@@ -1,0 +1,2737 @@
+import { ErrorCode } from "@loomkeep/shared/catalog";
+import {
+  type BulkEntriesResultDto,
+  type BulkEntriesTargetDto,
+  type EntryEpisodesResponseDto,
+  EPISODE_WATCH_BATCH_MAX,
+  EPISODE_WATCH_UNDO_MAX,
+  type EpisodeWatchBatchAction,
+  type EpisodeWatchBatchResultDto,
+  type EpisodeWatchDto,
+  type EpisodeWatchRestoreDto,
+  isDormant,
+  isGhost,
+  type LibraryEntryDto,
+  MEDIA_SORT_KEYS,
+  MEDIA_SYNTHETIC_STATUS,
+  type MediaDetailDto,
+  type MediaItemDto,
+  type MediaSortKey,
+  type MovieReplayDto,
+  type PagedResult,
+  type PileSummaryDto,
+  type ProgressDto,
+  progressPercent,
+  RealtimeEvent,
+  type TrackedMediaDto,
+} from "@loomkeep/shared/contracts";
+import {
+  ActivityType,
+  type CatalogSource,
+  Domain,
+  EntryStatus,
+  type MediaOwnershipStatus,
+  MediaType,
+  ReviewTargetType,
+  XpReason,
+} from "@loomkeep/shared/enums";
+import {
+  episodesTimeLeft,
+  isRuntimeKnown,
+  movieReleaseDates,
+  movieReleaseInfo,
+  runtimeFor,
+} from "@loomkeep/shared/rules";
+import {
+  sagaCompletionXp,
+  seasonCompletedXp,
+  seriesCompletedXp,
+} from "../gamification/xp-rules";
+import { revokeEntryXp } from "../work/entry-lifecycle.util";
+import { nextInRewatch } from "./rewatch.util";
+
+import { HttpStatus, Injectable } from "@nestjs/common";
+import type {
+  ExternalSource as DbExternalSource,
+  MediaItem,
+  MovieReplay,
+  Prisma,
+} from "@prisma/client";
+import { AppException } from "../common/app.exception";
+import { toDateOrNull, utcDateKey } from "../common/date.util";
+import { canonicalExternalId } from "../common/external-id.util";
+import { compareTitles, timeMs } from "../common/sort.util";
+import { EventsGateway } from "../events/events.gateway";
+import { AchievementService } from "../gamification/achievements/achievement.service";
+import {
+  addToList,
+  applyBulkUpdate,
+  applyToEntries,
+  assertBulkTarget,
+  assertBulkUpdate,
+} from "../work/bulk-entries.util";
+import type {
+  EntryStatusChange,
+  ListEntriesFilters as SharedListEntriesFilters,
+} from "../work/entry-lifecycle.util";
+import {
+  assertEntryOwnership,
+  awardNewEntryXp,
+  deleteOwnedReplay,
+  emitEntryActivity,
+  listEntryPage,
+  polymorphicTargetCleanup,
+  RECENTLY_UPDATED_FIRST,
+  searchTerm,
+} from "../work/entry-lifecycle.util";
+import { MediaItemService } from "./media-item.service";
+import { assertMediaReleased } from "./movie-release.util";
+import { resolveWatchRegion } from "./watch-region.util";
+
+import { retryAfterUniqueRace } from "../common/prisma-error.util";
+import { ACHIEVEMENT_KEYS_BY_XP_REASON } from "../gamification/achievements/triggers";
+import {
+  isSeasonComplete,
+  isSeriesComplete,
+} from "../gamification/xp-verifiers";
+import { XpService } from "../gamification/xp.service";
+import { ListService } from "../lists/list.service";
+import { PrismaService } from "../prisma/prisma.service";
+import { ReviewService } from "../reviews/review.service";
+import { ActivityService } from "../social/activity.service";
+import { summarizePile } from "../stats/pile.util";
+import { AgeGateService } from "../users/age-gate.service";
+import { preferencesOf } from "../users/preferences.util";
+import {
+  isLoanActive,
+  LOAN_INCLUDE,
+  loanFields,
+  loanUpdate,
+  loanWhere,
+  ownershipSourceUpdate,
+} from "../work/entry-loan.util";
+import { AddMovieReplayDto } from "./dto/add-movie-replay.dto";
+import type { BulkUpdateEntriesBody } from "./dto/bulk-update-entries.dto";
+import { UpdateEntryDto } from "./dto/update-entry.dto";
+import { UpsertEntryDto } from "./dto/upsert-entry.dto";
+import { WatchEpisodeDto } from "./dto/watch-episode.dto";
+import { toMediaItemDto } from "./media-item.mapper";
+import { completedSagaWorks, MEDIA_SAGA_STATUS } from "./saga-progress.util";
+import { deriveStatus, normalizeAiringFinished } from "./status.util";
+
+// Reused include: entries always need the media + its external IDs (sourceId),
+// plus their replay history (movies only in practice), most recent first.
+const ENTRY_INCLUDE = {
+  mediaItem: { include: { externalIds: true } },
+  ...LOAN_INCLUDE,
+  replays: { orderBy: { finishedAt: "desc" } },
+} satisfies Prisma.MediaEntryInclude;
+
+/** MediaEntry joined with its media and the media's external IDs. */
+type EntryWithMedia = Prisma.MediaEntryGetPayload<{
+  include: typeof ENTRY_INCLUDE;
+}>;
+
+// Order used by the "Statut" sort.
+const MEDIA_STATUS_SORT_ORDER: EntryStatus[] = [
+  "WATCHING",
+  "PLANNED",
+  "UP_TO_DATE",
+  "COMPLETED",
+  "DROPPED",
+];
+
+/**
+ * `statuses` accepts "DORMANT" and "GHOST" alongside real `EntryStatus`
+ * values — see `isDormant` and `isGhost`. `lang` drives
+ * `MediaItemService.translatedTitles` here, on top of the collation it drives
+ * everywhere.
+ */
+export interface ListEntriesFilters extends SharedListEntriesFilters {
+  types?: MediaType[];
+}
+
+/** What ranking and filtering a media entry read — a light slice of its DTO. */
+type MediaRow = Pick<
+  LibraryEntryDto,
+  | "id"
+  | "status"
+  | "rating"
+  | "startedAt"
+  | "finishedAt"
+  | "createdAt"
+  | "lastWatchedAt"
+> & {
+  mediaItem: Pick<MediaItemDto, "title">;
+  progress: Pick<ProgressDto, "watchedEpisodes" | "totalEpisodes"> | null;
+};
+
+const MEDIA_ROW_SELECT = {
+  id: true,
+  mediaItemId: true,
+  status: true,
+  startedAt: true,
+  finishedAt: true,
+  createdAt: true,
+  watchedEpisodes: true,
+  lastWatchedAt: true,
+  rewatchStartedAt: true,
+  mediaItem: {
+    select: { type: true, status: true, title: true, episodeCount: true },
+  },
+} satisfies Prisma.MediaEntrySelect;
+
+/**
+ * An entry's progress from its materialized counts (kept by the database,
+ * see MediaEntry.watchedEpisodes) — null for a work with no regular
+ * episode, as computeProgress has it. No next episode: only the page gets one.
+ */
+function materializedProgress(entry: {
+  watchedEpisodes: number;
+  mediaItem: { episodeCount: number };
+}): ProgressDto | null {
+  return entry.mediaItem.episodeCount > 0
+    ? {
+        watchedEpisodes: entry.watchedEpisodes,
+        totalEpisodes: entry.mediaItem.episodeCount,
+        nextEpisode: null,
+      }
+    : null;
+}
+
+// A day ahead covers a date the viewer picked in their own time zone (up to
+// UTC+14) and clock drift; anything beyond is a mistake, and a 2099 viewing
+// would pin the show at the top of "recent" for good.
+const WATCH_DATE_FUTURE_TOLERANCE_MS = 24 * 60 * 60 * 1000;
+
+function assertWatchDateNotFuture(
+  watchedAt: string | null | undefined,
+  now = new Date(),
+): void {
+  if (
+    watchedAt &&
+    new Date(watchedAt).getTime() >
+      now.getTime() + WATCH_DATE_FUTURE_TOLERANCE_MS
+  ) {
+    throw new AppException(HttpStatus.BAD_REQUEST, ErrorCode.ValidationFailed);
+  }
+}
+
+/**
+ * Whether a viewing belongs to the current one: any viewing outside a
+ * rewatch, only those since it began during one. An undated (imported)
+ * viewing always predates a rewatch.
+ */
+function seenInViewing(
+  watchedAt: Date | null,
+  rewatchStartedAt: Date | null,
+): boolean {
+  return (
+    !rewatchStartedAt || (watchedAt !== null && watchedAt >= rewatchStartedAt)
+  );
+}
+
+/** The EpisodeWatch filter matching `seenInViewing`. */
+const inViewing = (
+  rewatchStartedAt: Date | null,
+): Prisma.EpisodeWatchWhereInput =>
+  rewatchStartedAt ? { watchedAt: { gte: rewatchStartedAt } } : {};
+
+/**
+ * The episode to watch next among the regular run, in airing order: the first
+ * aired one not watched (null airDate = AniList's generated episodes, treated
+ * as available), or during a rewatch the one following the last episode seen
+ * again — `watchedIds` then holds only the viewings since the rewatch began.
+ */
+function nextEpisodeOf<E extends { id: string; airDate: Date | null }>(
+  run: E[],
+  watchedIds: Set<string>,
+  rewatching: boolean,
+  now: Date,
+): E | null {
+  const aired = run.filter((e) => e.airDate === null || e.airDate <= now);
+  return rewatching
+    ? nextInRewatch(aired, (e) => watchedIds.has(e.id))
+    : (aired.find((e) => !watchedIds.has(e.id)) ?? null);
+}
+
+// Base comparator per criterion (its natural order); `order: "asc"` negates it.
+export function compareMediaEntries(
+  sort: MediaSortKey,
+  a: MediaRow,
+  b: MediaRow,
+  locale: string | undefined,
+): number {
+  switch (sort) {
+    case "title":
+      return compareTitles(a.mediaItem.title, b.mediaItem.title, locale);
+    case "rating":
+      return (b.rating ?? -1) - (a.rating ?? -1);
+    case "progress":
+      // The whole series' progress (the triggers' watchedEpisodes), even
+      // during a rewatch whose card shows its own: accepted and documented
+      // in the guide rather than materialising a second count.
+      return progressPercent(b.progress) - progressPercent(a.progress);
+    case "finished":
+      return timeMs(b.finishedAt) - timeMs(a.finishedAt);
+    case "started":
+      return timeMs(b.startedAt) - timeMs(a.startedAt);
+    case "status":
+      return (
+        MEDIA_STATUS_SORT_ORDER.indexOf(a.status) -
+        MEDIA_STATUS_SORT_ORDER.indexOf(b.status)
+      );
+    case "added":
+      return b.createdAt.localeCompare(a.createdAt);
+    case "recent":
+      return lastActivityMs(b) - lastActivityMs(a);
+  }
+}
+
+/**
+ * When an entry last moved: its latest viewing, or when it was added if that
+ * came later. A title never watched yet (a planned movie) then sits where it
+ * was added among the series being watched, not after all of them.
+ */
+function lastActivityMs(
+  row: Pick<MediaRow, "lastWatchedAt" | "createdAt">,
+): number {
+  return Math.max(timeMs(row.lastWatchedAt), timeMs(row.createdAt));
+}
+
+@Injectable()
+export class MediaLibraryService {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly mediaItemService: MediaItemService,
+    private readonly ageGate: AgeGateService,
+    private readonly reviews: ReviewService,
+    private readonly activity: ActivityService,
+    private readonly xp: XpService,
+    private readonly achievements: AchievementService,
+    private readonly events: EventsGateway,
+    private readonly lists: ListService,
+  ) {}
+
+  /** First touch of a media persists it (on-demand cache), then upserts the entry. */
+  async upsertEntry(
+    userId: string,
+    dto: UpsertEntryDto,
+  ): Promise<LibraryEntryDto> {
+    // AniList holds the anime, TMDB everything else: any other pair would
+    // store an item under a type its source never gave it.
+    if ((dto.source === "ANILIST") !== (dto.type === "ANIME")) {
+      throw new AppException(
+        HttpStatus.BAD_REQUEST,
+        ErrorCode.ValidationFailed,
+      );
+    }
+
+    const mediaItem = await this.mediaItemService.upsertFromSource(
+      dto.source,
+      dto.sourceId,
+      dto.type,
+    );
+
+    if (mediaItem.isAdult) {
+      const allowAdult = await this.ageGate.allowsAdultContent(userId);
+      this.ageGate.assertAdultAllowed(true, allowAdult);
+    }
+
+    if (
+      dto.status === "COMPLETED" ||
+      (dto.rating !== null && dto.rating !== undefined)
+    ) {
+      await assertMediaReleased(this.prisma, mediaItem.id);
+    }
+
+    const before = await this.prisma.mediaEntry.findUnique({
+      where: { userId_mediaItemId: { userId, mediaItemId: mediaItem.id } },
+      select: { status: true, favorite: true },
+    });
+
+    const changes = {
+      status: dto.status,
+      notes: dto.notes,
+      favorite: dto.favorite,
+    };
+    const entry = await retryAfterUniqueRace(() =>
+      this.prisma.mediaEntry.upsert({
+        where: { userId_mediaItemId: { userId, mediaItemId: mediaItem.id } },
+        update: changes,
+        create: { userId, mediaItemId: mediaItem.id, ...changes },
+        include: ENTRY_INCLUDE,
+      }),
+    );
+
+    entry.finishedAt = await this.syncFinishedAt(
+      userId,
+      mediaItem.id,
+      mediaItem.type,
+    );
+
+    await this.emitEntryActivity(userId, mediaItem.id, {
+      prevStatus: before?.status ?? null,
+      nextStatus: entry.status,
+      prevFavorite: before?.favorite ?? false,
+      nextFavorite: entry.favorite,
+    });
+
+    if (before === null) {
+      await awardNewEntryXp(this.xp, {
+        userId,
+        entryId: entry.id,
+        domain: Domain.MEDIA,
+        countEntries: () => this.prisma.mediaEntry.count({ where: { userId } }),
+      });
+    }
+
+    if (
+      mediaItem.type === "MOVIE" &&
+      before?.status !== "COMPLETED" &&
+      entry.status === "COMPLETED"
+    ) {
+      await this.xp.award(userId, XpReason.MOVIE_WATCHED, entry.id);
+      await this.achievements.evaluate(
+        userId,
+        ACHIEVEMENT_KEYS_BY_XP_REASON[XpReason.MOVIE_WATCHED],
+      );
+      await this.awardSagaIfCompleted(userId, entry.mediaItemId);
+    }
+
+    // The /10 rating lives in Review (the single source of truth).
+    if (dto.rating !== undefined) {
+      await this.reviews.setRating(
+        userId,
+        ReviewTargetType.MEDIA,
+        mediaItem.id,
+        dto.rating,
+      );
+    }
+
+    // add_title/mark_complete are two of the onboarding checklist's steps
+    // (see OnboardingService) — pushed unconditionally rather than checking
+    // whether onboarding is even still in progress first, since that check
+    // would cost as much as the emit is worth avoiding.
+    this.events.emitToUser(userId, RealtimeEvent.ONBOARDING_UPDATED);
+
+    return this.toEntryDto(
+      entry,
+      await this.computeProgress(userId, mediaItem.id, entry.rewatchStartedAt),
+      await this.lastWatchedAt(userId, mediaItem.id),
+      await this.reviews.getRating(
+        userId,
+        ReviewTargetType.MEDIA,
+        mediaItem.id,
+      ),
+    );
+  }
+
+  /**
+   * Media can't let Postgres pick the page: the status is derived from watch
+   * progress, the default sort is the last viewing, and the search matches
+   * the translated title. Every entry is ranked on a light row instead, from
+   * the progress materialized on it — only the page gets the full progress
+   * (next episode included) and the full DTO.
+   */
+  async listEntries(
+    userId: string,
+    filters: ListEntriesFilters,
+  ): Promise<PagedResult<LibraryEntryDto>> {
+    const { rows, keep } = this.filteredRows(userId, filters);
+
+    return listEntryPage(filters, {
+      sortKeys: MEDIA_SORT_KEYS,
+      defaultSort: "recent",
+      compare: compareMediaEntries,
+      rows,
+      keep,
+      load: async (ids) => {
+        const entries = await this.prisma.mediaEntry.findMany({
+          where: { id: { in: ids } },
+          include: ENTRY_INCLUDE,
+        });
+        const mediaItemIds = entries.map((e) => e.mediaItemId);
+        const [ratings, progressByMedia, titles] = await Promise.all([
+          this.reviews.getRatings(userId, ReviewTargetType.MEDIA, mediaItemIds),
+          this.computeProgressBatch(
+            userId,
+            mediaItemIds,
+            new Map(
+              entries.flatMap((e) =>
+                e.rewatchStartedAt ? [[e.mediaItemId, e.rewatchStartedAt]] : [],
+              ),
+            ),
+          ),
+          this.titlesIn(mediaItemIds, filters.lang),
+        ]);
+        return entries.map((entry) => {
+          const p = progressByMedia.get(entry.mediaItemId);
+          return this.toEntryDto(
+            entry,
+            p?.progress ?? null,
+            p?.lastWatchedAt ?? null,
+            ratings.get(entry.mediaItemId) ?? null,
+            titles.get(entry.mediaItemId),
+          );
+        });
+      },
+    });
+  }
+
+  /**
+   * What's left to watch among the entries the library list would show under
+   * the same filters (UX-02): planned titles in full, plus the aired,
+   * unwatched episodes of what's in progress. Specials (season 0) never
+   * count, as for progress. A title with no known length falls back to the
+   * per-type default, flagged as an estimate — same rule as the stats.
+   */
+  async getPile(
+    userId: string,
+    filters: ListEntriesFilters,
+  ): Promise<PileSummaryDto> {
+    const { rows, keep } = this.filteredRows(userId, filters);
+    const pileIds = (await rows("recent"))
+      .filter(
+        (row) =>
+          keep(row) &&
+          (row.status === EntryStatus.PLANNED ||
+            row.status === EntryStatus.WATCHING),
+      )
+      .map((row) => row.id);
+    const entries = await this.prisma.mediaEntry.findMany({
+      where: { id: { in: pileIds } },
+      select: {
+        mediaItemId: true,
+        mediaItem: { select: { type: true, runtimeMin: true } },
+      },
+    });
+    const now = new Date();
+    const episodes = await this.prisma.episode.findMany({
+      where: {
+        season: {
+          number: { not: 0 },
+          mediaItemId: {
+            in: entries
+              .filter((e) => e.mediaItem.type !== MediaType.MOVIE)
+              .map((e) => e.mediaItemId),
+          },
+        },
+        OR: [{ airDate: null }, { airDate: { lte: now } }],
+        watches: { none: { userId } },
+      },
+      select: { runtimeMin: true, season: { select: { mediaItemId: true } } },
+    });
+    const episodesByMedia = new Map<string, typeof episodes>();
+
+    for (const episode of episodes) {
+      const id = episode.season.mediaItemId;
+      const group = episodesByMedia.get(id);
+      if (group) group.push(episode);
+      else episodesByMedia.set(id, [episode]);
+    }
+
+    return summarizePile(
+      "MINUTES",
+      entries.map(({ mediaItemId, mediaItem }) => {
+        if (mediaItem.type === MediaType.MOVIE) {
+          return {
+            amount: runtimeFor(mediaItem.type, mediaItem.runtimeMin),
+            estimated: !isRuntimeKnown(null, mediaItem.runtimeMin),
+          };
+        }
+
+        const left = episodesByMedia.get(mediaItemId) ?? [];
+        const remaining = episodesTimeLeft(
+          mediaItem.type,
+          mediaItem.runtimeMin,
+          left,
+        );
+        return {
+          amount: remaining.minutes,
+          estimated: remaining.estimated,
+        };
+      }),
+    );
+  }
+
+  /**
+   * Applies one change to every targeted entry, each through updateEntry
+   * (or the list's addItem), so the side effects match a single update's.
+   */
+  async bulkUpdate(
+    userId: string,
+    dto: BulkUpdateEntriesBody,
+  ): Promise<BulkEntriesResultDto> {
+    assertBulkUpdate(dto);
+    const entries = await this.prisma.mediaEntry.findMany({
+      where: { userId, id: { in: await this.bulkTargetIds(userId, dto) } },
+      orderBy: RECENTLY_UPDATED_FIRST,
+      select: {
+        id: true,
+        mediaItemId: true,
+        status: true,
+        favorite: true,
+        ownershipStatus: true,
+        ownershipSource: true,
+        mediaItem: { select: { type: true } },
+      },
+    });
+    const types = new Map(entries.map((e) => [e.id, e.mediaItem.type]));
+
+    return applyBulkUpdate(
+      entries.map((e) => ({
+        id: e.id,
+        itemId: e.mediaItemId,
+        status: e.status,
+        favorite: e.favorite,
+        ownershipStatus: e.ownershipStatus,
+        ownershipSource: e.ownershipSource,
+      })),
+      dto,
+      {
+        update: (id, patch) =>
+          this.updateEntry(userId, id, patch as UpdateEntryDto),
+        addToList: (itemId, listId) =>
+          addToList(this.lists, userId, listId, "MEDIA", itemId),
+        setStatus: async (entry, status) => {
+          // A series is complete once its episodes are watched: every aired
+          // one gets marked, as the season buttons do, and the status follows.
+          if (
+            status === EntryStatus.COMPLETED &&
+            types.get(entry.id) !== MediaType.MOVIE
+          ) {
+            if (entry.status === EntryStatus.UP_TO_DATE) return false;
+            return this.watchAllAired(
+              userId,
+              entry.itemId,
+              types.get(entry.id) as MediaType,
+            );
+          }
+
+          await this.updateEntry(userId, entry.id, {
+            status,
+          } as UpdateEntryDto);
+          return true;
+        },
+      },
+    );
+  }
+
+  /** Removes every targeted entry, each through deleteEntry. */
+  async bulkDelete(
+    userId: string,
+    target: BulkEntriesTargetDto,
+  ): Promise<BulkEntriesResultDto> {
+    assertBulkTarget(target);
+    return applyToEntries(
+      await this.bulkTargetIds(userId, target),
+      async (id) => {
+        await this.deleteEntry(userId, id);
+        return true;
+      },
+    );
+  }
+
+  /** The user's own picks, or every entry the list shows under the filters. */
+  private async bulkTargetIds(
+    userId: string,
+    target: BulkEntriesTargetDto,
+  ): Promise<string[]> {
+    if (!target.filters) {
+      const owned = await this.prisma.mediaEntry.findMany({
+        where: { userId, id: { in: target.ids ?? [] } },
+        select: { id: true },
+      });
+      return owned.map((e) => e.id);
+    }
+
+    const { rows, keep } = this.filteredRows(userId, target.filters);
+    return (await rows("recent")).filter(keep).map((row) => row.id);
+  }
+
+  /**
+   * Every aired episode of every regular season watched (specials never count,
+   * as for progress), in one pass: one read, one insert, one XP and progress
+   * sync for the whole series. Going season by season through watchSeason()
+   * repeated all of that per season, which made a bulk "completed" over a
+   * selection of long series run past the proxy's timeout.
+   */
+  private async watchAllAired(
+    userId: string,
+    mediaItemId: string,
+    type: MediaType,
+  ): Promise<boolean> {
+    const episodes = await this.prisma.episode.findMany({
+      where: { season: { mediaItemId, number: { gt: 0 } } },
+      select: { id: true, airDate: true },
+    });
+    if (episodes.length === 0) return false;
+
+    const episodeIds = episodes.map((episode) => episode.id);
+    const previouslyWatchedIds = await this.watchedEpisodeIds(userId, {
+      episodeId: { in: episodeIds },
+    });
+    // Unreleased episodes (future airDate) are skipped, as watchSeason does.
+    const now = new Date();
+    const airedIds = episodes
+      .filter((episode) => !episode.airDate || episode.airDate <= now)
+      .map((episode) => episode.id);
+
+    await this.markWatchedIfNew(
+      userId,
+      airedIds,
+      await this.rewatchStartedAt(userId, mediaItemId),
+    );
+    await this.syncFinishedAt(userId, mediaItemId, type);
+    await this.endFinishedRewatches(userId, [mediaItemId]);
+    await this.emitSeasonFinishedMilestones(
+      userId,
+      mediaItemId,
+      episodeIds,
+      previouslyWatchedIds,
+    );
+    return true;
+  }
+
+  /**
+   * Media can't let Postgres filter everything: the status is derived from
+   * watch progress and the search matches the translated title. Every entry
+   * is read as a light row, its progress counted in SQL, then `keep` applies
+   * what SQL couldn't — shared by the list and the pile so the header's
+   * figure always covers exactly what the list shows.
+   */
+  private filteredRows(userId: string, filters: ListEntriesFilters) {
+    const q = searchTerm(filters)?.toLowerCase();
+    const where: Prisma.MediaEntryWhereInput = {
+      userId,
+      favorite: filters.favorite ? true : undefined,
+      ...loanWhere(filters.loan),
+      mediaItem:
+        filters.types && filters.types.length > 0
+          ? { type: { in: filters.types } }
+          : undefined,
+    };
+    const statuses = filters.statuses ?? [];
+
+    const rows = async (sort: MediaSortKey): Promise<MediaRow[]> => {
+      const entries = await this.prisma.mediaEntry.findMany({
+        where,
+        orderBy: RECENTLY_UPDATED_FIRST,
+        select: MEDIA_ROW_SELECT,
+      });
+      const ids = entries.map((e) => e.mediaItemId);
+      const [ratings, titles] = await Promise.all([
+        sort === "rating"
+          ? this.reviews.getRatings(userId, ReviewTargetType.MEDIA, ids)
+          : new Map<string, number>(),
+        q || sort === "title"
+          ? this.titlesIn(ids, filters.lang)
+          : new Map<string, string>(),
+      ]);
+
+      return entries.map((entry) => {
+        const progress = materializedProgress(entry);
+        // Same fallback as toEntryDto: a movie has no episode watches.
+        const lastWatchedAt = entry.lastWatchedAt ?? entry.finishedAt;
+        return {
+          id: entry.id,
+          status: deriveStatus(
+            entry.mediaItem.type,
+            progress,
+            normalizeAiringFinished(entry.mediaItem.status),
+            entry.status,
+            !!entry.rewatchStartedAt,
+          ),
+          rating: ratings.get(entry.mediaItemId) ?? null,
+          startedAt: entry.startedAt?.toISOString() ?? null,
+          finishedAt: entry.finishedAt?.toISOString() ?? null,
+          createdAt: entry.createdAt.toISOString(),
+          lastWatchedAt: lastWatchedAt?.toISOString() ?? null,
+          mediaItem: {
+            title: titles.get(entry.mediaItemId) ?? entry.mediaItem.title,
+          },
+          progress,
+        };
+      });
+    };
+
+    // "DORMANT" and "GHOST" are synthetic refinements of WATCHING.
+    const matches = (row: MediaRow, s: string) =>
+      s === MEDIA_SYNTHETIC_STATUS.DORMANT
+        ? isDormant(row)
+        : s === MEDIA_SYNTHETIC_STATUS.GHOST
+          ? isGhost(row)
+          : row.status === s;
+    const keep = (row: MediaRow) =>
+      (statuses.length === 0 || statuses.some((s) => matches(row, s))) &&
+      (!q || row.mediaItem.title.toLowerCase().includes(q));
+
+    return { rows, keep };
+  }
+
+  private titlesIn(
+    mediaItemIds: string[],
+    lang: string | undefined,
+  ): Promise<Map<string, string>> {
+    return lang
+      ? this.mediaItemService.translatedTitles(mediaItemIds, lang)
+      : Promise.resolve(new Map<string, string>());
+  }
+
+  async getEntry(userId: string, entryId: string): Promise<LibraryEntryDto> {
+    const entry = await assertEntryOwnership(userId, () =>
+      this.prisma.mediaEntry.findUnique({
+        where: { id: entryId },
+        include: ENTRY_INCLUDE,
+      }),
+    );
+    return this.toEntryDto(
+      entry,
+      await this.computeProgress(
+        userId,
+        entry.mediaItemId,
+        entry.rewatchStartedAt,
+      ),
+      await this.lastWatchedAt(userId, entry.mediaItemId),
+      await this.reviews.getRating(
+        userId,
+        ReviewTargetType.MEDIA,
+        entry.mediaItemId,
+      ),
+    );
+  }
+
+  async updateEntry(
+    userId: string,
+    entryId: string,
+    dto: UpdateEntryDto,
+    acceptLanguage?: string,
+  ): Promise<LibraryEntryDto> {
+    const owned = await this.assertEntryOwnership(userId, entryId);
+
+    if (
+      dto.status === "COMPLETED" ||
+      (dto.rating !== null && dto.rating !== undefined) ||
+      (dto.startedAt !== null && dto.startedAt !== undefined) ||
+      (dto.finishedAt !== null && dto.finishedAt !== undefined)
+    ) {
+      await assertMediaReleased(this.prisma, owned.mediaItemId);
+    }
+
+    let reminder: {
+      movieReleaseReminderAt?: Date | null;
+      movieReleaseRegion?: string | null;
+    } = {};
+
+    if (dto.movieReleaseAlertsEnabled !== undefined) {
+      const region = await this.movieRegion(userId, acceptLanguage);
+      reminder = {
+        movieReleaseReminderAt: dto.movieReleaseAlertsEnabled
+          ? (owned.movieReleaseReminderAt ?? new Date())
+          : null,
+        movieReleaseRegion: dto.movieReleaseAlertsEnabled ? region : null,
+      };
+    }
+
+    const before = owned;
+
+    const entry = await this.prisma.mediaEntry.update({
+      where: { id: entryId },
+      data: {
+        status: dto.status,
+        ...reminder,
+        notes: dto.notes,
+        favorite: dto.favorite,
+        startedAt:
+          dto.startedAt === undefined ? undefined : toDateOrNull(dto.startedAt),
+        finishedAt:
+          dto.finishedAt === undefined
+            ? undefined
+            : toDateOrNull(dto.finishedAt),
+        ownershipStatus: dto.ownershipStatus,
+        ownershipSource: ownershipSourceUpdate(owned.ownershipStatus, dto),
+        ...loanUpdate(owned, dto),
+        episodeAlertsMuted: dto.episodeAlertsMuted,
+        rewatchStartedAt: await this.rewatchStartedAtFor(
+          userId,
+          owned,
+          dto.rewatching,
+        ),
+      },
+      include: ENTRY_INCLUDE,
+    });
+
+    // Only auto-derive when the caller didn't explicitly set finishedAt
+    // themselves (e.g. a future manual-date editor).
+    if (dto.finishedAt === undefined) {
+      entry.finishedAt = await this.syncFinishedAt(
+        userId,
+        entry.mediaItemId,
+        entry.mediaItem.type,
+      );
+    }
+
+    await this.emitEntryActivity(userId, entry.mediaItemId, {
+      prevStatus: before?.status ?? null,
+      nextStatus: entry.status,
+      prevFavorite: before?.favorite ?? false,
+      nextFavorite: entry.favorite,
+    });
+
+    if (
+      entry.mediaItem.type === "MOVIE" &&
+      before?.status !== "COMPLETED" &&
+      entry.status === "COMPLETED"
+    ) {
+      await this.xp.award(userId, XpReason.MOVIE_WATCHED, entry.id);
+      await this.achievements.evaluate(
+        userId,
+        ACHIEVEMENT_KEYS_BY_XP_REASON[XpReason.MOVIE_WATCHED],
+      );
+      await this.awardSagaIfCompleted(userId, entry.mediaItemId);
+    }
+
+    if (dto.rating !== undefined) {
+      await this.reviews.setRating(
+        userId,
+        ReviewTargetType.MEDIA,
+        entry.mediaItemId,
+        dto.rating,
+      );
+    }
+
+    this.events.emitToUser(userId, RealtimeEvent.ONBOARDING_UPDATED);
+
+    return this.toEntryDto(
+      entry,
+      await this.computeProgress(
+        userId,
+        entry.mediaItemId,
+        entry.rewatchStartedAt,
+      ),
+      await this.lastWatchedAt(userId, entry.mediaItemId),
+      await this.reviews.getRating(
+        userId,
+        ReviewTargetType.MEDIA,
+        entry.mediaItemId,
+      ),
+    );
+  }
+
+  /**
+   * Removing a work wipes everything the user attached to it, not just the
+   * entry row itself: watches/reviews/comments key off (userId, targetId)
+   * rather than the entry, so they'd otherwise survive re-adding the same
+   * work later. `notes`/`ownershipStatus`/`ownershipSource` are plain
+   * columns on the entry itself and need no separate cleanup. Comments are
+   * soft-deleted (same tombstone as a manual delete) rather than hard
+   * removed, so replies from other users stay attached instead of cascading
+   * away. targetId alone is enough to scope every table below — cuids are
+   * globally unique, so there's no need to also filter by targetType.
+   */
+  async deleteEntry(userId: string, entryId: string): Promise<void> {
+    const entry = await this.assertEntryOwnership(userId, entryId);
+
+    const seasons = await this.prisma.season.findMany({
+      where: { mediaItemId: entry.mediaItemId },
+      select: { id: true, episodes: { select: { id: true } } },
+    });
+    const episodeIds = seasons.flatMap((s) => s.episodes.map((e) => e.id));
+    const targetIds = [
+      entry.mediaItemId,
+      ...seasons.map((s) => s.id),
+      ...episodeIds,
+    ];
+
+    // Loaded before the transaction so revokeBySource has something to work
+    // with once the watches are gone. XP writes never
+    // happen inside a $transaction (no side effect in the lock, same as
+    // `activity.emit` elsewhere in this file, always awaited after one).
+    const watches = await this.prisma.episodeWatch.findMany({
+      where: { userId, episodeId: { in: episodeIds } },
+      select: { id: true },
+    });
+    // Same reason: the transaction below deletes these Reviews outright
+    // (not via ReviewService.setRating/remove, which handle their own XP
+    // revocation) — WORK_RATED/REVIEW_WRITTEN/REVIEW_DETAILED would
+    // otherwise linger until the next nightly reconciliation.
+    const reviews = await this.prisma.review.findMany({
+      where: { userId, targetId: { in: targetIds } },
+      select: { id: true },
+    });
+    // Same again for a movie's rewatches: they cascade with the entry, and
+    // MOVIE_REPLAYED is anchored to each one, not to the entry.
+    const replays = await this.prisma.movieReplay.findMany({
+      where: { mediaEntryId: entryId },
+      select: { id: true },
+    });
+
+    await this.prisma.$transaction([
+      this.prisma.episodeWatch.deleteMany({
+        where: { userId, episodeId: { in: episodeIds } },
+      }),
+      ...polymorphicTargetCleanup(
+        this.prisma,
+        userId,
+        [
+          ReviewTargetType.MEDIA,
+          ReviewTargetType.SEASON,
+          ReviewTargetType.EPISODE,
+        ],
+        targetIds,
+      ),
+      this.prisma.mediaEntry.delete({ where: { id: entryId } }),
+    ]);
+
+    await this.xp.revokeBySource(
+      userId,
+      "EpisodeWatch",
+      watches.map((w) => w.id),
+    );
+    // Cleans MOVIE_WATCHED and SERIES_COMPLETED (both sourceType
+    // "MediaEntry") in one call — intentional: deleting a whole entry
+    // must wipe every reason anchored to it, unlike unwatching a single
+    // season/episode, which only ever revokes its own reason.
+    await this.xp.revokeBySource(userId, "MediaEntry", [entryId]);
+    await revokeEntryXp(this.xp, userId, [
+      { sourceType: "Entry", ids: [entryId] },
+      { sourceType: "Season", ids: seasons.map((s) => s.id) },
+      { sourceType: "MovieReplay", ids: replays.map((r) => r.id) },
+      { sourceType: "Review", ids: reviews.map((r) => r.id) },
+    ]);
+  }
+
+  /** Emits the status milestone + FAVORITED events for a media entry write. */
+  private emitEntryActivity(
+    userId: string,
+    mediaItemId: string,
+    change: EntryStatusChange,
+  ): Promise<void> {
+    return emitEntryActivity(
+      this.activity,
+      {
+        userId,
+        domain: Domain.MEDIA,
+        targetType: ReviewTargetType.MEDIA,
+        targetId: mediaItemId,
+      },
+      change,
+    );
+  }
+
+  /**
+   * Keeps `finishedAt` in sync with "has the viewer finished this work":
+   * nothing in the UI sets it directly, but `CommentService.isMasked` reads
+   * it for the work-level spoiler gate on MEDIA-target threads, so without
+   * this a finished movie/series' discussion stays blurred forever. Movies
+   * follow the raw COMPLETED status; series/anime follow watch progress
+   * reaching the end (UP_TO_DATE counts too — everything released has been
+   * seen, even if the show is still airing).
+   */
+  private async syncFinishedAt(
+    userId: string,
+    mediaItemId: string,
+    type: MediaType,
+  ): Promise<Date | null> {
+    const entry = await this.prisma.mediaEntry.findUnique({
+      where: { userId_mediaItemId: { userId, mediaItemId } },
+      select: { status: true, finishedAt: true },
+    });
+    if (!entry) return null;
+
+    let finished: boolean;
+
+    if (type === "MOVIE") {
+      finished = entry.status === "COMPLETED";
+    } else {
+      const progress = await this.computeProgress(userId, mediaItemId);
+      finished =
+        !!progress &&
+        progress.totalEpisodes > 0 &&
+        progress.watchedEpisodes >= progress.totalEpisodes;
+    }
+
+    if (finished === !!entry.finishedAt) return entry.finishedAt;
+
+    const finishedAt = finished ? new Date() : null;
+    await this.prisma.mediaEntry.update({
+      where: { userId_mediaItemId: { userId, mediaItemId } },
+      data: { finishedAt },
+    });
+    return finishedAt;
+  }
+
+  /**
+   * Emits the SEASON_FINISHED milestone for every season, among the ones
+   * touched by `affectedEpisodeIds`, that has just become fully watched and
+   * wasn't before this action — distinct from the work-level FINISHED
+   * (`syncFinishedAt`), so a feed can tell "finished season 3" from
+   * "finished the whole show". Season 0 (TMDB specials) is excluded,
+   * matching `computeProgress`'s own exclusion.
+   *
+   * `previouslyWatchedIds` must cover every episode of every season
+   * `affectedEpisodeIds` might touch (not just the acted-upon ones) — a
+   * partial set would under-count an already-complete season as "newly"
+   * finished.
+   */
+  private async emitSeasonFinishedMilestones(
+    userId: string,
+    mediaItemId: string,
+    affectedEpisodeIds: string[],
+    previouslyWatchedIds: Set<string>,
+  ): Promise<void> {
+    if (affectedEpisodeIds.length === 0) return;
+
+    const rawSeasons = await this.prisma.season.findMany({
+      where: {
+        mediaItemId,
+        number: { gt: 0 },
+        episodes: { some: { id: { in: affectedEpisodeIds } } },
+      },
+      select: { number: true, episodes: { select: { id: true } } },
+    });
+    // `?? []` tolerates a caller-narrowed select that doesn't happen to
+    // include `episodes` — never the case for this query's own shape above,
+    // but keeps this from throwing on a shared-mock testing setup.
+    const seasons = rawSeasons.map((s) => ({
+      number: s.number,
+      episodes: s.episodes ?? [],
+    }));
+    if (seasons.length === 0) return;
+
+    const nowWatchedIds = await this.watchedEpisodeIds(userId, {
+      episodeId: { in: seasons.flatMap((s) => s.episodes.map((e) => e.id)) },
+    });
+
+    for (const season of seasons) {
+      if (season.episodes.length === 0) continue;
+
+      const wasComplete = season.episodes.every((e) =>
+        previouslyWatchedIds.has(e.id),
+      );
+      if (wasComplete) continue; // already emitted on an earlier watch
+
+      const isComplete = season.episodes.every((e) => nowWatchedIds.has(e.id));
+      if (!isComplete) continue;
+
+      await this.activity.emit({
+        userId,
+        type: ActivityType.SEASON_FINISHED,
+        domain: Domain.MEDIA,
+        targetType: ReviewTargetType.MEDIA,
+        targetId: mediaItemId,
+        level: "SEASON",
+        data: { seasonNumber: season.number },
+        homeFeed: true,
+      });
+    }
+  }
+
+  /** Persisted seasons/episodes of an entry's media, with the user's watch counts. */
+  async getEntryEpisodes(
+    userId: string,
+    entryId: string,
+  ): Promise<EntryEpisodesResponseDto> {
+    const entry = await this.assertEntryOwnership(userId, entryId);
+
+    const seasons = await this.prisma.season.findMany({
+      where: { mediaItemId: entry.mediaItemId },
+      orderBy: { number: "asc" },
+      include: {
+        episodes: {
+          orderBy: { number: "asc" },
+          include: { watches: { where: { userId }, select: { id: true } } },
+        },
+      },
+    });
+
+    return {
+      seasons: seasons.map((season) => ({
+        id: season.id,
+        number: season.number,
+        title: season.title,
+        episodes: season.episodes.map((episode) => ({
+          id: episode.id,
+          number: episode.number,
+          title: episode.title,
+          airDate: episode.airDate?.toISOString() ?? null,
+          watchCount: episode.watches.length,
+        })),
+      })),
+    };
+  }
+
+  async watchEpisode(
+    userId: string,
+    episodeId: string,
+    dto: WatchEpisodeDto,
+  ): Promise<EpisodeWatchDto> {
+    const episode = await this.prisma.episode.findUnique({
+      where: { id: episodeId },
+      include: {
+        season: {
+          select: { mediaItemId: true, mediaItem: { select: { type: true } } },
+        },
+      },
+    });
+
+    if (!episode) {
+      throw new AppException(
+        HttpStatus.NOT_FOUND,
+        ErrorCode.LibraryEpisodeNotFound,
+      );
+    }
+
+    await this.assertMediaOwnership(userId, episode.season.mediaItemId);
+
+    if (episode.airDate && episode.airDate > new Date()) {
+      throw new AppException(
+        HttpStatus.BAD_REQUEST,
+        ErrorCode.LibraryEpisodeNotAired,
+      );
+    }
+
+    assertWatchDateNotFuture(dto.watchedAt);
+
+    const previouslyWatchedIds = await this.watchedEpisodeIds(userId, {
+      episode: { seasonId: episode.seasonId },
+    });
+
+    const watch = await this.prisma.episodeWatch.create({
+      data: {
+        userId,
+        episodeId,
+        watchedAt: dto.watchedAt ? new Date(dto.watchedAt) : undefined,
+      },
+    });
+
+    await this.xp.award(userId, XpReason.EPISODE_WATCHED, watch.id);
+    await this.achievements.evaluate(
+      userId,
+      ACHIEVEMENT_KEYS_BY_XP_REASON[XpReason.EPISODE_WATCHED],
+    );
+    await this.syncSeasonAndSeriesXp(userId, [episode.seasonId]);
+
+    await this.syncFinishedAt(
+      userId,
+      episode.season.mediaItemId,
+      episode.season.mediaItem.type,
+    );
+
+    await this.endFinishedRewatches(userId, [episode.season.mediaItemId]);
+
+    await this.emitSeasonFinishedMilestones(
+      userId,
+      episode.season.mediaItemId,
+      [episodeId],
+      previouslyWatchedIds,
+    );
+
+    await this.activity.emit({
+      userId,
+      type: ActivityType.PROGRESS,
+      domain: "MEDIA",
+      targetType: ReviewTargetType.MEDIA,
+      targetId: episode.season.mediaItemId,
+      level: "EPISODE",
+      homeFeed: true,
+    });
+
+    return {
+      id: watch.id,
+      episodeId: watch.episodeId,
+      watchedAt: watch.watchedAt?.toISOString() ?? null,
+    };
+  }
+
+  /**
+   * Mark every not-yet-watched episode of a season as watched in one go.
+   * Already-watched episodes are skipped so this never inflates rewatch counts.
+   */
+  async watchSeason(userId: string, seasonId: string): Promise<void> {
+    const season = await this.prisma.season.findUnique({
+      where: { id: seasonId },
+      select: { mediaItemId: true, mediaItem: { select: { type: true } } },
+    });
+    const episodes = await this.prisma.episode.findMany({
+      where: { seasonId },
+      select: { id: true, airDate: true },
+    });
+
+    if (!season || episodes.length === 0) {
+      throw new AppException(
+        HttpStatus.NOT_FOUND,
+        ErrorCode.LibrarySeasonEmpty,
+      );
+    }
+
+    await this.assertMediaOwnership(userId, season.mediaItemId);
+
+    const previouslyWatchedIds = await this.watchedEpisodeIds(userId, {
+      episodeId: { in: episodes.map((e) => e.id) },
+    });
+
+    // Unreleased episodes (future airDate) are silently skipped rather than
+    // blocking the whole season.
+    const now = new Date();
+    const airedIds = episodes
+      .filter((e) => !e.airDate || e.airDate <= now)
+      .map((e) => e.id);
+    await this.markWatchedIfNew(
+      userId,
+      airedIds,
+      await this.rewatchStartedAt(userId, season.mediaItemId),
+    );
+    await this.syncFinishedAt(
+      userId,
+      season.mediaItemId,
+      season.mediaItem.type,
+    );
+    await this.endFinishedRewatches(userId, [season.mediaItemId]);
+    await this.emitSeasonFinishedMilestones(
+      userId,
+      season.mediaItemId,
+      episodes.map((e) => e.id),
+      previouslyWatchedIds,
+    );
+  }
+
+  /**
+   * Undo a whole season: removes every watch the user has recorded for its
+   * episodes (all rewatches included, not just the latest one per episode) —
+   * during a rewatch, only the ones since it began.
+   */
+  async unwatchSeason(userId: string, seasonId: string): Promise<void> {
+    const season = await this.prisma.season.findUnique({
+      where: { id: seasonId },
+      select: { mediaItemId: true, mediaItem: { select: { type: true } } },
+    });
+
+    if (!season) {
+      throw new AppException(
+        HttpStatus.NOT_FOUND,
+        ErrorCode.LibrarySeasonNotFound,
+        undefined,
+        "Season not found",
+      );
+    }
+
+    await this.assertMediaOwnership(userId, season.mediaItemId);
+
+    const episodes = await this.prisma.episode.findMany({
+      where: { seasonId },
+      select: { id: true },
+    });
+
+    // Loaded before the deleteMany so revokeBySource still has the ids to
+    // work with afterwards. Never award/revoke inside a
+    // transaction, and here there's nothing left to look up post-delete).
+    const where: Prisma.EpisodeWatchWhereInput = {
+      userId,
+      episodeId: { in: episodes.map((e) => e.id) },
+      ...inViewing(await this.rewatchStartedAt(userId, season.mediaItemId)),
+    };
+    const watches = await this.prisma.episodeWatch.findMany({
+      where,
+      select: { id: true },
+    });
+
+    await this.prisma.episodeWatch.deleteMany({ where });
+    await this.xp.revokeBySource(
+      userId,
+      "EpisodeWatch",
+      watches.map((w) => w.id),
+    );
+    await this.syncSeasonAndSeriesXp(userId, [seasonId]);
+    await this.syncFinishedAt(
+      userId,
+      season.mediaItemId,
+      season.mediaItem.type,
+    );
+  }
+
+  /**
+   * "Watch up to here": mark every regular episode of the series from the start
+   * up to and including the given one (specials excluded — they are not part of
+   * the linear run). If the target itself is a special, only it is marked.
+   */
+  async watchThrough(userId: string, episodeId: string): Promise<void> {
+    const target = await this.prisma.episode.findUnique({
+      where: { id: episodeId },
+      include: {
+        season: { include: { mediaItem: { select: { type: true } } } },
+      },
+    });
+
+    if (!target) {
+      throw new AppException(
+        HttpStatus.NOT_FOUND,
+        ErrorCode.LibraryEpisodeNotFound,
+      );
+    }
+
+    await this.assertMediaOwnership(userId, target.season.mediaItemId);
+
+    if (target.airDate && target.airDate > new Date()) {
+      throw new AppException(
+        HttpStatus.BAD_REQUEST,
+        ErrorCode.LibraryEpisodeNotAired,
+      );
+    }
+
+    const rewatchStartedAt = await this.rewatchStartedAt(
+      userId,
+      target.season.mediaItemId,
+    );
+
+    if (target.season.number === 0) {
+      await this.markWatchedIfNew(userId, [episodeId], rewatchStartedAt);
+    } else {
+      const episodes = await this.prisma.episode.findMany({
+        where: {
+          season: { mediaItemId: target.season.mediaItemId, number: { gt: 0 } },
+        },
+        select: {
+          id: true,
+          number: true,
+          airDate: true,
+          season: { select: { number: true } },
+        },
+      });
+      const now = new Date();
+      const throughIds = episodes
+        .filter(
+          (e) =>
+            (e.season.number < target.season.number ||
+              (e.season.number === target.season.number &&
+                e.number <= target.number)) &&
+            (!e.airDate || e.airDate <= now),
+        )
+        .map((e) => e.id);
+
+      // Scoped to every regular episode of the series (not just `throughIds`)
+      // so a season that was already fully watched before this call — but
+      // only partially covered by `throughIds` (the target's own season) —
+      // isn't under-counted as "newly" finished below.
+      const previouslyWatchedIds = await this.watchedEpisodeIds(userId, {
+        episodeId: { in: episodes.map((e) => e.id) },
+      });
+
+      await this.markWatchedIfNew(userId, throughIds, rewatchStartedAt);
+      await this.emitSeasonFinishedMilestones(
+        userId,
+        target.season.mediaItemId,
+        throughIds,
+        previouslyWatchedIds,
+      );
+    }
+
+    await this.syncFinishedAt(
+      userId,
+      target.season.mediaItemId,
+      target.season.mediaItem.type,
+    );
+    await this.endFinishedRewatches(userId, [target.season.mediaItemId]);
+  }
+
+  /**
+   * Create a watch for each of the given episodes the user hasn't watched
+   * yet, and credit EPISODE_WATCHED for each newly created watch (the batch
+   * still respects the daily cap — see `XpService.awardMany`).
+   */
+  private async watchedEpisodeIds(
+    userId: string,
+    where: Prisma.EpisodeWatchWhereInput,
+  ): Promise<Set<string>> {
+    const watches = await this.prisma.episodeWatch.findMany({
+      where: { ...where, userId },
+      distinct: ["episodeId"],
+      select: { episodeId: true },
+    });
+    return new Set(watches.map((watch) => watch.episodeId));
+  }
+
+  private async markWatchedIfNew(
+    userId: string,
+    episodeIds: string[],
+    rewatchStartedAt: Date | null = null,
+  ): Promise<void> {
+    if (episodeIds.length === 0) return;
+    const watchedIds = await this.watchedEpisodeIds(userId, {
+      episodeId: { in: episodeIds },
+      ...inViewing(rewatchStartedAt),
+    });
+    const newEpisodeIds = episodeIds.filter((id) => !watchedIds.has(id));
+    const toCreate = newEpisodeIds.map((id) => ({ userId, episodeId: id }));
+
+    if (toCreate.length > 0) {
+      const created = await this.prisma.episodeWatch.createManyAndReturn({
+        data: toCreate,
+        select: { id: true },
+      });
+      await this.xp.awardMany(
+        userId,
+        XpReason.EPISODE_WATCHED,
+        created.map((w) => w.id),
+      );
+
+      // Grouped by season, not per-episode, so a whole-season/whole-series
+      // mark-through only checks completion once per season involved.
+      const touchedSeasons = await this.prisma.episode.findMany({
+        where: { id: { in: newEpisodeIds } },
+        distinct: ["seasonId"],
+        select: { seasonId: true },
+      });
+      await this.syncSeasonAndSeriesXp(
+        userId,
+        touchedSeasons.map((e) => e.seasonId),
+      );
+    }
+  }
+
+  /**
+   * Re-derives SEASON_COMPLETED/SERIES_COMPLETED after a watch change
+   * touching `seasonIds`, awarding or revoking each as needed. Reuses
+   * `isSeasonComplete`/`isSeriesComplete` from xp-verifiers.ts — the same
+   * completion rule the nightly reconciliation checks — so this live path
+   * and that sweep can never disagree. Called once per batch of episodes
+   * touched (never per individual episode), grouped by the distinct
+   * seasons/series involved.
+   */
+  private async syncSeasonAndSeriesXp(
+    userId: string,
+    seasonIds: string[],
+  ): Promise<void> {
+    const uniqueSeasonIds = [...new Set(seasonIds)];
+    if (uniqueSeasonIds.length === 0) return;
+
+    const seasons = await this.prisma.season.findMany({
+      where: { id: { in: uniqueSeasonIds } },
+      select: { id: true, mediaItemId: true },
+    });
+
+    for (const season of seasons) {
+      const complete = await isSeasonComplete(this.prisma, userId, season.id);
+
+      if (complete) {
+        const episodes = await this.prisma.episode.count({
+          where: { seasonId: season.id },
+        });
+        await this.xp.award(
+          userId,
+          XpReason.SEASON_COMPLETED,
+          season.id,
+          seasonCompletedXp(episodes),
+        );
+      } else {
+        await this.xp.revokeBySource(userId, "Season", [season.id]);
+      }
+    }
+
+    const mediaItemIds = [...new Set(seasons.map((s) => s.mediaItemId))];
+    const entries = await this.prisma.mediaEntry.findMany({
+      where: { userId, mediaItemId: { in: mediaItemIds } },
+      select: { id: true, mediaItemId: true },
+    });
+
+    for (const entry of entries) {
+      const complete = await isSeriesComplete(this.prisma, userId, entry.id);
+
+      if (complete) {
+        const seasons = await this.prisma.season.count({
+          where: { mediaItemId: entry.mediaItemId, number: { gt: 0 } },
+        });
+        await this.xp.award(
+          userId,
+          XpReason.SERIES_COMPLETED,
+          entry.id,
+          seriesCompletedXp(seasons),
+        );
+        await this.achievements.evaluate(
+          userId,
+          ACHIEVEMENT_KEYS_BY_XP_REASON[XpReason.SERIES_COMPLETED],
+        );
+        await this.awardSagaIfCompleted(userId, entry.mediaItemId);
+      } else {
+        await this.xp.revokeBySource(userId, "MediaEntry", [entry.id]);
+      }
+    }
+  }
+
+  /**
+   * Undo watching an episode: removes the user's most recent watch for it
+   * (so it decrements a rewatch count, and unwatches the episode at one watch).
+   */
+  async unwatchEpisode(userId: string, episodeId: string): Promise<void> {
+    const latest = await this.prisma.episodeWatch.findFirst({
+      where: { userId, episodeId },
+      orderBy: { watchedAt: { sort: "desc", nulls: "last" } },
+      include: {
+        episode: {
+          include: {
+            season: { include: { mediaItem: { select: { type: true } } } },
+          },
+        },
+      },
+    });
+
+    if (!latest) {
+      throw new AppException(
+        HttpStatus.NOT_FOUND,
+        ErrorCode.LibraryNoWatchToUndo,
+      );
+    }
+
+    await this.assertMediaOwnership(userId, latest.episode.season.mediaItemId);
+
+    await this.prisma.episodeWatch.delete({ where: { id: latest.id } });
+    await this.xp.revokeBySource(userId, "EpisodeWatch", [latest.id]);
+    await this.syncSeasonAndSeriesXp(userId, [latest.episode.seasonId]);
+    await this.syncFinishedAt(
+      userId,
+      latest.episode.season.mediaItemId,
+      latest.episode.season.mediaItem.type,
+    );
+  }
+
+  /**
+   * One action over episodes picked by hand, possibly across seasons: `watch`
+   * skips what's already watched or not aired, `rewatch` what isn't watched,
+   * `unwatch` removes every viewing. Effects are those of a whole-season mark
+   * (one milestone per finished season, no per-episode activity), and the
+   * result is what `undoEpisodeWatches` needs to put things back.
+   */
+  async batchEpisodeWatches(
+    userId: string,
+    action: EpisodeWatchBatchAction,
+    episodeIds: string[],
+  ): Promise<EpisodeWatchBatchResultDto> {
+    const ids = [...new Set(episodeIds)];
+
+    if (ids.length > EPISODE_WATCH_BATCH_MAX) {
+      throw new AppException(
+        HttpStatus.BAD_REQUEST,
+        ErrorCode.LibraryWatchBatchTooLarge,
+      );
+    }
+
+    const episodes = await this.ownedEpisodes(userId, ids);
+    const rewatches = new Map(
+      (
+        await this.prisma.mediaEntry.findMany({
+          where: {
+            userId,
+            mediaItemId: {
+              in: [...new Set(episodes.map((e) => e.season.mediaItemId))],
+            },
+          },
+          select: { mediaItemId: true, rewatchStartedAt: true },
+        })
+      ).map((e) => [e.mediaItemId, e.rewatchStartedAt]),
+    );
+    const mediaOf = new Map(episodes.map((e) => [e.id, e.season.mediaItemId]));
+    // During a rewatch, watching, unwatching and what counts as watched only
+    // concern the viewings since it began; rewatching still takes any.
+    const allWatches = await this.prisma.episodeWatch.findMany({
+      where: { userId, episodeId: { in: ids } },
+      select: { id: true, episodeId: true, watchedAt: true },
+    });
+    const watches = allWatches.filter((watch) =>
+      seenInViewing(
+        watch.watchedAt,
+        rewatches.get(mediaOf.get(watch.episodeId)!) ?? null,
+      ),
+    );
+    const watchedIds = new Set(watches.map((watch) => watch.episodeId));
+    const everWatchedIds = new Set(allWatches.map((watch) => watch.episodeId));
+
+    if (action === "unwatch") {
+      await this.prisma.episodeWatch.deleteMany({
+        where: { id: { in: watches.map((watch) => watch.id) } },
+      });
+      await this.xp.revokeBySource(
+        userId,
+        "EpisodeWatch",
+        watches.map((watch) => watch.id),
+      );
+      await this.syncAfterWatchChange(userId, episodes);
+      return {
+        created: [],
+        removed: watches.map((watch) => ({
+          episodeId: watch.episodeId,
+          watchedAt: watch.watchedAt?.toISOString() ?? null,
+        })),
+      };
+    }
+
+    const now = new Date();
+    const targets = episodes.filter((episode) =>
+      action === "rewatch"
+        ? everWatchedIds.has(episode.id)
+        : !watchedIds.has(episode.id) &&
+          (!episode.airDate || episode.airDate <= now),
+    );
+    const previouslyWatchedIds =
+      action === "watch"
+        ? await this.watchedEpisodeIds(userId, {
+            episode: {
+              seasonId: { in: targets.map((episode) => episode.seasonId) },
+            },
+          })
+        : new Set<string>();
+
+    const created = await this.prisma.episodeWatch.createManyAndReturn({
+      data: targets.map((episode) => ({ userId, episodeId: episode.id })),
+      select: { id: true, episodeId: true },
+    });
+    await this.xp.awardMany(
+      userId,
+      XpReason.EPISODE_WATCHED,
+      created.map((watch) => watch.id),
+    );
+
+    if (created.length > 0) {
+      await this.achievements.evaluate(
+        userId,
+        ACHIEVEMENT_KEYS_BY_XP_REASON[XpReason.EPISODE_WATCHED],
+      );
+    }
+
+    await this.syncAfterWatchChange(userId, targets);
+
+    if (action === "watch") {
+      for (const mediaItemId of new Set(
+        targets.map((episode) => episode.season.mediaItemId),
+      )) {
+        await this.emitSeasonFinishedMilestones(
+          userId,
+          mediaItemId,
+          targets
+            .filter((episode) => episode.season.mediaItemId === mediaItemId)
+            .map((episode) => episode.id),
+          previouslyWatchedIds,
+        );
+      }
+    }
+
+    return { created, removed: [] };
+  }
+
+  /**
+   * Takes a bulk action back: viewings it created go, viewings it removed come
+   * back with their original dates. Nothing is announced, as the viewer is
+   * only returning to where they stood.
+   */
+  async undoEpisodeWatches(
+    userId: string,
+    {
+      deleteWatchIds = [],
+      restore = [],
+    }: {
+      deleteWatchIds?: string[];
+      restore?: EpisodeWatchRestoreDto[];
+    },
+  ): Promise<void> {
+    if (deleteWatchIds.length + restore.length > EPISODE_WATCH_UNDO_MAX) {
+      throw new AppException(
+        HttpStatus.BAD_REQUEST,
+        ErrorCode.LibraryWatchBatchTooLarge,
+      );
+    }
+
+    const toDelete = await this.prisma.episodeWatch.findMany({
+      where: { id: { in: deleteWatchIds } },
+      select: { id: true, userId: true, episodeId: true },
+    });
+
+    if (toDelete.some((watch) => watch.userId !== userId)) {
+      throw new AppException(
+        HttpStatus.FORBIDDEN,
+        ErrorCode.LibraryEntryForbidden,
+      );
+    }
+
+    const episodes = await this.ownedEpisodes(userId, [
+      ...new Set([
+        ...toDelete.map((watch) => watch.episodeId),
+        ...restore.map((row) => row.episodeId),
+      ]),
+    ]);
+
+    // A restore only brings back what a bulk action removed, so it obeys
+    // the same rules as the viewing it restores: aired, not dated ahead.
+    const now = new Date();
+    const restoredIds = new Set(restore.map((row) => row.episodeId));
+
+    if (
+      episodes.some(
+        (episode) =>
+          restoredIds.has(episode.id) &&
+          episode.airDate &&
+          episode.airDate > now,
+      )
+    ) {
+      throw new AppException(
+        HttpStatus.BAD_REQUEST,
+        ErrorCode.LibraryEpisodeNotAired,
+      );
+    }
+
+    restore.forEach((row) => assertWatchDateNotFuture(row.watchedAt, now));
+
+    const [, created] = await this.prisma.$transaction([
+      this.prisma.episodeWatch.deleteMany({
+        where: { id: { in: toDelete.map((watch) => watch.id) } },
+      }),
+      this.prisma.episodeWatch.createManyAndReturn({
+        data: restore.map((row) => ({
+          userId,
+          episodeId: row.episodeId,
+          // Null stays null: a missing value would take the column's now().
+          watchedAt: row.watchedAt ? new Date(row.watchedAt) : null,
+        })),
+        select: { id: true },
+      }),
+    ]);
+
+    await this.xp.revokeBySource(
+      userId,
+      "EpisodeWatch",
+      toDelete.map((watch) => watch.id),
+    );
+    await this.xp.awardMany(
+      userId,
+      XpReason.EPISODE_WATCHED,
+      created.map((watch) => watch.id),
+    );
+    await this.syncAfterWatchChange(userId, episodes);
+  }
+
+  /** The episodes, once the caller is known to track every work they're from. */
+  private async ownedEpisodes(userId: string, episodeIds: string[]) {
+    const episodes = await this.prisma.episode.findMany({
+      where: { id: { in: episodeIds } },
+      select: {
+        id: true,
+        airDate: true,
+        seasonId: true,
+        season: {
+          select: { mediaItemId: true, mediaItem: { select: { type: true } } },
+        },
+      },
+    });
+
+    if (episodes.length !== episodeIds.length) {
+      throw new AppException(
+        HttpStatus.NOT_FOUND,
+        ErrorCode.LibraryEpisodeNotFound,
+      );
+    }
+
+    for (const mediaItemId of new Set(
+      episodes.map((episode) => episode.season.mediaItemId),
+    )) {
+      await this.assertMediaOwnership(userId, mediaItemId);
+    }
+
+    return episodes;
+  }
+
+  /** Never inside the write's transaction: XP is awarded and revoked here. */
+  private async syncAfterWatchChange(
+    userId: string,
+    episodes: {
+      seasonId: string;
+      season: { mediaItemId: string; mediaItem: { type: MediaType } };
+    }[],
+  ): Promise<void> {
+    await this.syncSeasonAndSeriesXp(
+      userId,
+      episodes.map((episode) => episode.seasonId),
+    );
+    const types = new Map(
+      episodes.map((episode) => [
+        episode.season.mediaItemId,
+        episode.season.mediaItem.type,
+      ]),
+    );
+
+    for (const [mediaItemId, type] of types) {
+      await this.syncFinishedAt(userId, mediaItemId, type);
+    }
+
+    await this.endFinishedRewatches(userId, [...types.keys()]);
+  }
+
+  /** When the user's rewatch of this work began, if one is on. */
+  private async rewatchStartedAt(
+    userId: string,
+    mediaItemId: string,
+  ): Promise<Date | null> {
+    const entry = await this.prisma.mediaEntry.findUnique({
+      where: { userId_mediaItemId: { userId, mediaItemId } },
+      select: { rewatchStartedAt: true },
+    });
+    return entry?.rewatchStartedAt ?? null;
+  }
+
+  /** A series' rewatch is over once every aired episode was seen again. */
+  private async endFinishedRewatches(
+    userId: string,
+    mediaItemIds: string[],
+  ): Promise<void> {
+    const entries = await this.prisma.mediaEntry.findMany({
+      where: {
+        userId,
+        mediaItemId: { in: mediaItemIds },
+        rewatchStartedAt: { not: null },
+        mediaItem: { type: { not: MediaType.MOVIE } },
+      },
+      select: { id: true, mediaItemId: true, rewatchStartedAt: true },
+    });
+
+    for (const entry of entries) {
+      const progress = await this.computeProgress(
+        userId,
+        entry.mediaItemId,
+        entry.rewatchStartedAt,
+      );
+
+      if (progress && !progress.nextEpisode) {
+        await this.prisma.mediaEntry.update({
+          where: { id: entry.id },
+          data: { rewatchStartedAt: null },
+        });
+      }
+    }
+  }
+
+  /**
+   * The rewatch column an update writes: unchanged when not asked, cleared on
+   * stop, kept when already rewatching. Only a title seen to the end starts
+   * one. A series' rewatch begins with the viewing that prompted it when its
+   * latest viewing saw an episode again (the page asks right after one), and
+   * right now otherwise: "season watched" writes a whole run with one
+   * timestamp, which would otherwise count as already seen again.
+   */
+  private async rewatchStartedAtFor(
+    userId: string,
+    entry: {
+      mediaItemId: string;
+      status: EntryStatus;
+      watchedEpisodes: number;
+      lastWatchedAt: Date | null;
+      rewatchStartedAt: Date | null;
+    },
+    rewatching: boolean | undefined,
+  ): Promise<Date | null | undefined> {
+    if (rewatching === undefined) return undefined;
+    if (!rewatching) return null;
+    if (entry.rewatchStartedAt) return entry.rewatchStartedAt;
+
+    const mediaItem = await this.prisma.mediaItem.findUniqueOrThrow({
+      where: { id: entry.mediaItemId },
+      select: { type: true, status: true, episodeCount: true },
+    });
+    const status = deriveStatus(
+      mediaItem.type,
+      materializedProgress({ ...entry, mediaItem }),
+      normalizeAiringFinished(mediaItem.status),
+      entry.status,
+    );
+
+    if (status !== "COMPLETED" && status !== "UP_TO_DATE") {
+      throw new AppException(
+        HttpStatus.CONFLICT,
+        ErrorCode.LibraryRewatchNotFinished,
+      );
+    }
+
+    const latest = entry.lastWatchedAt;
+    if (mediaItem.type === "MOVIE" || !latest) return new Date();
+
+    const latestViewings = await this.prisma.episodeWatch.findMany({
+      where: {
+        userId,
+        watchedAt: latest,
+        episode: { season: { mediaItemId: entry.mediaItemId } },
+      },
+      select: { episodeId: true },
+    });
+    // An undated (imported) viewing predates every dated one.
+    const seenBefore = await this.prisma.episodeWatch.count({
+      where: {
+        userId,
+        episodeId: { in: latestViewings.map((w) => w.episodeId) },
+        OR: [{ watchedAt: { lt: latest } }, { watchedAt: null }],
+      },
+    });
+    return seenBefore > 0 ? latest : new Date();
+  }
+
+  private assertEntryOwnership(userId: string, entryId: string) {
+    return assertEntryOwnership(userId, () =>
+      this.prisma.mediaEntry.findUnique({
+        where: { id: entryId },
+        include: LOAN_INCLUDE,
+      }),
+    );
+  }
+
+  /**
+   * Sibling of `assertEntryOwnership` for the watch endpoints, which are
+   * addressed by episode/season id and so only know the media item. A missing
+   * entry is a 403, never an implicit "track it for them": creating one here
+   * would fire WORK_ADDED/DOMAIN_STARTED off a request that never asked to
+   * follow the work.
+   */
+  private async assertMediaOwnership(
+    userId: string,
+    mediaItemId: string,
+  ): Promise<void> {
+    const entry = await this.prisma.mediaEntry.findUnique({
+      where: { userId_mediaItemId: { userId, mediaItemId } },
+      select: { id: true },
+    });
+
+    if (!entry) {
+      throw new AppException(
+        HttpStatus.FORBIDDEN,
+        ErrorCode.LibraryEntryForbidden,
+      );
+    }
+  }
+
+  /**
+   * SAGA_COMPLETED once the item's saga (a film collection, an anime's main
+   * line) has every released work seen and nothing announced. Checked on each
+   * finish, the only moment it can become true; once per saga.
+   */
+  private async awardSagaIfCompleted(
+    userId: string,
+    mediaItemId: string,
+  ): Promise<void> {
+    const item = await this.prisma.mediaItem.findUnique({
+      where: { id: mediaItemId },
+      select: { sagaKey: true },
+    });
+    if (!item?.sagaKey) return;
+    const saga = await this.prisma.saga.findUnique({
+      where: { key: item.sagaKey },
+      select: {
+        title: true,
+        members: { select: { type: true, sourceId: true, upcoming: true } },
+      },
+    });
+    if (!saga) return;
+
+    const statuses = new Map<string, EntryStatus>();
+
+    for (const type of ["MOVIE", "ANIME"] as const) {
+      const ids = saga.members
+        .filter((m) => m.type === type)
+        .map((m) => m.sourceId);
+      if (ids.length === 0) continue;
+      const source: CatalogSource = type === "ANIME" ? "ANILIST" : "TMDB";
+      const byId = await this.statusesBySourceId(userId, source, type, ids);
+      for (const [id, status] of byId) statuses.set(`${type}:${id}`, status);
+    }
+
+    const works = completedSagaWorks(
+      saga.members.map((m) => ({
+        upcoming: m.upcoming,
+        status: statuses.get(`${m.type}:${m.sourceId}`) ?? null,
+      })),
+      MEDIA_SAGA_STATUS,
+    );
+    if (works === null) return;
+
+    await this.xp.award(
+      userId,
+      XpReason.SAGA_COMPLETED,
+      item.sagaKey,
+      sagaCompletionXp(works),
+      { title: saga.title, href: "/app/media?vue=sagas", data: {} },
+    );
+    await this.achievements.evaluate(
+      userId,
+      ACHIEVEMENT_KEYS_BY_XP_REASON[XpReason.SAGA_COMPLETED],
+    );
+  }
+
+  /**
+   * Every work the user tracks, with its effective status — the same
+   * derivation as the library list, from the materialized progress of each
+   * entry. See MediaLibraryController.listTracked.
+   */
+  async trackedStatuses(userId: string): Promise<TrackedMediaDto[]> {
+    const entries = await this.prisma.mediaEntry.findMany({
+      where: { userId },
+      select: {
+        status: true,
+        watchedEpisodes: true,
+        rewatchStartedAt: true,
+        mediaItem: {
+          select: {
+            type: true,
+            status: true,
+            episodeCount: true,
+            canonicalSource: true,
+            externalIds: { select: { source: true, externalId: true } },
+          },
+        },
+      },
+    });
+
+    return entries.flatMap((entry) => {
+      const { mediaItem } = entry;
+      const sourceId = canonicalExternalId(mediaItem, mediaItem.externalIds);
+      if (!sourceId) return [];
+      return [
+        {
+          type: mediaItem.type as MediaType,
+          sourceId,
+          status: deriveStatus(
+            mediaItem.type,
+            materializedProgress(entry),
+            normalizeAiringFinished(mediaItem.status),
+            entry.status,
+            !!entry.rewatchStartedAt,
+          ),
+        },
+      ];
+    });
+  }
+
+  /**
+   * The viewer's effective status for each of these catalogue works they
+   * track, keyed by source id — the same derivation as the library list.
+   */
+  async statusesBySourceId(
+    userId: string,
+    source: CatalogSource,
+    type: MediaType,
+    sourceIds: string[],
+  ): Promise<Map<string, EntryStatus>> {
+    const externalId = {
+      source: source as DbExternalSource,
+      type,
+      externalId: { in: sourceIds },
+    };
+    const entries = await this.prisma.mediaEntry.findMany({
+      where: { userId, mediaItem: { externalIds: { some: externalId } } },
+      select: {
+        status: true,
+        watchedEpisodes: true,
+        rewatchStartedAt: true,
+        mediaItem: {
+          select: {
+            type: true,
+            status: true,
+            episodeCount: true,
+            externalIds: {
+              where: { source: externalId.source, type },
+              select: { externalId: true },
+            },
+          },
+        },
+      },
+    });
+
+    const statuses = new Map<string, EntryStatus>();
+
+    for (const entry of entries) {
+      const sourceId = entry.mediaItem.externalIds[0]?.externalId;
+      if (!sourceId) continue;
+      statuses.set(
+        sourceId,
+        deriveStatus(
+          entry.mediaItem.type,
+          materializedProgress(entry),
+          normalizeAiringFinished(entry.mediaItem.status),
+          entry.status,
+          !!entry.rewatchStartedAt,
+        ),
+      );
+    }
+
+    return statuses;
+  }
+
+  /**
+   * Batched form of `computeProgress` + `lastWatchedAt` for `listEntries`:
+   * that call site was doing 2-3 DB round trips *per entry* (fine for
+   * `getEntry`'s single row, but a query storm across a whole library),
+   * so this fetches every relevant episode/watch once and reduces them
+   * per media item in memory instead.
+   */
+  private async computeProgressBatch(
+    userId: string,
+    mediaItemIds: string[],
+    rewatchStartedAt: Map<string, Date> = new Map(),
+  ): Promise<
+    Map<string, { progress: ProgressDto | null; lastWatchedAt: Date | null }>
+  > {
+    const result = new Map<
+      string,
+      { progress: ProgressDto | null; lastWatchedAt: Date | null }
+    >();
+    if (mediaItemIds.length === 0) return result;
+
+    const episodes = await this.prisma.episode.findMany({
+      where: {
+        season: { mediaItemId: { in: mediaItemIds }, number: { gt: 0 } },
+      },
+      orderBy: [{ season: { number: "asc" } }, { number: "asc" }],
+      select: {
+        id: true,
+        number: true,
+        airDate: true,
+        season: { select: { number: true, mediaItemId: true } },
+      },
+    });
+    const episodesByMedia = new Map<string, typeof episodes>();
+
+    for (const e of episodes) {
+      const list = episodesByMedia.get(e.season.mediaItemId);
+      if (list) list.push(e);
+      else episodesByMedia.set(e.season.mediaItemId, [e]);
+    }
+
+    // Watches across ALL seasons (specials included) — `lastWatchedAt`
+    // tracks any viewing, while progress below only counts regular ones.
+    const watches = await this.prisma.episodeWatch.findMany({
+      where: {
+        userId,
+        episode: { season: { mediaItemId: { in: mediaItemIds } } },
+      },
+      select: {
+        episodeId: true,
+        watchedAt: true,
+        episode: {
+          select: { season: { select: { mediaItemId: true, number: true } } },
+        },
+      },
+    });
+    const watchedRegularIdsByMedia = new Map<string, Set<string>>();
+    const lastWatchedByMedia = new Map<string, Date>();
+
+    for (const w of watches) {
+      const mediaItemId = w.episode.season.mediaItemId;
+
+      if (w.watchedAt) {
+        const prevLast = lastWatchedByMedia.get(mediaItemId);
+        if (!prevLast || w.watchedAt > prevLast)
+          lastWatchedByMedia.set(mediaItemId, w.watchedAt);
+      }
+
+      const countsForProgress = seenInViewing(
+        w.watchedAt,
+        rewatchStartedAt.get(mediaItemId) ?? null,
+      );
+
+      if (w.episode.season.number > 0 && countsForProgress) {
+        const set = watchedRegularIdsByMedia.get(mediaItemId);
+        if (set) set.add(w.episodeId);
+        else watchedRegularIdsByMedia.set(mediaItemId, new Set([w.episodeId]));
+      }
+    }
+
+    const now = new Date();
+
+    for (const mediaItemId of mediaItemIds) {
+      const mediaEpisodes = episodesByMedia.get(mediaItemId);
+
+      if (!mediaEpisodes || mediaEpisodes.length === 0) {
+        result.set(mediaItemId, {
+          progress: null,
+          lastWatchedAt: lastWatchedByMedia.get(mediaItemId) ?? null,
+        });
+        continue;
+      }
+
+      const watchedIds =
+        watchedRegularIdsByMedia.get(mediaItemId) ?? new Set<string>();
+      const next = nextEpisodeOf(
+        mediaEpisodes,
+        watchedIds,
+        rewatchStartedAt.has(mediaItemId),
+        now,
+      );
+      result.set(mediaItemId, {
+        progress: {
+          watchedEpisodes: watchedIds.size,
+          totalEpisodes: mediaEpisodes.length,
+          nextEpisode: next
+            ? {
+                episodeId: next.id,
+                seasonNumber: next.season.number,
+                episodeNumber: next.number,
+              }
+            : null,
+        },
+        lastWatchedAt: lastWatchedByMedia.get(mediaItemId) ?? null,
+      });
+    }
+
+    return result;
+  }
+
+  /**
+   * Season 0 holds specials on TMDB: they are watchable but excluded from the
+   * watched/total progress so "100%" means the regular run is complete.
+   */
+  private async computeProgress(
+    userId: string,
+    mediaItemId: string,
+    rewatchStartedAt: Date | null = null,
+  ): Promise<ProgressDto | null> {
+    const regularEpisodes: Prisma.EpisodeWhereInput = {
+      season: { mediaItemId, number: { gt: 0 } },
+    };
+
+    const episodes = await this.prisma.episode.findMany({
+      where: regularEpisodes,
+      orderBy: [{ season: { number: "asc" } }, { number: "asc" }],
+      select: {
+        id: true,
+        number: true,
+        airDate: true,
+        season: { select: { number: true } },
+      },
+    });
+
+    if (episodes.length === 0) {
+      return null; // Movies (or media without any episode listing).
+    }
+
+    // During a rewatch only the viewings since it began count.
+    const watchedIds = await this.watchedEpisodeIds(userId, {
+      episode: regularEpisodes,
+      ...inViewing(rewatchStartedAt),
+    });
+
+    const next = nextEpisodeOf(
+      episodes,
+      watchedIds,
+      !!rewatchStartedAt,
+      new Date(),
+    );
+
+    return {
+      watchedEpisodes: watchedIds.size,
+      totalEpisodes: episodes.length,
+      nextEpisode: next
+        ? {
+            episodeId: next.id,
+            seasonNumber: next.season.number,
+            episodeNumber: next.number,
+          }
+        : null,
+    };
+  }
+
+  /** Most recent viewing of a media (max episode watch), or null if never. */
+  private async lastWatchedAt(
+    userId: string,
+    mediaItemId: string,
+  ): Promise<Date | null> {
+    const agg = await this.prisma.episodeWatch.aggregate({
+      where: { userId, episode: { season: { mediaItemId } } },
+      _max: { watchedAt: true },
+    });
+    return agg._max.watchedAt;
+  }
+
+  private toEntryDto(
+    entry: EntryWithMedia,
+    progress: ProgressDto | null,
+    watchedAt: Date | null,
+    rating: number | null,
+    translatedTitle?: string,
+  ): LibraryEntryDto {
+    const media = entry.mediaItem;
+    const status = deriveStatus(
+      media.type,
+      progress,
+      normalizeAiringFinished(media.status),
+      entry.status,
+      !!entry.rewatchStartedAt,
+    );
+    // Movies have no episode watches: fall back to when it was marked finished.
+    const lastWatchedAt = watchedAt ?? entry.finishedAt;
+    return {
+      id: entry.id,
+      mediaItem: toMediaItemDto(media, translatedTitle),
+      status,
+      rating,
+      notes: entry.notes,
+      favorite: entry.favorite,
+      startedAt: entry.startedAt?.toISOString() ?? null,
+      finishedAt: entry.finishedAt?.toISOString() ?? null,
+      createdAt: entry.createdAt.toISOString(),
+      updatedAt: entry.updatedAt.toISOString(),
+      lastWatchedAt: lastWatchedAt?.toISOString() ?? null,
+      progress,
+      ownershipStatus: entry.ownershipStatus as MediaOwnershipStatus,
+      ownershipSource: entry.ownershipSource,
+      ...loanFields(entry),
+      loanActive: isLoanActive(entry),
+      episodeAlertsMuted: entry.episodeAlertsMuted,
+      rewatching: !!entry.rewatchStartedAt,
+      ...(entry.movieReleaseReminderAt
+        ? { movieReleaseAlertsEnabled: true }
+        : {}),
+      replays: entry.replays.map(toReplayDto),
+    };
+  }
+
+  /**
+   * Log a completed rewatch (a completion beyond the entry's first one).
+   * Movies only — series/anime rewatches are tracked per-episode via
+   * EpisodeWatch instead.
+   */
+  async addReplay(
+    userId: string,
+    entryId: string,
+    dto: AddMovieReplayDto,
+  ): Promise<LibraryEntryDto> {
+    const entry = await this.assertEntryOwnership(userId, entryId);
+    const media = await this.prisma.mediaItem.findUniqueOrThrow({
+      where: { id: entry.mediaItemId },
+      select: { type: true },
+    });
+
+    if (media.type !== "MOVIE") {
+      throw new AppException(
+        HttpStatus.BAD_REQUEST,
+        ErrorCode.LibraryReplayNotMovie,
+      );
+    }
+
+    await assertMediaReleased(this.prisma, entry.mediaItemId);
+
+    const replay = await this.prisma.movieReplay.create({
+      data: {
+        mediaEntryId: entryId,
+        finishedAt: dto.finishedAt ? new Date(dto.finishedAt) : undefined,
+      },
+    });
+    await this.xp.award(userId, XpReason.MOVIE_REPLAYED, replay.id);
+
+    if (entry.rewatchStartedAt) {
+      await this.prisma.mediaEntry.update({
+        where: { id: entryId },
+        data: { rewatchStartedAt: null },
+      });
+    }
+
+    await this.activity.emit({
+      userId,
+      type: ActivityType.REWATCHED,
+      domain: "MEDIA",
+      targetType: ReviewTargetType.MEDIA,
+      targetId: entry.mediaItemId,
+      homeFeed: true,
+    });
+
+    return this.getEntry(userId, entryId);
+  }
+
+  async deleteReplay(userId: string, replayId: string): Promise<void> {
+    await deleteOwnedReplay(this.xp, {
+      userId,
+      replayId,
+      xpSource: "MovieReplay",
+      findOwnerId: async () =>
+        (
+          await this.prisma.movieReplay.findUnique({
+            where: { id: replayId },
+            select: { mediaEntry: { select: { userId: true } } },
+          })
+        )?.mediaEntry.userId ?? null,
+      remove: () => this.prisma.movieReplay.delete({ where: { id: replayId } }),
+    });
+  }
+
+  /**
+   * Unified media page (`/app/media/{type}/{id}`): metadata + the current user's
+   * library state in one call. Served from the cache when the media is already
+   * persisted, otherwise fetched live (persisting nothing — an unreferenced
+   * media must not enter the on-demand cache just because it was previewed).
+   */
+  // `lang`: the signed-in user's locale, when known (live path only — a
+  // cached item already has its stored, possibly stale, language).
+  async getMediaDetail(
+    userId: string,
+    type: MediaType,
+    sourceId: string,
+    lang?: string,
+    acceptLanguage?: string,
+  ): Promise<MediaDetailDto> {
+    const source: CatalogSource = type === "ANIME" ? "ANILIST" : "TMDB";
+
+    const ref = await this.prisma.mediaExternalId.findUnique({
+      where: {
+        source_externalId_type: {
+          source: source as DbExternalSource,
+          externalId: sourceId,
+          type,
+        },
+      },
+      include: { mediaItem: true },
+    });
+
+    if (ref) {
+      if (type === "MOVIE" && ref.mediaItem.movieReleaseDates === null) {
+        ref.mediaItem = await this.mediaItemService.upsertFromSource(
+          source,
+          sourceId,
+          type,
+        );
+      }
+
+      const detail = await this.mediaDetailFromCache(
+        userId,
+        source,
+        sourceId,
+        ref.mediaItem,
+        type,
+        lang,
+        acceptLanguage,
+      );
+      const allowAdult = await this.ageGate.allowsAdultContent(userId);
+      this.ageGate.assertAdultAllowed(detail.isAdult, allowAdult);
+      return detail;
+    }
+
+    const details = await this.mediaItemService.getLiveDetails(
+      source,
+      sourceId,
+      type,
+      lang,
+    );
+    const allowAdult = await this.ageGate.allowsAdultContent(userId);
+    this.ageGate.assertAdultAllowed(details.isAdult, allowAdult);
+    const region =
+      type === "MOVIE" ? await this.movieRegion(userId, acceptLanguage) : "US";
+    return {
+      source,
+      sourceId,
+      type,
+      title: details.title,
+      originalTitle: details.originalTitle ?? null,
+      year: details.year,
+      posterUrl: details.posterUrl,
+      backdropUrl: details.backdropUrl,
+      overview: details.overview,
+      genres: details.genres,
+      airingStatus: details.status,
+      releaseDate: details.releaseDate ?? null,
+      movieRelease:
+        type === "MOVIE"
+          ? movieReleaseInfo(
+              details.movieReleaseDates ?? [],
+              details.status,
+              region,
+            )
+          : null,
+      airingFinished: normalizeAiringFinished(details.status),
+      runtimeMin: details.runtimeMin,
+      isAdult: details.isAdult,
+      // Nothing persisted yet, so no reviews either.
+      seasons: details.seasons.map((season) => ({
+        ...season,
+        ...NO_COMMUNITY_RATING,
+        episodes: season.episodes.map((episode) => ({
+          ...episode,
+          ...NO_COMMUNITY_RATING,
+          commentCount: 0,
+          watchCount: 0,
+          seen: false,
+          watches: [],
+        })),
+      })),
+      commentTargetId: null,
+      entry: null,
+    };
+  }
+
+  private async mediaDetailFromCache(
+    userId: string,
+    source: CatalogSource,
+    sourceId: string,
+    media: MediaItem,
+    type: MediaType,
+    lang: string | undefined,
+    acceptLanguage?: string,
+  ): Promise<MediaDetailDto> {
+    // Only fetched/created when `lang` isn't the base row's own (English)
+    // language — see the note on MediaItemService.translationFor.
+    const translation = lang
+      ? await this.mediaItemService.translationFor(
+          media.id,
+          source,
+          sourceId,
+          type,
+          lang,
+        )
+      : null;
+
+    // Season/episode translations exist only for the locales translationFor
+    // has cached (never the base row's own English).
+    const locale = translation && lang ? lang : "";
+    const seasons = await this.prisma.season.findMany({
+      where: { mediaItemId: media.id },
+      orderBy: { number: "asc" },
+      include: {
+        translations: { where: { locale } },
+        episodes: {
+          orderBy: { number: "asc" },
+          include: {
+            translations: { where: { locale } },
+            watches: {
+              where: { userId },
+              orderBy: { watchedAt: { sort: "desc", nulls: "last" } },
+              select: { id: true, watchedAt: true },
+            },
+          },
+        },
+      },
+    });
+    const [seasonRatings, episodeRatings, episodeComments] = await Promise.all([
+      this.reviews.communityRatings(
+        userId,
+        ReviewTargetType.SEASON,
+        seasons.map((s) => s.id),
+      ),
+      this.reviews.communityRatings(
+        userId,
+        ReviewTargetType.EPISODE,
+        seasons.flatMap((s) => s.episodes.map((e) => e.id)),
+      ),
+      this.prisma.comment.groupBy({
+        by: ["targetId"],
+        where: {
+          targetType: "EPISODE",
+          targetId: {
+            in: seasons.flatMap((s) => s.episodes.map((e) => e.id)),
+          },
+          deletedAt: null,
+        },
+        _count: { _all: true },
+      }),
+    ]);
+    const commentCounts = new Map(
+      episodeComments.map((row) => [row.targetId, row._count._all]),
+    );
+
+    const entryRow = await this.prisma.mediaEntry.findUnique({
+      where: { userId_mediaItemId: { userId, mediaItemId: media.id } },
+      include: ENTRY_INCLUDE,
+    });
+    const entry = entryRow
+      ? this.toEntryDto(
+          entryRow,
+          await this.computeProgress(
+            userId,
+            media.id,
+            entryRow.rewatchStartedAt,
+          ),
+          await this.lastWatchedAt(userId, media.id),
+          await this.reviews.getRating(
+            userId,
+            ReviewTargetType.MEDIA,
+            media.id,
+          ),
+        )
+      : null;
+
+    return {
+      source,
+      sourceId,
+      type: media.type,
+      title: translation?.title ?? media.title,
+      // Original title is not persisted separately; only used for matching.
+      originalTitle: null,
+      year: media.releaseDate ? media.releaseDate.getUTCFullYear() : null,
+      posterUrl: media.posterUrl,
+      backdropUrl: media.backdropUrl,
+      overview: translation?.overview ?? media.overview,
+      genres: translation?.genres ?? media.genres,
+      airingStatus: media.status,
+      releaseDate: media.releaseDate ? utcDateKey(media.releaseDate) : null,
+      movieRelease:
+        type === "MOVIE"
+          ? movieReleaseInfo(
+              movieReleaseDates(media.movieReleaseDates),
+              media.status,
+              await this.movieRegion(userId, acceptLanguage),
+            )
+          : null,
+      airingFinished: normalizeAiringFinished(media.status),
+      runtimeMin: media.runtimeMin,
+      isAdult: media.isAdult,
+      seasons: seasons.map((season) => ({
+        id: season.id,
+        number: season.number,
+        title: season.translations[0]?.title ?? season.title,
+        overview: season.translations[0]?.overview ?? season.overview,
+        posterUrl: season.posterUrl,
+        airDate: season.airDate?.toISOString() ?? null,
+        voteAverage: season.voteAverage,
+        ...(seasonRatings.get(season.id) ?? NO_COMMUNITY_RATING),
+        episodes: season.episodes.map((episode) => ({
+          id: episode.id,
+          number: episode.number,
+          title: episode.translations[0]?.title ?? episode.title,
+          airDate: episode.airDate?.toISOString() ?? null,
+          runtimeMin: episode.runtimeMin,
+          overview: episode.translations[0]?.overview ?? episode.overview,
+          stillUrl: episode.stillUrl,
+          voteAverage: episode.voteAverage,
+          voteCount: episode.voteCount,
+          streamingUrl: episode.streamingUrl,
+          streamingSite: episode.streamingSite,
+          ...(episodeRatings.get(episode.id) ?? NO_COMMUNITY_RATING),
+          commentCount: commentCounts.get(episode.id) ?? 0,
+          watchCount: episode.watches.length,
+          seen: episode.watches.some((w) =>
+            seenInViewing(w.watchedAt, entryRow?.rewatchStartedAt ?? null),
+          ),
+          watches: episode.watches.map((w) => ({
+            id: w.id,
+            episodeId: episode.id,
+            watchedAt: w.watchedAt?.toISOString() ?? null,
+          })),
+        })),
+      })),
+      commentTargetId: media.id,
+      entry,
+    };
+  }
+
+  private async movieRegion(
+    userId: string,
+    acceptLanguage?: string,
+  ): Promise<string> {
+    const user = preferencesOf(
+      await this.prisma.userPreferences.findUnique({
+        where: { userId: userId },
+        select: { watchRegion: true },
+      }),
+    );
+    return resolveWatchRegion(user.watchRegion ?? undefined, acceptLanguage);
+  }
+}
+
+const NO_COMMUNITY_RATING = {
+  reviewCount: null,
+  reviewAverage: null,
+  myRating: null,
+} as const;
+
+function toReplayDto(replay: MovieReplay): MovieReplayDto {
+  return { id: replay.id, finishedAt: replay.finishedAt.toISOString() };
+}

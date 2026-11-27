@@ -996,7 +996,7 @@ export class BookLibraryService {
 
   /**
    * Keeps `finishedAt` in sync with "has the reader finished this book" —
-   * nothing in the UI sets it directly. Mirrors LibraryService.syncFinishedAt
+   * nothing in the UI sets it directly. Mirrors MediaLibraryService.syncFinishedAt
    * for MEDIA; books have no progress model beyond the raw status, so a
    * finished book is simply one marked READ.
    */

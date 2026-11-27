@@ -43,8 +43,8 @@ import { rankBySearchRelevance } from "./search-ranking";
 import { resolveWatchRegion } from "./watch-region.util";
 
 @Controller("catalog")
-export class CatalogController {
-  private readonly logger = new Logger(CatalogController.name);
+export class MediaCatalogController {
+  private readonly logger = new Logger(MediaCatalogController.name);
 
   constructor(
     private readonly mediaItemService: MediaItemService,

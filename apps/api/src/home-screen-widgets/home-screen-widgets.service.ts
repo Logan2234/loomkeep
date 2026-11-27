@@ -12,7 +12,7 @@ import { canonicalExternalId } from "../common/external-id.util";
 import { localDay, localDayOrUtc } from "../common/local-day.util";
 import { XpService } from "../gamification/xp.service";
 import { CalendarService } from "../library/calendar.service";
-import { LibraryService } from "../library/library.service";
+import { MediaLibraryService } from "../media/media-library.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { SessionTimerService } from "../session-timer/session-timer.service";
 import { activityDates } from "../stats/activity-dates";
@@ -78,7 +78,7 @@ const ENTRY_ITEM = { include: { externalIds: true } } as const;
 export class HomeScreenWidgetsService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly library: LibraryService,
+    private readonly library: MediaLibraryService,
     private readonly domains: DomainGateService,
     private readonly timers: SessionTimerService,
     private readonly xp: XpService,

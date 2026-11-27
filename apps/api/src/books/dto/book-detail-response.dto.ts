@@ -4,8 +4,8 @@ import type {
 } from "@loomkeep/shared/contracts";
 import { BookSource } from "@loomkeep/shared/enums";
 import { ApiProperty } from "@nestjs/swagger";
-import { CreatorRefResponseDto } from "../../catalog/dto/creator-ref-response.dto";
-import { RatingResponseDto } from "../../catalog/dto/rating-response.dto";
+import { CreatorRefResponseDto } from "../../media/dto/creator-ref-response.dto";
+import { RatingResponseDto } from "../../media/dto/rating-response.dto";
 import { BookEntryResponseDto } from "./book-entry-response.dto";
 import { BookSummaryResponseDto } from "./book-summary-response.dto";
 

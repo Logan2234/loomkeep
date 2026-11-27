@@ -1,10 +1,10 @@
 import { ErrorCode } from "@loomkeep/shared/catalog";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import { MediaItemService } from "../../../catalog/media-item.service";
 import { AppException } from "../../../common/app.exception";
 import { HTTP_TIMEOUT_MS } from "../../../common/http.util";
 import { primaryWebOrigin } from "../../../common/web-origin.util";
+import { MediaItemService } from "../../../media/media-item.service";
 import { PrismaService } from "../../../prisma/prisma.service";
 import { QuotaTrackerService } from "../../../quota/quota-tracker.service";
 import { ReviewService } from "../../../reviews/review.service";

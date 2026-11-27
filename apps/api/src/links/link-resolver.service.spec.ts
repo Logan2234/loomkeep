@@ -3,10 +3,10 @@ import { HttpStatus } from "@nestjs/common";
 import type { ConfigService } from "@nestjs/config";
 import { vi } from "vitest";
 import type { OpenLibraryProvider } from "../books/providers/open-library.provider";
-import type { AnilistProvider } from "../catalog/providers/anilist.provider";
-import type { TmdbProvider } from "../catalog/providers/tmdb.provider";
 import { AppException } from "../common/app.exception";
 import type { IgdbProvider } from "../games/providers/igdb.provider";
+import type { AnilistProvider } from "../media/providers/anilist.provider";
+import type { TmdbProvider } from "../media/providers/tmdb.provider";
 import type { MusicBrainzProvider } from "../music/providers/musicbrainz.provider";
 import { LinkResolverService } from "./link-resolver.service";
 

@@ -1,6 +1,6 @@
 import { CatalogSource, MediaType } from "@loomkeep/shared/enums";
 import { Injectable } from "@nestjs/common";
-import { MediaItemService } from "../../../catalog/media-item.service";
+import { MediaItemService } from "../../../media/media-item.service";
 import { PrismaService } from "../../../prisma/prisma.service";
 import { ReviewService } from "../../../reviews/review.service";
 import type { ParsedImport } from "../../media-import-model";

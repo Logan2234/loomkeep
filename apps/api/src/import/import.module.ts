@@ -1,12 +1,12 @@
 import { Module } from "@nestjs/common";
 import { BooksModule } from "../books/books.module";
-import { CatalogModule } from "../catalog/catalog.module";
 import { EntitlementsModule } from "../entitlements/entitlements.module";
 import { EventsModule } from "../events/events.module";
 import { GamesModule } from "../games/games.module";
 import { GamificationModule } from "../gamification/gamification.module";
 import { ListsModule } from "../lists/lists.module";
 import { MailModule } from "../mail/mail.module";
+import { MediaModule } from "../media/media.module";
 import { AdminAlertModule } from "../notifications/admin-alert.module";
 import { NotificationsModule } from "../notifications/notifications.module";
 import { ReviewsModule } from "../reviews/reviews.module";
@@ -38,7 +38,7 @@ import { TvTimeImportSource } from "./sources/tvtime/tvtime.source";
  */
 @Module({
   imports: [
-    CatalogModule,
+    MediaModule,
     BooksModule,
     GamesModule,
     UserGatesModule,

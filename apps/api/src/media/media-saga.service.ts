@@ -12,16 +12,16 @@ import type {
 } from "@loomkeep/shared/enums";
 import { Injectable, Logger } from "@nestjs/common";
 import type { SagaMember } from "@prisma/client";
-import { SagaSyncService } from "../catalog/saga-sync.service";
 import { mapWithConcurrency } from "../common/concurrency.util";
 import { PrismaService } from "../prisma/prisma.service";
 import { AgeGateService } from "../users/age-gate.service";
-import { LibraryService } from "./library.service";
+import { MediaLibraryService } from "./media-library.service";
 import {
   MEDIA_SAGA_STATUS,
   sagaComparator,
   sagaProgress,
 } from "./saga-progress.util";
+import { SagaSyncService } from "./saga-sync.service";
 
 type SagaTitles = { title: string; members: Record<string, string> };
 
@@ -38,13 +38,13 @@ export interface LibrarySagaFilters {
  * progress across their library.
  */
 @Injectable()
-export class SagaService {
-  private readonly logger = new Logger(SagaService.name);
+export class MediaSagaService {
+  private readonly logger = new Logger(MediaSagaService.name);
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly sagas: SagaSyncService,
-    private readonly library: LibraryService,
+    private readonly library: MediaLibraryService,
     private readonly ageGate: AgeGateService,
   ) {}
 

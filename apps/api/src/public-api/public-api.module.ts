@@ -2,11 +2,11 @@ import { Module } from "@nestjs/common";
 import { AccountModule } from "../account/account.module";
 import { ApiKeysModule } from "../api-keys/api-keys.module";
 import { BooksModule } from "../books/books.module";
-import { CatalogModule } from "../catalog/catalog.module";
 import { GamesModule } from "../games/games.module";
 import { GamificationModule } from "../gamification/gamification.module";
 import { LibraryModule } from "../library/library.module";
 import { ListsModule } from "../lists/lists.module";
+import { MediaModule } from "../media/media.module";
 import { MusicModule } from "../music/music.module";
 import { NotificationsModule } from "../notifications/notifications.module";
 import { ReviewsModule } from "../reviews/reviews.module";
@@ -45,11 +45,11 @@ import { WorkTitlesService } from "./v1/work-titles.service";
     ApiKeysModule,
     AccountModule,
     UserGatesModule,
-    LibraryModule,
+    MediaModule,
     GamesModule,
     BooksModule,
     MusicModule,
-    CatalogModule,
+    LibraryModule,
     ListsModule,
     StatsModule,
     ReviewsModule,

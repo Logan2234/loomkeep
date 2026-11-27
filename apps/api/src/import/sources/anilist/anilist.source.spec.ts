@@ -4,7 +4,7 @@ import { vi } from "vitest";
 import type {
   AnilistListEntry,
   AnilistProvider,
-} from "../../../catalog/providers/anilist.provider";
+} from "../../../media/providers/anilist.provider";
 import { buildAnilistLists, buildAnilistShows } from "./anilist.parser";
 import { AnilistImportSource } from "./anilist.source";
 

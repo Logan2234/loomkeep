@@ -1,10 +1,10 @@
 import { ErrorCode } from "@loomkeep/shared/catalog";
 import { type Mock, vi } from "vitest";
 import type { BookSagaService } from "../books/book-saga.service";
-import type { MediaItemService } from "../catalog/media-item.service";
 import { AppException } from "../common/app.exception";
 import type { GameSagaService } from "../games/game-saga.service";
-import type { SagaService } from "../library/saga.service";
+import type { MediaItemService } from "../media/media-item.service";
+import type { MediaSagaService } from "../media/media-saga.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import type { FollowService } from "../social/follow.service";
 import type { WorkFriendsService } from "../social/work-friends.service";
@@ -76,7 +76,7 @@ function setup({ leaVisible = true } = {}) {
   const follow = {
     listFriendIds: vi.fn().mockResolvedValue([LEA]),
   } as unknown as FollowService;
-  const mediaSagas = { savedSaga: vi.fn() } as unknown as SagaService;
+  const mediaSagas = { savedSaga: vi.fn() } as unknown as MediaSagaService;
   const extras = { getExtras: vi.fn() };
   const media = {
     providerFor: vi.fn(() => extras),

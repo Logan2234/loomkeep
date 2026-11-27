@@ -12,7 +12,7 @@ import {
   type VisibilityAudience,
 } from "@loomkeep/shared/enums";
 import { Injectable } from "@nestjs/common";
-import { deriveStatus, normalizeAiringFinished } from "../library/status.util";
+import { deriveStatus, normalizeAiringFinished } from "../media/status.util";
 import { PrismaService } from "../prisma/prisma.service";
 import { toUserSummaryDto } from "../users/avatar.util";
 import { isSuspended } from "../users/suspension.util";

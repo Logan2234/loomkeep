@@ -2,7 +2,7 @@ import { ErrorCode } from "@loomkeep/shared/catalog";
 import type { ImportPlan, ImportPlanItem } from "@loomkeep/shared/contracts";
 import { ConfigService } from "@nestjs/config";
 import { vi } from "vitest";
-import { MediaItemService } from "../../../catalog/media-item.service";
+import { MediaItemService } from "../../../media/media-item.service";
 import { PrismaService } from "../../../prisma/prisma.service";
 import type { QuotaTrackerService } from "../../../quota/quota-tracker.service";
 import { mockFetchByUrl } from "../../../test-utils/mock-fetch";

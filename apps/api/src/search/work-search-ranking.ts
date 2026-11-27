@@ -1,6 +1,6 @@
 import { type WorkSearchHitDto } from "@loomkeep/shared/contracts";
 import { Domain } from "@loomkeep/shared/enums";
-import { titleRelevance } from "../catalog/search-ranking";
+import { titleRelevance } from "../media/search-ranking";
 
 /** The domains a work search covers: the ones with a catalogue. */
 export const SEARCH_DOMAINS = [

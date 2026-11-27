@@ -1,7 +1,7 @@
 import { INestApplication } from "@nestjs/common";
 import request from "supertest";
 import { App } from "supertest/types";
-import { LibraryService } from "../src/library/library.service";
+import { MediaLibraryService } from "../src/media/media-library.service";
 import type { PrismaService } from "../src/prisma/prisma.service";
 import { authCookies, createE2eApp, e2eUser } from "./e2e-app";
 
@@ -95,7 +95,7 @@ describe("Rewatch (e2e)", () => {
     expect(started.body.progress.nextEpisode.episodeId).toBe(e3);
 
     const watching = await app
-      .get(LibraryService)
+      .get(MediaLibraryService)
       .listEntries(userId, { statuses: ["WATCHING"] });
     expect(watching.items.map((e) => e.id)).toContain(entryId);
 
@@ -130,7 +130,9 @@ describe("Rewatch (e2e)", () => {
     const sourceId = entry.mediaItem.externalIds[0].externalId;
     const episodes = async () =>
       (
-        await app.get(LibraryService).getMediaDetail(userId, "SERIES", sourceId)
+        await app
+          .get(MediaLibraryService)
+          .getMediaDetail(userId, "SERIES", sourceId)
       ).seasons[0].episodes.map((e) => [e.seen, e.watchCount]);
 
     expect(await episodes()).toEqual([

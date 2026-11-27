@@ -8,7 +8,7 @@ export interface PileItem {
 
 /**
  * Statuses that make a pile: everything planned, plus what's in progress —
- * the rest of it, not all of it. Media's own pair lives in LibraryService,
+ * the rest of it, not all of it. Media's own pair lives in MediaLibraryService,
  * where the effective status is derived rather than stored.
  */
 export const GAME_PILE_STATUSES = ["BACKLOG", "PLAYING"] as const;

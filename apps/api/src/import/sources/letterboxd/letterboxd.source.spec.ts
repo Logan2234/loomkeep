@@ -1,7 +1,7 @@
 import { CatalogSource, MediaType } from "@loomkeep/shared/enums";
 import { vi } from "vitest";
-import type { MediaItemService } from "../../../catalog/media-item.service";
 import type { ListService } from "../../../lists/list.service";
+import type { MediaItemService } from "../../../media/media-item.service";
 import type { PrismaService } from "../../../prisma/prisma.service";
 import type { ReviewService } from "../../../reviews/review.service";
 import type { CommitDecisions } from "../../import-source";

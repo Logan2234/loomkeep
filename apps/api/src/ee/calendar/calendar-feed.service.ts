@@ -8,8 +8,6 @@ import {
 } from "@loomkeep/shared/rules";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import { TmdbProvider } from "../../catalog/providers/tmdb.provider";
-import { resolveWatchRegion } from "../../catalog/watch-region.util";
 import { AppException } from "../../common/app.exception";
 import {
   type CopyLocale,
@@ -21,6 +19,8 @@ import { canonicalExternalId } from "../../common/external-id.util";
 import { primaryWebOrigin } from "../../common/web-origin.util";
 import { EntitlementService } from "../../entitlements/entitlement.service";
 import { CalendarService } from "../../library/calendar.service";
+import { TmdbProvider } from "../../media/providers/tmdb.provider";
+import { resolveWatchRegion } from "../../media/watch-region.util";
 import { notificationCopy } from "../../notifications/notification-copy";
 import { PrismaService } from "../../prisma/prisma.service";
 import { saveUserUrlToken } from "../../users/user-url-token.writer";

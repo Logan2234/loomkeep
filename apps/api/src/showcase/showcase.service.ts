@@ -1,7 +1,7 @@
 import type { ShowcaseDto } from "@loomkeep/shared/contracts";
 import { Injectable, Logger } from "@nestjs/common";
-import { TmdbProvider } from "../catalog/providers/tmdb.provider";
 import { IgdbProvider } from "../games/providers/igdb.provider";
+import { TmdbProvider } from "../media/providers/tmdb.provider";
 import { PrismaService } from "../prisma/prisma.service";
 
 const TTL_MS = 24 * 60 * 60 * 1000;

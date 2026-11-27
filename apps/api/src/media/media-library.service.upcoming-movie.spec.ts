@@ -1,5 +1,5 @@
 import { vi } from "vitest";
-import { LibraryService } from "./library.service";
+import { MediaLibraryService } from "./media-library.service";
 
 function makeService(overrides: Record<string, unknown> = {}) {
   const movie = {
@@ -49,7 +49,7 @@ function makeService(overrides: Record<string, unknown> = {}) {
       aggregate: vi.fn().mockResolvedValue({ _max: { watchedAt: null } }),
     },
   };
-  const service = new LibraryService(
+  const service = new MediaLibraryService(
     prisma as never,
     { upsertFromSource: vi.fn().mockResolvedValue(movie) } as never,
     {} as never,
