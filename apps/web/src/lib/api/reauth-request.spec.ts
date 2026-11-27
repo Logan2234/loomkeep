@@ -1,7 +1,7 @@
 import { ErrorCode } from "@loomkeep/shared/catalog";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { reauth } from "../auth/reauth.svelte";
 import { m } from "../paraglide/messages.js";
-import { reauth } from "../reauth.svelte";
 import { request } from "./core";
 
 const reauthRequired = () =>

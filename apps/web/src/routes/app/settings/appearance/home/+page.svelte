@@ -1,8 +1,8 @@
 <script lang="ts">
-  import HomeLayoutEditor from "#lib/components/home/HomeLayoutEditor.svelte";
-  import PhoneHomeEditor from "#lib/components/home/PhoneHomeEditor.svelte";
-  import { layout } from "#lib/layout.svelte.js";
-  import PageHeader from "#lib/components/PageHeader.svelte";
+  import HomeLayoutEditor from "#lib/home/HomeLayoutEditor.svelte";
+  import PhoneHomeEditor from "#lib/home/PhoneHomeEditor.svelte";
+  import { layout } from "#lib/shell/layout.svelte.js";
+  import PageHeader from "#lib/ui/PageHeader.svelte";
   import { m } from "#lib/paraglide/messages.js";
 </script>
 

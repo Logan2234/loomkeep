@@ -1,4 +1,4 @@
-import { THEME_COLOR, theme } from "#lib/theme.svelte.js";
+import { THEME_COLOR, theme } from "#lib/ui/theme.svelte.js";
 import { Browser } from "@capacitor/browser";
 import { Capacitor } from "@capacitor/core";
 

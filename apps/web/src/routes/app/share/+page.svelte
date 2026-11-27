@@ -4,12 +4,12 @@
   import { keys } from "#lib/api/keys.js";
   import { resolveLink } from "#lib/api/links.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
-  import BootSplash from "#lib/components/BootSplash.svelte";
-  import EmptyState from "#lib/components/EmptyState.svelte";
-  import QuickAddPanel from "#lib/components/QuickAddPanel.svelte";
+  import BootSplash from "#lib/shell/BootSplash.svelte";
+  import EmptyState from "#lib/ui/EmptyState.svelte";
+  import QuickAddPanel from "#lib/library/QuickAddPanel.svelte";
   import { m } from "#lib/paraglide/messages.js";
-  import { quickAddTarget } from "#lib/quick-add.js";
-  import { readSharedLink } from "#lib/share-link.js";
+  import { quickAddTarget } from "#lib/library/quick-add.js";
+  import { readSharedLink } from "#lib/share/share-link.js";
 
   const { link, searchTerm } = readSharedLink(page.url.searchParams);
   const searchHref = `/app/search?query=${encodeURIComponent(searchTerm)}`;

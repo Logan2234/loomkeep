@@ -17,14 +17,14 @@
   } from "#lib/api/client.js";
   import { keys } from "#lib/api/keys.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
-  import { auth } from "#lib/auth.svelte.js";
-  import Icon from "#lib/components/Icon.svelte";
-  import PageHeader from "#lib/components/PageHeader.svelte";
+  import { auth } from "#lib/auth/auth.svelte.js";
+  import Icon from "#lib/ui/Icon.svelte";
+  import PageHeader from "#lib/ui/PageHeader.svelte";
   import { DOMAIN_IDS } from "#lib/constants/domains.js";
   import { IMPORTS_DEFINITION } from "#lib/constants/import-sources.js";
-  import { languageName } from "#lib/locales.js";
+  import { languageName } from "#lib/shell/locales.js";
   import { m } from "#lib/paraglide/messages.js";
-  import { theme } from "#lib/theme.svelte.js";
+  import { theme } from "#lib/ui/theme.svelte.js";
   import { DigestCadence } from "@loomkeep/shared/enums";
   import SettingsNav from "./components/SettingsNav.svelte";
   import {

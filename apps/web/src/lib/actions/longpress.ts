@@ -1,5 +1,5 @@
-import { prefersReducedMotion } from "#lib/motion.js";
 import { tapFeedback } from "#lib/native/haptics.js";
+import { prefersReducedMotion } from "#lib/ui/motion.js";
 
 const MOVE_TOLERANCE = 10;
 const DURATION = 450;

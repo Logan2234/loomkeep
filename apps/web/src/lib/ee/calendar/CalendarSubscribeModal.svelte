@@ -1,8 +1,8 @@
 <script lang="ts">
   import { API_URL } from "#lib/api/client.js";
   import { keys } from "#lib/api/keys.js";
-  import NewBadge from "#lib/components/NewBadge.svelte";
-  import { isFeatureNew } from "#lib/feature-badges.js";
+  import NewBadge from "#lib/premium/NewBadge.svelte";
+  import { isFeatureNew } from "#lib/shell/feature-badges.js";
   import { m } from "#lib/paraglide/messages.js";
   import { getCalendarToken, regenerateCalendarToken } from "../api";
   import FeedLink from "../feeds/FeedLink.svelte";

@@ -5,8 +5,8 @@ import {
   MUSIC_STATUS_META,
 } from "#lib/constants/status-labels.js";
 import { STATUS_LOOKS, type StatusTone } from "#lib/constants/status-looks.js";
-import { formatHours } from "#lib/format.js";
 import { m } from "#lib/paraglide/messages.js";
+import { formatHours } from "#lib/ui/format.js";
 import type {
   WorkFriendsDto,
   WorkProgressDto,

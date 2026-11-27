@@ -6,21 +6,24 @@
   import { keys } from "#lib/api/keys.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
-  import { auth } from "#lib/auth.svelte.js";
-  import EarlyAccessBadge from "#lib/components/EarlyAccessBadge.svelte";
-  import Icon from "#lib/components/Icon.svelte";
-  import PremiumLockBadge from "#lib/components/PremiumLockBadge.svelte";
-  import Tooltip from "#lib/components/Tooltip.svelte";
+  import { auth } from "#lib/auth/auth.svelte.js";
+  import EarlyAccessBadge from "#lib/premium/EarlyAccessBadge.svelte";
+  import Icon from "#lib/ui/Icon.svelte";
+  import PremiumLockBadge from "#lib/premium/PremiumLockBadge.svelte";
+  import Tooltip from "#lib/ui/Tooltip.svelte";
   import { DOMAINS } from "#lib/constants/domains.js";
-  import { createDomainToggle } from "#lib/domain-toggle.svelte.js";
-  import { isDomainOffered, orderedDomains } from "#lib/domain-availability.js";
-  import { prefersReducedMotion } from "#lib/motion.js";
+  import { createDomainToggle } from "#lib/work/domain-toggle.svelte.js";
+  import {
+    isDomainOffered,
+    orderedDomains,
+  } from "#lib/work/domain-availability.js";
+  import { prefersReducedMotion } from "#lib/ui/motion.js";
   import { m } from "#lib/paraglide/messages.js";
   import { Domain, PREMIUM_DOMAINS } from "@loomkeep/shared/enums";
   import { dragHandle, dragHandleZone } from "svelte-dnd-action";
   import { flip } from "svelte/animate";
   import { cubicOut } from "svelte/easing";
-  import { flashAnchor } from "#lib/flash-anchor.js";
+  import { flashAnchor } from "#lib/shell/flash-anchor.js";
 
   const premiumLocked = $derived(auth.isPremiumLocked);
   const reduced = prefersReducedMotion();

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { labeledOptions } from "#lib/options.js";
+  import { labeledOptions } from "#lib/ui/options.js";
 
   import { type SelectOption } from "#lib/types/select-option.js";
 
@@ -14,11 +14,11 @@
   import type {
     LibraryLoadParams,
     PileLoadParams,
-  } from "#lib/components/LibraryBrowser.svelte";
-  import EarlyAccessBanner from "#lib/components/EarlyAccessBanner.svelte";
-  import LibraryBrowser from "#lib/components/LibraryBrowser.svelte";
-  import PosterCard from "#lib/components/PosterCard.svelte";
-  import MusicSearchPanel from "#lib/components/search/MusicSearchPanel.svelte";
+  } from "#lib/library/LibraryBrowser.svelte";
+  import EarlyAccessBanner from "#lib/premium/EarlyAccessBanner.svelte";
+  import LibraryBrowser from "#lib/library/LibraryBrowser.svelte";
+  import PosterCard from "#lib/work/PosterCard.svelte";
+  import MusicSearchPanel from "#lib/search/MusicSearchPanel.svelte";
   import { STORAGE_KEYS } from "#lib/constants/storage-keys.js";
   import {
     MUSIC_OWNERSHIP_SOURCES,
@@ -33,14 +33,14 @@
     DATE_MEDIUM_OPTIONS,
     formatDate,
     formatRating,
-  } from "#lib/format.js";
+  } from "#lib/ui/format.js";
   import {
     ownershipText,
     type LibraryBulkActions,
     type LibraryColumn,
     type LibraryItemView,
     COMMON_LIBRARY_SORTS,
-  } from "#lib/library-view.js";
+  } from "#lib/library/library-view.js";
   import { m } from "#lib/paraglide/messages.js";
   import { Domain, type MusicStatus } from "@loomkeep/shared/enums";
   import {

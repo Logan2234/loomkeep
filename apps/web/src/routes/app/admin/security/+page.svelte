@@ -1,17 +1,17 @@
 <script lang="ts">
-  import KpiStripSkeleton from "#lib/components/stats/KpiStripSkeleton.svelte";
-  import RankBarsSkeleton from "#lib/components/stats/RankBarsSkeleton.svelte";
-  import LoadMoreButton from "#lib/components/LoadMoreButton.svelte";
+  import KpiStripSkeleton from "#lib/stats/KpiStripSkeleton.svelte";
+  import RankBarsSkeleton from "#lib/stats/RankBarsSkeleton.svelte";
+  import LoadMoreButton from "#lib/ui/LoadMoreButton.svelte";
 
-  import { typedEntries } from "#lib/object.js";
+  import { typedEntries } from "#lib/ui/object.js";
 
-  import { CopyFeedback } from "#lib/clipboard.svelte.js";
+  import { CopyFeedback } from "#lib/ui/clipboard.svelte.js";
 
   import AdminFilterBar from "../AdminFilterBar.svelte";
   import AdminQueryError from "../AdminQueryError.svelte";
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
-  import { adminFilterHref, enumParam } from "#lib/url-params.js";
+  import { adminFilterHref, enumParam } from "#lib/shell/url-params.js";
   import {
     getAdminSecurityEvents,
     getAdminSecuritySummary,
@@ -19,15 +19,15 @@
   import { createApiInfiniteQuery } from "#lib/api/infinite-query.svelte.js";
   import { keys } from "#lib/api/keys.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
-  import Combobox from "#lib/components/Combobox.svelte";
-  import EmptyState from "#lib/components/EmptyState.svelte";
-  import PageHeader from "#lib/components/PageHeader.svelte";
-  import KpiStrip from "#lib/components/stats/KpiStrip.svelte";
-  import RankBars from "#lib/components/stats/RankBars.svelte";
-  import SectionLabel from "#lib/components/stats/SectionLabel.svelte";
-  import { formatDateTime, formatNumber } from "#lib/format.js";
-  import { debounce, SEARCH_DEBOUNCE_MS } from "#lib/debounce.js";
-  import { prefersReducedMotion } from "#lib/motion.js";
+  import Combobox from "#lib/ui/Combobox.svelte";
+  import EmptyState from "#lib/ui/EmptyState.svelte";
+  import PageHeader from "#lib/ui/PageHeader.svelte";
+  import KpiStrip from "#lib/stats/KpiStrip.svelte";
+  import RankBars from "#lib/stats/RankBars.svelte";
+  import SectionLabel from "#lib/stats/SectionLabel.svelte";
+  import { formatDateTime, formatNumber } from "#lib/ui/format.js";
+  import { debounce, SEARCH_DEBOUNCE_MS } from "#lib/ui/debounce.js";
+  import { prefersReducedMotion } from "#lib/ui/motion.js";
   import { m } from "#lib/paraglide/messages.js";
   import { securityEventLabels } from "#lib/constants/security-events.js";
   import type { SecurityEventType } from "@loomkeep/shared/enums";

@@ -1,5 +1,5 @@
-import { calendarDayIso } from "#lib/calendar-entry.js";
-import { localDateInput } from "#lib/date.js";
+import { calendarDayIso } from "#lib/media/calendar-entry.js";
+import { localDateInput } from "#lib/ui/date.js";
 import type { CalendarEntryDto } from "@loomkeep/shared/contracts";
 
 export type CalendarFilter = "series" | "anime" | "movie" | "game" | "muted";

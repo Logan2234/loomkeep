@@ -3,10 +3,14 @@
   // Everything activity-related comes from refresh-token usage (see the API
   // service) — ActivityEvent only exists since P4 and would bury old accounts.
   import { getAdminNewAccountsTrend } from "#lib/api/client.js";
-  import HistogramBars from "#lib/components/stats/HistogramBars.svelte";
-  import RankBars from "#lib/components/stats/RankBars.svelte";
-  import StatFigure from "#lib/components/stats/StatFigure.svelte";
-  import { formatNumber, formatPercent, formatLanguage } from "#lib/format.js";
+  import HistogramBars from "#lib/stats/HistogramBars.svelte";
+  import RankBars from "#lib/stats/RankBars.svelte";
+  import StatFigure from "#lib/stats/StatFigure.svelte";
+  import {
+    formatNumber,
+    formatPercent,
+    formatLanguage,
+  } from "#lib/ui/format.js";
   import { ACQUISITION_SOURCE_LABELS } from "#lib/constants/acquisition-sources.js";
   import { DELETION_REASON_LABELS } from "#lib/constants/deletion-reasons.js";
   import { m } from "#lib/paraglide/messages.js";

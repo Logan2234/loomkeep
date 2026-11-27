@@ -3,9 +3,9 @@ import type { ApiErrorBody } from "@loomkeep/shared/catalog";
 import { ErrorCode } from "@loomkeep/shared/catalog";
 import type { PagedResult } from "@loomkeep/shared/contracts";
 import * as Sentry from "@sentry/sveltekit";
-import { auth } from "../auth.svelte";
+import { auth } from "../auth/auth.svelte";
+import { reauth, reauthReason } from "../auth/reauth.svelte";
 import { getLocale } from "../paraglide/runtime.js";
-import { reauth, reauthReason } from "../reauth.svelte";
 
 export const API_URL = env.PUBLIC_API_URL ?? "http://localhost:3000/api";
 

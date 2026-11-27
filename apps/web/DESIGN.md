@@ -104,7 +104,7 @@ ships the transitions of what it adds.
   70 % while pressed (`app.css`, base layer); a component that wants better
   (a scale, a fill) gives itself an `active:` utility, which opts it out.
 - Reduced motion: Svelte transitions take their duration from
-  `prefersReducedMotion()` (`$lib/motion`, `duration: reduced ? 0 : 200`), and
+  `prefersReducedMotion()` (`#lib/ui/motion`, `duration: reduced ? 0 : 200`), and
   spatial CSS ones (transform) add `motion-reduce:transition-none`. Colour
   fades may stay.
 

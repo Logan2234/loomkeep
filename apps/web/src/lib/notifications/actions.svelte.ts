@@ -8,7 +8,7 @@ import {
   markNotificationUnread,
 } from "#lib/api/notifications.js";
 import { m } from "#lib/paraglide/messages.js";
-import { toast } from "#lib/toast.svelte.js";
+import { toast } from "#lib/ui/toast.svelte.js";
 import type {
   NotificationCountsDto,
   NotificationDto,

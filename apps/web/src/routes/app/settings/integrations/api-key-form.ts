@@ -1,4 +1,4 @@
-import { localDateInput } from "#lib/date.js";
+import { localDateInput } from "#lib/ui/date.js";
 import type {
   ApiKeyDto,
   ApiKeyResource,

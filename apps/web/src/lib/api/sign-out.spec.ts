@@ -6,7 +6,7 @@ const { typedRequest, clear, goto } = vi.hoisted(() => ({
   goto: vi.fn(),
 }));
 vi.mock("./generated/typed-request", () => ({ typedRequest }));
-vi.mock("../auth.svelte", () => ({ auth: { clear } }));
+vi.mock("../auth/auth.svelte", () => ({ auth: { clear } }));
 vi.mock("$app/navigation", () => ({ goto }));
 beforeEach(() => {
   typedRequest.mockReset().mockResolvedValue(undefined);

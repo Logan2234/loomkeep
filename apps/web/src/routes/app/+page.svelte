@@ -1,23 +1,23 @@
 <script lang="ts">
   import * as env from "$app/env/public";
   import { signalVersionLinkClicked } from "#lib/api/client.js";
-  import { auth } from "#lib/auth.svelte.js";
-  import BetaBadge from "#lib/components/BetaBadge.svelte";
-  import HomeGrid from "#lib/components/home/HomeGrid.svelte";
-  import HomeStatPills from "#lib/components/home/HomeStatPills.svelte";
-  import PhoneHome from "#lib/components/home/PhoneHome.svelte";
-  import OnboardingCard from "#lib/components/onboarding/OnboardingCard.svelte";
-  import PageHeader from "#lib/components/PageHeader.svelte";
-  import { appConfig } from "#lib/config.svelte.js";
+  import { auth } from "#lib/auth/auth.svelte.js";
+  import BetaBadge from "#lib/premium/BetaBadge.svelte";
+  import HomeGrid from "#lib/home/HomeGrid.svelte";
+  import HomeStatPills from "#lib/home/HomeStatPills.svelte";
+  import PhoneHome from "#lib/home/PhoneHome.svelte";
+  import OnboardingCard from "#lib/onboarding/OnboardingCard.svelte";
+  import PageHeader from "#lib/ui/PageHeader.svelte";
+  import { appConfig } from "#lib/shell/config.svelte.js";
   import { GITHUB_REPO_URL } from "#lib/constants/external-links.js";
   import { currentHomeGate } from "#lib/home/gate.js";
   import { resolveHomeLayout } from "#lib/home/layout.js";
-  import { layout } from "#lib/layout.svelte.js";
+  import { layout } from "#lib/shell/layout.svelte.js";
   import { m } from "#lib/paraglide/messages.js";
   import {
     landHome,
     welcomeCelebration,
-  } from "#lib/onboarding-celebration.svelte.js";
+  } from "#lib/onboarding/onboarding-celebration.svelte.js";
   import { untrack } from "svelte";
 
   const widgets = $derived(

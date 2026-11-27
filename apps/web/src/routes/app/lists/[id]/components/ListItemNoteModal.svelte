@@ -3,7 +3,7 @@
 
   import { setListItemNote } from "#lib/api/lists.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
-  import Modal from "#lib/components/Modal.svelte";
+  import Modal from "#lib/ui/Modal.svelte";
   import { m } from "#lib/paraglide/messages.js";
 
   let {

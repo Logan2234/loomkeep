@@ -1,6 +1,6 @@
 <script lang="ts">
   import { page } from "$app/state";
-  import ProviderMark from "#lib/components/ProviderMark.svelte";
+  import ProviderMark from "#lib/work/ProviderMark.svelte";
   import {
     ANILIST_API,
     IGDB_API,
@@ -10,9 +10,9 @@
     TMDB_API,
   } from "#lib/constants/external-links.js";
   import { m } from "#lib/paraglide/messages.js";
-  import type { ProviderBrandKey } from "#lib/provider-brands.js";
+  import type { ProviderBrandKey } from "#lib/work/provider-brands.js";
   import SettingsSection from "../components/SettingsSection.svelte";
-  import { flashAnchor } from "#lib/flash-anchor.js";
+  import { flashAnchor } from "#lib/shell/flash-anchor.js";
 
   // TMDB's notice text is quoted verbatim by their API Terms of Use and kept
   // identical across locales for that reason — see messages/*.json.

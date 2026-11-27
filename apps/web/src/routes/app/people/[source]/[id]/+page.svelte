@@ -3,28 +3,28 @@
   import { getPersonPage } from "#lib/api/client.js";
   import { keys } from "#lib/api/keys.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
-  import { goBack } from "#lib/back-nav.svelte.js";
-  import Banner from "#lib/components/Banner.svelte";
-  import ClampedText from "#lib/components/ClampedText.svelte";
-  import DetailsCard from "#lib/components/DetailsCard.svelte";
-  import EmptyState from "#lib/components/EmptyState.svelte";
-  import PageHeader from "#lib/components/PageHeader.svelte";
-  import Poster from "#lib/components/Poster.svelte";
-  import PosterCard from "#lib/components/PosterCard.svelte";
-  import PosterGrid from "#lib/components/PosterGrid.svelte";
-  import PosterGridSkeleton from "#lib/components/PosterGridSkeleton.svelte";
-  import ProviderMark from "#lib/components/ProviderMark.svelte";
-  import SegmentedControl from "#lib/components/SegmentedControl.svelte";
-  import TabPanels from "#lib/components/TabPanels.svelte";
-  import Tabs from "#lib/components/Tabs.svelte";
-  import TrackingStatusBadge from "#lib/components/TrackingStatusBadge.svelte";
-  import Combobox from "#lib/components/Combobox.svelte";
-  import { formatDate, joinMeta } from "#lib/format.js";
-  import { pendingPortrait } from "#lib/shared-poster.svelte.js";
-  import { prefersReducedMotion } from "#lib/motion.js";
+  import { goBack } from "#lib/shell/back-nav.svelte.js";
+  import Banner from "#lib/ui/Banner.svelte";
+  import ClampedText from "#lib/ui/ClampedText.svelte";
+  import DetailsCard from "#lib/work/DetailsCard.svelte";
+  import EmptyState from "#lib/ui/EmptyState.svelte";
+  import PageHeader from "#lib/ui/PageHeader.svelte";
+  import Poster from "#lib/work/Poster.svelte";
+  import PosterCard from "#lib/work/PosterCard.svelte";
+  import PosterGrid from "#lib/work/PosterGrid.svelte";
+  import PosterGridSkeleton from "#lib/work/PosterGridSkeleton.svelte";
+  import ProviderMark from "#lib/work/ProviderMark.svelte";
+  import SegmentedControl from "#lib/ui/SegmentedControl.svelte";
+  import TabPanels from "#lib/ui/TabPanels.svelte";
+  import Tabs from "#lib/ui/Tabs.svelte";
+  import TrackingStatusBadge from "#lib/library/TrackingStatusBadge.svelte";
+  import Combobox from "#lib/ui/Combobox.svelte";
+  import { formatDate, joinMeta } from "#lib/ui/format.js";
+  import { pendingPortrait } from "#lib/share/shared-poster.svelte.js";
+  import { prefersReducedMotion } from "#lib/ui/motion.js";
   import { m } from "#lib/paraglide/messages.js";
   import { flip } from "svelte/animate";
-  import SeeMore from "#lib/components/SeeMore.svelte";
+  import SeeMore from "#lib/ui/SeeMore.svelte";
   import { cubicOut } from "svelte/easing";
   import { fade, slide } from "svelte/transition";
   import type { BookStatus, EntryStatus } from "@loomkeep/shared/enums";
@@ -34,8 +34,8 @@
     CreatorSource,
     CreatorWorkDto,
   } from "@loomkeep/shared/contracts";
-  import { workHref } from "#lib/creator-href.js";
-  import { lifeYears } from "#lib/life-years.js";
+  import { workHref } from "#lib/creators/creator-href.js";
+  import { lifeYears } from "#lib/creators/life-years.js";
   import {
     bySeries,
     mixesTypes,

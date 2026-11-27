@@ -1,6 +1,6 @@
-import { auth } from "#lib/auth.svelte.js";
+import { auth } from "#lib/auth/auth.svelte.js";
+import { reauth } from "#lib/auth/reauth.svelte.js";
 import { m } from "#lib/paraglide/messages.js";
-import { reauth } from "#lib/reauth.svelte.js";
 import { apiUrl, server } from "#lib/test/msw.js";
 import { renderWithQuery } from "#lib/test/render.js";
 import type {

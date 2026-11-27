@@ -2,8 +2,8 @@
   import { type LayoutProps } from "./$types";
 
   import { goto } from "$app/navigation";
-  import { bootstrap } from "#lib/bootstrap.svelte.js";
-  import { isDomainEnabled } from "#lib/domain-availability.js";
+  import { bootstrap } from "#lib/shell/bootstrap.svelte.js";
+  import { isDomainEnabled } from "#lib/work/domain-availability.js";
   import { Domain } from "@loomkeep/shared/enums";
 
   let { children }: LayoutProps = $props();

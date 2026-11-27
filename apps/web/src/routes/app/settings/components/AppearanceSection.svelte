@@ -7,36 +7,36 @@
     type ContrastPreference,
     type DensityPreference,
     type MotionPreference,
-  } from "#lib/accessibility.svelte.js";
+  } from "#lib/ui/accessibility.svelte.js";
   import { updateMe } from "#lib/api/auth.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
-  import { auth } from "#lib/auth.svelte.js";
-  import Combobox from "#lib/components/Combobox.svelte";
-  import Icon from "#lib/components/Icon.svelte";
-  import PremiumLockBadge from "#lib/components/PremiumLockBadge.svelte";
-  import ThemePreview from "#lib/components/ThemePreview.svelte";
-  import Tooltip from "#lib/components/Tooltip.svelte";
-  import SegmentedControl from "#lib/components/SegmentedControl.svelte";
-  import { appConfig } from "#lib/config.svelte.js";
+  import { auth } from "#lib/auth/auth.svelte.js";
+  import Combobox from "#lib/ui/Combobox.svelte";
+  import Icon from "#lib/ui/Icon.svelte";
+  import PremiumLockBadge from "#lib/premium/PremiumLockBadge.svelte";
+  import ThemePreview from "#lib/shell/ThemePreview.svelte";
+  import Tooltip from "#lib/ui/Tooltip.svelte";
+  import SegmentedControl from "#lib/ui/SegmentedControl.svelte";
+  import { appConfig } from "#lib/shell/config.svelte.js";
   import { THEME_DEFINITIONS } from "#lib/constants/theme-definitions.js";
-  import { isDomainEnabled } from "#lib/domain-availability.js";
+  import { isDomainEnabled } from "#lib/work/domain-availability.js";
   import { useEeLock } from "#lib/ee/license.svelte.js";
-  import { layout } from "#lib/layout.svelte.js";
-  import { languageOptions } from "#lib/locales.js";
-  import type { MobileDestination } from "#lib/navigation.js";
+  import { layout } from "#lib/shell/layout.svelte.js";
+  import { languageOptions } from "#lib/shell/locales.js";
+  import type { MobileDestination } from "#lib/shell/navigation.js";
   import {
     resolveBottomShortcuts,
     resolveShortcutChoices,
-  } from "#lib/navigation.js";
+  } from "#lib/shell/navigation.js";
   import {
     NAV_STYLE_META,
     navStyle,
     type NavStyle,
-  } from "#lib/nav-style.svelte.js";
-  import { mobileNav } from "#lib/mobile-nav.svelte.js";
+  } from "#lib/shell/nav-style.svelte.js";
+  import { mobileNav } from "#lib/shell/mobile-nav.svelte.js";
   import { m } from "#lib/paraglide/messages.js";
-  import { prefersReducedMotion } from "#lib/motion.js";
-  import { flashAnchor } from "#lib/flash-anchor.js";
+  import { prefersReducedMotion } from "#lib/ui/motion.js";
+  import { flashAnchor } from "#lib/shell/flash-anchor.js";
   import SettingRow from "./SettingRow.svelte";
   import { getLocale, setLocale } from "#lib/paraglide/runtime.js";
   import {

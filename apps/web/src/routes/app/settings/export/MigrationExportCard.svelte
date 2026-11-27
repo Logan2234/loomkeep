@@ -2,15 +2,15 @@
   import { page } from "$app/state";
   import { exportForGoodreads, exportForLetterboxd } from "#lib/api/client.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
-  import Icon from "#lib/components/Icon.svelte";
-  import ProviderMark from "#lib/components/ProviderMark.svelte";
-  import Switch from "#lib/components/Switch.svelte";
-  import { downloadBlob, datedFilename } from "#lib/download.js";
+  import Icon from "#lib/ui/Icon.svelte";
+  import ProviderMark from "#lib/work/ProviderMark.svelte";
+  import Switch from "#lib/ui/Switch.svelte";
+  import { downloadBlob, datedFilename } from "#lib/ui/download.js";
   import { m } from "#lib/paraglide/messages.js";
-  import { toast } from "#lib/toast.svelte.js";
+  import { toast } from "#lib/ui/toast.svelte.js";
   import type { MigrationExportDto } from "@loomkeep/shared/contracts";
-  import { flashAnchor } from "#lib/flash-anchor.js";
-  import type { ProviderBrandKey } from "#lib/provider-brands.js";
+  import { flashAnchor } from "#lib/shell/flash-anchor.js";
+  import type { ProviderBrandKey } from "#lib/work/provider-brands.js";
 
   type Service = "letterboxd" | "goodreads";
 

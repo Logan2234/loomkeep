@@ -1,9 +1,9 @@
 import { dismissTopmostDialog } from "#lib/actions/dialog-focus.js";
-import { consumeBackPress } from "#lib/back-press.js";
 import { chat } from "#lib/chat/chat.svelte.js";
 import { STORAGE_KEYS } from "#lib/constants/storage-keys.js";
-import { readStorage } from "#lib/local-storage.js";
-import { THEME_COLOR } from "#lib/theme.svelte.js";
+import { consumeBackPress } from "#lib/shell/back-press.js";
+import { readStorage } from "#lib/ui/local-storage.js";
+import { THEME_COLOR } from "#lib/ui/theme.svelte.js";
 import { goto } from "$app/navigation";
 import { App } from "@capacitor/app";
 import {

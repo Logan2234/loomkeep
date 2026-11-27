@@ -1,5 +1,9 @@
-import { DATE_MEDIUM_OPTIONS, formatDate, formatNumber } from "#lib/format.js";
 import { m } from "#lib/paraglide/messages.js";
+import {
+  DATE_MEDIUM_OPTIONS,
+  formatDate,
+  formatNumber,
+} from "#lib/ui/format.js";
 
 // TMDB air dates are calendar days, stored at midnight UTC — read in UTC so
 // they never slip to the day before west of Greenwich. Anime ones are exact

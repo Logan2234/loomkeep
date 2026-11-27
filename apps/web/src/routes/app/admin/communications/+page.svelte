@@ -3,10 +3,10 @@
 
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
-  import { adminFilterHref } from "#lib/url-params.js";
-  import PageHeader from "#lib/components/PageHeader.svelte";
-  import TabPanels from "#lib/components/TabPanels.svelte";
-  import Tabs from "#lib/components/Tabs.svelte";
+  import { adminFilterHref } from "#lib/shell/url-params.js";
+  import PageHeader from "#lib/ui/PageHeader.svelte";
+  import TabPanels from "#lib/ui/TabPanels.svelte";
+  import Tabs from "#lib/ui/Tabs.svelte";
   import { m } from "#lib/paraglide/messages.js";
   import EmailTab from "./components/EmailTab.svelte";
   import PushTab from "./components/PushTab.svelte";

@@ -1,8 +1,8 @@
 <script lang="ts">
-  import ModerationStatementFields from "#lib/components/admin/ModerationStatementFields.svelte";
-  import Banner from "#lib/components/Banner.svelte";
+  import ModerationStatementFields from "#lib/admin/ModerationStatementFields.svelte";
+  import Banner from "#lib/ui/Banner.svelte";
 
-  import Modal from "#lib/components/Modal.svelte";
+  import Modal from "#lib/ui/Modal.svelte";
 
   import { m } from "#lib/paraglide/messages.js";
   import type { ModerationLegalBasis } from "@loomkeep/shared/enums";

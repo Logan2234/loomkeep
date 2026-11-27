@@ -2,10 +2,10 @@
   import { getAdminSchema } from "#lib/api/client.js";
   import { keys } from "#lib/api/keys.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
-  import { auth } from "#lib/auth.svelte.js";
+  import { auth } from "#lib/auth/auth.svelte.js";
   import AdminQueryError from "../AdminQueryError.svelte";
-  import MermaidDiagram from "#lib/components/MermaidDiagram.svelte";
-  import PageHeader from "#lib/components/PageHeader.svelte";
+  import MermaidDiagram from "#lib/ui/MermaidDiagram.svelte";
+  import PageHeader from "#lib/ui/PageHeader.svelte";
   import { m } from "#lib/paraglide/messages.js";
 
   const schemaQuery = createApiQuery(() => ({

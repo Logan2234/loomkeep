@@ -1,17 +1,17 @@
 <script lang="ts">
   import { type SelectOption } from "#lib/types/select-option.js";
 
-  import { CopyFeedback } from "#lib/clipboard.svelte.js";
+  import { CopyFeedback } from "#lib/ui/clipboard.svelte.js";
 
   import { API_URL, createApiKey } from "#lib/api/client.js";
   import { keys } from "#lib/api/keys.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
-  import AnimatedHeight from "#lib/components/AnimatedHeight.svelte";
-  import Banner from "#lib/components/Banner.svelte";
-  import FieldError from "#lib/components/FieldError.svelte";
-  import Icon from "#lib/components/Icon.svelte";
-  import Modal from "#lib/components/Modal.svelte";
-  import SegmentedControl from "#lib/components/SegmentedControl.svelte";
+  import AnimatedHeight from "#lib/ui/AnimatedHeight.svelte";
+  import Banner from "#lib/ui/Banner.svelte";
+  import FieldError from "#lib/ui/FieldError.svelte";
+  import Icon from "#lib/ui/Icon.svelte";
+  import Modal from "#lib/ui/Modal.svelte";
+  import SegmentedControl from "#lib/ui/SegmentedControl.svelte";
   import { DOCS_URL } from "#lib/constants/external-links.js";
   import { m } from "#lib/paraglide/messages.js";
   import {

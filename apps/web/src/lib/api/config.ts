@@ -1,4 +1,4 @@
-import { appConfig } from "../config.svelte";
+import { appConfig } from "../shell/config.svelte";
 import { typedRequest } from "./generated/typed-request";
 
 const getPublicConfig = () => typedRequest("/config", { withAuth: false });

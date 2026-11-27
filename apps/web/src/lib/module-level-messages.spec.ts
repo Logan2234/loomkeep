@@ -10,9 +10,9 @@ async function importAll(locale: "en" | "fr") {
   overwriteGetLocale(() => locale);
   const loaders = import.meta.glob<Record<string, unknown>>([
     "./constants/*.ts",
-    "./privacy-options.ts",
-    "./navigation.ts",
-    "./nav-style.svelte.ts",
+    "./social/privacy-options.ts",
+    "./shell/navigation.ts",
+    "./shell/nav-style.svelte.ts",
     "../routes/app/settings/nav.ts",
     "!./**/*.spec.ts",
   ]);

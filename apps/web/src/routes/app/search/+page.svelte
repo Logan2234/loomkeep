@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { prefersReducedMotion } from "#lib/motion.js";
+  import { prefersReducedMotion } from "#lib/ui/motion.js";
   import { flip } from "svelte/animate";
   import { scale } from "svelte/transition";
   import {
@@ -7,44 +7,47 @@
     readRecentSearches,
     rememberSearch,
   } from "#lib/search/recent-searches.js";
-  import EmptyState from "#lib/components/EmptyState.svelte";
+  import EmptyState from "#lib/ui/EmptyState.svelte";
   import { MEDIA_TYPE_OPTIONS } from "#lib/constants/media-types.js";
-  import { enumParam } from "#lib/url-params.js";
+  import { enumParam } from "#lib/shell/url-params.js";
   import { type SelectOption } from "#lib/types/select-option.js";
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
   import { keys } from "#lib/api/keys.js";
   import { resolveLink } from "#lib/api/links.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
-  import Icon from "#lib/components/Icon.svelte";
-  import PageHeader from "#lib/components/PageHeader.svelte";
-  import BookSearchPanel from "#lib/components/search/BookSearchPanel.svelte";
-  import GameSearchPanel from "#lib/components/search/GameSearchPanel.svelte";
-  import MediaSearchPanel from "#lib/components/search/MediaSearchPanel.svelte";
-  import MusicSearchPanel from "#lib/components/search/MusicSearchPanel.svelte";
-  import UnifiedSearchPanel from "#lib/components/search/UnifiedSearchPanel.svelte";
-  import QuickAddPanel from "#lib/components/QuickAddPanel.svelte";
-  import SearchSelectionBar from "#lib/components/search/SearchSelectionBar.svelte";
-  import ScanIsbnModal from "#lib/components/ScanIsbnModal.svelte";
+  import Icon from "#lib/ui/Icon.svelte";
+  import PageHeader from "#lib/ui/PageHeader.svelte";
+  import BookSearchPanel from "#lib/search/BookSearchPanel.svelte";
+  import GameSearchPanel from "#lib/search/GameSearchPanel.svelte";
+  import MediaSearchPanel from "#lib/search/MediaSearchPanel.svelte";
+  import MusicSearchPanel from "#lib/search/MusicSearchPanel.svelte";
+  import UnifiedSearchPanel from "#lib/search/UnifiedSearchPanel.svelte";
+  import QuickAddPanel from "#lib/library/QuickAddPanel.svelte";
+  import SearchSelectionBar from "#lib/search/SearchSelectionBar.svelte";
+  import ScanIsbnModal from "#lib/books/ScanIsbnModal.svelte";
   import { DOMAINS, DOMAIN_IDS } from "#lib/constants/domains.js";
-  import { debounce, SEARCH_DEBOUNCE_MS } from "#lib/debounce.js";
-  import { isDomainEnabled, orderedDomains } from "#lib/domain-availability.js";
-  import { auth } from "#lib/auth.svelte.js";
-  import { layout } from "#lib/layout.svelte.js";
+  import { debounce, SEARCH_DEBOUNCE_MS } from "#lib/ui/debounce.js";
+  import {
+    isDomainEnabled,
+    orderedDomains,
+  } from "#lib/work/domain-availability.js";
+  import { auth } from "#lib/auth/auth.svelte.js";
+  import { layout } from "#lib/shell/layout.svelte.js";
   import { m } from "#lib/paraglide/messages.js";
   import {
     BarcodeFormat,
     isNativeScanAvailable,
     scanNatively,
   } from "#lib/native/scan.js";
-  import { isIsbnBarcode } from "#lib/scan-codes.js";
-  import { toast } from "#lib/toast.svelte.js";
-  import { quickAddTarget } from "#lib/quick-add.js";
+  import { isIsbnBarcode } from "#lib/share/scan-codes.js";
+  import { toast } from "#lib/ui/toast.svelte.js";
+  import { quickAddTarget } from "#lib/library/quick-add.js";
   import {
     SearchSelection,
     setSearchSelection,
   } from "#lib/search/search-selection.svelte.js";
-  import { isPastedLink } from "#lib/share-link.js";
+  import { isPastedLink } from "#lib/share/share-link.js";
   import { Domain, type MediaType } from "@loomkeep/shared/enums";
   import { untrack } from "svelte";
 

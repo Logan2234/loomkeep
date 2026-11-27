@@ -1,5 +1,5 @@
-import { languageName } from "#lib/locales.js";
 import { m } from "#lib/paraglide/messages.js";
+import { languageName } from "#lib/shell/locales.js";
 import { apiUrl, server } from "#lib/test/msw.js";
 import { visit } from "#lib/test/navigation.svelte.js";
 import { renderWithQuery } from "#lib/test/render.js";

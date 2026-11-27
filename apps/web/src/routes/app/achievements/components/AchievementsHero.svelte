@@ -1,13 +1,13 @@
 <script lang="ts">
-  import ProgressBar from "#lib/components/ProgressBar.svelte";
-  import RelativeTime from "#lib/components/RelativeTime.svelte";
-  import { PERCENT_OPTIONS, formatNumber } from "#lib/format.js";
-  import { prefersReducedMotion } from "#lib/motion.js";
+  import ProgressBar from "#lib/ui/ProgressBar.svelte";
+  import RelativeTime from "#lib/ui/RelativeTime.svelte";
+  import { PERCENT_OPTIONS, formatNumber } from "#lib/ui/format.js";
+  import { prefersReducedMotion } from "#lib/ui/motion.js";
   import { m } from "#lib/paraglide/messages.js";
   import type { AchievementTier } from "@loomkeep/shared/contracts";
   import type { CatalogueSummary } from "../achievements";
   import { achievementName, entryIcon } from "../labels";
-  import AchievementMedallion from "#lib/components/AchievementMedallion.svelte";
+  import AchievementMedallion from "#lib/gamification/AchievementMedallion.svelte";
 
   let { summary }: { summary: CatalogueSummary } = $props();
 

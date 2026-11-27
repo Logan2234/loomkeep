@@ -1,5 +1,5 @@
-import { formatHours, formatNumber } from "#lib/format.js";
 import { m } from "#lib/paraglide/messages.js";
+import { formatHours, formatNumber } from "#lib/ui/format.js";
 import type { FiguresDto } from "@loomkeep/shared/contracts";
 import { Domain } from "@loomkeep/shared/enums";
 

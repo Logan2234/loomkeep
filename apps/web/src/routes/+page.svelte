@@ -1,20 +1,20 @@
 <script lang="ts">
   import { page } from "$app/state";
   import * as env from "$app/env/public";
-  import { auth } from "#lib/auth.svelte.js";
-  import { bootstrap } from "#lib/bootstrap.svelte.js";
-  import Icon from "#lib/components/Icon.svelte";
-  import Poster from "#lib/components/Poster.svelte";
-  import { appConfig } from "#lib/config.svelte.js";
+  import { auth } from "#lib/auth/auth.svelte.js";
+  import { bootstrap } from "#lib/shell/bootstrap.svelte.js";
+  import Icon from "#lib/ui/Icon.svelte";
+  import Poster from "#lib/work/Poster.svelte";
+  import { appConfig } from "#lib/shell/config.svelte.js";
   import {
     ANDROID_APK_URL,
     DOCS_URL,
     FEEDBACK_URL,
     GITHUB_REPO_URL,
   } from "#lib/constants/external-links.js";
-  import { prefersReducedMotion } from "#lib/motion.js";
+  import { prefersReducedMotion } from "#lib/ui/motion.js";
   import { m } from "#lib/paraglide/messages.js";
-  import { theme } from "#lib/theme.svelte.js";
+  import { theme } from "#lib/ui/theme.svelte.js";
   import type { IconName } from "#lib/types/icon-name.js";
   import { ACCOUNT_DELETION_GRACE_DAYS } from "@loomkeep/shared/contracts";
   import { slide } from "svelte/transition";

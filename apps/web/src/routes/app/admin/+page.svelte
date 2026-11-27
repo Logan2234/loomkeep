@@ -1,6 +1,6 @@
 <script lang="ts">
   import * as env from "$app/env/public";
-  import { adminAttentionData } from "#lib/admin-attention.js";
+  import { adminAttentionData } from "#lib/admin/admin-attention.js";
   import {
     getAdminBackupFiles,
     getAdminJobs,
@@ -9,17 +9,17 @@
   } from "#lib/api/client.js";
   import { keys } from "#lib/api/keys.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
-  import BetaBadge from "#lib/components/BetaBadge.svelte";
-  import Icon from "#lib/components/Icon.svelte";
-  import PageHeader from "#lib/components/PageHeader.svelte";
-  import { appConfig } from "#lib/config.svelte.js";
+  import BetaBadge from "#lib/premium/BetaBadge.svelte";
+  import Icon from "#lib/ui/Icon.svelte";
+  import PageHeader from "#lib/ui/PageHeader.svelte";
+  import { appConfig } from "#lib/shell/config.svelte.js";
   import { VISIBLE_ADMIN_NAV_GROUPS } from "#lib/constants/admin-nav.js";
   import { adminJobLabel } from "#lib/constants/admin-presentation.js";
   import { DOCS_URL, GITHUB_REPO_URL } from "#lib/constants/external-links.js";
-  import { formatNumber, formatRelative } from "#lib/format.js";
+  import { formatNumber, formatRelative } from "#lib/ui/format.js";
   import { m } from "#lib/paraglide/messages.js";
-  import { useAdminUpdateAvailable } from "#lib/admin-update.svelte.js";
-  import { useReportsPendingCount } from "#lib/reports-pending.svelte.js";
+  import { useAdminUpdateAvailable } from "#lib/admin/admin-update.svelte.js";
+  import { useReportsPendingCount } from "#lib/reports/reports-pending.svelte.js";
   import type { ServiceStatusDto } from "@loomkeep/shared/contracts";
   import { useQueryClient } from "@tanstack/svelte-query";
   import StatsSectionError from "./stats/components/StatsSectionError.svelte";

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { auth } from "../auth.svelte";
+import { auth } from "../auth/auth.svelte";
 import { signOutAndRedirect } from "./auth";
 
 // Signing out has to take this device's push subscription with it: left in
@@ -21,7 +21,7 @@ const { typedRequest, disablePush, calls } = vi.hoisted(() => {
   };
 });
 vi.mock("./generated/typed-request", () => ({ typedRequest }));
-vi.mock("../push", () => ({ disablePush }));
+vi.mock("../notifications/push", () => ({ disablePush }));
 vi.mock("$app/navigation", () => ({ goto: vi.fn() }));
 
 describe("signOutAndRedirect()", () => {

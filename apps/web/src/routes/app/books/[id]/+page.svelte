@@ -1,12 +1,12 @@
 <script lang="ts">
-  import ClampedText from "#lib/components/ClampedText.svelte";
-  import { layout } from "#lib/layout.svelte.js";
-  import StatusCorrectionModal from "#lib/components/StatusCorrectionModal.svelte";
-  import ExternalRatingChips from "#lib/components/ExternalRatingChips.svelte";
-  import CreatorNames from "#lib/components/CreatorNames.svelte";
-  import { isFeatureNew } from "#lib/feature-badges.js";
-  import DetailsCard from "#lib/components/DetailsCard.svelte";
-  import WorkSocialSection from "#lib/components/WorkSocialSection.svelte";
+  import ClampedText from "#lib/ui/ClampedText.svelte";
+  import { layout } from "#lib/shell/layout.svelte.js";
+  import StatusCorrectionModal from "#lib/library/StatusCorrectionModal.svelte";
+  import ExternalRatingChips from "#lib/work/ExternalRatingChips.svelte";
+  import CreatorNames from "#lib/creators/CreatorNames.svelte";
+  import { isFeatureNew } from "#lib/shell/feature-badges.js";
+  import DetailsCard from "#lib/work/DetailsCard.svelte";
+  import WorkSocialSection from "#lib/social/WorkSocialSection.svelte";
   import { page } from "$app/state";
   import {
     deleteBookEntry,
@@ -20,30 +20,30 @@
   import { keys } from "#lib/api/keys.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
   import BookSagaSection from "./components/BookSagaSection.svelte";
-  import { goBack } from "#lib/back-nav.svelte.js";
-  import { toCarouselItems } from "#lib/carousel.js";
-  import Banner from "#lib/components/Banner.svelte";
-  import BookSessionDock from "#lib/components/BookSessionDock.svelte";
-  import Combobox from "#lib/components/Combobox.svelte";
-  import WorkFriendsStrip from "#lib/components/WorkFriendsStrip.svelte";
-  import { appConfig } from "#lib/config.svelte.js";
-  import ConfirmationModal from "#lib/components/ConfirmationModal.svelte";
-  import DetailHeroSkeleton from "#lib/components/DetailHeroSkeleton.svelte";
-  import Lightbox from "#lib/components/Lightbox.svelte";
+  import { goBack } from "#lib/shell/back-nav.svelte.js";
+  import { toCarouselItems } from "#lib/ui/carousel.js";
+  import Banner from "#lib/ui/Banner.svelte";
+  import BookSessionDock from "#lib/books/BookSessionDock.svelte";
+  import Combobox from "#lib/ui/Combobox.svelte";
+  import WorkFriendsStrip from "#lib/social/WorkFriendsStrip.svelte";
+  import { appConfig } from "#lib/shell/config.svelte.js";
+  import ConfirmationModal from "#lib/ui/ConfirmationModal.svelte";
+  import DetailHeroSkeleton from "#lib/ui/DetailHeroSkeleton.svelte";
+  import Lightbox from "#lib/ui/Lightbox.svelte";
 
-  import MyRatingBadge from "#lib/components/MyRatingBadge.svelte";
-  import NoteField from "#lib/components/NoteField.svelte";
-  import OwnershipField from "#lib/components/OwnershipField.svelte";
+  import MyRatingBadge from "#lib/reviews/MyRatingBadge.svelte";
+  import NoteField from "#lib/library/NoteField.svelte";
+  import OwnershipField from "#lib/library/OwnershipField.svelte";
 
-  import RelatedCarousel from "#lib/components/RelatedCarousel.svelte";
+  import RelatedCarousel from "#lib/work/RelatedCarousel.svelte";
 
-  import CommentsPanel from "#lib/components/CommentsPanel.svelte";
-  import WorkActionBar from "#lib/components/work/WorkActionBar.svelte";
-  import WorkHero from "#lib/components/work/WorkHero.svelte";
-  import WorkTrackingFold from "#lib/components/work/WorkTrackingFold.svelte";
-  import ShareWorkModal from "#lib/components/ShareWorkModal.svelte";
+  import CommentsPanel from "#lib/comments/CommentsPanel.svelte";
+  import WorkActionBar from "#lib/work/WorkActionBar.svelte";
+  import WorkHero from "#lib/work/WorkHero.svelte";
+  import WorkTrackingFold from "#lib/work/WorkTrackingFold.svelte";
+  import ShareWorkModal from "#lib/work/ShareWorkModal.svelte";
   import { bookWork } from "#lib/chat/work-search.js";
-  import TrackingStatusBadge from "#lib/components/TrackingStatusBadge.svelte";
+  import TrackingStatusBadge from "#lib/library/TrackingStatusBadge.svelte";
 
   import {
     BOOK_OWNERSHIP_SOURCES,
@@ -55,14 +55,14 @@
     BOOK_STATUS_META as STATUS_META,
     BOOK_STATUS_ORDER as STATUS_ORDER,
   } from "#lib/constants/status-labels.js";
-  import { createEntryTrackingMutations } from "#lib/entry-tracking-mutations.svelte.js";
-  import { joinMeta, compareText } from "#lib/format.js";
+  import { createEntryTrackingMutations } from "#lib/library/entry-tracking-mutations.svelte.js";
+  import { joinMeta, compareText } from "#lib/ui/format.js";
   import { m } from "#lib/paraglide/messages.js";
   import {
     BOOK_DIRECT_STATUS_TARGETS,
     statusCorrectionLabel,
     cycleAwareStatusCorrections,
-  } from "#lib/status-corrections.js";
+  } from "#lib/library/status-corrections.js";
 
   // Open Library is the only book source today; the web route carries just
   // the work id (e.g. "OL893414W").

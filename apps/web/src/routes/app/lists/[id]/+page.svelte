@@ -6,8 +6,8 @@
 
   import { page } from "$app/state";
   import { longpress } from "#lib/actions/longpress.js";
-  import Drawer from "#lib/components/Drawer.svelte";
-  import { layout } from "#lib/layout.svelte.js";
+  import Drawer from "#lib/ui/Drawer.svelte";
+  import { layout } from "#lib/shell/layout.svelte.js";
   import {
     ApiError,
     getList,
@@ -21,21 +21,24 @@
   import { keys } from "#lib/api/keys.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
-  import { auth } from "#lib/auth.svelte.js";
-  import Avatar from "#lib/components/Avatar.svelte";
-  import Banner from "#lib/components/Banner.svelte";
-  import ConfirmationModal from "#lib/components/ConfirmationModal.svelte";
-  import DomainOffMark from "#lib/components/DomainOffMark.svelte";
-  import Dropdown from "#lib/components/Dropdown.svelte";
-  import EmptyState from "#lib/components/EmptyState.svelte";
-  import Icon from "#lib/components/Icon.svelte";
-  import ListAddWorkButton from "#lib/components/ListAddWorkButton.svelte";
-  import ListFormModal from "#lib/components/ListFormModal.svelte";
-  import ListMembersModal from "#lib/components/ListMembersModal.svelte";
-  import Poster from "#lib/components/Poster.svelte";
-  import ReportModal from "#lib/components/ReportModal.svelte";
-  import { appConfig } from "#lib/config.svelte.js";
-  import { isDomainEnabled, targetDomain } from "#lib/domain-availability.js";
+  import { auth } from "#lib/auth/auth.svelte.js";
+  import Avatar from "#lib/ui/Avatar.svelte";
+  import Banner from "#lib/ui/Banner.svelte";
+  import ConfirmationModal from "#lib/ui/ConfirmationModal.svelte";
+  import DomainOffMark from "#lib/work/DomainOffMark.svelte";
+  import Dropdown from "#lib/ui/Dropdown.svelte";
+  import EmptyState from "#lib/ui/EmptyState.svelte";
+  import Icon from "#lib/ui/Icon.svelte";
+  import ListAddWorkButton from "#lib/lists/ListAddWorkButton.svelte";
+  import ListFormModal from "#lib/lists/ListFormModal.svelte";
+  import ListMembersModal from "#lib/lists/ListMembersModal.svelte";
+  import Poster from "#lib/work/Poster.svelte";
+  import ReportModal from "#lib/reports/ReportModal.svelte";
+  import { appConfig } from "#lib/shell/config.svelte.js";
+  import {
+    isDomainEnabled,
+    targetDomain,
+  } from "#lib/work/domain-availability.js";
   import { m } from "#lib/paraglide/messages.js";
   import { joinRealtimeRoom, onRealtimeEvent } from "#lib/realtime/socket.js";
   import {
@@ -45,8 +48,8 @@
   } from "@loomkeep/shared/contracts";
   import { useQueryClient } from "@tanstack/svelte-query";
   import ListItemNoteModal from "./components/ListItemNoteModal.svelte";
-  import NewBadge from "#lib/components/NewBadge.svelte";
-  import { isFeatureNew } from "#lib/feature-badges.js";
+  import NewBadge from "#lib/premium/NewBadge.svelte";
+  import { isFeatureNew } from "#lib/shell/feature-badges.js";
   import ArrFeedModal from "#lib/ee/arr/ArrFeedModal.svelte";
   import { useEeLock } from "#lib/ee/license.svelte.js";
   import { dndzone } from "svelte-dnd-action";

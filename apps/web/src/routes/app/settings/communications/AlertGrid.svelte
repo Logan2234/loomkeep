@@ -2,7 +2,7 @@
   import { type AlertChannel } from "@loomkeep/shared/catalog";
 
   import type { AlertKey } from "@loomkeep/shared/catalog";
-  import type { FeatureBadgeKey } from "#lib/feature-badges.js";
+  import type { FeatureBadgeKey } from "#lib/shell/feature-badges.js";
 
   export interface AlertGroupRows {
     /** Left out for a matrix short enough to need no sections. */
@@ -19,11 +19,11 @@
 <script lang="ts">
   import { updateMe } from "#lib/api/client.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
-  import { auth } from "#lib/auth.svelte.js";
-  import Icon from "#lib/components/Icon.svelte";
-  import NewBadge from "#lib/components/NewBadge.svelte";
-  import Switch from "#lib/components/Switch.svelte";
-  import { isFeatureNew } from "#lib/feature-badges.js";
+  import { auth } from "#lib/auth/auth.svelte.js";
+  import Icon from "#lib/ui/Icon.svelte";
+  import NewBadge from "#lib/premium/NewBadge.svelte";
+  import Switch from "#lib/ui/Switch.svelte";
+  import { isFeatureNew } from "#lib/shell/feature-badges.js";
   import { m } from "#lib/paraglide/messages.js";
   import type { IconName } from "#lib/types/icon-name.js";
   import {

@@ -1,9 +1,9 @@
 <script lang="ts">
-  import Banner from "#lib/components/Banner.svelte";
-  import CardRowSkeleton from "#lib/components/CardRowSkeleton.svelte";
-  import Combobox from "#lib/components/Combobox.svelte";
-  import EmptyState from "#lib/components/EmptyState.svelte";
-  import SegmentedControl from "#lib/components/SegmentedControl.svelte";
+  import Banner from "#lib/ui/Banner.svelte";
+  import CardRowSkeleton from "#lib/ui/CardRowSkeleton.svelte";
+  import Combobox from "#lib/ui/Combobox.svelte";
+  import EmptyState from "#lib/ui/EmptyState.svelte";
+  import SegmentedControl from "#lib/ui/SegmentedControl.svelte";
   import { m } from "#lib/paraglide/messages.js";
   let values = $state<string[]>([]);
   type Mode = "long" | "empty" | "loading" | "error";

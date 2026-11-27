@@ -1,12 +1,12 @@
 import { ApiError } from "#lib/api/core.js";
 import { resolveApiError } from "#lib/api/errors.js";
 import { chat } from "#lib/chat/chat.svelte.js";
-import { appConfig } from "#lib/config.svelte.js";
-import { layout } from "#lib/layout.svelte.js";
 import { m } from "#lib/paraglide/messages.js";
+import { appConfig } from "#lib/shell/config.svelte.js";
+import { layout } from "#lib/shell/layout.svelte.js";
 import { apiUrl, server } from "#lib/test/msw.js";
 import { renderWithQuery } from "#lib/test/render.js";
-import { toast } from "#lib/toast.svelte.js";
+import { toast } from "#lib/ui/toast.svelte.js";
 import { ErrorCode } from "@loomkeep/shared/catalog";
 import {
   type LibraryEntryDto,

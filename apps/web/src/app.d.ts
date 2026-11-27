@@ -17,7 +17,7 @@ declare global {
   }
 
   // Cloudflare Turnstile's own script (loaded directly, not an npm
-  // package — see lib/components/Turnstile.svelte) attaches this global.
+  // package — see lib/auth/Turnstile.svelte) attaches this global.
   interface Window {
     turnstile?: {
       render(

@@ -3,8 +3,8 @@
 
   import { TABLET_QUERY } from "#lib/constants/media-queries.js";
 
-  import PageHeader from "#lib/components/PageHeader.svelte";
-  import { isFeatureNew } from "#lib/feature-badges.js";
+  import PageHeader from "#lib/ui/PageHeader.svelte";
+  import { isFeatureNew } from "#lib/shell/feature-badges.js";
   import type { Snippet } from "svelte";
   import { findSection, sectionHref } from "../nav";
 

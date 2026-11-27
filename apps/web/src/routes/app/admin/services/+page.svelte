@@ -1,18 +1,18 @@
 <script lang="ts">
-  import KpiStripSkeleton from "#lib/components/stats/KpiStripSkeleton.svelte";
-  import RankBarsSkeleton from "#lib/components/stats/RankBarsSkeleton.svelte";
+  import KpiStripSkeleton from "#lib/stats/KpiStripSkeleton.svelte";
+  import RankBarsSkeleton from "#lib/stats/RankBarsSkeleton.svelte";
   import { getAdminServices } from "#lib/api/client.js";
   import { keys } from "#lib/api/keys.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
-  import { auth } from "#lib/auth.svelte.js";
-  import { scrollToAdminAnchor } from "#lib/admin-anchor.js";
+  import { auth } from "#lib/auth/auth.svelte.js";
+  import { scrollToAdminAnchor } from "#lib/admin/admin-anchor.js";
   import AdminQueryError from "../AdminQueryError.svelte";
   import UpdateCard from "./UpdateCard.svelte";
-  import PageHeader from "#lib/components/PageHeader.svelte";
-  import ProgressBar from "#lib/components/ProgressBar.svelte";
-  import KpiStrip from "#lib/components/stats/KpiStrip.svelte";
-  import RankBars from "#lib/components/stats/RankBars.svelte";
-  import SectionLabel from "#lib/components/stats/SectionLabel.svelte";
+  import PageHeader from "#lib/ui/PageHeader.svelte";
+  import ProgressBar from "#lib/ui/ProgressBar.svelte";
+  import KpiStrip from "#lib/stats/KpiStrip.svelte";
+  import RankBars from "#lib/stats/RankBars.svelte";
+  import SectionLabel from "#lib/stats/SectionLabel.svelte";
   import {
     groupAdminServices,
     adminServiceLabel,
@@ -23,7 +23,7 @@
     formatTime,
     formatPercent,
     percentParts,
-  } from "#lib/format.js";
+  } from "#lib/ui/format.js";
   import { m } from "#lib/paraglide/messages.js";
   import type { ServiceStatusDto } from "@loomkeep/shared/contracts";
   import { useQueryClient } from "@tanstack/svelte-query";

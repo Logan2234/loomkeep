@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { labeledOptions } from "#lib/options.js";
+  import { labeledOptions } from "#lib/ui/options.js";
 
   import { type SelectOption } from "#lib/types/select-option.js";
 
@@ -18,13 +18,13 @@
   import type {
     LibraryLoadParams,
     PileLoadParams,
-  } from "#lib/components/LibraryBrowser.svelte";
-  import LibraryBrowser from "#lib/components/LibraryBrowser.svelte";
-  import PosterCard from "#lib/components/PosterCard.svelte";
+  } from "#lib/library/LibraryBrowser.svelte";
+  import LibraryBrowser from "#lib/library/LibraryBrowser.svelte";
+  import PosterCard from "#lib/work/PosterCard.svelte";
   import SagasModeSwitch, {
     sagasMode,
-  } from "#lib/components/saga/SagasModeSwitch.svelte";
-  import GameSearchPanel from "#lib/components/search/GameSearchPanel.svelte";
+  } from "#lib/sagas/SagasModeSwitch.svelte";
+  import GameSearchPanel from "#lib/search/GameSearchPanel.svelte";
   import GameSagasView from "./components/GameSagasView.svelte";
   import {
     GAME_OWNERSHIP_SOURCES,
@@ -41,14 +41,14 @@
     formatDate,
     formatHours,
     formatRating,
-  } from "#lib/format.js";
+  } from "#lib/ui/format.js";
   import {
     ownershipText,
     type LibraryBulkActions,
     type LibraryColumn,
     type LibraryItemView,
     COMMON_LIBRARY_SORTS,
-  } from "#lib/library-view.js";
+  } from "#lib/library/library-view.js";
   import { m } from "#lib/paraglide/messages.js";
   import { Domain } from "@loomkeep/shared/enums";
   import {

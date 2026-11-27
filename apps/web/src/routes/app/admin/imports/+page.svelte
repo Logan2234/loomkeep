@@ -1,16 +1,16 @@
 <script lang="ts">
-  import KpiStripSkeleton from "#lib/components/stats/KpiStripSkeleton.svelte";
-  import RankBarsSkeleton from "#lib/components/stats/RankBarsSkeleton.svelte";
-  import LoadMoreButton from "#lib/components/LoadMoreButton.svelte";
+  import KpiStripSkeleton from "#lib/stats/KpiStripSkeleton.svelte";
+  import RankBarsSkeleton from "#lib/stats/RankBarsSkeleton.svelte";
+  import LoadMoreButton from "#lib/ui/LoadMoreButton.svelte";
 
   import AdminFilterBar from "../AdminFilterBar.svelte";
-  import Tooltip from "#lib/components/Tooltip.svelte";
+  import Tooltip from "#lib/ui/Tooltip.svelte";
   import ImportDetailModal from "./ImportDetailModal.svelte";
-  import { importRunFigures } from "#lib/components/import-presentation.js";
-  import Banner from "#lib/components/Banner.svelte";
+  import { importRunFigures } from "#lib/import/import-presentation.js";
+  import Banner from "#lib/ui/Banner.svelte";
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
-  import { adminFilterHref } from "#lib/url-params.js";
+  import { adminFilterHref } from "#lib/shell/url-params.js";
   import {
     getAdminImportRuns,
     getAdminImportSummary,
@@ -18,19 +18,19 @@
   import { createApiInfiniteQuery } from "#lib/api/infinite-query.svelte.js";
   import { keys } from "#lib/api/keys.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
-  import Combobox from "#lib/components/Combobox.svelte";
-  import EmptyState from "#lib/components/EmptyState.svelte";
-  import PageHeader from "#lib/components/PageHeader.svelte";
-  import KpiStrip from "#lib/components/stats/KpiStrip.svelte";
-  import RankBars from "#lib/components/stats/RankBars.svelte";
-  import SectionLabel from "#lib/components/stats/SectionLabel.svelte";
-  import UserSelector from "#lib/components/UserSelector.svelte";
+  import Combobox from "#lib/ui/Combobox.svelte";
+  import EmptyState from "#lib/ui/EmptyState.svelte";
+  import PageHeader from "#lib/ui/PageHeader.svelte";
+  import KpiStrip from "#lib/stats/KpiStrip.svelte";
+  import RankBars from "#lib/stats/RankBars.svelte";
+  import SectionLabel from "#lib/stats/SectionLabel.svelte";
+  import UserSelector from "#lib/social/UserSelector.svelte";
   import { IMPORTS_DEFINITION } from "#lib/constants/import-sources.js";
   import {
     formatDateTime,
     formatDurationMs,
     formatNumber,
-  } from "#lib/format.js";
+  } from "#lib/ui/format.js";
   import { m } from "#lib/paraglide/messages.js";
   import type {
     AdminImportRunDto,

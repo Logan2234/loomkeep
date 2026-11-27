@@ -1,4 +1,4 @@
-import { normalizeAdminBackupInventory } from "#lib/admin-backup-inventory.js";
+import { normalizeAdminBackupInventory } from "#lib/admin/admin-backup-inventory.js";
 import type { Locale } from "@loomkeep/shared/catalog";
 import type {
   AdminBackupRestoreRequestDto,

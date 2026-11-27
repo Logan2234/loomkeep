@@ -1,4 +1,4 @@
-import { type StatsDomainChoice } from "#lib/components/stats/stats-domain.js";
+import { type StatsDomainChoice } from "#lib/stats/stats-domain.js";
 import type { StatsWindow, WatchStaleness } from "@loomkeep/shared/contracts";
 import { typedRequest } from "./generated/typed-request";
 

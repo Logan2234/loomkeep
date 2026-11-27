@@ -1,5 +1,5 @@
 <script lang="ts">
-  import ImportWizard from "#lib/components/ImportWizard.svelte";
+  import ImportWizard from "#lib/import/ImportWizard.svelte";
   import { m } from "#lib/paraglide/messages.js";
 </script>
 

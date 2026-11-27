@@ -6,16 +6,16 @@
   import { getLeaderboard } from "#lib/api/gamification.js";
   import { keys } from "#lib/api/keys.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
-  import Avatar from "#lib/components/Avatar.svelte";
-  import Banner from "#lib/components/Banner.svelte";
-  import EmptyState from "#lib/components/EmptyState.svelte";
-  import PageHeader from "#lib/components/PageHeader.svelte";
-  import SegmentedControl from "#lib/components/SegmentedControl.svelte";
-  import TabPanels from "#lib/components/TabPanels.svelte";
-  import Tabs from "#lib/components/Tabs.svelte";
-  import { appConfig } from "#lib/config.svelte.js";
-  import { formatNumber } from "#lib/format.js";
-  import { prefersReducedMotion } from "#lib/motion.js";
+  import Avatar from "#lib/ui/Avatar.svelte";
+  import Banner from "#lib/ui/Banner.svelte";
+  import EmptyState from "#lib/ui/EmptyState.svelte";
+  import PageHeader from "#lib/ui/PageHeader.svelte";
+  import SegmentedControl from "#lib/ui/SegmentedControl.svelte";
+  import TabPanels from "#lib/ui/TabPanels.svelte";
+  import Tabs from "#lib/ui/Tabs.svelte";
+  import { appConfig } from "#lib/shell/config.svelte.js";
+  import { formatNumber } from "#lib/ui/format.js";
+  import { prefersReducedMotion } from "#lib/ui/motion.js";
   import { m } from "#lib/paraglide/messages.js";
   import {
     type LeaderboardEntryDto,

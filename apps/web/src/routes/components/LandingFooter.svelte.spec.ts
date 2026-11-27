@@ -1,7 +1,7 @@
-import { auth } from "#lib/auth.svelte.js";
-import { languageName } from "#lib/locales.js";
+import { auth } from "#lib/auth/auth.svelte.js";
 import { m } from "#lib/paraglide/messages.js";
 import { setLocale } from "#lib/paraglide/runtime.js";
+import { languageName } from "#lib/shell/locales.js";
 import { apiUrl, server } from "#lib/test/msw.js";
 import { renderWithQuery } from "#lib/test/render.js";
 import type { UserDto } from "@loomkeep/shared/contracts";

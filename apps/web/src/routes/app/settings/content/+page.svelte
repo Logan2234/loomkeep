@@ -1,12 +1,12 @@
 <script lang="ts">
   import { type SelectOption } from "#lib/types/select-option.js";
 
-  import { localDateInput } from "#lib/date.js";
+  import { localDateInput } from "#lib/ui/date.js";
   import { updateMe } from "#lib/api/client.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
-  import { auth } from "#lib/auth.svelte.js";
-  import Combobox from "#lib/components/Combobox.svelte";
-  import Switch from "#lib/components/Switch.svelte";
+  import { auth } from "#lib/auth/auth.svelte.js";
+  import Combobox from "#lib/ui/Combobox.svelte";
+  import Switch from "#lib/ui/Switch.svelte";
   import { m } from "#lib/paraglide/messages.js";
   import { SpoilerSensitivity } from "@loomkeep/shared/enums";
   import SettingRow from "../components/SettingRow.svelte";

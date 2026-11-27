@@ -9,8 +9,8 @@
   import { getMfaStatus } from "#lib/api/client.js";
   import { keys } from "#lib/api/keys.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
-  import Banner from "#lib/components/Banner.svelte";
-  import LegalLinks from "#lib/components/LegalLinks.svelte";
+  import Banner from "#lib/ui/Banner.svelte";
+  import LegalLinks from "#lib/auth/LegalLinks.svelte";
   import { m } from "#lib/paraglide/messages.js";
   import type { Snippet } from "svelte";
   import SettingsNav from "./components/SettingsNav.svelte";

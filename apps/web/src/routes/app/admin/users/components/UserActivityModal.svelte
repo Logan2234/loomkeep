@@ -9,17 +9,17 @@
     getAdminUserReportsAgainst,
     getAdminUserReviews,
   } from "#lib/api/admin.js";
-  import Avatar from "#lib/components/Avatar.svelte";
-  import Banner from "#lib/components/Banner.svelte";
-  import Modal from "#lib/components/Modal.svelte";
+  import Avatar from "#lib/ui/Avatar.svelte";
+  import Banner from "#lib/ui/Banner.svelte";
+  import Modal from "#lib/ui/Modal.svelte";
   import {
     REPORT_CATEGORY_LABELS,
     REPORT_MOTIF_LABELS,
     REPORT_STATUS_COLORS,
     REPORT_STATUS_LABELS,
   } from "#lib/constants/report-labels.js";
-  import { formatDate, formatRating } from "#lib/format.js";
-  import { reportTargetLabel } from "#lib/report-target-label.js";
+  import { formatDate, formatRating } from "#lib/ui/format.js";
+  import { reportTargetLabel } from "#lib/reports/report-target-label.js";
   import { m } from "#lib/paraglide/messages.js";
 
   let {

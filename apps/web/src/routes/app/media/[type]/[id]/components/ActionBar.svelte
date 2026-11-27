@@ -1,16 +1,16 @@
 <script lang="ts">
-  import AddToListButton from "#lib/components/AddToListButton.svelte";
-  import Dropdown from "#lib/components/Dropdown.svelte";
-  import Icon from "#lib/components/Icon.svelte";
-  import NewBadge from "#lib/components/NewBadge.svelte";
-  import ShareWorkMenuItem from "#lib/components/ShareWorkMenuItem.svelte";
-  import Tooltip from "#lib/components/Tooltip.svelte";
-  import WorkMoreMenu from "#lib/components/WorkMoreMenu.svelte";
-  import { isFeatureNew } from "#lib/feature-badges.js";
+  import AddToListButton from "#lib/lists/AddToListButton.svelte";
+  import Dropdown from "#lib/ui/Dropdown.svelte";
+  import Icon from "#lib/ui/Icon.svelte";
+  import NewBadge from "#lib/premium/NewBadge.svelte";
+  import ShareWorkMenuItem from "#lib/work/ShareWorkMenuItem.svelte";
+  import Tooltip from "#lib/ui/Tooltip.svelte";
+  import WorkMoreMenu from "#lib/work/WorkMoreMenu.svelte";
+  import { isFeatureNew } from "#lib/shell/feature-badges.js";
   import { MEDIA_STATUS_META } from "#lib/constants/status-labels.js";
-  import { formatDate } from "#lib/format.js";
-  import { prefersReducedMotion } from "#lib/motion.js";
-  import { releaseDigestOff } from "#lib/release-alerts.js";
+  import { formatDate } from "#lib/ui/format.js";
+  import { prefersReducedMotion } from "#lib/ui/motion.js";
+  import { releaseDigestOff } from "#lib/work/release-alerts.js";
   import { m } from "#lib/paraglide/messages.js";
   import type { LibraryEntryDto } from "@loomkeep/shared/contracts";
   import type { Snippet } from "svelte";

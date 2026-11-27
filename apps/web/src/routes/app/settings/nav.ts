@@ -1,4 +1,4 @@
-import { type FeatureBadgeKey } from "#lib/feature-badges.js";
+import { type FeatureBadgeKey } from "#lib/shell/feature-badges.js";
 // The settings information architecture, in one place: five groups, one
 // route per section. The old single page kept a parallel `SECTIONS` array
 // next to the markup that rendered it; here the same array drives the rail,

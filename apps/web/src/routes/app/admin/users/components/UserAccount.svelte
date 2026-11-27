@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { typedEntries } from "#lib/object.js";
+  import { typedEntries } from "#lib/ui/object.js";
 
   import { type ActivityKind } from "./activity-kind";
 
@@ -27,30 +27,30 @@
   import { keys } from "#lib/api/keys.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
-  import { auth } from "#lib/auth.svelte.js";
-  import { appConfig } from "#lib/config.svelte.js";
-  import Avatar from "#lib/components/Avatar.svelte";
-  import AvatarLightbox from "#lib/components/AvatarLightbox.svelte";
-  import Banner from "#lib/components/Banner.svelte";
-  import Combobox from "#lib/components/Combobox.svelte";
-  import ConfirmationModal from "#lib/components/ConfirmationModal.svelte";
-  import Icon from "#lib/components/Icon.svelte";
+  import { auth } from "#lib/auth/auth.svelte.js";
+  import { appConfig } from "#lib/shell/config.svelte.js";
+  import Avatar from "#lib/ui/Avatar.svelte";
+  import AvatarLightbox from "#lib/ui/AvatarLightbox.svelte";
+  import Banner from "#lib/ui/Banner.svelte";
+  import Combobox from "#lib/ui/Combobox.svelte";
+  import ConfirmationModal from "#lib/ui/ConfirmationModal.svelte";
+  import Icon from "#lib/ui/Icon.svelte";
   import { DELETION_REASON_LABELS } from "#lib/constants/deletion-reasons.js";
   import { ACQUISITION_SOURCE_LABELS } from "#lib/constants/acquisition-sources.js";
   import { DOMAIN_IDS, DOMAINS } from "#lib/constants/domains.js";
   import { securityEventLabels } from "#lib/constants/security-events.js";
   import { getLocale } from "#lib/paraglide/runtime.js";
   import { goto } from "$app/navigation";
-  import { downloadBlob, datedFilename } from "#lib/download.js";
+  import { downloadBlob, datedFilename } from "#lib/ui/download.js";
   import {
     formatDate,
     formatDateTime,
     formatNumber,
     formatRegion,
     formatRelative,
-  } from "#lib/format.js";
+  } from "#lib/ui/format.js";
   import { m } from "#lib/paraglide/messages.js";
-  import { toast } from "#lib/toast.svelte.js";
+  import { toast } from "#lib/ui/toast.svelte.js";
   import { type ModerationLegalBasis } from "@loomkeep/shared/enums";
   import {
     IMPORT_SOURCE_NAMES,

@@ -1,4 +1,4 @@
-import { ownershipText } from "#lib/library-view.js";
+import { ownershipText } from "#lib/library/library-view.js";
 import { m } from "#lib/paraglide/messages.js";
 import { describe, expect, it } from "vitest";
 import {

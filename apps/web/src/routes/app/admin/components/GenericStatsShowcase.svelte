@@ -1,12 +1,12 @@
 <script lang="ts">
-  import HistogramBars from "#lib/components/stats/HistogramBars.svelte";
-  import KpiStrip from "#lib/components/stats/KpiStrip.svelte";
-  import RankBars from "#lib/components/stats/RankBars.svelte";
-  import StatFigure from "#lib/components/stats/StatFigure.svelte";
-  import TrendChart from "#lib/components/TrendChart.svelte";
-  import EmptyState from "#lib/components/EmptyState.svelte";
+  import HistogramBars from "#lib/stats/HistogramBars.svelte";
+  import KpiStrip from "#lib/stats/KpiStrip.svelte";
+  import RankBars from "#lib/stats/RankBars.svelte";
+  import StatFigure from "#lib/stats/StatFigure.svelte";
+  import TrendChart from "#lib/ui/TrendChart.svelte";
+  import EmptyState from "#lib/ui/EmptyState.svelte";
   import { m } from "#lib/paraglide/messages.js";
-  import { foldAdminSearch } from "#lib/admin-search.js";
+  import { foldAdminSearch } from "#lib/admin/admin-search.js";
   let { query = "" }: { query?: string } = $props();
   function matches(name: string) {
     return foldAdminSearch(name).includes(foldAdminSearch(query).trim());

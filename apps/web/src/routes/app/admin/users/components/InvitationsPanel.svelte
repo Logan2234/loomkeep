@@ -1,10 +1,10 @@
 <script lang="ts">
-  import LoadMoreButton from "#lib/components/LoadMoreButton.svelte";
+  import LoadMoreButton from "#lib/ui/LoadMoreButton.svelte";
 
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
-  import { adminFilterHref } from "#lib/url-params.js";
-  import Combobox from "#lib/components/Combobox.svelte";
+  import { adminFilterHref } from "#lib/shell/url-params.js";
+  import Combobox from "#lib/ui/Combobox.svelte";
   import AdminFilterBar from "../../AdminFilterBar.svelte";
   import {
     getAdminInvitations,
@@ -14,13 +14,13 @@
   import { createApiInfiniteQuery } from "#lib/api/infinite-query.svelte.js";
   import { keys } from "#lib/api/keys.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
-  import Avatar from "#lib/components/Avatar.svelte";
+  import Avatar from "#lib/ui/Avatar.svelte";
   import AdminQueryError from "../../AdminQueryError.svelte";
-  import ConfirmationModal from "#lib/components/ConfirmationModal.svelte";
-  import EmptyState from "#lib/components/EmptyState.svelte";
-  import Icon from "#lib/components/Icon.svelte";
-  import { formatDate } from "#lib/format.js";
-  import { prefersReducedMotion } from "#lib/motion.js";
+  import ConfirmationModal from "#lib/ui/ConfirmationModal.svelte";
+  import EmptyState from "#lib/ui/EmptyState.svelte";
+  import Icon from "#lib/ui/Icon.svelte";
+  import { formatDate } from "#lib/ui/format.js";
+  import { prefersReducedMotion } from "#lib/ui/motion.js";
   import { m } from "#lib/paraglide/messages.js";
   import type {
     AdminInvitationDto,

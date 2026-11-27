@@ -8,19 +8,22 @@
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
   import { initConfig } from "#lib/api/config.js";
-  import { auth } from "#lib/auth.svelte.js";
+  import { auth } from "#lib/auth/auth.svelte.js";
   import AdminQueryError from "../AdminQueryError.svelte";
-  import Banner from "#lib/components/Banner.svelte";
-  import CardRowSkeleton from "#lib/components/CardRowSkeleton.svelte";
-  import Icon from "#lib/components/Icon.svelte";
-  import NewBadge from "#lib/components/NewBadge.svelte";
-  import PageHeader from "#lib/components/PageHeader.svelte";
-  import Switch from "#lib/components/Switch.svelte";
+  import Banner from "#lib/ui/Banner.svelte";
+  import CardRowSkeleton from "#lib/ui/CardRowSkeleton.svelte";
+  import Icon from "#lib/ui/Icon.svelte";
+  import NewBadge from "#lib/premium/NewBadge.svelte";
+  import PageHeader from "#lib/ui/PageHeader.svelte";
+  import Switch from "#lib/ui/Switch.svelte";
   import { DOMAINS } from "#lib/constants/domains.js";
   import { DOCS_URL } from "#lib/constants/external-links.js";
-  import { isFeatureNew, type FeatureBadgeKey } from "#lib/feature-badges.js";
+  import {
+    isFeatureNew,
+    type FeatureBadgeKey,
+  } from "#lib/shell/feature-badges.js";
   import { m } from "#lib/paraglide/messages.js";
-  import { toast } from "#lib/toast.svelte.js";
+  import { toast } from "#lib/ui/toast.svelte.js";
   import { Domain } from "@loomkeep/shared/enums";
   import {
     API_RATE_LIMIT_BOUNDS,

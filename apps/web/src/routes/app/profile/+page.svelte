@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { auth } from "#lib/auth.svelte.js";
-  import ProfileView from "#lib/components/profile/ProfileView.svelte";
+  import { auth } from "#lib/auth/auth.svelte.js";
+  import ProfileView from "#lib/profile/ProfileView.svelte";
   import { m } from "#lib/paraglide/messages.js";
 </script>
 
