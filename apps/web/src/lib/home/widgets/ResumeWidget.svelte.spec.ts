@@ -31,7 +31,7 @@ afterEach(() => {
 describe("ResumeWidget", () => {
   it("leaves the ghosts to the library and offers only the shows paused lately", async () => {
     server.use(
-      http.get(apiUrl("/library"), () =>
+      http.get(apiUrl("/media"), () =>
         HttpResponse.json({
           items: [pausedFor("Dark", 45), pausedFor("Lost", 400)],
           hasMore: false,
@@ -54,10 +54,10 @@ it("reports a failed resume instead of silently swallowing the error", async () 
     totalEpisodes: 3,
   } as LibraryEntryDto["progress"];
   server.use(
-    http.get(apiUrl("/library"), () =>
+    http.get(apiUrl("/media"), () =>
       HttpResponse.json({ items: [entry], hasMore: false }),
     ),
-    http.post(apiUrl("/library/episodes/ep1/watches"), () =>
+    http.post(apiUrl("/media/episodes/ep1/watches"), () =>
       HttpResponse.json({ message: "Unavailable" }, { status: 503 }),
     ),
   );

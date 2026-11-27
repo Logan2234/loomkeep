@@ -4,8 +4,8 @@ import type {
 } from "@loomkeep/shared/contracts";
 import { Injectable } from "@nestjs/common";
 import { BookItemService } from "../books/book-item.service";
-import { MediaItemService } from "../catalog/media-item.service";
 import { GameItemService } from "../games/game-item.service";
+import { MediaItemService } from "../media/media-item.service";
 import { MusicItemService } from "../music/music-item.service";
 
 /** A work named by its page, cached like a tracked one. */

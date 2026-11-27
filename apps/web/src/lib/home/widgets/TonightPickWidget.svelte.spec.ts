@@ -33,7 +33,7 @@ const planned = (id: string, title: string, upcoming?: boolean) =>
 
 it("never picks a film that isn't out yet", async () => {
   server.use(
-    http.get(apiUrl("/library"), () =>
+    http.get(apiUrl("/media"), () =>
       HttpResponse.json({
         items: [planned("1", "Avengers: Doomsday", true)],
         hasMore: false,

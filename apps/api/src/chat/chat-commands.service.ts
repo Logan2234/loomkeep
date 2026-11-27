@@ -18,11 +18,11 @@ import {
 } from "@loomkeep/shared/enums";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { BookSagaService } from "../books/book-saga.service";
-import { MediaItemService } from "../catalog/media-item.service";
-import { resolveWatchRegion } from "../catalog/watch-region.util";
 import { AppException } from "../common/app.exception";
 import { GameSagaService } from "../games/game-saga.service";
-import { SagaService } from "../library/saga.service";
+import { MediaItemService } from "../media/media-item.service";
+import { MediaSagaService } from "../media/media-saga.service";
+import { resolveWatchRegion } from "../media/watch-region.util";
 import { PrismaService } from "../prisma/prisma.service";
 import { FollowService } from "../social/follow.service";
 import { WorkFriendsService } from "../social/work-friends.service";
@@ -89,7 +89,7 @@ export class ChatCommandsService {
     private readonly works: ChatWorkService,
     private readonly friends: WorkFriendsService,
     private readonly follow: FollowService,
-    private readonly mediaSagas: SagaService,
+    private readonly mediaSagas: MediaSagaService,
     private readonly gameSagas: GameSagaService,
     private readonly bookSagas: BookSagaService,
     private readonly media: MediaItemService,

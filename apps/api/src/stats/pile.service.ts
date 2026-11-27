@@ -7,7 +7,7 @@ import { Domain } from "@loomkeep/shared/enums";
 import { Injectable } from "@nestjs/common";
 import { BookLibraryService } from "../books/book-library.service";
 import { GameLibraryService } from "../games/game-library.service";
-import { LibraryService } from "../library/library.service";
+import { MediaLibraryService } from "../media/media-library.service";
 import { MusicLibraryService } from "../music/music-library.service";
 import { DomainGateService } from "../users/domain-gate.service";
 import { filterEnabledDomains } from "./enabled-domains.util";
@@ -21,7 +21,7 @@ import { filterEnabledDomains } from "./enabled-domains.util";
 export class PileService {
   constructor(
     private readonly domainGate: DomainGateService,
-    private readonly media: LibraryService,
+    private readonly media: MediaLibraryService,
     private readonly games: GameLibraryService,
     private readonly books: BookLibraryService,
     private readonly music: MusicLibraryService,

@@ -1,10 +1,10 @@
 import type { MediaSagaDto, SagaMemberDto } from "@loomkeep/shared/contracts";
 import { vi } from "vitest";
-import type { SagaSyncService } from "../catalog/saga-sync.service";
 import type { PrismaService } from "../prisma/prisma.service";
 import type { AgeGateService } from "../users/age-gate.service";
-import type { LibraryService } from "./library.service";
-import { SagaService } from "./saga.service";
+import type { MediaProgressService } from "./media-progress.service";
+import { MediaSagaService } from "./media-saga.service";
+import type { SagaSyncService } from "./saga-sync.service";
 
 const member = (
   sourceId: string,
@@ -57,16 +57,16 @@ function makeService(allowAdult = false) {
       upsert: vi.fn().mockResolvedValue({}),
     },
   };
-  const service = new SagaService(
+  const service = new MediaSagaService(
     prisma as unknown as PrismaService,
     sagas as unknown as SagaSyncService,
-    library as unknown as LibraryService,
+    library as unknown as MediaProgressService,
     ageGate as unknown as AgeGateService,
   );
   return { service, sagas, library, prisma };
 }
 
-describe("SagaService", () => {
+describe("MediaSagaService", () => {
   it("adds the viewer's status to each work and tags the tracked ones with the saga", async () => {
     const { service, sagas, library } = makeService(true);
 

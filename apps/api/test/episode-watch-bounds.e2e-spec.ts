@@ -70,27 +70,27 @@ describe("Episode watch bounds (e2e)", () => {
   afterAll(() => app.close());
 
   it("refuses a viewing dated in the future", async () => {
-    await post(`/api/library/episodes/${aired}/watches`)
+    await post(`/api/media/episodes/${aired}/watches`)
       .send({ watchedAt: "2099-01-01T00:00:00Z" })
       .expect(400);
   });
 
   it("still takes a viewing dated later today in another time zone", async () => {
     const tonight = new Date(Date.now() + 10 * 60 * 60 * 1000).toISOString();
-    await post(`/api/library/episodes/${aired}/watches`)
+    await post(`/api/media/episodes/${aired}/watches`)
       .send({ watchedAt: tonight })
       .expect(201);
   });
 
   it("refuses to restore a viewing of an episode not out yet", async () => {
-    const res = await post("/api/library/episodes/watches/undo")
+    const res = await post("/api/media/episodes/watches/undo")
       .send({ restore: [{ episodeId: upcoming, watchedAt: null }] })
       .expect(400);
     expect(res.body.code).toBe("library.episode_not_aired");
   });
 
   it("refuses to restore a viewing dated in the future", async () => {
-    await post("/api/library/episodes/watches/undo")
+    await post("/api/media/episodes/watches/undo")
       .send({
         restore: [{ episodeId: aired, watchedAt: "2099-01-01T00:00:00Z" }],
       })

@@ -2,7 +2,7 @@ import { vi } from "vitest";
 import type { JwtPayload } from "../auth/decorators/current-user.decorator";
 import { BooksController } from "../books/books.controller";
 import { GamesController } from "../games/games.controller";
-import { LibraryController } from "../library/library.controller";
+import { MediaLibraryController } from "../media/media-library.controller";
 import { MusicController } from "../music/music.controller";
 import type { ListEntriesFilters } from "./entry-lifecycle.util";
 
@@ -23,10 +23,10 @@ describe("library pagination boundaries", () => {
         new GamesController(null!, service as never, null!, null!, null!),
         new MusicController(null!, service as never),
       ],
-      media: new LibraryController(
+      media: new MediaLibraryController(
         service as never,
-        gate as never,
         null!,
+        gate as never,
         null!,
       ),
     };

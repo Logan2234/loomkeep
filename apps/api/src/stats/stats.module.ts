@@ -2,7 +2,7 @@ import { Module } from "@nestjs/common";
 import { BooksModule } from "../books/books.module";
 import { EntitlementsModule } from "../entitlements/entitlements.module";
 import { GamesModule } from "../games/games.module";
-import { LibraryModule } from "../library/library.module";
+import { MediaModule } from "../media/media.module";
 import { MusicModule } from "../music/music.module";
 import { ReviewsModule } from "../reviews/reviews.module";
 import { SocialModule } from "../social/social.module";
@@ -18,7 +18,7 @@ import { StatsService } from "./stats.service";
     ReviewsModule,
     UserGatesModule,
     EntitlementsModule,
-    LibraryModule,
+    MediaModule,
     GamesModule,
     BooksModule,
     MusicModule,

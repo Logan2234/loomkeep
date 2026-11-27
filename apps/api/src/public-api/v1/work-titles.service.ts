@@ -1,7 +1,7 @@
 import type { Locale } from "@loomkeep/shared/catalog";
 import { Injectable } from "@nestjs/common";
-import { MediaItemService } from "../../catalog/media-item.service";
 import { safeLang } from "../../common/locale.util";
+import { MediaItemService } from "../../media/media-item.service";
 import { PrismaService } from "../../prisma/prisma.service";
 import type { ApiV1TargetDto, ApiV1WorkDto } from "./api-v1.types";
 

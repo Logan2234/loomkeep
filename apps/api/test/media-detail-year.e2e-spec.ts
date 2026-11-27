@@ -1,7 +1,7 @@
 import { INestApplication } from "@nestjs/common";
 import request from "supertest";
 import { App } from "supertest/types";
-import { LibraryService } from "../src/library/library.service";
+import { MediaDetailService } from "../src/media/media-detail.service";
 import type { PrismaService } from "../src/prisma/prisma.service";
 import { authCookies, createE2eApp, e2eUser } from "./e2e-app";
 
@@ -53,7 +53,7 @@ describe("Media detail year (e2e)", () => {
     process.env.TZ = "America/New_York";
 
     const detail = await app
-      .get(LibraryService)
+      .get(MediaDetailService)
       .getMediaDetail(userId, "MOVIE", "ny-2024");
 
     expect(detail.year).toBe(2024);

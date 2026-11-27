@@ -1,10 +1,10 @@
 import type { EntryStatus } from "@loomkeep/shared/enums";
-import { toSummary } from "../../../catalog/providers/anilist.mapper";
+import { toSummary } from "../../../media/providers/anilist.mapper";
 import type {
   AnilistFuzzyDate,
   AnilistListEntry,
   AnilistUserList,
-} from "../../../catalog/providers/anilist.provider";
+} from "../../../media/providers/anilist.provider";
 import type { ImportList, ImportShow } from "../../media-import-model";
 import { toMatch } from "../media/media-match-resolver";
 

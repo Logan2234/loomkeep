@@ -49,10 +49,6 @@ const KNOWN_CROSSINGS: Record<string, { models: string[]; why: string }> = {
     models: ["userOnboarding"],
     why: "the gamified onboarding records its completion beside the users module's steps",
   },
-  "library/saga.service.ts": {
-    models: ["sagaTranslation"],
-    why: "the sagas view caches a film saga's translated title",
-  },
   "lists/list.service.ts": {
     models: ["notification"],
     why: "removing a member drops the notification whose dedupe key would swallow a re-invitation",

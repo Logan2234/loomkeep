@@ -46,7 +46,7 @@ function stubSideRequests() {
     http.get(apiUrl("/gamification/onboarding"), () =>
       HttpResponse.json({ steps: [] }),
     ),
-    http.get(apiUrl("/catalog/watch-providers"), () =>
+    http.get(apiUrl("/media/watch-providers"), () =>
       HttpResponse.json({ region: "FR", regions: [], providers: [] }),
     ),
   );

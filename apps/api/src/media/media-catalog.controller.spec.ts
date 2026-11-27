@@ -2,12 +2,12 @@ import { Logger } from "@nestjs/common";
 import { vi, type Mock } from "vitest";
 import type { AgeGateService } from "../users/age-gate.service";
 import type { DomainGateService } from "../users/domain-gate.service";
-import { CatalogController } from "./catalog.controller";
+import { MediaCatalogController } from "./media-catalog.controller";
 import type { MediaItemService } from "./media-item.service";
 
 const user = { sub: "user-1" } as never;
 
-describe("CatalogController.search", () => {
+describe("MediaCatalogController.search", () => {
   function makeController(opts: {
     tmdbSearch: Mock;
     anilistSearch: Mock;
@@ -27,7 +27,7 @@ describe("CatalogController.search", () => {
       assertEnabled: vi.fn().mockResolvedValue(undefined),
     } as unknown as DomainGateService;
 
-    return new CatalogController(
+    return new MediaCatalogController(
       mediaItemService,
       ageGate,
       domainGate,

@@ -26,7 +26,6 @@ import { HttpStatus, Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { Cron, CronExpression } from "@nestjs/schedule";
 import { type Notification, Prisma } from "@prisma/client";
-import { resolveWatchRegion } from "../catalog/watch-region.util";
 import { AppException } from "../common/app.exception";
 import { sinceDaysAgo, utcDateKey } from "../common/date.util";
 import {
@@ -40,6 +39,7 @@ import { isDomainOffered } from "../instance-settings/instance-domains";
 import { JOB_KEYS } from "../jobs/job-keys";
 import { JobRunService, type JobSkipped } from "../jobs/job-run.service";
 import { MailService } from "../mail/mail.service";
+import { resolveWatchRegion } from "../media/watch-region.util";
 import { PrismaService } from "../prisma/prisma.service";
 import { preferencesOf } from "../users/preferences.util";
 import { isSuspended } from "../users/suspension.util";

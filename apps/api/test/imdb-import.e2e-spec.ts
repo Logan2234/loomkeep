@@ -2,7 +2,7 @@ import { CatalogSource, MediaSource, MediaType } from "@loomkeep/shared/enums";
 import { INestApplication } from "@nestjs/common";
 import request from "supertest";
 import { App } from "supertest/types";
-import type { ProviderMediaDetails } from "../src/catalog/providers/provider.types";
+import type { ProviderMediaDetails } from "../src/media/providers/provider.types";
 import type { PrismaService } from "../src/prisma/prisma.service";
 import {
   authCookies,

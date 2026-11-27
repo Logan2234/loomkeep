@@ -81,7 +81,7 @@ describe("Bulk completion of a series (e2e)", () => {
     });
 
     const { body } = await request(http)
-      .post("/api/library/entries/bulk")
+      .post("/api/media/entries/bulk")
       .set("Cookie", cookie)
       .send({ ids: [entry.id], status: "COMPLETED" })
       .expect(200);

@@ -15,7 +15,7 @@ import { ChatService } from "../chat/chat.service";
 import { CommentService } from "../comments/comment.service";
 import { AppException } from "../common/app.exception";
 import { GameLibraryService } from "../games/game-library.service";
-import { LibraryService } from "../library/library.service";
+import { MediaLibraryService } from "../media/media-library.service";
 import {
   type ActionClaims,
   NotificationAction,
@@ -42,7 +42,7 @@ export class NotificationActionService {
     private readonly chat: ChatService,
     private readonly follows: FollowService,
     private readonly comments: CommentService,
-    private readonly library: LibraryService,
+    private readonly library: MediaLibraryService,
     private readonly games: GameLibraryService,
     private readonly notifications: NotificationService,
   ) {}

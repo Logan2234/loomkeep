@@ -196,7 +196,7 @@ export class TmdbProvider implements CatalogProvider {
     const wantMovies = type === undefined || type === MediaType.MOVIE;
     const wantSeries = type === undefined || type === MediaType.SERIES;
     // Adult movies are fetched too (flagged via `adult`) — the caller
-    // (CatalogController) strips them per-account with the age gate.
+    // (MediaCatalogController) strips them per-account with the age gate.
     const params = {
       query,
       page: String(page),

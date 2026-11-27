@@ -1,7 +1,7 @@
 import { Module } from "@nestjs/common";
-import { CatalogModule } from "../catalog/catalog.module";
 import { EntitlementsModule } from "../entitlements/entitlements.module";
 import { LibraryModule } from "../library/library.module";
+import { MediaModule } from "../media/media.module";
 import { ReviewsModule } from "../reviews/reviews.module";
 import { SocialModule } from "../social/social.module";
 import { StatsModule } from "../stats/stats.module";
@@ -22,7 +22,7 @@ import { AdvancedStatsService } from "./stats/advanced-stats.service";
  */
 @Module({
   imports: [
-    CatalogModule,
+    MediaModule,
     EntitlementsModule,
     LibraryModule,
     ReviewsModule,

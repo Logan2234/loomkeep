@@ -1,7 +1,7 @@
 import { ErrorCode } from "@loomkeep/shared/catalog";
 import { HttpStatus, Injectable } from "@nestjs/common";
-import { MediaItemService } from "../../../catalog/media-item.service";
 import { AppException } from "../../../common/app.exception";
+import { MediaItemService } from "../../../media/media-item.service";
 import { PrismaService } from "../../../prisma/prisma.service";
 import { ReviewService } from "../../../reviews/review.service";
 import type { ParsedImport } from "../../media-import-model";

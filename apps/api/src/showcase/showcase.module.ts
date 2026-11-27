@@ -1,11 +1,11 @@
 import { Module } from "@nestjs/common";
-import { CatalogModule } from "../catalog/catalog.module";
 import { GamesModule } from "../games/games.module";
+import { MediaModule } from "../media/media.module";
 import { ShowcaseController } from "./showcase.controller";
 import { ShowcaseService } from "./showcase.service";
 
 @Module({
-  imports: [CatalogModule, GamesModule],
+  imports: [MediaModule, GamesModule],
   controllers: [ShowcaseController],
   providers: [ShowcaseService],
 })

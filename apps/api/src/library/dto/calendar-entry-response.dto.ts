@@ -1,6 +1,6 @@
 import type { CalendarEntryDto } from "@loomkeep/shared/contracts";
 import { GameItemResponseDto } from "../../games/dto/game-item-response.dto";
-import { MediaItemResponseDto } from "./media-item-response.dto";
+import { MediaItemResponseDto } from "../../media/dto/media-item-response.dto";
 
 export class CalendarEntryResponseDto implements CalendarEntryDto {
   mediaItem!: MediaItemResponseDto | null;

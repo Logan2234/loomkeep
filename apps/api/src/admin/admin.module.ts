@@ -3,7 +3,6 @@ import { AccountModule } from "../account/account.module";
 import { ApiKeysModule } from "../api-keys/api-keys.module";
 import { AuthModule } from "../auth/auth.module";
 import { BooksModule } from "../books/books.module";
-import { CatalogModule } from "../catalog/catalog.module";
 import { ChatModule } from "../chat/chat.module";
 import { CommentsModule } from "../comments/comments.module";
 import { EntitlementsModule } from "../entitlements/entitlements.module";
@@ -14,6 +13,7 @@ import { ImportModule } from "../import/import.module";
 import { JobsModule } from "../jobs/jobs.module";
 import { ListsModule } from "../lists/lists.module";
 import { MailModule } from "../mail/mail.module";
+import { MediaModule } from "../media/media.module";
 import { MusicModule } from "../music/music.module";
 import { AdminAlertModule } from "../notifications/admin-alert.module";
 import { NotificationsModule } from "../notifications/notifications.module";
@@ -59,7 +59,7 @@ import { UpdateCheckService } from "./update-check.service";
     NotificationsModule,
     AdminAlertModule,
     AuthModule,
-    CatalogModule,
+    MediaModule,
     GamesModule,
     BooksModule,
     MusicModule,

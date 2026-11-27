@@ -143,7 +143,7 @@ describe("Import (e2e)", () => {
 
     // Nothing is tracked until the commit.
     const library = await request(http)
-      .get("/api/library")
+      .get("/api/media")
       .set("Cookie", cookies)
       .expect(200);
     expect(library.body.items).toHaveLength(0);
@@ -180,7 +180,7 @@ describe("Import (e2e)", () => {
     expect(episodes.value).toBe(2);
 
     const library = await request(http)
-      .get("/api/library")
+      .get("/api/media")
       .set("Cookie", cookies)
       .expect(200);
     expect(library.body.items).toHaveLength(1);

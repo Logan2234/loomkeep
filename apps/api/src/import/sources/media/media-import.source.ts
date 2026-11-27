@@ -20,12 +20,12 @@ import type {
 import { Domain, ListKind, ReviewTargetType } from "@loomkeep/shared/enums";
 import { Logger } from "@nestjs/common";
 import type { ExternalSource as DbExternalSource } from "@prisma/client";
-import { MediaItemService } from "../../../catalog/media-item.service";
-import { assertMediaReleased } from "../../../catalog/movie-release.util";
 import { AppException } from "../../../common/app.exception";
 import { mapWithConcurrency } from "../../../common/concurrency.util";
-import { MediaEntryImportWriter } from "../../../library/media-entry-import.writer";
 import type { ListService } from "../../../lists/list.service";
+import { MediaEntryImportWriter } from "../../../media/media-entry-import.writer";
+import { MediaItemService } from "../../../media/media-item.service";
+import { assertMediaReleased } from "../../../media/movie-release.util";
 import { PrismaService } from "../../../prisma/prisma.service";
 import { ReviewService } from "../../../reviews/review.service";
 import {

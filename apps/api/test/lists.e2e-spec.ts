@@ -97,7 +97,7 @@ describe("Collaborative lists (e2e)", () => {
 
     // A work to put on the list: tracking it is what persists it.
     const tracked = await as("alice")
-      .put("/api/library")
+      .put("/api/media")
       .send({
         source: "ANILIST",
         sourceId: "4242",
@@ -234,7 +234,7 @@ describe("Collaborative lists (e2e)", () => {
       .get(`/api/lists/me/${own.body.id}`)
       .expect(200);
     expect(detail.body.items).toHaveLength(1);
-    const library = await as("carol").get("/api/library").expect(200);
+    const library = await as("carol").get("/api/media").expect(200);
     expect(library.body.items).toEqual([]);
   });
 

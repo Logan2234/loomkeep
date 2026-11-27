@@ -10,18 +10,18 @@ import {
 import { BookItemService } from "../books/book-item.service";
 import { BookLibraryService } from "../books/book-library.service";
 import { BooksController } from "../books/books.controller";
-import { MediaItemService } from "../catalog/media-item.service";
 import { isUniqueViolation } from "../common/prisma-error.util";
 import { GameItemService } from "../games/game-item.service";
 import { GameLibraryService } from "../games/game-library.service";
 import { GamesController } from "../games/games.controller";
 import { XP_RULES } from "../gamification/xp-rules";
 import { JOB_KEYS } from "../jobs/job-keys";
-import { LibraryService } from "../library/library.service";
+import { MediaItemService } from "../media/media-item.service";
 import { MusicItemService } from "../music/music-item.service";
 import { MusicLibraryService } from "../music/music-library.service";
 import { MusicController } from "../music/music.controller";
 import type { PrismaService } from "../prisma/prisma.service";
+import { mediaServices } from "../test-utils/media-services";
 import { allDomainsConfig, stubSagas } from "../test-utils/stubs";
 import { DOMAIN_GATE, DomainGateGuard } from "../users/domain-gate.guard";
 
@@ -368,7 +368,7 @@ const DELETE_ENTRY: Record<
   ) => { deleteEntry(userId: string, entryId: string): Promise<void> }
 > = {
   MEDIA: (prisma, { xp, activity }) =>
-    new LibraryService(
+    mediaServices(
       prisma,
       unused,
       unused,
@@ -378,7 +378,7 @@ const DELETE_ENTRY: Record<
       unused,
       unused,
       unused,
-    ),
+    ).library,
   GAMES: (prisma, { xp, activity, sessionXp }) =>
     new GameLibraryService(
       prisma,
@@ -713,7 +713,7 @@ const UPSERT_ENTRY: Record<
   MEDIA: {
     entryModel: "mediaEntry",
     add: (prisma) =>
-      new LibraryService(
+      mediaServices(
         prisma,
         {
           upsertFromSource: vi
@@ -727,7 +727,7 @@ const UPSERT_ENTRY: Record<
         anything(),
         anything(),
         anything(),
-      ).upsertEntry(USER, {
+      ).library.upsertEntry(USER, {
         source: "TMDB",
         sourceId: "42",
         type: "MOVIE",

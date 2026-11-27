@@ -709,7 +709,7 @@ describe("ChatComposer", () => {
       finished: [],
     });
     server.use(
-      http.get(apiUrl("/library/sagas"), () =>
+      http.get(apiUrl("/media/sagas"), () =>
         HttpResponse.json(sagas("TMDB:119", "Le Seigneur des anneaux")),
       ),
       http.get(apiUrl("/games/sagas"), () =>

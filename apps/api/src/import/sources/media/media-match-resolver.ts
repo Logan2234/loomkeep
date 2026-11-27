@@ -1,6 +1,6 @@
 import type { ImportMatch, MediaSummaryDto } from "@loomkeep/shared/contracts";
 import { Injectable } from "@nestjs/common";
-import { TmdbProvider } from "../../../catalog/providers/tmdb.provider";
+import { TmdbProvider } from "../../../media/providers/tmdb.provider";
 import type { ImportMovie, ImportShow } from "../../media-import-model";
 
 /** Catalogue resolution contract shared by media import sources. */

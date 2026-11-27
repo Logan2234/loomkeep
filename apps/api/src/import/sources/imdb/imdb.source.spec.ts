@@ -1,8 +1,8 @@
 import type { MediaSummaryDto } from "@loomkeep/shared/contracts";
 import { vi } from "vitest";
-import type { MediaItemService } from "../../../catalog/media-item.service";
-import type { TmdbProvider } from "../../../catalog/providers/tmdb.provider";
 import type { ListService } from "../../../lists/list.service";
+import type { MediaItemService } from "../../../media/media-item.service";
+import type { TmdbProvider } from "../../../media/providers/tmdb.provider";
 import type { PrismaService } from "../../../prisma/prisma.service";
 import type { ReviewService } from "../../../reviews/review.service";
 import type { ProgressReporter } from "../../import-source";

@@ -24,7 +24,7 @@ import {
 import {
   materializedStatus,
   withEpisodeLeftToWatch,
-} from "../library/status.util";
+} from "../media/status.util";
 import { PrismaService } from "../prisma/prisma.service";
 import { ReviewService } from "../reviews/review.service";
 import { DomainGateService } from "../users/domain-gate.service";
