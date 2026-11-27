@@ -1,6 +1,7 @@
 import { ErrorCode } from "@loomkeep/shared/catalog";
 import {
   type MyReviewDto,
+  REVIEW_TARGET_DOMAIN,
   type ReviewBatchResultDto,
   type ReviewDto,
   type ReviewRevisionDto,
@@ -29,7 +30,7 @@ import { REPORT_THROTTLE } from "../common/throttle.constants";
 import { CreateReportBody } from "../reports/dto/create-report.dto";
 import { ReportService } from "../reports/report.service";
 import { SocialFeatureGuard } from "../social/social-feature.guard";
-import { DomainGateService, TARGET_DOMAIN } from "../users/domain-gate.service";
+import { DomainGateService } from "../users/domain-gate.service";
 import {
   BatchDeleteReviewsBody,
   BatchVisibilityBody,
@@ -112,7 +113,7 @@ export class ReviewController {
     @Body() body: UpsertReviewBody,
   ): Promise<ReviewDto> {
     const target = parseTarget(type);
-    await this.domainGate.assertEnabled(user.sub, TARGET_DOMAIN[target]);
+    await this.domainGate.assertEnabled(user.sub, REVIEW_TARGET_DOMAIN[target]);
     return this.reviews.upsert(user.sub, target, id, body);
   }
 

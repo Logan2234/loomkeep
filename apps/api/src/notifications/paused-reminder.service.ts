@@ -53,7 +53,7 @@ export function isPausedReminderDue(timezone: string, now: Date): boolean {
  * on all but a day or two a month. Offsets rather than zone names, so an
  * account whose zone is an alias isn't left out.
  */
-export function isPausedReminderDueAnywhere(now: Date): boolean {
+function isPausedReminderDueAnywhere(now: Date): boolean {
   for (let quarter = -12 * 4; quarter <= 14 * 4; quarter++) {
     const local = new Date(now.getTime() + quarter * QUARTER_HOUR_MS);
 

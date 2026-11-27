@@ -3,6 +3,7 @@
 // Social on.
 process.env.SOCIAL_ENABLED = "true";
 
+import { ErrorCode } from "@loomkeep/shared/catalog";
 import { ProfileAccess } from "@loomkeep/shared/enums";
 import { INestApplication } from "@nestjs/common";
 import request from "supertest";
@@ -79,6 +80,11 @@ describe("Collaborative lists (e2e)", () => {
         .patch("/api/social/me/privacy")
         .send({ profileAccess: ProfileAccess.PUBLIC })
         .expect(200);
+      // Adding a work to a list takes its domain open to whoever adds it.
+      await as(who)
+        .patch("/api/users/me")
+        .send({ enabledDomains: ["MEDIA"] })
+        .expect(200);
     }
 
     // Friends: a mutual follow between two public profiles.
@@ -90,10 +96,6 @@ describe("Collaborative lists (e2e)", () => {
       .expect(201);
 
     // A work to put on the list: tracking it is what persists it.
-    await as("alice")
-      .patch("/api/users/me")
-      .send({ enabledDomains: ["MEDIA"] })
-      .expect(200);
     const tracked = await as("alice")
       .put("/api/library")
       .send({
@@ -336,5 +338,20 @@ describe("Collaborative lists (e2e)", () => {
         expectedUpdatedAt: after.body.updatedAt,
       })
       .expect(409);
+  });
+
+  // Writes and list additions went through on a domain the user had turned
+  // off (audit 2026-11-17, PRM-02 and PRM-06).
+  it("refuses writes and list additions in a domain the user turned off", async () => {
+    const refused = await as("alice")
+      .put("/api/games")
+      .send({ source: "IGDB", sourceId: "1", status: "PLAYING" })
+      .expect(403);
+    expect(refused.body.code).toBe(ErrorCode.UserDomainDisabled);
+
+    await as("alice")
+      .post(`/api/lists/${listId}/items`)
+      .send({ targetType: "GAME", targetId: "any-game" })
+      .expect(403);
   });
 });

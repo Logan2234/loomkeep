@@ -819,8 +819,8 @@ const GATED_CONTROLLER: Record<
   Exclude<CacheDomain, "MEDIA">,
   [Type, Domain]
 > = {
-  GAME: [GamesController, Domain.GAMES],
-  BOOK: [BooksController, Domain.BOOKS],
+  GAMES: [GamesController, Domain.GAMES],
+  BOOKS: [BooksController, Domain.BOOKS],
   MUSIC: [MusicController, Domain.MUSIC],
 };
 

@@ -1,5 +1,8 @@
 import { ErrorCode } from "@loomkeep/shared/catalog";
-import { type ListItemDto } from "@loomkeep/shared/contracts";
+import {
+  type ListItemDto,
+  REVIEW_TARGET_DOMAIN,
+} from "@loomkeep/shared/contracts";
 import { Body, Controller, HttpStatus, Param, Post } from "@nestjs/common";
 import { ApiCreatedResponse } from "@nestjs/swagger";
 import {
@@ -9,7 +12,7 @@ import {
 import { AppException } from "../common/app.exception";
 import { WorkPageService } from "../links/work-page.service";
 import { AgeGateService } from "../users/age-gate.service";
-import { DomainGateService, TARGET_DOMAIN } from "../users/domain-gate.service";
+import { DomainGateService } from "../users/domain-gate.service";
 import { AddListWorkBody } from "./dto/add-list-work.dto";
 import { ListItemResponseDto } from "./dto/list-item-response.dto";
 import { ListService } from "./list.service";
@@ -46,7 +49,7 @@ export class ListWorksController {
 
     await this.domainGate.assertEnabled(
       user.sub,
-      TARGET_DOMAIN[work.targetType],
+      REVIEW_TARGET_DOMAIN[work.targetType],
     );
 
     return this.lists.addItem(user.sub, id, {
