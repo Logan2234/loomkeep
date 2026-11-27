@@ -11,10 +11,10 @@
   // role rather than a real <button> (whose content model forbids the flow
   // content inside: the progress bar, the ladder) or an <article> (which has
   // a landmark role of its own, and may not be repurposed as a button).
-  import Icon from "#lib/components/Icon.svelte";
-  import ProgressBar from "#lib/components/ProgressBar.svelte";
-  import { formatNumber } from "#lib/format.js";
-  import { prefersReducedMotion } from "#lib/motion.js";
+  import Icon from "#lib/ui/Icon.svelte";
+  import ProgressBar from "#lib/ui/ProgressBar.svelte";
+  import { formatNumber } from "#lib/ui/format.js";
+  import { prefersReducedMotion } from "#lib/ui/motion.js";
   import { m } from "#lib/paraglide/messages.js";
   import type { AchievementGroup } from "../achievements";
   import {
@@ -23,7 +23,7 @@
     groupIcon,
   } from "../labels";
   import AchievementLadder from "./AchievementLadder.svelte";
-  import AchievementMedallion from "#lib/components/AchievementMedallion.svelte";
+  import AchievementMedallion from "#lib/gamification/AchievementMedallion.svelte";
   import TierPips from "./TierPips.svelte";
 
   let {

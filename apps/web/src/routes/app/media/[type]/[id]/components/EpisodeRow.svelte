@@ -1,13 +1,13 @@
 <script lang="ts">
-  import Dropdown from "#lib/components/Dropdown.svelte";
-  import Icon from "#lib/components/Icon.svelte";
-  import { appConfig } from "#lib/config.svelte.js";
+  import Dropdown from "#lib/ui/Dropdown.svelte";
+  import Icon from "#lib/ui/Icon.svelte";
+  import { appConfig } from "#lib/shell/config.svelte.js";
   import {
     DATE_MEDIUM_OPTIONS,
     formatDate,
     formatRuntimeTimecode,
-  } from "#lib/format.js";
-  import { layout } from "#lib/layout.svelte.js";
+  } from "#lib/ui/format.js";
+  import { layout } from "#lib/shell/layout.svelte.js";
   import { m } from "#lib/paraglide/messages.js";
   import type { MediaDetailEpisodeDto } from "@loomkeep/shared/contracts";
   import { airDateLabel, scoreLabel, upcomingLabel } from "./episode-format";

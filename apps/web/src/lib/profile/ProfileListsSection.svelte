@@ -1,0 +1,87 @@
+<script lang="ts">
+  import { type ListTile } from "#lib/profile/list-tile.js";
+
+  import Carousel from "#lib/ui/Carousel.svelte";
+  import Icon from "#lib/ui/Icon.svelte";
+  import ListCoverGrid from "#lib/lists/ListCoverGrid.svelte";
+  import ProfileSectionHeading from "#lib/profile/ProfileSectionHeading.svelte";
+  import { m } from "#lib/paraglide/messages.js";
+
+  let {
+    listTiles,
+    selfManage,
+    hasOwnLists,
+    onCreateList,
+  }: {
+    listTiles: ListTile[];
+    selfManage: boolean | undefined;
+    hasOwnLists: boolean;
+    onCreateList: () => void;
+  } = $props();
+</script>
+
+<section>
+  <ProfileSectionHeading label={m.common_lists()}>
+    {#snippet action()}
+      {#if selfManage && hasOwnLists}
+        <a href="/app/lists" class="btn-text group shrink-0">
+          {m.common_manage()}
+          <Icon
+            name="arrow-right"
+            class="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+        </a>
+      {/if}
+    {/snippet}
+  </ProfileSectionHeading>
+  <div class="flex items-stretch gap-4">
+    {#if selfManage && hasOwnLists}
+      <a href="/app/lists" class="mt-2 hidden w-28 shrink-0 sm:w-32 md:block">
+        <div
+          class="card hover:border-accent text-dim hover:text-accent flex aspect-2/3 flex-col items-center justify-center gap-1.5 transition-colors">
+          <Icon name="list" class="h-6 w-6" />
+          <span class="text-xs font-semibold">{m.common_view_all()}</span>
+        </div>
+      </a>
+    {/if}
+    <div class="min-w-0 flex-1">
+      <Carousel
+        items={listTiles}
+        keyOf={(item) => item.key}
+        label={m.common_lists()}>
+        {#snippet card(item)}
+          {#if item.kind === "create"}
+            <button
+              type="button"
+              onclick={onCreateList}
+              class="w-28 self-start sm:w-32">
+              <div
+                class="card text-dim hover:border-accent hover:text-accent flex aspect-2/3 flex-col items-center justify-center gap-1.5 border-dashed transition-colors">
+                <Icon name="plus" class="h-6 w-6" />
+                <span class="text-xs font-semibold">{m.common_create()}</span>
+              </div>
+            </button>
+          {:else}
+            <a href="/app/lists/{item.list.id}" class="block w-28 sm:w-32">
+              <div
+                class="card hover:border-accent overflow-hidden transition-colors">
+                <ListCoverGrid
+                  images={item.list.previewImageUrls}
+                  title={item.list.title} />
+              </div>
+              <p class="mt-1.5 truncate text-xs font-semibold">
+                {item.list.title}
+              </p>
+              {#if item.list.role === "EDITOR"}
+                <p class="text-dim text-micro truncate">
+                  {m.list_owned_by_editor({
+                    name: item.list.author.displayName,
+                  })}
+                </p>
+              {/if}
+            </a>
+          {/if}
+        {/snippet}
+      </Carousel>
+    </div>
+  </div>
+</section>

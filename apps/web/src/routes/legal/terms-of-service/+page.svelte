@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { formatDate } from "#lib/format.js";
+  import { formatDate } from "#lib/ui/format.js";
   import { LEGAL_VERSION } from "@loomkeep/shared/catalog";
 </script>
 

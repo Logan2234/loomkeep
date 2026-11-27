@@ -1,7 +1,7 @@
 # Mounted only when docker-compose.unleash.yml is in use. See
 # docker/README.md § "Access control per public subdomain" — every
 # visitor's browser calls this same subdomain's /api/frontend path directly
-# and unauthenticated to poll live flags (apps/web/src/lib/feature-flags-live.ts),
+# and unauthenticated to poll live flags (apps/web/src/lib/shell/feature-flags-live.svelte.ts),
 # so gating the whole hostname (a Cloudflare Access policy via
 # docker-compose.tunnel.yml) requires exempting that path
 # first — a separate Access Application scoped to `/api/frontend*` with a

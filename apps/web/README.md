@@ -39,17 +39,18 @@ src/
   routes/         # SvelteKit pages (file-based routing) — one folder per
                    # top-level feature: media, search, lists, reviews,
                    # feed, stats, admin, settings, auth flows, ...
-  lib/
-    api/           # request() wrappers per domain, talk to the NestJS API
-    components/    # shared Svelte components — check here (and any
+  lib/             # sorted by domain, like the API's modules
+    books/ games/ media/ music/   # one folder per domain: components,
+    library/ lists/ reviews/ …    # stores and helpers together
+    ui/            # generic components and helpers — check here (and any
                    # route-local components/ folder) before writing a new one
+    shell/         # the app's frame: navigation, boot, config, feature flags
+    api/           # request() wrappers per domain, talk to the NestJS API
     actions/       # Svelte actions (use:)
     native/        # bridge to the Android app's native plugins
     realtime/      # WebSocket client
     types/         # front-end-only types (DTOs come from @loomkeep/shared)
     assets/
-    auth.svelte.ts    # auth state (Svelte 5 runes)
-    query-client.ts   # svelte-query client/provider
   service-worker/  # service worker source (Web Push, notification clicks)
   app.css          # Tailwind tokens (light/dark theme variables)
 ```

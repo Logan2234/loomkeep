@@ -1,16 +1,16 @@
 <script lang="ts">
   // "Catalogue & cache": what the on-demand cache holds, how fresh it is and
   // how much of it is actually shared between accounts.
-  import RankBars from "#lib/components/stats/RankBars.svelte";
+  import RankBars from "#lib/stats/RankBars.svelte";
   import {
     STATS_DOMAIN_COLOR_VAR,
     STATS_DOMAIN_LABEL,
-  } from "#lib/components/stats/stats-domain.js";
-  import { formatNumber, formatPercent } from "#lib/format.js";
+  } from "#lib/stats/stats-domain.js";
+  import { formatNumber, formatPercent } from "#lib/ui/format.js";
   import type { AdminCatalogueSectionDto } from "@loomkeep/shared/contracts";
   import { m } from "#lib/paraglide/messages.js";
   import Sparkline from "./Sparkline.svelte";
-  import StatFigure from "#lib/components/stats/StatFigure.svelte";
+  import StatFigure from "#lib/stats/StatFigure.svelte";
 
   let { stats }: { stats: AdminCatalogueSectionDto } = $props();
 

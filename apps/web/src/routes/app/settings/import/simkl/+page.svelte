@@ -1,7 +1,7 @@
 <script lang="ts">
   import * as env from "$app/env/public";
-  import Banner from "#lib/components/Banner.svelte";
-  import PageHeader from "#lib/components/PageHeader.svelte";
+  import Banner from "#lib/ui/Banner.svelte";
+  import PageHeader from "#lib/ui/PageHeader.svelte";
   import {
     isNativeBrowserAvailable,
     openInAppBrowser,

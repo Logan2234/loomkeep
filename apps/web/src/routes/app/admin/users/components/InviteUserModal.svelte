@@ -1,22 +1,22 @@
 <script lang="ts">
   import { type SelectOption } from "#lib/types/select-option.js";
 
-  import { CopyFeedback } from "#lib/clipboard.svelte.js";
+  import { CopyFeedback } from "#lib/ui/clipboard.svelte.js";
 
   import { createAdminInvitation } from "#lib/api/client.js";
   import { keys } from "#lib/api/keys.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
-  import AnimatedHeight from "#lib/components/AnimatedHeight.svelte";
-  import Banner from "#lib/components/Banner.svelte";
-  import FieldError from "#lib/components/FieldError.svelte";
-  import Icon from "#lib/components/Icon.svelte";
-  import Modal from "#lib/components/Modal.svelte";
-  import RollingNumber from "#lib/components/RollingNumber.svelte";
-  import SegmentedControl from "#lib/components/SegmentedControl.svelte";
-  import { formatDate } from "#lib/format.js";
-  import { prefersReducedMotion } from "#lib/motion.js";
+  import AnimatedHeight from "#lib/ui/AnimatedHeight.svelte";
+  import Banner from "#lib/ui/Banner.svelte";
+  import FieldError from "#lib/ui/FieldError.svelte";
+  import Icon from "#lib/ui/Icon.svelte";
+  import Modal from "#lib/ui/Modal.svelte";
+  import RollingNumber from "#lib/ui/RollingNumber.svelte";
+  import SegmentedControl from "#lib/ui/SegmentedControl.svelte";
+  import { formatDate } from "#lib/ui/format.js";
+  import { prefersReducedMotion } from "#lib/ui/motion.js";
   import { isNativeShareAvailable, shareNatively } from "#lib/native/share.js";
-  import { canShareNatively } from "#lib/share-work.js";
+  import { canShareNatively } from "#lib/share/share-work.js";
   import { m } from "#lib/paraglide/messages.js";
   import {
     INVITATION_MAX_USES,

@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { CopyFeedback } from "#lib/clipboard.svelte.js";
-  import Icon from "#lib/components/Icon.svelte";
+  import { CopyFeedback } from "#lib/ui/clipboard.svelte.js";
+  import Icon from "#lib/ui/Icon.svelte";
   import { m } from "#lib/paraglide/messages.js";
   import type { Snippet } from "svelte";
 

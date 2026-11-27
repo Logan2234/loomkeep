@@ -11,7 +11,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
 const OUTPUT = fileURLToPath(
-  new URL("../src/lib/components/stats/world-map.json", import.meta.url),
+  new URL("../src/lib/stats/world-map.json", import.meta.url),
 );
 const WIDTH = 1000;
 // Points closer than this to the line through their neighbours are dropped.

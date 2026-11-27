@@ -1,9 +1,9 @@
 <script lang="ts">
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
-  import Modal from "#lib/components/Modal.svelte";
+  import Modal from "#lib/ui/Modal.svelte";
   import { m } from "#lib/paraglide/messages.js";
-  import { toast } from "#lib/toast.svelte.js";
+  import { toast } from "#lib/ui/toast.svelte.js";
   import type { QueryKey } from "@tanstack/svelte-query";
   import type { Snippet } from "svelte";
 

@@ -1,12 +1,12 @@
-import { CopyFeedback } from "#lib/clipboard.svelte.js";
 import { m } from "#lib/paraglide/messages.js";
+import { CopyFeedback } from "#lib/ui/clipboard.svelte.js";
 import { render, screen, waitFor } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import RecoveryCodesModal from "./RecoveryCodesModal.svelte";
 const { downloadBlob } = vi.hoisted(() => ({ downloadBlob: vi.fn() }));
-vi.mock("#lib/download.js", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("#lib/download.js")>()),
+vi.mock("#lib/ui/download.js", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("#lib/ui/download.js")>()),
   downloadBlob,
 }));
 describe("recovery code export", () => {

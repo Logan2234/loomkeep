@@ -1,0 +1,264 @@
+<script lang="ts">
+  import { MEDIA_TYPE_PLURAL_LABEL } from "#lib/constants/media-types.js";
+
+  import { m } from "#lib/paraglide/messages.js";
+  // "Vidéo — en détail" section of /stats. Self-contained: fetches on mount,
+  // reuses the MEDIA status breakdown already loaded by the overview (avoids
+  // re-deriving "en cours" from scratch) and StatsWorksModal for the
+  // ghost/paused drill-down, same pattern as the ratings/decades modal.
+  import { keys } from "#lib/api/keys.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
+  import { getVideoSeries, getVideoStats } from "#lib/api/stats.js";
+  import { type MediaType } from "@loomkeep/shared/enums";
+  import {
+    type DomainStatusBreakdownDto,
+    type WatchStaleness,
+  } from "@loomkeep/shared/contracts";
+  import { isFeatureNew } from "#lib/shell/feature-badges.js";
+  import NewBadge from "#lib/premium/NewBadge.svelte";
+  import PremiumTeaser from "../premium/PremiumTeaser.svelte";
+  import CountryMap from "./CountryMap.svelte";
+  import RankBars from "./RankBars.svelte";
+  import StackedBar from "./StackedBar.svelte";
+  import StatsWorksModal from "./StatsWorksModal.svelte";
+  import StatTile from "./StatTile.svelte";
+
+  let {
+    mediaBreakdown,
+    locked,
+  }: {
+    mediaBreakdown: DomainStatusBreakdownDto | undefined;
+    locked: boolean;
+  } = $props();
+
+  const videoStats = createApiQuery(() => ({
+    key: keys.stats.video(),
+    fetch: getVideoStats,
+  }));
+  const video = $derived(videoStats.data);
+  const error = $derived(videoStats.error);
+
+  const inProgressCount = $derived(
+    mediaBreakdown?.byStatus.find((s) => s.bucket === "IN_PROGRESS")?.count ??
+      0,
+  );
+
+  const hours = $derived(video ? Math.round(video.totalMinutes / 60) : 0);
+  const days = $derived(video ? Math.round(video.totalMinutes / 1440) : 0);
+
+  const TYPE_TINT: Record<MediaType, string> = {
+    SERIES: "var(--stat-media)",
+    ANIME: "color-mix(in srgb, var(--stat-media) 55%, var(--surface))",
+    MOVIE: "color-mix(in srgb, var(--stat-media) 25%, var(--surface))",
+  };
+
+  const typeSegments = $derived(
+    video
+      ? video.typeSplit.map((t) => ({
+          label: MEDIA_TYPE_PLURAL_LABEL[t.type] ?? t.type,
+          color: TYPE_TINT[t.type] ?? "var(--stat-media)",
+          value: Math.round(t.minutes / 60),
+          altValue: t.count,
+        }))
+      : [],
+  );
+
+  const genreItems = $derived(
+    video ? video.genres.map((g) => ({ label: g.genre, value: g.count })) : [],
+  );
+
+  // Ghost/paused drill-down modal — same StatsWorksModal as ratings/decades.
+  let modalKind = $state<WatchStaleness | null>(null);
+  // Keyed on the kind, so switching between the two lists never shows one
+  // under the other's title.
+  const seriesQuery = createApiQuery(() => {
+    const kind = modalKind;
+    return {
+      key: keys.stats.videoSeries(kind ?? ""),
+      fetch: () => getVideoSeries(kind ?? "PAUSED"),
+      enabled: kind !== null,
+    };
+  });
+
+  function openStaleness(kind: WatchStaleness) {
+    modalKind = kind;
+  }
+</script>
+
+{#if error}
+  <p class="text-danger text-sm">{error}</p>
+{:else if video}
+  <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+    <StatTile
+      value={hours}
+      unit={m.common_hours_short()}
+      label={m.stats_video_watch_time()}
+      hint={days === 1
+        ? m.stats_approx_day({ days })
+        : m.stats_approx_days({ days })} />
+    <StatTile value={video.episodesWatched} label={m.stats_video_episodes()} />
+    <StatTile
+      value={video.seasonsCompleted}
+      label={m.stats_video_seasons()}
+      hint={m.stats_video_progress_count({ count: inProgressCount })} />
+    <StatTile
+      value={video.avgEpisodeRuntimeMin ?? "—"}
+      unit={m.common_minutes_short()}
+      label={m.stats_video_average_episode()} />
+  </div>
+
+  <div class="mt-5 grid gap-5 md:grid-cols-2">
+    <section class="inset-card p-5">
+      <div class="mb-4 flex items-center justify-between">
+        <h3 class="font-display text-lg font-bold">
+          {m.stats_video_type_split()}
+        </h3>
+      </div>
+      <StackedBar
+        segments={typeSegments}
+        toggle={{
+          primaryLabel: m.common_time(),
+          altLabel: m.common_count(),
+        }} />
+      {#if video.longestFilm || video.shortestFilm}
+        {@const longestFilm = video.longestFilm}
+        {@const shortestFilm = video.shortestFilm}
+        <PremiumTeaser {locked} class="mt-4">
+          <div class="grid grid-cols-2 gap-2 text-xs">
+            {#if longestFilm}
+              <a href={longestFilm.href} class="hover:text-accent">
+                <span class="text-dim block uppercase">
+                  {m.stats_video_longest()}
+                </span>
+                <span class="truncate font-semibold">{longestFilm.title}</span>
+                <span class="timecode block">
+                  {Math.floor(
+                    longestFilm.minutes / 60,
+                  )}{m.common_hours_short()}{(longestFilm.minutes % 60)
+                    .toString()
+                    .padStart(2, "0")}
+                </span>
+              </a>
+            {/if}
+            {#if shortestFilm}
+              <a href={shortestFilm.href} class="hover:text-accent">
+                <span class="text-dim block uppercase">
+                  {m.stats_video_shortest()}
+                </span>
+                <span class="truncate font-semibold">{shortestFilm.title}</span>
+                <span class="timecode block">
+                  {shortestFilm.minutes}{m.common_minutes_short()}
+                </span>
+              </a>
+            {/if}
+          </div>
+        </PremiumTeaser>
+      {/if}
+    </section>
+
+    <PremiumTeaser {locked}>
+      <section class="panel md:p-5">
+        <h3 class="panel-head font-display text-lg font-bold md:mb-4">
+          {m.stats_favorite_genres()}
+        </h3>
+        <div class="panel-body">
+          <RankBars items={genreItems} />
+        </div>
+      </section>
+    </PremiumTeaser>
+  </div>
+
+  {#if video.countries.length > 0}
+    <PremiumTeaser {locked}>
+      <section class="panel mt-5 md:p-5">
+        <div
+          class="panel-head flex items-baseline justify-between gap-2 md:mb-2">
+          <h3 class="font-display flex items-center gap-2 text-lg font-bold">
+            {m.stats_video_countries()}
+            {#if isFeatureNew("country-map")}<NewBadge />{/if}
+          </h3>
+          <span class="timecode">
+            {video.countries.length === 1
+              ? m.stats_video_countries_count_one({
+                  count: video.countries.length,
+                })
+              : m.stats_video_countries_count_many({
+                  count: video.countries.length,
+                })}
+          </span>
+        </div>
+        <div class="panel-body">
+          <CountryMap countries={video.countries} />
+        </div>
+      </section>
+    </PremiumTeaser>
+  {/if}
+
+  <section class="inset-card mt-5 p-5">
+    <h3 class="font-display mb-1 text-lg font-bold">
+      {m.stats_video_tracking()}
+    </h3>
+    <p class="text-dim mb-4 text-sm">
+      {m.stats_video_tracking_hint()}
+    </p>
+    <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div class="bg-surface-2 border-border rounded-lg border p-3">
+        <p class="font-display text-xl font-bold">{inProgressCount}</p>
+        <p class="text-dim text-xs">{m.library_status_in_progress()}</p>
+      </div>
+    </div>
+    <PremiumTeaser {locked} class="mt-3 block">
+      <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div class="bg-surface-2 border-border rounded-lg border p-3">
+          <p class="font-display text-xl font-bold">
+            {video.moviesRewatchedCount}
+          </p>
+          <p class="text-dim text-xs">{m.stats_video_rewatched()}</p>
+        </div>
+        <div class="bg-surface-2 border-border rounded-lg border p-3">
+          <p class="text-accent font-display text-xl font-bold">
+            {video.pausedCount}
+          </p>
+          <p class="text-dim text-xs">{m.stats_video_paused_old()}</p>
+          {#if video.pausedCount > 0}
+            <button
+              class="text-accent mt-1 text-xs font-semibold"
+              onclick={() => openStaleness("PAUSED")}>
+              {m.common_see()} ▾
+            </button>
+          {/if}
+        </div>
+        <div class="bg-surface-2 border-border rounded-lg border p-3">
+          <p class="text-danger font-display text-xl font-bold">
+            {video.ghostCount}
+          </p>
+          <p class="text-dim text-xs">{m.stats_video_ghost_old()}</p>
+          {#if video.ghostCount > 0}
+            <button
+              class="text-accent mt-1 text-xs font-semibold"
+              onclick={() => openStaleness("GHOST")}>
+              {m.common_see()} ▾
+            </button>
+          {/if}
+        </div>
+        <div class="bg-surface-2 border-border rounded-lg border p-3">
+          <p class="font-display text-xl font-bold">
+            {video.longestBingeCount}
+          </p>
+          <p class="text-dim text-xs">{m.stats_video_longest_binge()}</p>
+        </div>
+      </div>
+    </PremiumTeaser>
+  </section>
+{/if}
+
+{#if modalKind}
+  <StatsWorksModal
+    title={modalKind === "PAUSED"
+      ? m.stats_video_paused_series()
+      : m.stats_video_ghost_series()}
+    works={seriesQuery.data ?? []}
+    loading={seriesQuery.loading}
+    error={seriesQuery.error}
+    onclose={() => (modalKind = null)} />
+{/if}

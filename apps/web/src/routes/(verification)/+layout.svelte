@@ -1,8 +1,8 @@
 <script lang="ts">
   import { type LayoutProps } from "./$types";
 
-  import { bootstrap } from "#lib/bootstrap.svelte.js";
-  import BootSplash from "#lib/components/BootSplash.svelte";
+  import { bootstrap } from "#lib/shell/bootstrap.svelte.js";
+  import BootSplash from "#lib/shell/BootSplash.svelte";
 
   let { children }: LayoutProps = $props();
 </script>

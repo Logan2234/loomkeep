@@ -1,5 +1,5 @@
 <script lang="ts">
-  import EmptyState from "#lib/components/EmptyState.svelte";
+  import EmptyState from "#lib/ui/EmptyState.svelte";
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
   import { createApiInfiniteQuery } from "#lib/api/infinite-query.svelte.js";
@@ -10,14 +10,14 @@
   } from "#lib/api/notifications.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
   import { getFollowRequests } from "#lib/api/social.js";
-  import CardRowSkeleton from "#lib/components/CardRowSkeleton.svelte";
-  import Icon from "#lib/components/Icon.svelte";
-  import LoadMoreButton from "#lib/components/LoadMoreButton.svelte";
-  import FollowRequests from "#lib/components/notifications/FollowRequests.svelte";
-  import NotificationRow from "#lib/components/notifications/NotificationRow.svelte";
-  import PageHeader from "#lib/components/PageHeader.svelte";
-  import Tabs from "#lib/components/Tabs.svelte";
-  import { prefersReducedMotion } from "#lib/motion.js";
+  import CardRowSkeleton from "#lib/ui/CardRowSkeleton.svelte";
+  import Icon from "#lib/ui/Icon.svelte";
+  import LoadMoreButton from "#lib/ui/LoadMoreButton.svelte";
+  import FollowRequests from "#lib/notifications/FollowRequests.svelte";
+  import NotificationRow from "#lib/notifications/NotificationRow.svelte";
+  import PageHeader from "#lib/ui/PageHeader.svelte";
+  import Tabs from "#lib/ui/Tabs.svelte";
+  import { prefersReducedMotion } from "#lib/ui/motion.js";
   import {
     cascade,
     CASCADE_STEP_MS,

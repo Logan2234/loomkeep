@@ -1,14 +1,14 @@
 <script lang="ts">
-  import { Cooldown } from "#lib/cooldown.svelte.js";
+  import { Cooldown } from "#lib/ui/cooldown.svelte.js";
 
   import { goto } from "$app/navigation";
   import { resendVerificationEmail } from "#lib/api/client.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
-  import { auth } from "#lib/auth.svelte.js";
-  import AuthShell from "#lib/components/AuthShell.svelte";
-  import Icon from "#lib/components/Icon.svelte";
-  import SealedEnvelope from "#lib/components/SealedEnvelope.svelte";
-  import { mailInboxFor } from "#lib/mail-inbox.js";
+  import { auth } from "#lib/auth/auth.svelte.js";
+  import AuthShell from "#lib/auth/AuthShell.svelte";
+  import Icon from "#lib/ui/Icon.svelte";
+  import SealedEnvelope from "#lib/ui/SealedEnvelope.svelte";
+  import { mailInboxFor } from "#lib/auth/mail-inbox.js";
   import { m } from "#lib/paraglide/messages.js";
   import {
     connectRealtimeSocket,

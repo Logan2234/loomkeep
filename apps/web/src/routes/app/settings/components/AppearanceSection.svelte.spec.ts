@@ -1,7 +1,7 @@
-import { auth } from "#lib/auth.svelte.js";
-import { layout } from "#lib/layout.svelte.js";
-import { mobileNav } from "#lib/mobile-nav.svelte.js";
+import { auth } from "#lib/auth/auth.svelte.js";
 import { m } from "#lib/paraglide/messages.js";
+import { layout } from "#lib/shell/layout.svelte.js";
+import { mobileNav } from "#lib/shell/mobile-nav.svelte.js";
 import { apiUrl, server } from "#lib/test/msw.js";
 import { renderWithQuery } from "#lib/test/render.js";
 import type { UserDto } from "@loomkeep/shared/contracts";

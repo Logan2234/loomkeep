@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { orderedDomains } from "#lib/domain-availability.js";
+  import { orderedDomains } from "#lib/work/domain-availability.js";
 
   import { page } from "$app/state";
   import {
@@ -11,14 +11,14 @@
   import { keys } from "#lib/api/keys.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
-  import { auth } from "#lib/auth.svelte.js";
-  import CardRowSkeleton from "#lib/components/CardRowSkeleton.svelte";
-  import Combobox from "#lib/components/Combobox.svelte";
-  import GhostSwitchModal from "#lib/components/GhostSwitchModal.svelte";
-  import Modal from "#lib/components/Modal.svelte";
-  import SegmentedControl from "#lib/components/SegmentedControl.svelte";
-  import Switch from "#lib/components/Switch.svelte";
-  import { appConfig } from "#lib/config.svelte.js";
+  import { auth } from "#lib/auth/auth.svelte.js";
+  import CardRowSkeleton from "#lib/ui/CardRowSkeleton.svelte";
+  import Combobox from "#lib/ui/Combobox.svelte";
+  import GhostSwitchModal from "#lib/profile/GhostSwitchModal.svelte";
+  import Modal from "#lib/ui/Modal.svelte";
+  import SegmentedControl from "#lib/ui/SegmentedControl.svelte";
+  import Switch from "#lib/ui/Switch.svelte";
+  import { appConfig } from "#lib/shell/config.svelte.js";
   import { DOMAINS } from "#lib/constants/domains.js";
   import { m } from "#lib/paraglide/messages.js";
   import {
@@ -28,7 +28,7 @@
     commonAudience,
     FACETS,
     MODE_MATRIX,
-  } from "#lib/privacy-options.js";
+  } from "#lib/social/privacy-options.js";
   import {
     Domain,
     type ListVisibility,
@@ -39,7 +39,7 @@
   } from "@loomkeep/shared/enums";
   import { type VisibilitySettingsDto } from "@loomkeep/shared/contracts";
   import { useQueryClient } from "@tanstack/svelte-query";
-  import { flashAnchor } from "#lib/flash-anchor.js";
+  import { flashAnchor } from "#lib/shell/flash-anchor.js";
   import SettingRow from "./SettingRow.svelte";
 
   let showModesModal = $state(false);

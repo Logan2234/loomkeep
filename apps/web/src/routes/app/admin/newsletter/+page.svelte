@@ -1,21 +1,21 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
-  import { adminFilterHref } from "#lib/url-params.js";
+  import { adminFilterHref } from "#lib/shell/url-params.js";
   import {
     getAdminAccountsStats,
     getAdminNewsletterSends,
   } from "#lib/api/client.js";
   import { keys } from "#lib/api/keys.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
-  import PageHeader from "#lib/components/PageHeader.svelte";
-  import EmptyState from "#lib/components/EmptyState.svelte";
+  import PageHeader from "#lib/ui/PageHeader.svelte";
+  import EmptyState from "#lib/ui/EmptyState.svelte";
   import { CHANGELOG_URL } from "#lib/constants/external-links.js";
   import {
     DATETIME_NUMERIC_OPTIONS,
     formatDateTime,
     formatNumber,
-  } from "#lib/format.js";
+  } from "#lib/ui/format.js";
   import { m } from "#lib/paraglide/messages.js";
   import AdminFilterBar from "../AdminFilterBar.svelte";
   import AdminQueryError from "../AdminQueryError.svelte";

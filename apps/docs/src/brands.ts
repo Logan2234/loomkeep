@@ -1,4 +1,4 @@
-// Generated from apps/web/src/lib/provider-brands.ts (Simple Icons paths, 24×24 grid);
+// Generated from apps/web/src/lib/work/provider-brands.ts (Simple Icons paths, 24×24 grid);
 // the docs cannot import from the web app, so keep the two in step.
 export type Brand =
   | { name: string; color: string; src: string }

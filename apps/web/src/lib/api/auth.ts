@@ -1,5 +1,5 @@
 import { goto } from "$app/navigation";
-import { disablePush } from "../push";
+import { disablePush } from "../notifications/push";
 
 import { LEGACY_STORAGE_KEYS } from "#lib/constants/storage-keys.js";
 import { browser } from "$app/env";
@@ -30,9 +30,9 @@ import {
   startAuthentication,
   type PublicKeyCredentialRequestOptionsJSON,
 } from "@simplewebauthn/browser";
-import { auth } from "../auth.svelte";
-import { removeStorage } from "../local-storage";
+import { auth } from "../auth/auth.svelte";
 import { getLocale, isLocale, setLocale } from "../paraglide/runtime.js";
+import { removeStorage } from "../ui/local-storage";
 import { ApiError, LONG_REQUEST_TIMEOUT_MS } from "./core";
 import { typedRequest } from "./generated/typed-request";
 import { pageParam } from "./query-params";

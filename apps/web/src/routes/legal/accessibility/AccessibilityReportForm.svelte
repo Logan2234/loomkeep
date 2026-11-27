@@ -1,9 +1,9 @@
 <script lang="ts">
   import { reportAccessibility } from "#lib/api/contact.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
-  import { auth } from "#lib/auth.svelte.js";
-  import Banner from "#lib/components/Banner.svelte";
-  import Turnstile from "#lib/components/Turnstile.svelte";
+  import { auth } from "#lib/auth/auth.svelte.js";
+  import Banner from "#lib/ui/Banner.svelte";
+  import Turnstile from "#lib/auth/Turnstile.svelte";
   import { m } from "#lib/paraglide/messages.js";
   import { getLocale } from "#lib/paraglide/runtime.js";
   import * as env from "$app/env/public";

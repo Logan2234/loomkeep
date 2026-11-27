@@ -3,20 +3,20 @@
 
   import { page } from "$app/state";
   import { signOutAndRedirect } from "#lib/api/auth.js";
-  import { auth } from "#lib/auth.svelte.js";
-  import Avatar from "#lib/components/Avatar.svelte";
-  import Icon from "#lib/components/Icon.svelte";
-  import { appConfig } from "#lib/config.svelte.js";
+  import { auth } from "#lib/auth/auth.svelte.js";
+  import Avatar from "#lib/ui/Avatar.svelte";
+  import Icon from "#lib/ui/Icon.svelte";
+  import { appConfig } from "#lib/shell/config.svelte.js";
   import { VISIBLE_ADMIN_NAV_GROUPS } from "#lib/constants/admin-nav.js";
-  import { isDomainEnabled } from "#lib/domain-availability.js";
-  import { isFeatureNew } from "#lib/feature-badges.js";
+  import { isDomainEnabled } from "#lib/work/domain-availability.js";
+  import { isFeatureNew } from "#lib/shell/feature-badges.js";
   import {
     visibleNavSections,
     profileHref as resolveProfileHref,
-  } from "#lib/navigation.js";
+  } from "#lib/shell/navigation.js";
   import { m } from "#lib/paraglide/messages.js";
-  import { useAdminUpdateAvailable } from "#lib/admin-update.svelte.js";
-  import { useReportsPendingCount } from "#lib/reports-pending.svelte.js";
+  import { useAdminUpdateAvailable } from "#lib/admin/admin-update.svelte.js";
+  import { useReportsPendingCount } from "#lib/reports/reports-pending.svelte.js";
 
   let { children }: { children: Snippet } = $props();
 

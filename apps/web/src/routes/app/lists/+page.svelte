@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { listComparator } from "#lib/list-sort.js";
+  import { listComparator } from "#lib/lists/list-sort.js";
 
   import {
     LIST_KIND_LABEL,
@@ -9,14 +9,14 @@
   import { getEditableLists } from "#lib/api/client.js";
   import { keys } from "#lib/api/keys.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
-  import { auth } from "#lib/auth.svelte.js";
-  import Combobox from "#lib/components/Combobox.svelte";
-  import Icon from "#lib/components/Icon.svelte";
-  import ListCoverGrid from "#lib/components/ListCoverGrid.svelte";
-  import ListFormModal from "#lib/components/ListFormModal.svelte";
-  import PageHeader from "#lib/components/PageHeader.svelte";
-  import { appConfig } from "#lib/config.svelte.js";
-  import { prefersReducedMotion } from "#lib/motion.js";
+  import { auth } from "#lib/auth/auth.svelte.js";
+  import Combobox from "#lib/ui/Combobox.svelte";
+  import Icon from "#lib/ui/Icon.svelte";
+  import ListCoverGrid from "#lib/lists/ListCoverGrid.svelte";
+  import ListFormModal from "#lib/lists/ListFormModal.svelte";
+  import PageHeader from "#lib/ui/PageHeader.svelte";
+  import { appConfig } from "#lib/shell/config.svelte.js";
+  import { prefersReducedMotion } from "#lib/ui/motion.js";
   import { m } from "#lib/paraglide/messages.js";
 
   import { useQueryClient } from "@tanstack/svelte-query";

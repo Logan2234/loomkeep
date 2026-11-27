@@ -1,6 +1,6 @@
 // Resolves query errors before they reach templates. Queries have no field
 // errors because they do not submit a body.
-import { toast } from "#lib/toast.svelte.js";
+import { toast } from "#lib/ui/toast.svelte.js";
 import {
   createQuery,
   keepPreviousData,

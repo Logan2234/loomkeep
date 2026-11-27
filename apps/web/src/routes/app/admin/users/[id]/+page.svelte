@@ -3,8 +3,8 @@
   import { getAdminUser } from "#lib/api/client.js";
   import { keys } from "#lib/api/keys.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
-  import { auth } from "#lib/auth.svelte.js";
-  import { prefersReducedMotion } from "#lib/motion.js";
+  import { auth } from "#lib/auth/auth.svelte.js";
+  import { prefersReducedMotion } from "#lib/ui/motion.js";
   import { fade } from "svelte/transition";
   import AdminQueryError from "../../AdminQueryError.svelte";
   import UserAccount from "../components/UserAccount.svelte";

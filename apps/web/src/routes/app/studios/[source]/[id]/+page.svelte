@@ -1,6 +1,6 @@
 <script lang="ts">
   import { page } from "$app/state";
-  import StudioPage from "#lib/components/StudioPage.svelte";
+  import StudioPage from "#lib/creators/StudioPage.svelte";
   import type { CreatorSource } from "@loomkeep/shared/contracts";
 </script>
 

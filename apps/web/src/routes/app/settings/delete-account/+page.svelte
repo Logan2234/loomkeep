@@ -9,19 +9,19 @@
   import { keys } from "#lib/api/keys.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
-  import { auth } from "#lib/auth.svelte.js";
-  import Combobox from "#lib/components/Combobox.svelte";
-  import Icon from "#lib/components/Icon.svelte";
-  import Modal from "#lib/components/Modal.svelte";
+  import { auth } from "#lib/auth/auth.svelte.js";
+  import Combobox from "#lib/ui/Combobox.svelte";
+  import Icon from "#lib/ui/Icon.svelte";
+  import Modal from "#lib/ui/Modal.svelte";
   import {
     DELETION_REASON_LABELS,
     DELETION_REASONS,
   } from "#lib/constants/deletion-reasons.js";
-  import { formatDate } from "#lib/format.js";
-  import { prefersReducedMotion } from "#lib/motion.js";
+  import { formatDate } from "#lib/ui/format.js";
+  import { prefersReducedMotion } from "#lib/ui/motion.js";
   import { m } from "#lib/paraglide/messages.js";
-  import { reauth } from "#lib/reauth.svelte.js";
-  import { toast } from "#lib/toast.svelte.js";
+  import { reauth } from "#lib/auth/reauth.svelte.js";
+  import { toast } from "#lib/ui/toast.svelte.js";
   import { type AccountDeletionReason } from "@loomkeep/shared/enums";
   import {
     ACCOUNT_DELETION_GRACE_DAYS,

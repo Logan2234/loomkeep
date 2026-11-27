@@ -1,7 +1,7 @@
-import { downloadBlob } from "#lib/download.js";
 import { m } from "#lib/paraglide/messages.js";
 import { apiUrl, server } from "#lib/test/msw.js";
 import { renderWithQuery } from "#lib/test/render.js";
+import { downloadBlob } from "#lib/ui/download.js";
 import { screen, waitFor } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
@@ -9,8 +9,8 @@ import { describe, expect, it, vi } from "vitest";
 import MigrationExportCard from "./MigrationExportCard.svelte";
 
 vi.mock("$app/state", () => import("#lib/test/navigation.svelte.js"));
-vi.mock("#lib/download.js", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("#lib/download.js")>();
+vi.mock("#lib/ui/download.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("#lib/ui/download.js")>();
   return { ...actual, downloadBlob: vi.fn() };
 });
 

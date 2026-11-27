@@ -1,9 +1,9 @@
 <script lang="ts">
   import { upsertBookEntry } from "#lib/api/client.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
-  import SagaBlock from "#lib/components/saga/SagaBlock.svelte";
+  import SagaBlock from "#lib/sagas/SagaBlock.svelte";
   import { m } from "#lib/paraglide/messages.js";
-  import { bookSagaMember } from "#lib/saga.js";
+  import { bookSagaMember } from "#lib/sagas/saga.js";
   import type { BookStatus } from "@loomkeep/shared/enums";
   import type {
     BookSagaDto,

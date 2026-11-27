@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { DATE_MEDIUM_OPTIONS, formatDate } from "#lib/format.js";
-  import { prefersReducedMotion } from "#lib/motion.js";
+  import { DATE_MEDIUM_OPTIONS, formatDate } from "#lib/ui/format.js";
+  import { prefersReducedMotion } from "#lib/ui/motion.js";
   import { m } from "#lib/paraglide/messages.js";
   import type { EpisodeWatchDto } from "@loomkeep/shared/contracts";
   import { cubicOut } from "svelte/easing";

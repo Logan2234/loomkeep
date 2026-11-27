@@ -1,5 +1,5 @@
-import { appConfig } from "#lib/config.svelte.js";
 import { m } from "#lib/paraglide/messages.js";
+import { appConfig } from "#lib/shell/config.svelte.js";
 import { apiUrl, server } from "#lib/test/msw.js";
 import { renderWithQuery } from "#lib/test/render.js";
 import { screen } from "@testing-library/svelte";

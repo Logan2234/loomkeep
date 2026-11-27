@@ -4,21 +4,21 @@
   import { page } from "$app/state";
   import { afterNavigate, onNavigate } from "$app/navigation";
   import * as env from "$app/env/public";
-  import { bootstrap } from "#lib/bootstrap.svelte.js";
-  import NavigationProgress from "#lib/components/NavigationProgress.svelte";
-  import NewsBanner from "#lib/components/NewsBanner.svelte";
-  import OpenInAppBanner from "#lib/components/OpenInAppBanner.svelte";
-  import Toast from "#lib/components/Toast.svelte";
-  import { layout } from "#lib/layout.svelte.js";
-  import { mobileNav } from "#lib/mobile-nav.svelte.js";
-  import { navStyle } from "#lib/nav-style.svelte.js";
+  import { bootstrap } from "#lib/shell/bootstrap.svelte.js";
+  import NavigationProgress from "#lib/shell/NavigationProgress.svelte";
+  import NewsBanner from "#lib/shell/NewsBanner.svelte";
+  import OpenInAppBanner from "#lib/shell/OpenInAppBanner.svelte";
+  import Toast from "#lib/ui/Toast.svelte";
+  import { layout } from "#lib/shell/layout.svelte.js";
+  import { mobileNav } from "#lib/shell/mobile-nav.svelte.js";
+  import { navStyle } from "#lib/shell/nav-style.svelte.js";
   import { m } from "#lib/paraglide/messages.js";
   import { getLocale } from "#lib/paraglide/runtime.js";
   import { regionalLocale } from "@loomkeep/shared/catalog";
-  import { queryClient } from "#lib/query-client.js";
-  import { accessibility } from "#lib/accessibility.svelte.js";
-  import { theme } from "#lib/theme.svelte.js";
-  import { auth } from "#lib/auth.svelte.js";
+  import { queryClient } from "#lib/api/query-client.js";
+  import { accessibility } from "#lib/ui/accessibility.svelte.js";
+  import { theme } from "#lib/ui/theme.svelte.js";
+  import { auth } from "#lib/auth/auth.svelte.js";
   import {
     isNativeApp,
     releaseShellSplash,

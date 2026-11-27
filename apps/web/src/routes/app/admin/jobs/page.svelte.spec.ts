@@ -7,7 +7,7 @@ import { http, HttpResponse } from "msw";
 import { expect, it, vi } from "vitest";
 import Jobs from "./+page.svelte";
 
-vi.mock("#lib/auth.svelte.js", () => ({
+vi.mock("#lib/auth/auth.svelte.js", () => ({
   auth: { isAdmin: true, user: null, clear: vi.fn() },
 }));
 

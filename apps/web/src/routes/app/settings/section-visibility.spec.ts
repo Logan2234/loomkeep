@@ -1,4 +1,4 @@
-import { auth } from "#lib/auth.svelte.js";
+import { auth } from "#lib/auth/auth.svelte.js";
 import type { UserDto } from "@loomkeep/shared/contracts";
 import { afterEach, describe, expect, it } from "vitest";
 import { SETTINGS_SECTIONS } from "./nav";

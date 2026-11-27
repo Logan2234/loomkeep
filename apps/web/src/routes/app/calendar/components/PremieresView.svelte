@@ -3,15 +3,15 @@
   import { keys } from "#lib/api/keys.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
-  import { auth } from "#lib/auth.svelte.js";
-  import Banner from "#lib/components/Banner.svelte";
-  import Carousel from "#lib/components/Carousel.svelte";
-  import EmptyState from "#lib/components/EmptyState.svelte";
-  import Icon from "#lib/components/Icon.svelte";
-  import Poster from "#lib/components/Poster.svelte";
-  import { formatDate, formatRegion } from "#lib/format.js";
+  import { auth } from "#lib/auth/auth.svelte.js";
+  import Banner from "#lib/ui/Banner.svelte";
+  import Carousel from "#lib/ui/Carousel.svelte";
+  import EmptyState from "#lib/ui/EmptyState.svelte";
+  import Icon from "#lib/ui/Icon.svelte";
+  import Poster from "#lib/work/Poster.svelte";
+  import { formatDate, formatRegion } from "#lib/ui/format.js";
   import { m } from "#lib/paraglide/messages.js";
-  import { fetchTrackedMedia, trackKey } from "#lib/tracked-media.js";
+  import { fetchTrackedMedia, trackKey } from "#lib/work/tracked-media.js";
   import { type PremiereDto } from "@loomkeep/shared/contracts";
   import {
     PREMIERE_NETWORKS,

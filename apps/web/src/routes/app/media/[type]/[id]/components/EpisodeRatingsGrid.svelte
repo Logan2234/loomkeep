@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { formatNumber } from "#lib/format.js";
+  import { formatNumber } from "#lib/ui/format.js";
   import { m } from "#lib/paraglide/messages.js";
   import type { MediaDetailSeasonDto } from "@loomkeep/shared/contracts";
   import { ratingBand, RATING_BANDS } from "./episode-ratings";

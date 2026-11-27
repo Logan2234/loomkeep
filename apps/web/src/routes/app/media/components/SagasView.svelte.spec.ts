@@ -1,5 +1,5 @@
-import { layout } from "#lib/layout.svelte.js";
 import { m } from "#lib/paraglide/messages.js";
+import { layout } from "#lib/shell/layout.svelte.js";
 import { apiUrl, server } from "#lib/test/msw.js";
 import { renderWithQuery } from "#lib/test/render.js";
 import type {

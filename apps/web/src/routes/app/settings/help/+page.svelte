@@ -2,11 +2,11 @@
   import { page } from "$app/state";
   import { updateMe } from "#lib/api/auth.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
-  import { auth } from "#lib/auth.svelte.js";
-  import Icon from "#lib/components/Icon.svelte";
-  import NewBadge from "#lib/components/NewBadge.svelte";
-  import Switch from "#lib/components/Switch.svelte";
-  import { feedbackBoardUrl } from "#lib/corner-launchers.svelte.js";
+  import { auth } from "#lib/auth/auth.svelte.js";
+  import Icon from "#lib/ui/Icon.svelte";
+  import NewBadge from "#lib/premium/NewBadge.svelte";
+  import Switch from "#lib/ui/Switch.svelte";
+  import { feedbackBoardUrl } from "#lib/shell/corner-launchers.svelte.js";
   import {
     CHANGELOG_URL,
     DOCS_URL,
@@ -18,9 +18,9 @@
   import { m } from "#lib/paraglide/messages.js";
   import SettingRow from "../components/SettingRow.svelte";
   import SettingsSection from "../components/SettingsSection.svelte";
-  import { flashAnchor } from "#lib/flash-anchor.js";
-  import { isFeatureNew } from "#lib/feature-badges.js";
-  import { onboardingReplay } from "#lib/onboarding-replay.svelte.js";
+  import { flashAnchor } from "#lib/shell/flash-anchor.js";
+  import { isFeatureNew } from "#lib/shell/feature-badges.js";
+  import { onboardingReplay } from "#lib/onboarding/onboarding-replay.svelte.js";
 
   const LINKS = [
     {

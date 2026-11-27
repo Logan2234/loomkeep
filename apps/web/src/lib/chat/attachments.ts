@@ -1,5 +1,5 @@
-import { formatNumber } from "#lib/format.js";
 import { m } from "#lib/paraglide/messages.js";
+import { formatNumber } from "#lib/ui/format.js";
 import {
   episodeCode,
   type MyListDto,

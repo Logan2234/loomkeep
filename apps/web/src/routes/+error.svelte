@@ -1,6 +1,6 @@
 <script lang="ts">
   import { page } from "$app/state";
-  import { auth } from "#lib/auth.svelte.js";
+  import { auth } from "#lib/auth/auth.svelte.js";
   import { m } from "#lib/paraglide/messages.js";
 
   const status = $derived(page.status);

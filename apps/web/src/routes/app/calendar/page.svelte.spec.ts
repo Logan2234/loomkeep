@@ -1,9 +1,9 @@
-import { auth } from "#lib/auth.svelte.js";
-import { formatDate } from "#lib/format.js";
+import { auth } from "#lib/auth/auth.svelte.js";
 import { m } from "#lib/paraglide/messages.js";
 import { apiUrl, server } from "#lib/test/msw.js";
 import { goto, visit } from "#lib/test/navigation.svelte.js";
 import { renderWithQuery } from "#lib/test/render.js";
+import { formatDate } from "#lib/ui/format.js";
 import type { CalendarEntryDto, UserDto } from "@loomkeep/shared/contracts";
 import { screen, waitFor, within } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";

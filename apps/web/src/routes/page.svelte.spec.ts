@@ -1,4 +1,4 @@
-import { auth } from "#lib/auth.svelte.js";
+import { auth } from "#lib/auth/auth.svelte.js";
 import { m } from "#lib/paraglide/messages.js";
 import { renderWithQuery } from "#lib/test/render.js";
 import {

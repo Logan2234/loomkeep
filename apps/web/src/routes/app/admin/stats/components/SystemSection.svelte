@@ -3,12 +3,12 @@
   // snapshot — nothing here is historised. Database size / per-table
   // breakdown deliberately isn't here — see the Homepage dashboard's "DB"
   // tile (docker/hosted/homepage/services.yaml), sourced from Prometheus instead.
-  import { formatBytes, formatNumber, formatRelative } from "#lib/format.js";
-  import RankBars from "#lib/components/stats/RankBars.svelte";
+  import { formatBytes, formatNumber, formatRelative } from "#lib/ui/format.js";
+  import RankBars from "#lib/stats/RankBars.svelte";
   import { m } from "#lib/paraglide/messages.js";
   import { adminServiceLabel } from "#lib/constants/admin-presentation.js";
   import type { AdminSystemSectionDto } from "@loomkeep/shared/contracts";
-  import StatFigure from "#lib/components/stats/StatFigure.svelte";
+  import StatFigure from "#lib/stats/StatFigure.svelte";
 
   let { stats }: { stats: AdminSystemSectionDto } = $props();
 

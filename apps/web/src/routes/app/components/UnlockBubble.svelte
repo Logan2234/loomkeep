@@ -10,9 +10,9 @@
   } from "#lib/api/gamification.js";
   import { keys } from "#lib/api/keys.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
-  import { auth } from "#lib/auth.svelte.js";
-  import { appConfig } from "#lib/config.svelte.js";
-  import { formatNumber } from "#lib/format.js";
+  import { auth } from "#lib/auth/auth.svelte.js";
+  import { appConfig } from "#lib/shell/config.svelte.js";
+  import { formatNumber } from "#lib/ui/format.js";
   import {
     ENTER_MS,
     EXIT_MS,
@@ -23,8 +23,8 @@
     compareToLastKnown,
     readLastKnown,
     writeLastKnown,
-  } from "#lib/last-known.js";
-  import { prefersReducedMotion } from "#lib/motion.js";
+  } from "#lib/ui/last-known.js";
+  import { prefersReducedMotion } from "#lib/ui/motion.js";
   import { successFeedback } from "#lib/native/haptics.js";
   import { m } from "#lib/paraglide/messages.js";
   import { onRealtimeEvent } from "#lib/realtime/socket.js";
@@ -32,7 +32,7 @@
   import { useQueryClient } from "@tanstack/svelte-query";
   import { backOut } from "svelte/easing";
   import { fly } from "svelte/transition";
-  import AchievementMedallion from "#lib/components/AchievementMedallion.svelte";
+  import AchievementMedallion from "#lib/gamification/AchievementMedallion.svelte";
   import { achievementName, entryIcon } from "../achievements/labels";
 
   const queryClient = useQueryClient();

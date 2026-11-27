@@ -2,16 +2,16 @@
   import { getAdminImportDetail } from "#lib/api/client.js";
   import { keys } from "#lib/api/keys.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
-  import Banner from "#lib/components/Banner.svelte";
-  import Modal from "#lib/components/Modal.svelte";
-  import TabPanels from "#lib/components/TabPanels.svelte";
-  import Tabs from "#lib/components/Tabs.svelte";
+  import Banner from "#lib/ui/Banner.svelte";
+  import Modal from "#lib/ui/Modal.svelte";
+  import TabPanels from "#lib/ui/TabPanels.svelte";
+  import Tabs from "#lib/ui/Tabs.svelte";
   import {
     importReportLabel,
     importRunFigures,
-  } from "#lib/components/import-presentation.js";
+  } from "#lib/import/import-presentation.js";
   import { IMPORTS_DEFINITION } from "#lib/constants/import-sources.js";
-  import { formatDateTime, formatDurationMs } from "#lib/format.js";
+  import { formatDateTime, formatDurationMs } from "#lib/ui/format.js";
   import { m } from "#lib/paraglide/messages.js";
   import type { AdminImportDetailDto } from "@loomkeep/shared/contracts";
   let { id, onclose }: { id: string; onclose: () => void } = $props();

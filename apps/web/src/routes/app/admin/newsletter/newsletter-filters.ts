@@ -1,5 +1,5 @@
-import { foldAdminSearch } from "#lib/admin-search.js";
-import { localDayBoundary } from "#lib/admin-user-filters.js";
+import { foldAdminSearch } from "#lib/admin/admin-search.js";
+import { localDayBoundary } from "#lib/admin/admin-user-filters.js";
 
 export function filterNewsletterSends<
   T extends { title: string; sentAt: string },

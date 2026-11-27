@@ -1,7 +1,7 @@
 <script lang="ts">
-  import Icon from "#lib/components/Icon.svelte";
-  import { formatDate, formatRelative } from "#lib/format.js";
-  import { prefersReducedMotion } from "#lib/motion.js";
+  import Icon from "#lib/ui/Icon.svelte";
+  import { formatDate, formatRelative } from "#lib/ui/format.js";
+  import { prefersReducedMotion } from "#lib/ui/motion.js";
   import { m } from "#lib/paraglide/messages.js";
   import type { ApiKeyDto } from "@loomkeep/shared/contracts";
   import { expiryState } from "../api-key-form";

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { MEDIA_TYPE_LABEL } from "#lib/constants/media-types.js";
 
-  import { recordFrom } from "#lib/object.js";
+  import { recordFrom } from "#lib/ui/object.js";
 
   import { type SelectOption } from "#lib/types/select-option.js";
 
@@ -17,14 +17,14 @@
   import type {
     LibraryLoadParams,
     PileLoadParams,
-  } from "#lib/components/LibraryBrowser.svelte";
-  import Icon from "#lib/components/Icon.svelte";
-  import LibraryBrowser from "#lib/components/LibraryBrowser.svelte";
-  import PosterCard from "#lib/components/PosterCard.svelte";
-  import MediaSearchPanel from "#lib/components/search/MediaSearchPanel.svelte";
+  } from "#lib/library/LibraryBrowser.svelte";
+  import Icon from "#lib/ui/Icon.svelte";
+  import LibraryBrowser from "#lib/library/LibraryBrowser.svelte";
+  import PosterCard from "#lib/work/PosterCard.svelte";
+  import MediaSearchPanel from "#lib/search/MediaSearchPanel.svelte";
   import SagasModeSwitch, {
     sagasMode,
-  } from "#lib/components/saga/SagasModeSwitch.svelte";
+  } from "#lib/sagas/SagasModeSwitch.svelte";
   import SagasView from "./components/SagasView.svelte";
   import {
     MEDIA_OWNERSHIP_SOURCES,
@@ -40,14 +40,14 @@
     DATE_MEDIUM_OPTIONS,
     formatDate,
     formatRating,
-  } from "#lib/format.js";
+  } from "#lib/ui/format.js";
   import {
     ownershipText,
     type LibraryBulkActions,
     type LibraryColumn,
     type LibraryItemView,
     COMMON_LIBRARY_SORTS,
-  } from "#lib/library-view.js";
+  } from "#lib/library/library-view.js";
   import { m } from "#lib/paraglide/messages.js";
   import { type MediaType, Domain } from "@loomkeep/shared/enums";
   import {

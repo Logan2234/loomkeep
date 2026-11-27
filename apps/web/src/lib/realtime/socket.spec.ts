@@ -29,7 +29,7 @@ const { fakeSocket, ioMock, authMock } = vi.hoisted(() => {
 });
 
 vi.mock("socket.io-client", () => ({ io: ioMock }));
-vi.mock("#lib/auth.svelte.js", () => ({ auth: authMock }));
+vi.mock("#lib/auth/auth.svelte.js", () => ({ auth: authMock }));
 
 beforeAll(() => server.listen({ onUnhandledFrame: "error" }));
 afterEach(() => server.resetHandlers());

@@ -1,17 +1,17 @@
 <script lang="ts">
   import { page } from "$app/state";
   import { pullMenu } from "#lib/actions/pull-menu.js";
-  import { auth } from "#lib/auth.svelte.js";
-  import Avatar from "#lib/components/Avatar.svelte";
-  import Icon from "#lib/components/Icon.svelte";
-  import { appConfig } from "#lib/config.svelte.js";
-  import { isDomainEnabled } from "#lib/domain-availability.js";
-  import { isFeatureNew } from "#lib/feature-badges.js";
-  import { resolveBottomShortcuts } from "#lib/navigation.js";
-  import { mobileNav } from "#lib/mobile-nav.svelte.js";
-  import type { NavTabLook } from "#lib/components/sidebars/NavTab.svelte";
-  import LibraryTab from "#lib/components/sidebars/LibraryTab.svelte";
-  import MenuGrabber from "#lib/components/sidebars/MenuGrabber.svelte";
+  import { auth } from "#lib/auth/auth.svelte.js";
+  import Avatar from "#lib/ui/Avatar.svelte";
+  import Icon from "#lib/ui/Icon.svelte";
+  import { appConfig } from "#lib/shell/config.svelte.js";
+  import { isDomainEnabled } from "#lib/work/domain-availability.js";
+  import { isFeatureNew } from "#lib/shell/feature-badges.js";
+  import { resolveBottomShortcuts } from "#lib/shell/navigation.js";
+  import { mobileNav } from "#lib/shell/mobile-nav.svelte.js";
+  import type { NavTabLook } from "#lib/shell/sidebars/NavTab.svelte";
+  import LibraryTab from "#lib/shell/sidebars/LibraryTab.svelte";
+  import MenuGrabber from "#lib/shell/sidebars/MenuGrabber.svelte";
 
   const TAB_LOOK: NavTabLook = {
     root: "flex-1 gap-0.5 text-micro",

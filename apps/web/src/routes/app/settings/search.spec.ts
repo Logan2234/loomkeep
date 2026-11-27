@@ -1,5 +1,5 @@
-import { auth } from "#lib/auth.svelte.js";
-import { layout } from "#lib/layout.svelte.js";
+import { auth } from "#lib/auth/auth.svelte.js";
+import { layout } from "#lib/shell/layout.svelte.js";
 import type { UserDto } from "@loomkeep/shared/contracts";
 import { describe, expect, it } from "vitest";
 import { SETTINGS_SECTIONS } from "./nav";

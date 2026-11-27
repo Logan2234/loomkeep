@@ -1,5 +1,5 @@
 <script lang="ts">
-  import LoadMoreButton from "#lib/components/LoadMoreButton.svelte";
+  import LoadMoreButton from "#lib/ui/LoadMoreButton.svelte";
 
   import { type SelectOption } from "#lib/types/select-option.js";
 
@@ -8,15 +8,18 @@
   import { getFeed } from "#lib/api/client.js";
   import { keys } from "#lib/api/keys.js";
   import { createApiInfiniteQuery } from "#lib/api/infinite-query.svelte.js";
-  import { auth } from "#lib/auth.svelte.js";
-  import ActivityItem from "#lib/components/ActivityItem.svelte";
-  import CardRowSkeleton from "#lib/components/CardRowSkeleton.svelte";
-  import EmptyState from "#lib/components/EmptyState.svelte";
-  import PageHeader from "#lib/components/PageHeader.svelte";
-  import TabPanels from "#lib/components/TabPanels.svelte";
-  import Tabs from "#lib/components/Tabs.svelte";
+  import { auth } from "#lib/auth/auth.svelte.js";
+  import ActivityItem from "#lib/social/ActivityItem.svelte";
+  import CardRowSkeleton from "#lib/ui/CardRowSkeleton.svelte";
+  import EmptyState from "#lib/ui/EmptyState.svelte";
+  import PageHeader from "#lib/ui/PageHeader.svelte";
+  import TabPanels from "#lib/ui/TabPanels.svelte";
+  import Tabs from "#lib/ui/Tabs.svelte";
   import { DOMAINS } from "#lib/constants/domains.js";
-  import { isDomainEnabled, orderedDomains } from "#lib/domain-availability.js";
+  import {
+    isDomainEnabled,
+    orderedDomains,
+  } from "#lib/work/domain-availability.js";
   import { m } from "#lib/paraglide/messages.js";
   import type { Domain } from "@loomkeep/shared/enums";
   import type {

@@ -1,6 +1,6 @@
 import { ApiError } from "#lib/api/core.js";
 import { resolveApiError } from "#lib/api/errors.js";
-import { auth } from "#lib/auth.svelte.js";
+import { auth } from "#lib/auth/auth.svelte.js";
 import { m } from "#lib/paraglide/messages.js";
 import { apiUrl, server } from "#lib/test/msw.js";
 import { goto, visit } from "#lib/test/navigation.svelte.js";

@@ -1,9 +1,9 @@
 <script lang="ts">
-  import Modal from "#lib/components/Modal.svelte";
-  import Icon from "#lib/components/Icon.svelte";
-  import { CopyFeedback } from "#lib/clipboard.svelte.js";
-  import { downloadBlob, datedFilename } from "#lib/download.js";
-  import { formatDate } from "#lib/format.js";
+  import Modal from "#lib/ui/Modal.svelte";
+  import Icon from "#lib/ui/Icon.svelte";
+  import { CopyFeedback } from "#lib/ui/clipboard.svelte.js";
+  import { downloadBlob, datedFilename } from "#lib/ui/download.js";
+  import { formatDate } from "#lib/ui/format.js";
   import { m } from "#lib/paraglide/messages.js";
   import { RECOVERY_CODE_LENGTH } from "@loomkeep/shared/contracts";
   let {

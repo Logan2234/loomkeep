@@ -2,10 +2,10 @@
   import { type LayoutProps } from "./$types";
 
   import { goto } from "$app/navigation";
-  import { auth } from "#lib/auth.svelte.js";
-  import { bootstrap } from "#lib/bootstrap.svelte.js";
-  import AuthShell from "#lib/components/AuthShell.svelte";
-  import BootSplash from "#lib/components/BootSplash.svelte";
+  import { auth } from "#lib/auth/auth.svelte.js";
+  import { bootstrap } from "#lib/shell/bootstrap.svelte.js";
+  import AuthShell from "#lib/auth/AuthShell.svelte";
+  import BootSplash from "#lib/shell/BootSplash.svelte";
   import { m } from "#lib/paraglide/messages.js";
   import { page } from "$app/state";
   import { untrack } from "svelte";

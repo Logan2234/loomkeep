@@ -1,5 +1,5 @@
 import { DOMAINS, DOMAIN_IDS } from "#lib/constants/domains.js";
-import { enumParam } from "#lib/url-params.js";
+import { enumParam } from "#lib/shell/url-params.js";
 import { type AdminCacheSort } from "@loomkeep/shared/contracts";
 import { Domain } from "@loomkeep/shared/enums";
 

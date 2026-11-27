@@ -1,11 +1,11 @@
 <script lang="ts">
   import { updateMe } from "#lib/api/auth.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
-  import { auth } from "#lib/auth.svelte.js";
-  import Combobox from "#lib/components/Combobox.svelte";
-  import Icon from "#lib/components/Icon.svelte";
-  import ProviderMark from "#lib/components/ProviderMark.svelte";
-  import { appConfig } from "#lib/config.svelte.js";
+  import { auth } from "#lib/auth/auth.svelte.js";
+  import Combobox from "#lib/ui/Combobox.svelte";
+  import Icon from "#lib/ui/Icon.svelte";
+  import ProviderMark from "#lib/work/ProviderMark.svelte";
+  import { appConfig } from "#lib/shell/config.svelte.js";
   import {
     CHANGELOG_URL,
     DOCS_URL,
@@ -15,12 +15,12 @@
     ROADMAP_URL,
   } from "#lib/constants/external-links.js";
   import { m } from "#lib/paraglide/messages.js";
-  import { languageOptions } from "#lib/locales.js";
+  import { languageOptions } from "#lib/shell/locales.js";
   import { getLocale, setLocale } from "#lib/paraglide/runtime.js";
   import {
     PROVIDER_BRANDS,
     type ProviderBrandKey,
-  } from "#lib/provider-brands.js";
+  } from "#lib/work/provider-brands.js";
   import type { Locale } from "@loomkeep/shared/catalog";
 
   // The catalogues whose artwork the landing page shows. TMDB's API terms

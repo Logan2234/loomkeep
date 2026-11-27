@@ -3,8 +3,8 @@
   import { page } from "$app/state";
   import { resetPassword } from "#lib/api/client.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
-  import PasswordInput from "#lib/components/PasswordInput.svelte";
-  import PasswordRequirements from "#lib/components/PasswordRequirements.svelte";
+  import PasswordInput from "#lib/auth/PasswordInput.svelte";
+  import PasswordRequirements from "#lib/auth/PasswordRequirements.svelte";
   import { m } from "#lib/paraglide/messages.js";
   import {
     isPasswordValid,
