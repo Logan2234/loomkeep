@@ -4,6 +4,7 @@ import { apiUrl, server } from "#lib/test/msw.js";
 import { visit } from "#lib/test/navigation.svelte.js";
 import { renderWithQuery } from "#lib/test/render.js";
 import { toast } from "#lib/toast.svelte.js";
+import { ErrorCode } from "@loomkeep/shared/catalog";
 import { screen, waitFor } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
@@ -138,5 +139,71 @@ describe("Search page selection", () => {
 
     expect(screen.queryByRole("menuitem")).toBeNull();
     expect(screen.getByRole("toolbar")).toBeTruthy();
+  });
+
+  it("adds the picks to a list, through the library, counting one already there as done", async () => {
+    auth.user = {
+      id: "user-1",
+      enabledDomains: ["GAMES"],
+    } as unknown as typeof auth.user;
+    const listed: string[] = [];
+    server.use(
+      http.get(apiUrl("/games/search"), () =>
+        HttpResponse.json({
+          results: ["1020", "1021"].map((sourceId, index) => ({
+            source: "IGDB",
+            sourceId,
+            title: `Zelda ${index + 1}`,
+            year: 2017,
+            coverUrl: null,
+            isAdult: false,
+          })),
+        }),
+      ),
+      http.get(apiUrl("/games"), () =>
+        HttpResponse.json({ items: [], page: 1, limit: 50, hasMore: false }),
+      ),
+      http.put(apiUrl("/games"), async ({ request }) => {
+        const { sourceId } = (await request.json()) as { sourceId: string };
+        return HttpResponse.json({ id: "e", game: { id: `item-${sourceId}` } });
+      }),
+      http.get(apiUrl("/lists/editable"), () =>
+        HttpResponse.json([{ id: "list-1", title: "Coop" }]),
+      ),
+      http.post(apiUrl("/lists/list-1/items"), async ({ request }) => {
+        const { targetId } = (await request.json()) as { targetId: string };
+        if (targetId === "item-1021")
+          return HttpResponse.json(
+            { code: ErrorCode.ListItemAlreadyExists, message: "Already" },
+            { status: 409 },
+          );
+        listed.push(targetId);
+        return HttpResponse.json({});
+      }),
+      http.get(apiUrl("/*"), () => HttpResponse.json([])),
+    );
+    visit("/app/search?type=GAMES&query=zelda");
+    const user = userEvent.setup();
+    renderWithQuery(SearchPage, {});
+
+    const first = await screen.findByRole(
+      "link",
+      { name: "Zelda 1" },
+      { timeout: 4000 },
+    );
+    first.focus();
+    await user.keyboard("x");
+    await user.click(screen.getByRole("button", { name: "Zelda 2" }));
+    await user.click(
+      screen.getByRole("button", { name: m.search_selection_list() }),
+    );
+    await user.click(await screen.findByRole("menuitem", { name: "Coop" }));
+
+    await waitFor(() =>
+      expect(toast.items.map((t) => t.message)).toContain(
+        m.search_selection_listed_many({ count: 2, list: "Coop" }),
+      ),
+    );
+    expect(listed).toEqual(["item-1020"]);
   });
 });
