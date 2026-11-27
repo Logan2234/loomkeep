@@ -9,6 +9,7 @@ import { BookItemService } from "./book-item.service";
 import { BookLibraryService } from "./book-library.service";
 import { BookSagaService } from "./book-saga.service";
 import { BookSessionService } from "./book-session.service";
+import { BooksDomainAdapter } from "./books-domain.adapter";
 import { BooksController } from "./books.controller";
 import { OpenLibraryProvider } from "./providers/open-library.provider";
 
@@ -25,6 +26,7 @@ import { OpenLibraryProvider } from "./providers/open-library.provider";
   ],
   controllers: [BooksController],
   providers: [
+    BooksDomainAdapter,
     BookItemService,
     BookLibraryService,
     BookSagaService,
@@ -32,6 +34,7 @@ import { OpenLibraryProvider } from "./providers/open-library.provider";
     OpenLibraryProvider,
   ],
   exports: [
+    BooksDomainAdapter,
     BookItemService,
     BookLibraryService,
     BookSessionService,

@@ -1,5 +1,5 @@
 import type { MediaType } from "@loomkeep/shared/enums";
-import type { DataExportWatch } from "../../../account/data-export.types";
+import type { DataExportWatch } from "../../../media/media-export.types";
 
 class DataExportWatchMediaResponseDto {
   /**

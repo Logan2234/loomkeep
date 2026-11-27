@@ -25,5 +25,5 @@ ses champs propres (saisons et épisodes, sessions et parties, lectures et
   comportement que les quatre doivent avoir.
 - Les modules transverses (stats, export, admin, widgets, API publique)
   interrogent les quatre tables. Ajouter un domaine veut dire passer dans chacun
-  d'eux ; un adaptateur de domaine commun réduirait ce coût (audit
-  d'architecture du 26/11/2026, API-05).
+  d'eux ; l'adaptateur de domaine ([ADR 0011](0011-domain-adapter.md)) réduit
+  ce coût.

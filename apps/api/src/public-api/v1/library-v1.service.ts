@@ -19,14 +19,14 @@ import { CalendarService } from "../../library/calendar.service";
 import { MediaLibraryService } from "../../media/media-library.service";
 import { MusicLibraryService } from "../../music/music-library.service";
 import { PrismaService } from "../../prisma/prisma.service";
+import { DomainGateService } from "../../users/domain-gate.service";
+import type { ListEntriesFilters } from "../../work/entry-lifecycle.util";
 import {
   bucketizeBookStatus,
   bucketizeEntryStatus,
   bucketizeGameStatus,
   bucketizeMusicStatus,
-} from "../../stats/status-bucket.util";
-import { DomainGateService } from "../../users/domain-gate.service";
-import type { ListEntriesFilters } from "../../work/entry-lifecycle.util";
+} from "../../work/status-bucket.util";
 import type {
   ApiV1CalendarEpisodeDto,
   ApiV1LibraryEntryDto,

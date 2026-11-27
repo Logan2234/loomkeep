@@ -3,23 +3,13 @@ import type {
   SavedViewDomain,
   SavedViewFiltersDto,
 } from "@loomkeep/shared/contracts";
-import type {
-  BookOwnershipStatus,
-  GameOwnershipStatus,
-  MusicOwnershipStatus,
-} from "@loomkeep/shared/enums";
-import { ReviewTargetType } from "@loomkeep/shared/enums";
+import type { ReviewTargetType } from "@loomkeep/shared/enums";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { toUserDto, USER_DTO_INCLUDE } from "../auth/auth.service";
 import { AppException } from "../common/app.exception";
-import {
-  canonicalExternalId,
-  toExternalIdDtos,
-} from "../common/external-id.util";
 import { jsonObject } from "../common/json.util";
+import { DomainRegistry } from "../library/domain-registry";
 import { PrismaService } from "../prisma/prisma.service";
-import { ReviewService } from "../reviews/review.service";
-import { LOAN_INCLUDE, loanFields } from "../work/entry-loan.util";
 import type { UserDataExportDto } from "./data-export.types";
 
 /**
@@ -32,7 +22,7 @@ import type { UserDataExportDto } from "./data-export.types";
 export class DataExportService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly reviews: ReviewService,
+    private readonly registry: DomainRegistry,
   ) {}
 
   async buildExport(userId: string): Promise<UserDataExportDto> {
@@ -51,11 +41,7 @@ export class DataExportService {
     }
 
     const [
-      entries,
-      watches,
-      gameEntries,
-      bookEntries,
-      musicEntries,
+      domainEntries,
       notifications,
       reviewRows,
       reviewVoteRows,
@@ -78,61 +64,7 @@ export class DataExportService {
       importRunRows,
       savedViewRows,
     ] = await Promise.all([
-      this.prisma.mediaEntry.findMany({
-        where: { userId },
-        include: {
-          mediaItem: { include: { externalIds: true } },
-          replays: { orderBy: { finishedAt: "asc" } },
-        },
-        orderBy: { createdAt: "asc" },
-      }),
-      this.prisma.episodeWatch.findMany({
-        where: { userId },
-        include: {
-          episode: {
-            include: {
-              season: {
-                include: { mediaItem: { include: { externalIds: true } } },
-              },
-            },
-          },
-        },
-        orderBy: { watchedAt: "asc" },
-      }),
-      this.prisma.gameEntry.findMany({
-        where: { userId },
-        include: {
-          gameItem: { include: { externalIds: true } },
-          ...LOAN_INCLUDE,
-          playthroughs: { orderBy: { number: "asc" } },
-          sessions: {
-            orderBy: { occurredAt: "asc" },
-            include: { playthrough: { select: { number: true } } },
-          },
-        },
-        orderBy: { createdAt: "asc" },
-      }),
-      this.prisma.bookEntry.findMany({
-        where: { userId },
-        include: {
-          bookItem: { include: { externalIds: true } },
-          ...LOAN_INCLUDE,
-          readings: { orderBy: { number: "asc" } },
-          sessions: {
-            orderBy: { occurredAt: "asc" },
-            include: { reading: { select: { number: true } } },
-          },
-        },
-        orderBy: { createdAt: "asc" },
-      }),
-      this.prisma.musicEntry.findMany({
-        where: { userId },
-        include: {
-          musicItem: { include: { externalIds: true } },
-          ...LOAN_INCLUDE,
-        },
-        orderBy: { createdAt: "asc" },
-      }),
+      this.registry.exportEntries(userId),
       this.prisma.notification.findMany({
         where: { userId },
         orderBy: { createdAt: "asc" },
@@ -386,31 +318,6 @@ export class DataExportService {
       })),
     ]);
 
-    // Ratings now live in Review; project them back into the export.
-    const [mediaRatings, gameRatings, bookRatings, musicRatings] =
-      await Promise.all([
-        this.reviews.getRatings(
-          userId,
-          ReviewTargetType.MEDIA,
-          entries.map((e) => e.mediaItemId),
-        ),
-        this.reviews.getRatings(
-          userId,
-          ReviewTargetType.GAME,
-          gameEntries.map((e) => e.gameItemId),
-        ),
-        this.reviews.getRatings(
-          userId,
-          ReviewTargetType.BOOK,
-          bookEntries.map((e) => e.bookItemId),
-        ),
-        this.reviews.getRatings(
-          userId,
-          ReviewTargetType.MUSIC,
-          musicEntries.map((e) => e.musicItemId),
-        ),
-      ]);
-
     return {
       exportedAt: new Date().toISOString(),
       account: toUserDto(user),
@@ -444,152 +351,7 @@ export class DataExportService {
             }
           : null,
       },
-      library: entries.map((entry) => ({
-        media: {
-          type: entry.mediaItem.type,
-          title: entry.mediaItem.title,
-          canonicalSource: entry.mediaItem.canonicalSource,
-          sourceId: canonicalExternalId(
-            entry.mediaItem,
-            entry.mediaItem.externalIds,
-          ),
-          externalIds: toExternalIdDtos(entry.mediaItem.externalIds),
-        },
-        status: entry.status,
-        rating: mediaRatings.get(entry.mediaItemId) ?? null,
-        notes: entry.notes,
-        favorite: entry.favorite,
-        startedAt: entry.startedAt?.toISOString() ?? null,
-        finishedAt: entry.finishedAt?.toISOString() ?? null,
-        createdAt: entry.createdAt.toISOString(),
-        replays: entry.replays.map((replay) => replay.finishedAt.toISOString()),
-      })),
-      episodeWatches: watches.map((watch) => {
-        const media = watch.episode.season.mediaItem;
-        return {
-          media: {
-            type: media.type,
-            title: media.title,
-            sourceId: canonicalExternalId(media, media.externalIds),
-          },
-          seasonNumber: watch.episode.season.number,
-          episodeNumber: watch.episode.number,
-          episodeTitle: watch.episode.title,
-          watchedAt: watch.watchedAt?.toISOString() ?? null,
-        };
-      }),
-      games: gameEntries.map((entry) => ({
-        game: {
-          title: entry.gameItem.title,
-          canonicalSource: entry.gameItem.canonicalSource,
-          sourceId: canonicalExternalId(
-            entry.gameItem,
-            entry.gameItem.externalIds,
-          ),
-          externalIds: toExternalIdDtos(entry.gameItem.externalIds),
-        },
-        status: entry.status,
-        rating: gameRatings.get(entry.gameItemId) ?? null,
-        notes: entry.notes,
-        favorite: entry.favorite,
-        playtimeMinutes: entry.playtimeMinutes,
-        trackedPlaytimeMinutes: entry.trackedPlaytimeMinutes,
-        steamPlaytimeMinutes: entry.steamPlaytimeMinutes,
-        steamSyncedAt: entry.steamSyncedAt?.toISOString() ?? null,
-        ownershipStatus: entry.ownershipStatus as GameOwnershipStatus,
-        ownershipSource: entry.ownershipSource,
-        ...loanFields(entry),
-        startedAt: entry.startedAt?.toISOString() ?? null,
-        finishedAt: entry.finishedAt?.toISOString() ?? null,
-        createdAt: entry.createdAt.toISOString(),
-        replays: laterCompletions(entry.playthroughs),
-        playthroughs: entry.playthroughs.map((playthrough) => ({
-          number: playthrough.number,
-          status: playthrough.status,
-          startedAt: playthrough.startedAt?.toISOString() ?? null,
-          finishedAt: playthrough.finishedAt?.toISOString() ?? null,
-          trackedMinutes: playthrough.trackedMinutes,
-        })),
-        sessions: entry.sessions.map((session) => ({
-          durationMinutes: session.durationMinutes,
-          notes: session.notes,
-          occurredAt: session.occurredAt.toISOString(),
-          source: session.source,
-          createdAt: session.createdAt.toISOString(),
-          playthroughNumber: session.playthrough?.number ?? null,
-        })),
-      })),
-      books: bookEntries.map((entry) => ({
-        book: {
-          title: entry.bookItem.title,
-          authors: entry.bookItem.authors,
-          canonicalSource: entry.bookItem.canonicalSource,
-          sourceId: canonicalExternalId(
-            entry.bookItem,
-            entry.bookItem.externalIds,
-          ),
-          externalIds: toExternalIdDtos(entry.bookItem.externalIds),
-        },
-        status: entry.status,
-        rating: bookRatings.get(entry.bookItemId) ?? null,
-        notes: entry.notes,
-        favorite: entry.favorite,
-        currentPage: entry.currentPage,
-        editionKey: entry.editionKey,
-        referencePageCount: entry.referencePageCount,
-        trackedReadingMinutes: entry.trackedReadingMinutes,
-        ownershipStatus: entry.ownershipStatus as BookOwnershipStatus,
-        ownershipSource: entry.ownershipSource,
-        ...loanFields(entry),
-        startedAt: entry.startedAt?.toISOString() ?? null,
-        finishedAt: entry.finishedAt?.toISOString() ?? null,
-        createdAt: entry.createdAt.toISOString(),
-        replays: laterCompletions(entry.readings),
-        readings: entry.readings.map((reading) => ({
-          number: reading.number,
-          status: reading.status,
-          editionKey: reading.editionKey,
-          referencePageCount: reading.referencePageCount,
-          currentPage: reading.currentPage,
-          pagesRead: reading.pagesRead,
-          trackedMinutes: reading.trackedMinutes,
-          startedAt: reading.startedAt?.toISOString() ?? null,
-          finishedAt: reading.finishedAt?.toISOString() ?? null,
-        })),
-        sessions: entry.sessions.map((session) => ({
-          durationMinutes: session.durationMinutes,
-          pagesRead: session.pagesRead,
-          startPage: session.startPage,
-          endPage: session.endPage,
-          notes: session.notes,
-          occurredAt: session.occurredAt.toISOString(),
-          source: session.source,
-          createdAt: session.createdAt.toISOString(),
-          readingNumber: session.reading?.number ?? null,
-        })),
-      })),
-      music: musicEntries.map((entry) => ({
-        album: {
-          title: entry.musicItem.title,
-          artists: entry.musicItem.artists,
-          canonicalSource: entry.musicItem.canonicalSource,
-          sourceId: canonicalExternalId(
-            entry.musicItem,
-            entry.musicItem.externalIds,
-          ),
-          externalIds: toExternalIdDtos(entry.musicItem.externalIds),
-        },
-        status: entry.status,
-        rating: musicRatings.get(entry.musicItemId) ?? null,
-        notes: entry.notes,
-        favorite: entry.favorite,
-        ownershipStatus: entry.ownershipStatus as MusicOwnershipStatus,
-        ownershipSource: entry.ownershipSource,
-        ...loanFields(entry),
-        startedAt: entry.startedAt?.toISOString() ?? null,
-        finishedAt: entry.finishedAt?.toISOString() ?? null,
-        createdAt: entry.createdAt.toISOString(),
-      })),
+      ...domainEntries,
       // Reserved keys for the planned podcasts/board-games domains — no backing
       // tables yet, so always empty (keeps the export shape stable ahead of P3).
       podcasts: [],
@@ -860,58 +622,18 @@ export class DataExportService {
     }
 
     const map = new Map<string, string>();
-    const mediaIds = [...(idsByType.get(ReviewTargetType.MEDIA) ?? [])];
-    const gameIds = [...(idsByType.get(ReviewTargetType.GAME) ?? [])];
-    const bookIds = [...(idsByType.get(ReviewTargetType.BOOK) ?? [])];
-    const musicIds = [...(idsByType.get(ReviewTargetType.MUSIC) ?? [])];
+    const titles = await Promise.all(
+      this.registry.all().map(async (adapter) => {
+        const type = adapter.reviewTargetType;
+        const ids = [...(idsByType.get(type) ?? [])];
+        return { type, titles: await adapter.itemTitles(ids) };
+      }),
+    );
 
-    const [mediaItems, gameItems, bookItems, musicItems] = await Promise.all([
-      mediaIds.length
-        ? this.prisma.mediaItem.findMany({
-            where: { id: { in: mediaIds } },
-            select: { id: true, title: true },
-          })
-        : [],
-      gameIds.length
-        ? this.prisma.gameItem.findMany({
-            where: { id: { in: gameIds } },
-            select: { id: true, title: true },
-          })
-        : [],
-      bookIds.length
-        ? this.prisma.bookItem.findMany({
-            where: { id: { in: bookIds } },
-            select: { id: true, title: true },
-          })
-        : [],
-      musicIds.length
-        ? this.prisma.musicItem.findMany({
-            where: { id: { in: musicIds } },
-            select: { id: true, title: true },
-          })
-        : [],
-    ]);
-
-    for (const i of mediaItems)
-      map.set(`${ReviewTargetType.MEDIA}:${i.id}`, i.title);
-    for (const i of gameItems)
-      map.set(`${ReviewTargetType.GAME}:${i.id}`, i.title);
-    for (const i of bookItems)
-      map.set(`${ReviewTargetType.BOOK}:${i.id}`, i.title);
-    for (const i of musicItems)
-      map.set(`${ReviewTargetType.MUSIC}:${i.id}`, i.title);
+    for (const { type, titles: byId } of titles) {
+      for (const [id, title] of byId) map.set(`${type}:${id}`, title);
+    }
 
     return map;
   }
-}
-
-/** Completion dates of the cycles after the first: the export's `replays`. */
-function laterCompletions(
-  cycles: { number: number; status: string; finishedAt: Date | null }[],
-): string[] {
-  return cycles.flatMap((cycle) =>
-    cycle.number > 1 && cycle.status === "COMPLETED" && cycle.finishedAt
-      ? [cycle.finishedAt.toISOString()]
-      : [],
-  );
 }

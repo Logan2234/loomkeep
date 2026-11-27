@@ -1,4 +1,5 @@
 import type { PrismaService } from "../prisma/prisma.service";
+import { domainRegistry } from "../test-utils/domain-registry";
 import { LibraryService } from "./library.service";
 
 describe("LibraryService.getDomainCounts", () => {
@@ -9,7 +10,7 @@ describe("LibraryService.getDomainCounts", () => {
       bookEntry: { count: vi.fn().mockResolvedValue(340) },
       musicEntry: { count: vi.fn().mockResolvedValue(7) },
     } as unknown as PrismaService;
-    const service = new LibraryService(prisma);
+    const service = new LibraryService(domainRegistry(prisma));
 
     const counts = await service.getDomainCounts("u1");
 

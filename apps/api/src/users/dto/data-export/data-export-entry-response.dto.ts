@@ -3,7 +3,7 @@ import type {
   EntryStatus,
   MediaType,
 } from "@loomkeep/shared/enums";
-import type { DataExportEntry } from "../../../account/data-export.types";
+import type { DataExportEntry } from "../../../media/media-export.types";
 
 class DataExportEntryExternalIdResponseDto {
   /**

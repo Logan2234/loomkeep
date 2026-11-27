@@ -5,7 +5,7 @@ import type {
   SessionSource,
   TrackingCycleStatus,
 } from "@loomkeep/shared/enums";
-import type { DataExportGameEntry } from "../../../account/data-export.types";
+import type { DataExportGameEntry } from "../../../games/game-export.types";
 
 class DataExportGameExternalIdResponseDto {
   /**

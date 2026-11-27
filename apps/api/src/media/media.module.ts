@@ -7,6 +7,7 @@ import { ReviewsModule } from "../reviews/reviews.module";
 import { UserGatesModule } from "../users/user-gates.module";
 import { MediaCatalogController } from "./media-catalog.controller";
 import { MediaDetailService } from "./media-detail.service";
+import { MediaDomainAdapter } from "./media-domain.adapter";
 import { MediaEpisodesService } from "./media-episodes.service";
 import { MediaItemService } from "./media-item.service";
 import { MediaLibraryController } from "./media-library.controller";
@@ -38,6 +39,7 @@ import { SagaSyncService } from "./saga-sync.service";
     MediaController,
   ],
   providers: [
+    MediaDomainAdapter,
     MediaItemService,
     TmdbProvider,
     AnilistProvider,
@@ -52,6 +54,7 @@ import { SagaSyncService } from "./saga-sync.service";
   // The providers are exported for import reconciliation; each source keeps
   // its catalogue boundary explicit (TVDB → TMDB for TV Time, MAL → AniList).
   exports: [
+    MediaDomainAdapter,
     MediaItemService,
     TmdbProvider,
     AnilistProvider,

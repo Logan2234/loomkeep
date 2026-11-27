@@ -66,6 +66,10 @@ wording change or a rename.
   they share (entry lifecycle, loans, bulk edits, work links) lives in
   `apps/api/src/work/`. `common/` is infrastructure and pure helpers only and
   imports no other module (`common-boundary.spec.ts`).
+- A module that reads every domain at once iterates `DomainRegistry`
+  (`library/`) rather than naming the four entry tables: each domain module
+  provides a `DomainAdapter` (counts, library rows, titles, exports), and a
+  new domain adds its adapter there ([ADR 0011](docs/adr/0011-domain-adapter.md)).
 - The Prisma schema is one file per owning API module in
   `apps/api/prisma/schema/` (`games.prisma`…): a new table goes in the file of
   the module that writes it; generators, datasource and enums several files

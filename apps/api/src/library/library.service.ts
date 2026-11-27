@@ -1,7 +1,7 @@
 import type { LibraryDomainCountsDto } from "@loomkeep/shared/contracts";
-import { Domain } from "@loomkeep/shared/enums";
+import type { Domain } from "@loomkeep/shared/enums";
 import { Injectable } from "@nestjs/common";
-import { PrismaService } from "../prisma/prisma.service";
+import { DomainRegistry } from "./domain-registry";
 
 /**
  * The library across domains: what reads every domain's entries at once.
@@ -9,7 +9,7 @@ import { PrismaService } from "../prisma/prisma.service";
  */
 @Injectable()
 export class LibraryService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly registry: DomainRegistry) {}
 
   /**
    * Tracked-item count per domain, hidden domains included. Deliberately not
@@ -19,18 +19,14 @@ export class LibraryService {
    * are absent rather than zero.
    */
   async getDomainCounts(userId: string): Promise<LibraryDomainCountsDto> {
-    const [media, games, books, music] = await Promise.all([
-      this.prisma.mediaEntry.count({ where: { userId } }),
-      this.prisma.gameEntry.count({ where: { userId } }),
-      this.prisma.bookEntry.count({ where: { userId } }),
-      this.prisma.musicEntry.count({ where: { userId } }),
-    ]);
-
-    return {
-      [Domain.MEDIA]: media,
-      [Domain.GAMES]: games,
-      [Domain.BOOKS]: books,
-      [Domain.MUSIC]: music,
-    };
+    const counts = await Promise.all(
+      this.registry
+        .all()
+        .map(async (adapter): Promise<[Domain, number]> => [
+          adapter.domain,
+          await adapter.countEntries(userId),
+        ]),
+    );
+    return Object.fromEntries(counts);
   }
 }

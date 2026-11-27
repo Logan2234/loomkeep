@@ -5,7 +5,7 @@ import type {
   SessionSource,
   TrackingCycleStatus,
 } from "@loomkeep/shared/enums";
-import type { DataExportBookEntry } from "../../../account/data-export.types";
+import type { DataExportBookEntry } from "../../../books/book-export.types";
 
 class DataExportBookExternalIdResponseDto {
   /**
