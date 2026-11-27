@@ -32,7 +32,7 @@ export type EntryWithMedia = Prisma.MediaEntryGetPayload<{
 }>;
 
 // Order used by the "Statut" sort.
-export const MEDIA_STATUS_SORT_ORDER: EntryStatus[] = [
+const MEDIA_STATUS_SORT_ORDER: EntryStatus[] = [
   "WATCHING",
   "PLANNED",
   "UP_TO_DATE",
@@ -101,7 +101,7 @@ export function materializedProgress(entry: {
 // A day ahead covers a date the viewer picked in their own time zone (up to
 // UTC+14) and clock drift; anything beyond is a mistake, and a 2099 viewing
 // would pin the show at the top of "recent" for good.
-export const WATCH_DATE_FUTURE_TOLERANCE_MS = 24 * 60 * 60 * 1000;
+const WATCH_DATE_FUTURE_TOLERANCE_MS = 24 * 60 * 60 * 1000;
 
 export function assertWatchDateNotFuture(
   watchedAt: string | null | undefined,
@@ -192,7 +192,7 @@ export function compareMediaEntries(
  * came later. A title never watched yet (a planned movie) then sits where it
  * was added among the series being watched, not after all of them.
  */
-export function lastActivityMs(
+function lastActivityMs(
   row: Pick<MediaRow, "lastWatchedAt" | "createdAt">,
 ): number {
   return Math.max(timeMs(row.lastWatchedAt), timeMs(row.createdAt));
