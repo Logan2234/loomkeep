@@ -544,8 +544,8 @@ importers:
         specifier: ^14.0.0
         version: 14.0.0
       '@tanstack/svelte-query':
-        specifier: ^6.4.6
-        version: 6.4.6(svelte@5.59.1(@typescript-eslint/types@8.73.0))
+        specifier: ^6.4.7
+        version: 6.4.7(svelte@5.59.1(@typescript-eslint/types@8.73.0))
       qr-scanner:
         specifier: ^1.4.2
         version: 1.4.2
@@ -3818,11 +3818,11 @@ packages:
     peerDependencies:
       vite: ^5.2.0 || ^6 || ^7 || ^8
 
-  '@tanstack/query-core@5.108.3':
-    resolution: {integrity: sha512-Lh8fyLDlHOdZXfUB+G1M5bKxfQ1Y0/mfydFP+pMjFKweAU4OUiC4MyIBTcW7Ck+Iwt6K3/pzvADrJi2Dc1lwuQ==}
+  '@tanstack/query-core@5.108.4':
+    resolution: {integrity: sha512-2Ks5dlLWz4eXJrthOyG0qW3SLt3xx0RrQmAmN0rnmogiaaOYuWiAe6HAm9KE2b2v8nig+vraNz8fsfZ6fF6zFg==}
 
-  '@tanstack/svelte-query@6.4.6':
-    resolution: {integrity: sha512-Ke6+l9nkZVTnZVy3YGui4rs1sByMi4NGmdLdrDDHr9oX49oo9FoAHoU3+xOiYjcjYwkoooIMmAgLV3nEGtOxxA==}
+  '@tanstack/svelte-query@6.4.7':
+    resolution: {integrity: sha512-PkKz/OXE+BGb5rsrepDElCiXaVjq7Q4POKrvo27n5dg1yKhso7P3s/uScBmci5gTyMUac7b2n6LWkl0c9KRhAQ==}
     peerDependencies:
       svelte: ^5.25.0
 
@@ -12562,11 +12562,11 @@ snapshots:
       tailwindcss: 4.3.5
       vite: 8.3.8(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1)
 
-  '@tanstack/query-core@5.108.3': {}
+  '@tanstack/query-core@5.108.4': {}
 
-  '@tanstack/svelte-query@6.4.6(svelte@5.59.1(@typescript-eslint/types@8.73.0))':
+  '@tanstack/svelte-query@6.4.7(svelte@5.59.1(@typescript-eslint/types@8.73.0))':
     dependencies:
-      '@tanstack/query-core': 5.108.3
+      '@tanstack/query-core': 5.108.4
       svelte: 5.59.1(@typescript-eslint/types@8.73.0)
 
   '@tanstack/virtual-core@3.19.13': {}
