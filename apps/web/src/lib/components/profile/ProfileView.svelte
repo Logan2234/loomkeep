@@ -401,8 +401,12 @@
 
     <!-- What the viewer produces, one section under the other. -->
     <div class="mt-8 flex flex-col gap-8">
-      <ProfileFiguresSection username={profile.username} />
-      <ProfileLibrarySection domains={profile.domains} {selfManage} />
+      <!-- On a phone the figures follow the library; on a wide screen they
+           sit beside it, in the level card's column. -->
+      <div class="grid gap-8 lg:grid-cols-[minmax(0,1fr)_358px] lg:gap-7">
+        <ProfileLibrarySection domains={profile.domains} {selfManage} />
+        <ProfileFiguresSection username={profile.username} />
+      </div>
 
       {#if appConfig.socialEnabled && listTiles.length > 0}
         <div class="min-w-0">

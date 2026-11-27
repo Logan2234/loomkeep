@@ -80,7 +80,7 @@
 
     {#key period}
       <ul
-        class="grid gap-3 sm:grid-cols-2"
+        class="grid gap-3 sm:grid-cols-2 lg:grid-cols-1"
         in:fade={{ duration: reduced ? 0 : 160 }}>
         {#each lines as line (line.domain)}
           <li class="grid grid-cols-[4px_minmax(0,1fr)] gap-3">

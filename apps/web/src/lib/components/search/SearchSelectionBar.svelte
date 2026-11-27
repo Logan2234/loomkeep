@@ -1,7 +1,7 @@
 <script lang="ts">
   // The search page's selection bar (PRV-09): the count, then the two things
   // a handful of search results can share, adding them to the library or to
-  // a list. Same dark floating bar as a library's selection mode.
+  // a list. A floating bar in the page's own theme.
   import { getEditableLists } from "#lib/api/client.js";
   import { keys } from "#lib/api/keys.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
@@ -91,7 +91,7 @@
   <div
     role="toolbar"
     aria-label={m.search_selection_toolbar()}
-    class="pointer-events-auto flex w-full items-center gap-1 rounded-2xl border border-[#2A2E38] bg-[#15171C] p-1.5 text-[#ECECEA] shadow-2xl shadow-black/40 sm:w-auto sm:pl-4"
+    class="border-border bg-surface text-fg pointer-events-auto flex w-full items-center gap-1 rounded-2xl border p-1.5 shadow-2xl shadow-black/25 sm:w-auto sm:pl-4"
     in:fly|global={{ y: 24, duration: reduced ? 0 : 260 }}
     out:fly|global={{ y: 24, duration: reduced ? 0 : 180 }}>
     <span aria-live="polite" class="mr-auto sm:mr-2">
@@ -120,7 +120,7 @@
       {#snippet trigger({ open, toggle, onkeydown })}
         <button
           type="button"
-          class="inline-flex h-10 items-center gap-1.5 rounded-xl px-3 text-sm font-semibold transition-[background-color,transform] hover:bg-white/10 active:scale-95 disabled:pointer-events-none disabled:opacity-40"
+          class="hover:bg-surface-2 inline-flex h-10 items-center gap-1.5 rounded-xl px-3 text-sm font-semibold transition-[background-color,transform] active:scale-95 disabled:pointer-events-none disabled:opacity-40"
           aria-haspopup="menu"
           aria-expanded={open}
           disabled={busy || count === 0}
@@ -153,7 +153,7 @@
     </Dropdown>
     <button
       type="button"
-      class="grid h-10 w-10 place-items-center rounded-xl text-[#9AA0AE] transition-[background-color,color,transform] hover:bg-white/10 hover:text-[#ECECEA] active:scale-95 sm:ml-1 sm:h-9 sm:w-9"
+      class="text-dim hover:bg-surface-2 hover:text-fg grid h-10 w-10 place-items-center rounded-xl transition-[background-color,color,transform] active:scale-95 sm:ml-1 sm:h-9 sm:w-9"
       aria-label={m.library_bulk_exit()}
       onclick={() => selection.exit()}>
       <Icon name="x" class="h-4 w-4" />
