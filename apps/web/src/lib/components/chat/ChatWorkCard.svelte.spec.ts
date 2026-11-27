@@ -37,7 +37,7 @@ describe("ChatWorkCard", () => {
     server.use(
       http.put(apiUrl("/games"), async ({ request }) => {
         added = await request.json();
-        return HttpResponse.json({});
+        return HttpResponse.json({ id: "entry-1", game: { id: "game-1" } });
       }),
     );
     auth.user = { enabledDomains: ["GAMES"] } as unknown as UserDto;
