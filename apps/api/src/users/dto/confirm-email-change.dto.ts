@@ -1,7 +1,7 @@
 import {
   OTP_CODE_LENGTH,
   type ConfirmEmailChangeRequestDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 import { IsString, Length } from "class-validator";
 
 export class ConfirmEmailChangeDto implements ConfirmEmailChangeRequestDto {

@@ -1,4 +1,4 @@
-import { XpReason } from "@loomkeep/shared";
+import { XpReason } from "@loomkeep/shared/enums";
 
 /**
  * Which registry keys a live XP award site should re-evaluate right after

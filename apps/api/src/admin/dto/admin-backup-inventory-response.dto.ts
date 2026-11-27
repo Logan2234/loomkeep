@@ -1,7 +1,7 @@
 import type {
   AdminBackupInventoryDto,
   AdminOrphanBackupFileDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 import { AdminBackupFileResponseDto } from "./admin-backup-file-response.dto";
 
 class AdminOrphanBackupFileResponseDto implements AdminOrphanBackupFileDto {

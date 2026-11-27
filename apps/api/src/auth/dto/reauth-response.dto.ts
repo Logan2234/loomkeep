@@ -2,7 +2,7 @@ import type {
   ReauthMethod,
   ReauthResultDto,
   ReauthStatusDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 
 export class ReauthStatusResponseDto implements ReauthStatusDto {
   methods!: ReauthMethod[];

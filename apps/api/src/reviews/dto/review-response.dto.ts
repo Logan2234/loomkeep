@@ -1,9 +1,9 @@
+import type { ReviewDto } from "@loomkeep/shared/contracts";
 import type {
-  ReviewDto,
   ReviewTargetType,
   ReviewVisibility,
   ReviewVoteValue,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/enums";
 import { UserSummaryResponseDto } from "../../common/dto/user-summary-response.dto";
 
 export class ReviewResponseDto implements ReviewDto {

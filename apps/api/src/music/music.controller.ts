@@ -1,17 +1,16 @@
+import { ErrorCode } from "@loomkeep/shared/catalog";
 import type {
   BulkEntriesResultDto,
   PagedResult,
   PileSummaryDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 import {
-  Domain,
-  ErrorCode,
   MusicDetailDto,
   MusicEntryDto,
   MusicSearchResponseDto,
-  MusicSource,
   StoredMusicDetailDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import { Domain, MusicSource } from "@loomkeep/shared/enums";
 import {
   Body,
   Controller,

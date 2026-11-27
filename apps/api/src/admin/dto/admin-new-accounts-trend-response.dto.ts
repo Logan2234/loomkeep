@@ -1,4 +1,7 @@
-import type { AdminNewAccountsTrendDto, TrendPeriod } from "@loomkeep/shared";
+import type {
+  AdminNewAccountsTrendDto,
+  TrendPeriod,
+} from "@loomkeep/shared/contracts";
 import { TrendPointResponseDto } from "./trend-point-response.dto";
 
 export class AdminNewAccountsTrendResponseDto implements AdminNewAccountsTrendDto {

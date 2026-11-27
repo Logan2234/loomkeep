@@ -40,7 +40,7 @@
   import { toast } from "#lib/toast.svelte.js";
   import { quickAddTarget } from "#lib/quick-add.js";
   import { isPastedLink } from "#lib/share-link.js";
-  import { Domain, type MediaType } from "@loomkeep/shared";
+  import { Domain, type MediaType } from "@loomkeep/shared/enums";
   import { untrack } from "svelte";
 
   // The "Tout" tab: every domain at once, by shelves (UnifiedSearchPanel).

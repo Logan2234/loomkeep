@@ -1,5 +1,9 @@
-import type { MediaDetailDto, MediaSagaResponseDto } from "@loomkeep/shared";
-import { ErrorCode, MediaType } from "@loomkeep/shared";
+import { ErrorCode } from "@loomkeep/shared/catalog";
+import type {
+  MediaDetailDto,
+  MediaSagaResponseDto,
+} from "@loomkeep/shared/contracts";
+import { MediaType } from "@loomkeep/shared/enums";
 import {
   Controller,
   Get,

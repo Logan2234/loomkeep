@@ -1,10 +1,10 @@
-import type { ListKind, ListVisibility } from "@loomkeep/shared";
+import type { ListKind, ListVisibility } from "@loomkeep/shared/enums";
 import type { ApiV1ListDto } from "../api-v1.types";
 
 import {
   ListKind as ListKindValues,
   ListVisibility as ListVisibilityValues,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/enums";
 
 import { ApiProperty } from "@nestjs/swagger";
 export class ApiV1ListResponseDto implements ApiV1ListDto {

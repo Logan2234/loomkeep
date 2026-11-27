@@ -3,7 +3,7 @@
   import { auth } from "#lib/auth.svelte.js";
   import { createMyReview } from "#lib/my-review.svelte.js";
   import { m } from "#lib/paraglide/messages.js";
-  import type { ReviewTargetType } from "@loomkeep/shared";
+  import type { ReviewTargetType } from "@loomkeep/shared/enums";
   import Icon from "./Icon.svelte";
   import ReviewFormModal from "./ReviewFormModal.svelte";
 

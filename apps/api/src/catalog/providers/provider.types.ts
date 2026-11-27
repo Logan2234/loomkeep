@@ -1,11 +1,13 @@
 import type {
   CastDetailDto,
-  CatalogSource,
   MediaExtrasDto,
-  MediaSource,
   MediaSummaryDto,
+} from "@loomkeep/shared/contracts";
+import type {
+  CatalogSource,
+  MediaSource,
   MediaType,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/enums";
 import type { ProviderExternalId as GenericProviderExternalId } from "../../common/provider-external-id";
 
 export type ProviderExternalId = GenericProviderExternalId<MediaSource>;
@@ -53,7 +55,7 @@ export interface ProviderMediaDetails {
   /** AniList release format ("TV", "MOVIE", "OVA"…); null for TMDB. */
   format: string | null;
   releaseDate: string | null;
-  movieReleaseDates?: import("@loomkeep/shared").MovieReleaseDate[];
+  movieReleaseDates?: import("@loomkeep/shared/rules").MovieReleaseDate[];
   /** Average minutes per episode (series/anime) or the film's runtime; null if unknown. */
   runtimeMin: number | null;
   /** ISO 3166-1 alpha-2 countries of origin; empty when the source names none. */

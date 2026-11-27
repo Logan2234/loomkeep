@@ -1,7 +1,7 @@
 <script lang="ts" module>
-  import { type AlertChannel } from "@loomkeep/shared";
+  import { type AlertChannel } from "@loomkeep/shared/catalog";
 
-  import type { AlertKey } from "@loomkeep/shared";
+  import type { AlertKey } from "@loomkeep/shared/catalog";
   import type { FeatureBadgeKey } from "#lib/feature-badges.js";
 
   export interface AlertGroupRows {
@@ -31,7 +31,7 @@
     type AlertDefinition,
     isAlertEnabled,
     isAlertToggleable,
-  } from "@loomkeep/shared";
+  } from "@loomkeep/shared/catalog";
   import type { Snippet } from "svelte";
   import SettingRow from "../components/SettingRow.svelte";
 

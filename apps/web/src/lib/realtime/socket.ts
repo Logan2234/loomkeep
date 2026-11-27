@@ -1,6 +1,9 @@
 import { API_URL, tryRefresh } from "#lib/api/core.js";
 import { auth } from "#lib/auth.svelte.js";
-import { type RealtimeEvent, RealtimeCommand } from "@loomkeep/shared";
+import {
+  type RealtimeEvent,
+  RealtimeCommand,
+} from "@loomkeep/shared/contracts";
 import { io } from "socket.io-client";
 
 const API_ORIGIN = API_URL.replace(/\/api\/?$/, "");

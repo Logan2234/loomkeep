@@ -1,4 +1,4 @@
-import type { OnboardingChecklistDto } from "@loomkeep/shared";
+import type { OnboardingChecklistDto } from "@loomkeep/shared/contracts";
 import { Controller, Get, Param, Post } from "@nestjs/common";
 import { ApiOkResponse } from "@nestjs/swagger";
 import {

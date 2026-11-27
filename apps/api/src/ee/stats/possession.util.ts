@@ -1,7 +1,7 @@
 import {
   POSSESSION_MIN_RATIO,
   type PossessionBreakdownDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 
 /**
  * Aggregates ownership statuses into a breakdown, or flags "not enough data"

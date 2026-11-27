@@ -3,9 +3,9 @@ import { apiUrl, server } from "#lib/test/msw.js";
 import { renderWithQuery } from "#lib/test/render.js";
 import type {
   GameSagaMemberDto,
-  GameStatus,
   LibraryGameSagasDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import type { GameStatus } from "@loomkeep/shared/enums";
 import { screen, waitFor, within } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";

@@ -1,9 +1,9 @@
 import {
   MAX_PAGE_NUMBER,
   SESSION_NOTES_MAX_LENGTH,
-  SessionCycleAction,
   type FinishSessionTimerDto as Contract,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import { SessionCycleAction } from "@loomkeep/shared/enums";
 import {
   IsIn,
   IsInt,

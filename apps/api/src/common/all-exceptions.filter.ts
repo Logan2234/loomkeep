@@ -1,5 +1,5 @@
-import type { ApiErrorBody } from "@loomkeep/shared";
-import { ErrorCode } from "@loomkeep/shared";
+import type { ApiErrorBody } from "@loomkeep/shared/catalog";
+import { ErrorCode } from "@loomkeep/shared/catalog";
 import type { ArgumentsHost } from "@nestjs/common";
 import { Catch, HttpException, HttpStatus } from "@nestjs/common";
 import { HttpAdapterHost } from "@nestjs/core";

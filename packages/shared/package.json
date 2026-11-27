@@ -14,18 +14,31 @@
   },
   "sideEffects": false,
   "type": "commonjs",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Logan2234/loomkeep.git",
     "directory": "packages/shared"
   },
   "exports": {
-    ".": {
-      "source": "./src/index.ts",
-      "types": "./dist/index.d.ts",
-      "default": "./dist/index.js"
+    "./contracts": {
+      "source": "./src/contracts/index.ts",
+      "types": "./dist/contracts/index.d.ts",
+      "default": "./dist/contracts/index.js"
+    },
+    "./rules": {
+      "source": "./src/rules/index.ts",
+      "types": "./dist/rules/index.d.ts",
+      "default": "./dist/rules/index.js"
+    },
+    "./catalog": {
+      "source": "./src/catalog/index.ts",
+      "types": "./dist/catalog/index.d.ts",
+      "default": "./dist/catalog/index.js"
+    },
+    "./enums": {
+      "source": "./src/enums.ts",
+      "types": "./dist/enums.d.ts",
+      "default": "./dist/enums.js"
     }
   },
   "files": [

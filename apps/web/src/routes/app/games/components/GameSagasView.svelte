@@ -6,7 +6,7 @@
   } from "#lib/components/saga/SagasView.svelte";
   import { m } from "#lib/paraglide/messages.js";
   import { gameSagaMember, librarySagasView } from "#lib/saga.js";
-  import type { GameSagaMemberDto } from "@loomkeep/shared";
+  import type { GameSagaMemberDto } from "@loomkeep/shared/contracts";
   import type { Snippet } from "svelte";
 
   let { modeSwitch }: { modeSwitch: Snippet } = $props();

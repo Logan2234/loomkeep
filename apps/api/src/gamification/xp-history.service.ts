@@ -1,9 +1,9 @@
 import {
-  XpReason,
   type PagedResult,
   type XpHistoryDayDto,
   type XpHistoryItemDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import { XpReason } from "@loomkeep/shared/enums";
 import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import type { Prisma } from "@prisma/client";

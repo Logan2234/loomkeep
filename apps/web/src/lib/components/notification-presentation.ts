@@ -3,11 +3,10 @@ import { m } from "#lib/paraglide/messages.js";
 import type { IconName } from "#lib/types/icon-name.js";
 import {
   IMPORT_SOURCE_NAMES,
-  ModerationMeasure,
-  NotificationType,
   type ImportSource,
   type NotificationDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import { ModerationMeasure, NotificationType } from "@loomkeep/shared/enums";
 
 export interface NotificationView {
   /** Whoever caused it: shown as their avatar, their name leading the line. */

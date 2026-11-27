@@ -1,13 +1,13 @@
 import { m } from "#lib/paraglide/messages.js";
 import { apiUrl, server } from "#lib/test/msw.js";
 import { renderWithQuery } from "#lib/test/render.js";
+import { ErrorCode } from "@loomkeep/shared/catalog";
 import {
-  Domain,
-  ErrorCode,
   type ImportCommitRequest,
   type ImportJobDto,
   type ImportPlan,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import { Domain } from "@loomkeep/shared/enums";
 import { screen, waitFor } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";

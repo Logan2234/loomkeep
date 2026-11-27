@@ -1,4 +1,4 @@
-import type { ImportPlan, ImportPlanItem } from "@loomkeep/shared";
+import type { ImportPlan, ImportPlanItem } from "@loomkeep/shared/contracts";
 import { vi } from "vitest";
 import { makeZip } from "../../../../test/make-zip";
 import { ImportJobService } from "../../import-job.service";

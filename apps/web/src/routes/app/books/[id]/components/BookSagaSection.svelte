@@ -4,11 +4,11 @@
   import SagaBlock from "#lib/components/saga/SagaBlock.svelte";
   import { m } from "#lib/paraglide/messages.js";
   import { bookSagaMember } from "#lib/saga.js";
+  import type { BookStatus } from "@loomkeep/shared/enums";
   import type {
     BookSagaDto,
     BookSagaMemberDto,
-    BookStatus,
-  } from "@loomkeep/shared";
+  } from "@loomkeep/shared/contracts";
 
   let {
     saga,

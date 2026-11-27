@@ -1,4 +1,4 @@
-import { ProfileAccess, VisibilityAudience } from "@loomkeep/shared";
+import { ProfileAccess, VisibilityAudience } from "@loomkeep/shared/enums";
 import {
   computeIsFriend,
   resolveFacet,

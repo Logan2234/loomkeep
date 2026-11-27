@@ -28,7 +28,7 @@
   import type {
     AdminBackupFileDto,
     AdminOrphanBackupFileDto,
-  } from "@loomkeep/shared";
+  } from "@loomkeep/shared/contracts";
   import { flip } from "svelte/animate";
   import { fade, slide } from "svelte/transition";
 

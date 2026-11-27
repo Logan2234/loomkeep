@@ -1,4 +1,4 @@
-import type { MediaType } from "@loomkeep/shared";
+import type { MediaType } from "@loomkeep/shared/enums";
 import { getLocale } from "../paraglide/runtime.js";
 import { typedRequest } from "./generated/typed-request";
 

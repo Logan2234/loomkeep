@@ -1,11 +1,12 @@
 import type {
   GameSagaDto,
   GameSagaMemberDto,
-  GameStatus,
   LibraryGameSagasDto,
   LibrarySagaSort,
-} from "@loomkeep/shared";
-import { isGameUpcoming, type SortOrder } from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import { type SortOrder } from "@loomkeep/shared/contracts";
+import type { GameStatus } from "@loomkeep/shared/enums";
+import { isGameUpcoming } from "@loomkeep/shared/rules";
 import { Injectable, Logger } from "@nestjs/common";
 import type { GameSagaMember } from "@prisma/client";
 import {

@@ -1,4 +1,4 @@
-import { ALERTS, type AlertKey } from "@loomkeep/shared";
+import { ALERTS, type AlertKey } from "@loomkeep/shared/catalog";
 import {
   NotificationAction,
   type PushAction,

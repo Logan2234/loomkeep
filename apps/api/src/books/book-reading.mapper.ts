@@ -1,4 +1,4 @@
-import type { BookReadingDto } from "@loomkeep/shared";
+import type { BookReadingDto } from "@loomkeep/shared/contracts";
 import type { Prisma } from "@prisma/client";
 
 export function toReadingDto(

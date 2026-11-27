@@ -1,4 +1,6 @@
-import { Domain, ErrorCode, type ImportSource } from "@loomkeep/shared";
+import { ErrorCode } from "@loomkeep/shared/catalog";
+import { type ImportSource } from "@loomkeep/shared/contracts";
+import { Domain } from "@loomkeep/shared/enums";
 import { HttpStatus } from "@nestjs/common";
 import type { ConfigService } from "@nestjs/config";
 import { vi } from "vitest";

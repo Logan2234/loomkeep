@@ -1,4 +1,4 @@
-import { Domain } from "@loomkeep/shared";
+import { Domain } from "@loomkeep/shared/enums";
 import {
   percent,
   rankPopularWorks,

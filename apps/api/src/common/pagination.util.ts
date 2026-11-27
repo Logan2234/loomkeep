@@ -1,4 +1,4 @@
-import { MAX_PAGE_LIMIT, type PagedResult } from "@loomkeep/shared";
+import { MAX_PAGE_LIMIT, type PagedResult } from "@loomkeep/shared/contracts";
 
 /** Parsed, safe `page`/`limit` query params for a `GET` list endpoint. */
 export interface ParsedPage {
@@ -8,7 +8,7 @@ export interface ParsedPage {
   take: number;
 }
 
-export { DEFAULT_PAGE_SIZE } from "@loomkeep/shared";
+export { DEFAULT_PAGE_SIZE } from "@loomkeep/shared/contracts";
 
 function parsePositiveInt(value: string | undefined, fallback: number): number {
   if (!value) return fallback;

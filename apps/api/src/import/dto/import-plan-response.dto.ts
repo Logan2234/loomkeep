@@ -1,9 +1,5 @@
-import type {
-  Domain,
-  ImportPlan,
-  ImportPlanList,
-  MediaType,
-} from "@loomkeep/shared";
+import type { ImportPlan, ImportPlanList } from "@loomkeep/shared/contracts";
+import type { Domain, MediaType } from "@loomkeep/shared/enums";
 import { ImportPlanGroupResponseDto } from "./import-plan-group-response.dto";
 
 class ImportPlanListResponseDto implements ImportPlanList {

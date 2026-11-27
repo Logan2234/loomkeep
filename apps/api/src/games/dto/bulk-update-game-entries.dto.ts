@@ -1,5 +1,5 @@
-import type { BulkUpdateEntriesDto } from "@loomkeep/shared";
-import { GameOwnershipStatus, GameStatus } from "@loomkeep/shared";
+import type { BulkUpdateEntriesDto } from "@loomkeep/shared/contracts";
+import { GameOwnershipStatus, GameStatus } from "@loomkeep/shared/enums";
 import { IsIn, IsOptional } from "class-validator";
 import { BulkUpdateEntriesBaseBody } from "../../work/dto/bulk-entries.dto";
 

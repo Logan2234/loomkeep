@@ -12,11 +12,11 @@
   import { formatDate, formatRegion } from "#lib/format.js";
   import { m } from "#lib/paraglide/messages.js";
   import { fetchTrackedMedia, trackKey } from "#lib/tracked-media.js";
+  import { type PremiereDto } from "@loomkeep/shared/contracts";
   import {
     PREMIERE_NETWORKS,
     premiereNetworksFor,
-    type PremiereDto,
-  } from "@loomkeep/shared";
+  } from "@loomkeep/shared/catalog";
   import {
     groupPremieres,
     pickHeadliner,

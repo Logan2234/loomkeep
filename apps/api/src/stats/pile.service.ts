@@ -1,9 +1,9 @@
 import {
-  Domain,
   type DomainPileDto,
   type PileSummaryDto,
   type StatsDomain,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import { Domain } from "@loomkeep/shared/enums";
 import { Injectable } from "@nestjs/common";
 import { BookLibraryService } from "../books/book-library.service";
 import { GameLibraryService } from "../games/game-library.service";

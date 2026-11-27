@@ -4,7 +4,7 @@
   import { PERCENT_OPTIONS, formatNumber } from "#lib/format.js";
   import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
-  import type { AchievementTier } from "@loomkeep/shared";
+  import type { AchievementTier } from "@loomkeep/shared/contracts";
   import type { CatalogueSummary } from "../achievements";
   import { achievementName, entryIcon } from "../labels";
   import AchievementMedallion from "#lib/components/AchievementMedallion.svelte";

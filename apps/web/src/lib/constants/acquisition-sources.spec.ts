@@ -1,4 +1,4 @@
-import { AcquisitionSource } from "@loomkeep/shared";
+import { AcquisitionSource } from "@loomkeep/shared/enums";
 import { describe, expect, it } from "vitest";
 import { acquisitionSourceOrder } from "./acquisition-sources";
 

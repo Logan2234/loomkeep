@@ -7,7 +7,7 @@
   import Poster from "#lib/components/Poster.svelte";
   import { DOMAINS } from "#lib/constants/domains.js";
   import { m } from "#lib/paraglide/messages.js";
-  import type { SagaStep } from "@loomkeep/shared";
+  import type { SagaStep } from "@loomkeep/shared/contracts";
 
   let { messageId }: { messageId: string } = $props();
 

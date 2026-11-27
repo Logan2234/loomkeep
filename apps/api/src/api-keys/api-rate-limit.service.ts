@@ -1,4 +1,5 @@
-import { FeatureFlag, type ApiKeyQuotaDto } from "@loomkeep/shared";
+import { FeatureFlag } from "@loomkeep/shared/catalog";
+import { type ApiKeyQuotaDto } from "@loomkeep/shared/contracts";
 import { Injectable } from "@nestjs/common";
 import { EntitlementService } from "../entitlements/entitlement.service";
 import { FeatureFlagsService } from "../feature-flags/feature-flags.service";

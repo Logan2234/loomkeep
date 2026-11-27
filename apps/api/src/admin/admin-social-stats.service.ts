@@ -2,10 +2,14 @@ import type {
   AdminSocialActivityTrendDto,
   AdminSocialSectionDto,
   AdminSocialStatsDto,
-  ReportCategory,
   TrendPeriod,
-} from "@loomkeep/shared";
-import { FollowStatus, ReportStatus, ReviewVoteValue } from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import type { ReportCategory } from "@loomkeep/shared/enums";
+import {
+  FollowStatus,
+  ReportStatus,
+  ReviewVoteValue,
+} from "@loomkeep/shared/enums";
 import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { PrismaService } from "../prisma/prisma.service";

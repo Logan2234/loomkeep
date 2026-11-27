@@ -1,12 +1,12 @@
 import type {
   InstanceSettingKey,
   InstanceSettingsValues,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 import {
   API_RATE_LIMIT_BOUNDS,
   DEFAULT_INSTANCE_SETTINGS,
   INSTANCE_SETTING_ENV,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 import { Logger } from "@nestjs/common";
 import type { ConfigService } from "@nestjs/config";
 

@@ -9,12 +9,14 @@ import {
   type LoanFilter,
   type MEDIA_BULK_STATUSES,
   type MediaFilterStatus,
-  type MediaOwnershipStatus,
   type MediaSortKey,
-  type MediaType,
   type SortOrder,
   type UpsertLibraryEntryDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import {
+  type MediaOwnershipStatus,
+  type MediaType,
+} from "@loomkeep/shared/enums";
 import { pageParam } from "./query-params";
 
 import { getLocale } from "../paraglide/runtime.js";

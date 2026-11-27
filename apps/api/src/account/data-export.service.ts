@@ -1,11 +1,14 @@
+import { ErrorCode } from "@loomkeep/shared/catalog";
+import type {
+  SavedViewDomain,
+  SavedViewFiltersDto,
+} from "@loomkeep/shared/contracts";
 import type {
   BookOwnershipStatus,
   GameOwnershipStatus,
   MusicOwnershipStatus,
-  SavedViewDomain,
-  SavedViewFiltersDto,
-} from "@loomkeep/shared";
-import { ErrorCode, ReviewTargetType } from "@loomkeep/shared";
+} from "@loomkeep/shared/enums";
+import { ReviewTargetType } from "@loomkeep/shared/enums";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { toUserDto, USER_DTO_INCLUDE } from "../auth/auth.service";
 import { AppException } from "../common/app.exception";

@@ -1,4 +1,4 @@
-import type { DomainStatusBreakdownDto } from "@loomkeep/shared";
+import type { DomainStatusBreakdownDto } from "@loomkeep/shared/contracts";
 
 import { sumStatusBreakdowns } from "./cross-domain-totals.util";
 

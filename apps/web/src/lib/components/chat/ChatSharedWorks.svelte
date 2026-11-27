@@ -7,7 +7,7 @@
   import Modal from "#lib/components/Modal.svelte";
   import { formatDate } from "#lib/format.js";
   import { m } from "#lib/paraglide/messages.js";
-  import type { ConversationWorkDto } from "@loomkeep/shared";
+  import type { ConversationWorkDto } from "@loomkeep/shared/contracts";
   import ChatSharedWorkRow from "./ChatSharedWorkRow.svelte";
 
   let {

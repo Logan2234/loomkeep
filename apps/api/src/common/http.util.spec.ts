@@ -1,4 +1,4 @@
-import { ErrorCode } from "@loomkeep/shared";
+import { ErrorCode } from "@loomkeep/shared/catalog";
 import { vi } from "vitest";
 import { fetchJson, identifyingUserAgent } from "./http.util";
 

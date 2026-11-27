@@ -1,4 +1,4 @@
-import type { AdminUserLibraryEntryDto } from "@loomkeep/shared";
+import type { AdminUserLibraryEntryDto } from "@loomkeep/shared/contracts";
 
 export class AdminUserLibraryEntryResponseDto implements AdminUserLibraryEntryDto {
   id!: string;

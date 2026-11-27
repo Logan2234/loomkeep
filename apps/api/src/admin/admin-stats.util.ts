@@ -1,4 +1,4 @@
-import type { TrendPeriod, TrendPointDto } from "@loomkeep/shared";
+import type { TrendPeriod, TrendPointDto } from "@loomkeep/shared/contracts";
 import { startOfUtcDay } from "../common/date.util";
 
 const DAY_MS = 24 * 60 * 60 * 1000;

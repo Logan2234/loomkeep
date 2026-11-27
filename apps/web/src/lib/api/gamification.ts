@@ -4,7 +4,7 @@ import type {
   LeaderboardPeriod,
   LeaderboardScope,
   OnboardingChecklistDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 import { typedRequest } from "./generated/typed-request";
 
 export function getAchievements() {

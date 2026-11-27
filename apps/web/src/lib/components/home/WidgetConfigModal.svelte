@@ -14,6 +14,7 @@
   import { PHONE_DISPLAY_TYPES } from "#lib/home/phone-layout.js";
   import { HOME_WIDGETS } from "#lib/home/widgets.js";
   import { m } from "#lib/paraglide/messages.js";
+  import { type MediaType } from "@loomkeep/shared/enums";
   import {
     HOME_LAYOUT_LIMITS,
     type HomeWidgetConfigDto,
@@ -23,8 +24,7 @@
     type HomeWidgetType,
     type LeaderboardPeriod,
     type LeaderboardScope,
-    type MediaType,
-  } from "@loomkeep/shared";
+  } from "@loomkeep/shared/contracts";
   import { untrack } from "svelte";
   import DomainsConfig from "./config/DomainsConfig.svelte";
   import ListContentConfig from "./config/ListContentConfig.svelte";

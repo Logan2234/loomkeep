@@ -1,7 +1,7 @@
 import {
   PUSH_LIMITS,
   type SendAdminBroadcastPushRequestDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 import { IsOptional, IsString, MaxLength } from "class-validator";
 
 export class SendAdminBroadcastPushDto implements SendAdminBroadcastPushRequestDto {

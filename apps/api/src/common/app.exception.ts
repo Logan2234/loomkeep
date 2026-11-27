@@ -1,4 +1,4 @@
-import type { ErrorCode } from "@loomkeep/shared";
+import type { ErrorCode } from "@loomkeep/shared/catalog";
 import { HttpException, HttpStatus } from "@nestjs/common";
 
 /**

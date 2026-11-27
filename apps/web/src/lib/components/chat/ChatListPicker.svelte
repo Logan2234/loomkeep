@@ -10,7 +10,7 @@
   import Icon from "#lib/components/Icon.svelte";
   import ListCoverGrid from "#lib/components/ListCoverGrid.svelte";
   import { m } from "#lib/paraglide/messages.js";
-  import type { MyListDto } from "@loomkeep/shared";
+  import type { MyListDto } from "@loomkeep/shared/contracts";
   import ChatPicker from "./ChatPicker.svelte";
 
   let {

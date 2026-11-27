@@ -12,6 +12,7 @@
   import type { BoxSize } from "#lib/home/sizing.js";
   import { m } from "#lib/paraglide/messages.js";
   import { savedViewHref } from "#lib/saved-views.js";
+  import { type MusicStatus } from "@loomkeep/shared/enums";
   import {
     type HomeWidgetDto,
     type SavedViewDto,
@@ -22,8 +23,7 @@
     type MediaFilterStatus,
     type GameFilterStatus,
     type BookFilterStatus,
-    type MusicStatus,
-  } from "@loomkeep/shared";
+  } from "@loomkeep/shared/contracts";
   import PosterRail from "../PosterRail.svelte";
   import WidgetShell from "../WidgetShell.svelte";
 

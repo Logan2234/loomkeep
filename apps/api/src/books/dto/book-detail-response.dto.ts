@@ -1,5 +1,8 @@
-import type { BookDetailDto, StoredBookDetailDto } from "@loomkeep/shared";
-import { BookSource } from "@loomkeep/shared";
+import type {
+  BookDetailDto,
+  StoredBookDetailDto,
+} from "@loomkeep/shared/contracts";
+import { BookSource } from "@loomkeep/shared/enums";
 import { ApiProperty } from "@nestjs/swagger";
 import { CreatorRefResponseDto } from "../../catalog/dto/creator-ref-response.dto";
 import { RatingResponseDto } from "../../catalog/dto/rating-response.dto";

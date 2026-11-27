@@ -1,4 +1,4 @@
-import type { Domain } from "@loomkeep/shared";
+import type { Domain } from "@loomkeep/shared/enums";
 
 /** The Loomkeep page a catalogue link (TMDB, IMDb, Steam…) points to. */
 export interface ResolvedLinkDto {

@@ -1,11 +1,11 @@
+import type { UpsertReviewDto } from "@loomkeep/shared/contracts";
 import type {
   ReportCategory,
   ReportMotif,
   ReviewTargetType,
   ReviewVisibility,
   ReviewVoteValue,
-  UpsertReviewDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/enums";
 import { typedRequest } from "./generated/typed-request";
 
 export const getMyReviews = () => typedRequest("/reviews/me");

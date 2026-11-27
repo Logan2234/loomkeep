@@ -4,7 +4,7 @@ import type {
   ImportHistoryRunDto,
   ImportSource,
   PagedResult,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 import { LONG_REQUEST_TIMEOUT_MS, request } from "./core";
 import { typedRequest } from "./generated/typed-request";
 

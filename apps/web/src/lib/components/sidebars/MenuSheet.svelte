@@ -28,7 +28,7 @@
   import { m } from "#lib/paraglide/messages.js";
   import { useAdminUpdateAvailable } from "#lib/admin-update.svelte.js";
   import { useReportsPendingCount } from "#lib/reports-pending.svelte.js";
-  import { levelProgress, xpForLevel } from "@loomkeep/shared";
+  import { levelProgress, xpForLevel } from "@loomkeep/shared/rules";
 
   let open = $state(false);
   let pull = $state<number | null>(null);

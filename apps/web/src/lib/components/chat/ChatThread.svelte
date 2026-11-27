@@ -29,7 +29,7 @@
     ConversationDto,
     MessageDto,
     PagedResult,
-  } from "@loomkeep/shared";
+  } from "@loomkeep/shared/contracts";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { tick } from "svelte";
   import { fade, fly } from "svelte/transition";

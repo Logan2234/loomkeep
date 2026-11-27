@@ -1,4 +1,4 @@
-import type { AdminUserLibraryStatsDto } from "@loomkeep/shared";
+import type { AdminUserLibraryStatsDto } from "@loomkeep/shared/contracts";
 
 export class AdminUserLibraryStatsResponseDto implements AdminUserLibraryStatsDto {
   movies!: number;

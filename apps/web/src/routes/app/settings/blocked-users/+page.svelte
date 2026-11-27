@@ -10,7 +10,7 @@
   import CardRowSkeleton from "#lib/components/CardRowSkeleton.svelte";
   import EmptyState from "#lib/components/EmptyState.svelte";
   import { m } from "#lib/paraglide/messages.js";
-  import type { PagedResult, UserSummaryDto } from "@loomkeep/shared";
+  import type { PagedResult, UserSummaryDto } from "@loomkeep/shared/contracts";
   import SettingsSection from "../components/SettingsSection.svelte";
 
   const blockedQuery = createApiInfiniteQuery<

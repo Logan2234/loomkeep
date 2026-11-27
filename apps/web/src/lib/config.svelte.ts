@@ -1,4 +1,5 @@
-import { Domain, type PublicConfigDto } from "@loomkeep/shared";
+import { type PublicConfigDto } from "@loomkeep/shared/contracts";
+import { Domain } from "@loomkeep/shared/enums";
 
 /**
  * Global runtime config (Svelte 5 runes), loaded once at startup from

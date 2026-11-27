@@ -25,7 +25,7 @@
   import ActivityFeedSubscribeModal from "#lib/ee/social/ActivityFeedSubscribeModal.svelte";
   import { m } from "#lib/paraglide/messages.js";
   import type { IconName } from "#lib/types/icon-name.js";
-  import type { ApiKeyDto } from "@loomkeep/shared";
+  import type { ApiKeyDto } from "@loomkeep/shared/contracts";
   import { flashAnchor } from "#lib/flash-anchor.js";
   import SettingsSection from "../components/SettingsSection.svelte";
   import { expiryState, RECIPES, type Recipe } from "./api-key-form";

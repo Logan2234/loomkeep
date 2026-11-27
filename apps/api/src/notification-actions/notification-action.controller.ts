@@ -1,4 +1,4 @@
-import { MESSAGE_TEXT_MAX_LENGTH } from "@loomkeep/shared";
+import { MESSAGE_TEXT_MAX_LENGTH } from "@loomkeep/shared/contracts";
 import { Body, Controller, HttpCode, HttpStatus, Post } from "@nestjs/common";
 import { Throttle } from "@nestjs/throttler";
 import { IsOptional, IsString, MaxLength } from "class-validator";

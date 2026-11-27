@@ -1,5 +1,5 @@
-import type { ImportPlan, ImportPlanItem } from "@loomkeep/shared";
-import { ErrorCode } from "@loomkeep/shared";
+import { ErrorCode } from "@loomkeep/shared/catalog";
+import type { ImportPlan, ImportPlanItem } from "@loomkeep/shared/contracts";
 import { ConfigService } from "@nestjs/config";
 import { vi } from "vitest";
 import { MediaItemService } from "../../../catalog/media-item.service";

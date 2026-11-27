@@ -1,4 +1,4 @@
-import type { StatsDomain, StatsWorkDto } from "@loomkeep/shared";
+import type { StatsDomain, StatsWorkDto } from "@loomkeep/shared/contracts";
 
 export class StatsWorkResponseDto implements StatsWorkDto {
   domain!: StatsDomain;

@@ -32,8 +32,8 @@
   import { readImportFile } from "#lib/import-file.js";
   import { m } from "#lib/paraglide/messages.js";
   import { onRealtimeEvent, socket } from "#lib/realtime/socket.js";
+  import { Domain } from "@loomkeep/shared/enums";
   import {
-    Domain,
     type BookSummaryDto,
     type GameSummaryDto,
     type ImportJobDto,
@@ -42,7 +42,7 @@
     type ImportPlanItem,
     type ImportProgressEvent,
     type MediaSummaryDto,
-  } from "@loomkeep/shared";
+  } from "@loomkeep/shared/contracts";
   import { useQueryClient } from "@tanstack/svelte-query";
   import type { Snippet } from "svelte";
   import { SvelteMap, SvelteSet } from "svelte/reactivity";

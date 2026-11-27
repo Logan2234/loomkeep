@@ -50,14 +50,14 @@
     COMMON_LIBRARY_SORTS,
   } from "#lib/library-view.js";
   import { m } from "#lib/paraglide/messages.js";
+  import { Domain } from "@loomkeep/shared/enums";
   import {
-    Domain,
     isSessionPaused,
     type GameEntryDto,
     type GameSortKey,
     type GameFilterStatus,
     SESSION_FILTER_PAUSED,
-  } from "@loomkeep/shared";
+  } from "@loomkeep/shared/contracts";
 
   const STATUS_OPTIONS = [
     ...labeledOptions(GAME_STATUS_LABELS, GAME_STATUS_ORDER),

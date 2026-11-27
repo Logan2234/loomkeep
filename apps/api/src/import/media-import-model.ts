@@ -5,11 +5,8 @@
  * simpler parse models.
  */
 
-import type {
-  EntryStatus,
-  ImportMatch,
-  MediaOwnershipStatus,
-} from "@loomkeep/shared";
+import type { ImportMatch } from "@loomkeep/shared/contracts";
+import type { EntryStatus, MediaOwnershipStatus } from "@loomkeep/shared/enums";
 
 /** External identifiers a source may expose for a title (any subset). */
 type ExternalIdMap = {

@@ -1,4 +1,4 @@
-import type { WorkSearchResultDto } from "@loomkeep/shared";
+import type { WorkSearchResultDto } from "@loomkeep/shared/contracts";
 import { Controller, Get, Query } from "@nestjs/common";
 import { ApiOkResponse } from "@nestjs/swagger";
 import { Throttle } from "@nestjs/throttler";

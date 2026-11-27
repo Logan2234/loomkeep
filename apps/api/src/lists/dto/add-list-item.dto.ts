@@ -1,4 +1,4 @@
-import type { ListItemTargetType } from "@loomkeep/shared";
+import type { ListItemTargetType } from "@loomkeep/shared/contracts";
 import { IsIn, IsString } from "class-validator";
 
 // Work-level only â€” narrower than ReviewTargetType/CommentTargetType, whose

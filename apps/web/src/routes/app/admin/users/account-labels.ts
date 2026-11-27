@@ -5,7 +5,7 @@ import {
   ProfileAccess,
   PushPlatform,
   ReviewVisibility,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/enums";
 
 export const CADENCE_LABELS: Record<DigestCadence, () => string> = {
   [DigestCadence.DISABLED]: () => m.settings_communications_cadence_disabled(),

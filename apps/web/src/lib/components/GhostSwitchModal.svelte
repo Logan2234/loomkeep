@@ -1,6 +1,6 @@
 <script lang="ts">
   import { m } from "#lib/paraglide/messages.js";
-  import type { GhostSwitchImpactDto } from "@loomkeep/shared";
+  import type { GhostSwitchImpactDto } from "@loomkeep/shared/contracts";
   import Modal from "./Modal.svelte";
 
   // Becoming a Figurant applies at once (followers removed, lists made

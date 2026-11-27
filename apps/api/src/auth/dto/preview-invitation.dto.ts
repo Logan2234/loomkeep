@@ -1,4 +1,4 @@
-import type { InvitationPreviewRequestDto } from "@loomkeep/shared";
+import type { InvitationPreviewRequestDto } from "@loomkeep/shared/contracts";
 import { IsString, MaxLength } from "class-validator";
 
 export class PreviewInvitationDto implements InvitationPreviewRequestDto {

@@ -1,4 +1,4 @@
-import type { RatingDto } from "@loomkeep/shared";
+import type { RatingDto } from "@loomkeep/shared/contracts";
 import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { HTTP_TIMEOUT_MS } from "../common/http.util";

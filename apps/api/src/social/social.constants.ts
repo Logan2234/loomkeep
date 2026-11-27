@@ -1,4 +1,4 @@
-import { Domain, VisibilityFacet } from "@loomkeep/shared";
+import { Domain, VisibilityFacet } from "@loomkeep/shared/enums";
 
 /**
  * Content domains that actually back a library (and thus a visibility matrix).

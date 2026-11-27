@@ -1,5 +1,5 @@
 import { m } from "#lib/paraglide/messages.js";
-import { AcquisitionSource } from "@loomkeep/shared";
+import { AcquisitionSource } from "@loomkeep/shared/enums";
 
 const SHUFFLED = Object.values(AcquisitionSource).filter(
   (source) => source !== AcquisitionSource.OTHER,

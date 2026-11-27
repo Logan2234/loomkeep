@@ -1,4 +1,4 @@
-import { SecurityEventType } from "@loomkeep/shared";
+import { SecurityEventType } from "@loomkeep/shared/enums";
 import { vi, type Mock } from "vitest";
 import type { PrismaService } from "../prisma/prisma.service";
 import { AdminSystemStatsService } from "./admin-system-stats.service";

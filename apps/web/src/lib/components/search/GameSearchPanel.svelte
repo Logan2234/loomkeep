@@ -17,7 +17,7 @@
   import { IGDB_API } from "#lib/constants/external-links.js";
   import { debounce, SEARCH_DEBOUNCE_MS } from "#lib/debounce.js";
   import { m } from "#lib/paraglide/messages.js";
-  import type { GameSummaryDto } from "@loomkeep/shared";
+  import type { GameSummaryDto } from "@loomkeep/shared/contracts";
   import { SvelteMap } from "svelte/reactivity";
 
   // The search query is owned by the page and shared across domain panels.

@@ -12,7 +12,7 @@ import {
   type ActionPerformed,
   PushNotifications,
 } from "@capacitor/push-notifications";
-import { AlertGroup } from "@loomkeep/shared";
+import { AlertGroup } from "@loomkeep/shared/catalog";
 
 /**
  * Whether this build of the Android app can receive push: apps/mobile

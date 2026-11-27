@@ -1,8 +1,8 @@
 import { DOMAINS } from "#lib/constants/domains.js";
 import { m } from "#lib/paraglide/messages.js";
 import type { IconName } from "#lib/types/icon-name.js";
-import type { HomeQuickLinkDto } from "@loomkeep/shared";
-import { Domain } from "@loomkeep/shared";
+import type { HomeQuickLinkDto } from "@loomkeep/shared/contracts";
+import { Domain } from "@loomkeep/shared/enums";
 import type { HomeGate } from "./widgets";
 
 interface AppDestination {

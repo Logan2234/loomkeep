@@ -1,4 +1,4 @@
-import type { UpdateVisibilitySettingsDto } from "@loomkeep/shared";
+import type { UpdateVisibilitySettingsDto } from "@loomkeep/shared/contracts";
 import {
   type Domain,
   Domain as DomainEnum,
@@ -8,7 +8,7 @@ import {
   VisibilityAudience as VisibilityAudienceEnum,
   type VisibilityFacet,
   VisibilityFacet as VisibilityFacetEnum,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/enums";
 import { Type } from "class-transformer";
 import { IsArray, IsIn, IsOptional, ValidateNested } from "class-validator";
 

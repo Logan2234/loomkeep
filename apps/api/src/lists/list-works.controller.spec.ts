@@ -1,4 +1,4 @@
-import { ErrorCode } from "@loomkeep/shared";
+import { ErrorCode } from "@loomkeep/shared/catalog";
 import { vi } from "vitest";
 import type { WorkPageService } from "../links/work-page.service";
 import type { AgeGateService } from "../users/age-gate.service";

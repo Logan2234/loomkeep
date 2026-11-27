@@ -1,4 +1,4 @@
-import type { ReviewTargetType, ReviewVoteValue } from "@loomkeep/shared";
+import type { ReviewTargetType, ReviewVoteValue } from "@loomkeep/shared/enums";
 import type { DataExportReviewVote } from "../../../account/data-export.types";
 
 export class DataExportReviewVoteResponseDto implements DataExportReviewVote {

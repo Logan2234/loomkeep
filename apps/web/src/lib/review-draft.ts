@@ -2,7 +2,7 @@ import {
   LEGACY_STORAGE_KEYS,
   STORAGE_KEYS,
 } from "#lib/constants/storage-keys.js";
-import type { ReviewTargetType } from "@loomkeep/shared";
+import type { ReviewTargetType } from "@loomkeep/shared/enums";
 import { readStorage, removeStorage, writeStorage } from "./local-storage";
 
 // An unsaved review survives an accidental close (backdrop tap, swipe,

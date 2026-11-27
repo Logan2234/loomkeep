@@ -25,7 +25,7 @@
     percentParts,
   } from "#lib/format.js";
   import { m } from "#lib/paraglide/messages.js";
-  import type { ServiceStatusDto } from "@loomkeep/shared";
+  import type { ServiceStatusDto } from "@loomkeep/shared/contracts";
   import { useQueryClient } from "@tanstack/svelte-query";
 
   const queryClient = useQueryClient();

@@ -1,4 +1,4 @@
-import type { MediaSagaDto, SagaMemberDto } from "@loomkeep/shared";
+import type { MediaSagaDto, SagaMemberDto } from "@loomkeep/shared/contracts";
 import { vi } from "vitest";
 import type { PrismaService } from "../prisma/prisma.service";
 import type { AnilistProvider } from "./providers/anilist.provider";

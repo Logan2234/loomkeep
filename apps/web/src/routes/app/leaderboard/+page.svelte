@@ -18,11 +18,11 @@
   import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
   import {
-    levelForXp,
     type LeaderboardEntryDto,
     type LeaderboardPeriod,
     type LeaderboardScope,
-  } from "@loomkeep/shared";
+  } from "@loomkeep/shared/contracts";
+  import { levelForXp } from "@loomkeep/shared/rules";
   import { flip } from "svelte/animate";
   import { fade } from "svelte/transition";
 

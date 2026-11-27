@@ -1,9 +1,8 @@
 import {
   ENTRY_NOTES_MAX_LENGTH,
-  GameSource,
-  GameStatus,
   UpsertGameEntryDto as UpsertGameEntryContract,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import { GameSource, GameStatus } from "@loomkeep/shared/enums";
 import {
   IsBoolean,
   IsIn,

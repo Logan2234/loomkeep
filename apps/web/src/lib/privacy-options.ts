@@ -4,7 +4,7 @@ import {
   ProfileAccess,
   VisibilityAudience,
   VisibilityFacet,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/enums";
 
 export const ACCESS: { id: ProfileAccess; label: string; desc: string }[] = [
   {

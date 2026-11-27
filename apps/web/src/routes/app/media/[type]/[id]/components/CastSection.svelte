@@ -8,7 +8,7 @@
   import Poster from "#lib/components/Poster.svelte";
   import { creatorPeek } from "#lib/creator-peek/peek.svelte.js";
   import { creatorHref } from "#lib/creator-href.js";
-  import type { CastMemberDto } from "@loomkeep/shared";
+  import type { CastMemberDto } from "@loomkeep/shared/contracts";
 
   let { cast, source }: { cast: CastMemberDto[]; source: "anilist" | "tmdb" } =
     $props();

@@ -1,4 +1,4 @@
-import { XpReason } from "@loomkeep/shared";
+import { XpReason } from "@loomkeep/shared/enums";
 import { vi } from "vitest";
 import { AppException } from "../common/app.exception";
 import { stubAchievements, stubXp } from "../test-utils/stubs";

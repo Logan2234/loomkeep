@@ -7,7 +7,10 @@ describe("import progress contract", () => {
     const source = ts.createSourceFile(
       "realtime.ts",
       readFileSync(
-        join(__dirname, "../../../../packages/shared/src/realtime.ts"),
+        join(
+          __dirname,
+          "../../../../packages/shared/src/contracts/realtime.ts",
+        ),
         "utf8",
       ),
       ts.ScriptTarget.Latest,

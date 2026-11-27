@@ -1,4 +1,4 @@
-import type { AdminUpdateStatusDto } from "@loomkeep/shared";
+import type { AdminUpdateStatusDto } from "@loomkeep/shared/contracts";
 
 export class AdminUpdateStatusResponseDto implements AdminUpdateStatusDto {
   enabled!: boolean;

@@ -10,12 +10,12 @@
   import { ACQUISITION_SOURCE_LABELS } from "#lib/constants/acquisition-sources.js";
   import { DELETION_REASON_LABELS } from "#lib/constants/deletion-reasons.js";
   import { m } from "#lib/paraglide/messages.js";
+  import { ProfileAccess } from "@loomkeep/shared/enums";
   import {
     DORMANT_AFTER_DAYS,
-    ProfileAccess,
     type AdminAccountsSectionDto,
     type TrendPeriod,
-  } from "@loomkeep/shared";
+  } from "@loomkeep/shared/contracts";
   import CohortTable from "./CohortTable.svelte";
   import { enabledDomainsLabel } from "./enabled-domains-label";
   import TrendPeriodCard from "./TrendPeriodCard.svelte";

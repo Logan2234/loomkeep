@@ -1,4 +1,4 @@
-import type { LibraryDomainCountsDto } from "@loomkeep/shared";
+import type { LibraryDomainCountsDto } from "@loomkeep/shared/contracts";
 
 export class LibraryDomainCountsResponseDto implements LibraryDomainCountsDto {
   MEDIA?: number;

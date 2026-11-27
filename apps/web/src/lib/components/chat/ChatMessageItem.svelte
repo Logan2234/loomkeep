@@ -18,7 +18,8 @@
   import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
   import { toast } from "#lib/toast.svelte.js";
-  import { type Emote, type MessageDto } from "@loomkeep/shared";
+  import { type Emote } from "@loomkeep/shared/enums";
+  import { type MessageDto } from "@loomkeep/shared/contracts";
   import { fade, scale } from "svelte/transition";
   import ChatForwardModal from "./ChatForwardModal.svelte";
   import ChatMessageText from "./ChatMessageText.svelte";

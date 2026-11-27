@@ -1,4 +1,4 @@
-import { ErrorCode } from "@loomkeep/shared";
+import { ErrorCode } from "@loomkeep/shared/catalog";
 import { vi } from "vitest";
 import { JOB_KEYS } from "../jobs/job-keys";
 import { JOB_SKIPPED } from "../jobs/job-run.service";

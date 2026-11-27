@@ -1,4 +1,4 @@
-import { Locale } from "@loomkeep/shared";
+import { Locale } from "@loomkeep/shared/catalog";
 import { notificationCopy } from "./notification-copy";
 
 describe("notificationCopy", () => {

@@ -2,7 +2,7 @@ import type {
   ApiKeyDto,
   ApiKeyQuotaDto,
   CreatedApiKeyDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 import {
   Body,
   Controller,

@@ -1,4 +1,7 @@
-import type { ListItemTargetType, MessageWorkKind } from "@loomkeep/shared";
+import type {
+  ListItemTargetType,
+  MessageWorkKind,
+} from "@loomkeep/shared/contracts";
 import { Injectable } from "@nestjs/common";
 import { BookItemService } from "../books/book-item.service";
 import { MediaItemService } from "../catalog/media-item.service";

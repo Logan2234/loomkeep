@@ -1,4 +1,4 @@
-import type { ImportAvailabilityDto } from "@loomkeep/shared";
+import type { ImportAvailabilityDto } from "@loomkeep/shared/contracts";
 
 export class ImportAvailabilityResponseDto implements ImportAvailabilityDto {
   tvtime?: boolean;

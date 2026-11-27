@@ -1,16 +1,14 @@
+import { ErrorCode } from "@loomkeep/shared/catalog";
 import {
   CastDetailDto,
-  CatalogSource,
-  Domain,
   EpisodeMediaDto,
-  ErrorCode,
   MediaExtrasDto,
-  MediaType,
   PremiereDto,
   SearchResponseDto,
   SeasonImagesDto,
   WatchProviderCatalogDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import { CatalogSource, Domain, MediaType } from "@loomkeep/shared/enums";
 import {
   Controller,
   Get,

@@ -1,4 +1,4 @@
-import type { WorkSearchHitDto } from "@loomkeep/shared";
+import type { WorkSearchHitDto } from "@loomkeep/shared/contracts";
 import {
   FOLD_FROM,
   FOLD_TO,

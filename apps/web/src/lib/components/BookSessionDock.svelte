@@ -10,7 +10,7 @@
     type FinishSessionTimerDto,
     type UpdateBookSessionDto,
     timerMinutes,
-  } from "@loomkeep/shared";
+  } from "@loomkeep/shared/contracts";
 
   import {
     createBookSession,

@@ -1,13 +1,12 @@
 import { formatHours, formatNumber, hoursParts } from "#lib/format.js";
 import { m } from "#lib/paraglide/messages.js";
 import {
-  Domain,
-  episodesTimeLeft,
   type MediaDetailSeasonDto,
-  type MediaType,
   type PileSummaryDto,
   type StatsDomain,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import { Domain, type MediaType } from "@loomkeep/shared/enums";
+import { episodesTimeLeft } from "@loomkeep/shared/rules";
 
 // "~" marks an estimate: an IGDB average, or a video length that fell back to
 // the per-type default.

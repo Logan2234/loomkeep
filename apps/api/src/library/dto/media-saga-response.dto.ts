@@ -1,11 +1,11 @@
 import type {
-  EntryStatus,
   LibrarySagaDto,
   LibrarySagasDto,
   MediaSagaDto,
   MediaSagaResponseDto as MediaSagaResponse,
   SagaMemberDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import type { EntryStatus } from "@loomkeep/shared/enums";
 import { MediaSummaryResponseDto } from "../../catalog/dto/media-summary-response.dto";
 
 export class SagaMemberResponseDto

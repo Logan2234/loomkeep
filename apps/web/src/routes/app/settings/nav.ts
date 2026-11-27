@@ -8,7 +8,7 @@ import { IMPORTS_DEFINITION } from "#lib/constants/import-sources.js";
 
 import { m } from "#lib/paraglide/messages.js";
 import type { IconName } from "#lib/types/icon-name.js";
-import { Domain } from "@loomkeep/shared";
+import { Domain } from "@loomkeep/shared/enums";
 
 /**
  * Below this many unused recovery codes, running out stops being a detail of

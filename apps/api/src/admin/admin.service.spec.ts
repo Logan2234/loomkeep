@@ -1,4 +1,4 @@
-import type { LicenseStatusDto } from "@loomkeep/shared";
+import type { LicenseStatusDto } from "@loomkeep/shared/contracts";
 import type { ConfigService } from "@nestjs/config";
 import { vi } from "vitest";
 import type { EntitlementService } from "../entitlements/entitlement.service";

@@ -1,4 +1,4 @@
-import { ErrorCode } from "@loomkeep/shared";
+import { ErrorCode } from "@loomkeep/shared/catalog";
 import type { ConfigService } from "@nestjs/config";
 import { type Mock, vi } from "vitest";
 import type { BookItemService } from "../books/book-item.service";

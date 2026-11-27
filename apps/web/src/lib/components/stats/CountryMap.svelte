@@ -2,7 +2,7 @@
   import SegmentedStatusControl from "#lib/components/SegmentedStatusControl.svelte";
   import { formatHours, formatRegion } from "#lib/format.js";
   import { m } from "#lib/paraglide/messages.js";
-  import type { VideoCountryDto } from "@loomkeep/shared";
+  import type { VideoCountryDto } from "@loomkeep/shared/contracts";
   import { onMount } from "svelte";
   import RankBars from "./RankBars.svelte";
   import { countryShade } from "./country-map.js";

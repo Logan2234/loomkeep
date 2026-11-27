@@ -1,4 +1,5 @@
-import { Locale, MediaType } from "@loomkeep/shared";
+import { Locale } from "@loomkeep/shared/catalog";
+import { MediaType } from "@loomkeep/shared/enums";
 import { Type } from "class-transformer";
 import {
   IsIn,

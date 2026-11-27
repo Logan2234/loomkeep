@@ -11,7 +11,7 @@
   import { formatRuntimeTimecode } from "#lib/format.js";
   import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
-  import type { MediaDetailEpisodeDto } from "@loomkeep/shared";
+  import type { MediaDetailEpisodeDto } from "@loomkeep/shared/contracts";
   import { fade } from "svelte/transition";
   import { airDateLabel, scoreLabel, upcomingLabel } from "./episode-format";
   import EpisodeMediaSlider from "./EpisodeMediaSlider.svelte";

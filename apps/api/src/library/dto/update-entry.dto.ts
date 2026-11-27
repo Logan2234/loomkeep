@@ -1,10 +1,9 @@
 import {
   ENTRY_NOTES_MAX_LENGTH,
-  EntryStatus,
   LOAN_PERSON_MAX_LENGTH,
-  MediaOwnershipStatus,
   OWNERSHIP_SOURCE_MAX_LENGTH,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import { EntryStatus, MediaOwnershipStatus } from "@loomkeep/shared/enums";
 import {
   IsBoolean,
   IsDateString,

@@ -1,12 +1,11 @@
 import {
-  BookOwnershipStatus,
-  BookStatus,
   ENTRY_NOTES_MAX_LENGTH,
   LOAN_PERSON_MAX_LENGTH,
   MAX_REFERENCE_PAGE_COUNT,
   OWNERSHIP_SOURCE_MAX_LENGTH,
   UpdateBookEntryDto as UpdateBookEntryContract,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import { BookOwnershipStatus, BookStatus } from "@loomkeep/shared/enums";
 import {
   IsBoolean,
   IsDateString,

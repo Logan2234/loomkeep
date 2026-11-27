@@ -1,5 +1,5 @@
 import { adminFilterHref } from "#lib/url-params.js";
-import { Domain } from "@loomkeep/shared";
+import { Domain } from "@loomkeep/shared/enums";
 import { describe, expect, it } from "vitest";
 import { parseCacheFilters } from "./cache-filters";
 

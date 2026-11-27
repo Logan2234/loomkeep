@@ -11,7 +11,7 @@
   import { downloadBlob, datedFilename } from "#lib/download.js";
   import { m } from "#lib/paraglide/messages.js";
   import { toast } from "#lib/toast.svelte.js";
-  import { Domain } from "@loomkeep/shared";
+  import { Domain } from "@loomkeep/shared/enums";
   import { flashAnchor } from "#lib/flash-anchor.js";
 
   const exportMut = createApiMutation(() => ({

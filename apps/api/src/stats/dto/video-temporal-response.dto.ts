@@ -5,7 +5,7 @@ import type {
   VideoTemporalDto,
   WeekdayCountDto,
   YearMinutesDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 
 class HeatmapDayResponseDto implements HeatmapDayDto {
   date!: string;

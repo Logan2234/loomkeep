@@ -10,8 +10,8 @@ on:
       - apps/docs/**
       - apps/api/src/public-api/**
       - apps/api/src/api-keys/**
-      - packages/shared/src/dto/api-key.ts
-      - packages/shared/src/alerts.ts
+      - packages/shared/src/contracts/api-key.ts
+      - packages/shared/src/catalog/alerts.ts
       - .github/workflows/docs.yml
       - .github/workflows/generate-openapi-artifact.yml
   push:
@@ -20,8 +20,8 @@ on:
       - apps/docs/**
       - apps/api/src/public-api/**
       - apps/api/src/api-keys/**
-      - packages/shared/src/dto/api-key.ts
-      - packages/shared/src/alerts.ts
+      - packages/shared/src/contracts/api-key.ts
+      - packages/shared/src/catalog/alerts.ts
       - .github/workflows/docs.yml
       - .github/workflows/generate-openapi-artifact.yml
   workflow_dispatch:

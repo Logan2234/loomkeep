@@ -1,7 +1,7 @@
 import type {
   AdminFailedLoginTargetDto,
   AdminSecuritySummaryDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 
 class AdminFailedLoginTargetResponseDto implements AdminFailedLoginTargetDto {
   identifier!: string;

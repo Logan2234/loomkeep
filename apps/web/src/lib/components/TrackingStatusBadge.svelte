@@ -18,7 +18,7 @@
     EntryStatus,
     GameStatus,
     MusicStatus,
-  } from "@loomkeep/shared";
+  } from "@loomkeep/shared/enums";
   import Icon from "./Icon.svelte";
 
   let {

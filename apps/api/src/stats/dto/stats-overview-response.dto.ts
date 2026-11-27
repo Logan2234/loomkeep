@@ -2,7 +2,7 @@ import type {
   PossessionBreakdownDto,
   StatsDomain,
   StatsOverviewDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 import { ApiExtraModels, ApiProperty, getSchemaPath } from "@nestjs/swagger";
 import { DecadeBucketResponseDto } from "./decade-bucket-response.dto";
 import { DomainStatusBreakdownResponseDto } from "./domain-status-breakdown-response.dto";

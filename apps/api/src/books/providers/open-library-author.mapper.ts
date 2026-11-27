@@ -2,13 +2,13 @@ import type {
   CreatorSeriesRefDto,
   CreatorWorkDto,
   PersonPageDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 import {
   CreatorCreditKind,
   CreatorGroupKey,
   CreatorSource,
-  Domain,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import { Domain } from "@loomkeep/shared/enums";
 import { coverUrl, description } from "./open-library.format";
 
 /** `/authors/{id}.json`, the fields an author page reads. */

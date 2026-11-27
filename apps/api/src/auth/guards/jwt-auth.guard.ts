@@ -1,4 +1,5 @@
-import { API_KEY_PREFIX, ErrorCode, readScope } from "@loomkeep/shared";
+import { ErrorCode } from "@loomkeep/shared/catalog";
+import { API_KEY_PREFIX, readScope } from "@loomkeep/shared/contracts";
 import {
   CanActivate,
   ExecutionContext,

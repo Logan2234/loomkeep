@@ -1,8 +1,5 @@
-import type {
-  CatalogSource,
-  MediaSummaryDto,
-  MediaType,
-} from "@loomkeep/shared";
+import type { MediaSummaryDto } from "@loomkeep/shared/contracts";
+import type { CatalogSource, MediaType } from "@loomkeep/shared/enums";
 
 export class MediaSummaryResponseDto implements MediaSummaryDto {
   source!: CatalogSource;

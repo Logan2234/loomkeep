@@ -4,7 +4,10 @@
   import Modal from "#lib/components/Modal.svelte";
   import { m } from "#lib/paraglide/messages.js";
   import { createWatchProviderToggle } from "#lib/watch-provider-toggle.svelte.js";
-  import type { WatchProviderDto, WatchProvidersDto } from "@loomkeep/shared";
+  import type {
+    WatchProviderDto,
+    WatchProvidersDto,
+  } from "@loomkeep/shared/contracts";
 
   let { offers }: { offers: WatchProvidersDto } = $props();
 

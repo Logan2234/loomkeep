@@ -5,7 +5,7 @@
   import Poster from "#lib/components/Poster.svelte";
   import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
-  import type { MessageReviewDto } from "@loomkeep/shared";
+  import type { MessageReviewDto } from "@loomkeep/shared/contracts";
   import { fade } from "svelte/transition";
 
   let { review, mine }: { review: MessageReviewDto; mine: boolean } = $props();

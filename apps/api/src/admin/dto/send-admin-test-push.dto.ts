@@ -1,9 +1,8 @@
+import { type AlertKey, PUSH_SAMPLE_KEYS } from "@loomkeep/shared/catalog";
 import {
-  type AlertKey,
   PUSH_LIMITS,
-  PUSH_SAMPLE_KEYS,
   type SendAdminTestPushRequestDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 import {
   IsBoolean,
   IsEmail,

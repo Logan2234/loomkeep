@@ -1,4 +1,4 @@
-import type { Domain } from "@loomkeep/shared";
+import type { Domain } from "@loomkeep/shared/enums";
 import { typedRequest } from "./generated/typed-request";
 
 /** `domain` narrows the feed to one of the viewer's enabled domains. */

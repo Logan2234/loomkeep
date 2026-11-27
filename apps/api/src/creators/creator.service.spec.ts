@@ -1,5 +1,7 @@
-import type { CreatorWorkDto, PersonPageDto } from "@loomkeep/shared";
-import { CreatorCreditKind, ErrorCode, MediaType } from "@loomkeep/shared";
+import { ErrorCode } from "@loomkeep/shared/catalog";
+import type { CreatorWorkDto, PersonPageDto } from "@loomkeep/shared/contracts";
+import { CreatorCreditKind } from "@loomkeep/shared/contracts";
+import { MediaType } from "@loomkeep/shared/enums";
 import { vi } from "vitest";
 import type { BookSagaService } from "../books/book-saga.service";
 import type { OpenLibraryProvider } from "../books/providers/open-library.provider";

@@ -1,4 +1,4 @@
-import { GHOST_AFTER_DAYS } from "@loomkeep/shared";
+import { GHOST_AFTER_DAYS } from "@loomkeep/shared/contracts";
 import {
   classifyStaleness,
   computeTypeSplit,

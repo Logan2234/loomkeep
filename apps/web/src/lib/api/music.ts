@@ -3,13 +3,15 @@ import {
   type BulkEntriesTargetDto,
   type BulkUpdateEntriesDto,
   type LoanFilter,
-  type MusicOwnershipStatus,
   type MusicSortKey,
-  type MusicStatus,
   type SortOrder,
   type UpdateMusicEntryDto,
   type UpsertMusicEntryDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import {
+  type MusicOwnershipStatus,
+  type MusicStatus,
+} from "@loomkeep/shared/enums";
 import { pageParam } from "./query-params";
 
 import { typedRequest } from "./generated/typed-request";

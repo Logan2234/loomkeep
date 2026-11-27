@@ -5,7 +5,7 @@ import {
   type PagedResult,
   type PushDeviceCountDto,
   type PushPublicKeyDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 import {
   Body,
   Controller,

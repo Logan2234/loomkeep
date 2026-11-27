@@ -3,12 +3,7 @@
 // built on (@loomkeep/shared's alerts.ts), so this page can't drift from
 // what Loomkeep actually sends. A new alert fails the build until it gets a
 // label here.
-import {
-  ALERTS,
-  type AlertDefinition,
-  type AlertGroup,
-  type AlertRule,
-} from "@loomkeep/shared";
+import { ALERTS, type AlertDefinition, type AlertGroup, type AlertRule } from "@loomkeep/shared/catalog";
 
 interface Props {
   group: AlertGroup;

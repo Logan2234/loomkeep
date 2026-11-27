@@ -8,7 +8,7 @@
     POLL_OPTION_MAX_LENGTH,
     POLL_OPTIONS_MAX,
     type MessageWorkDto,
-  } from "@loomkeep/shared";
+  } from "@loomkeep/shared/contracts";
   import { tick } from "svelte";
   import { scale } from "svelte/transition";
   import ChatWorkPicker from "./ChatWorkPicker.svelte";

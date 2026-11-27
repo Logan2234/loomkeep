@@ -1,4 +1,5 @@
-import { FeatureFlag, type LicenseStatusDto } from "@loomkeep/shared";
+import { FeatureFlag } from "@loomkeep/shared/catalog";
+import { type LicenseStatusDto } from "@loomkeep/shared/contracts";
 import { Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { EntitlementService } from "../../entitlements/entitlement.service";

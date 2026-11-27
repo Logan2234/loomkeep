@@ -1,4 +1,4 @@
-import type { Plan } from "@loomkeep/shared";
+import type { Plan } from "@loomkeep/shared/enums";
 import type { DataExportEntitlement } from "../../../account/data-export.types";
 
 export class DataExportEntitlementResponseDto implements DataExportEntitlement {

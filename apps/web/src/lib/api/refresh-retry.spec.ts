@@ -1,5 +1,5 @@
-import type { UserDto } from "@loomkeep/shared";
-import { ErrorCode } from "@loomkeep/shared";
+import { ErrorCode } from "@loomkeep/shared/catalog";
+import type { UserDto } from "@loomkeep/shared/contracts";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { auth } from "../auth.svelte";
 import { request, tryRefresh } from "./core";

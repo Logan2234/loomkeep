@@ -1,4 +1,7 @@
-import type { AchievementDto, PendingAchievementDto } from "@loomkeep/shared";
+import type {
+  AchievementDto,
+  PendingAchievementDto,
+} from "@loomkeep/shared/contracts";
 import {
   Controller,
   Delete,

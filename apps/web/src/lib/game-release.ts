@@ -1,6 +1,6 @@
 import { formatDate, MONTH_YEAR_OPTIONS } from "#lib/format.js";
 import { m } from "#lib/paraglide/messages.js";
-import type { ReleaseDatePrecision } from "@loomkeep/shared";
+import type { ReleaseDatePrecision } from "@loomkeep/shared/enums";
 
 /**
  * "Sortie prévue le 19/11/2026", "… en mars 2027", "… au T4 2027", "… en

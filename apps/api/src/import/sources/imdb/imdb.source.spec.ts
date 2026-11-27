@@ -1,4 +1,4 @@
-import type { MediaSummaryDto } from "@loomkeep/shared";
+import type { MediaSummaryDto } from "@loomkeep/shared/contracts";
 import { vi } from "vitest";
 import type { MediaItemService } from "../../../catalog/media-item.service";
 import type { TmdbProvider } from "../../../catalog/providers/tmdb.provider";

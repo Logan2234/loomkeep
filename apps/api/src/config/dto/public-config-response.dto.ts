@@ -1,4 +1,5 @@
-import { Domain, type PublicConfigDto } from "@loomkeep/shared";
+import { type PublicConfigDto } from "@loomkeep/shared/contracts";
+import { Domain } from "@loomkeep/shared/enums";
 import { ApiProperty } from "@nestjs/swagger";
 
 export class PublicConfigResponseDto implements PublicConfigDto {

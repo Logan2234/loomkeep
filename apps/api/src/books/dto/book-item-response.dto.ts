@@ -1,5 +1,5 @@
-import type { BookItemDto } from "@loomkeep/shared";
-import { BookSource } from "@loomkeep/shared";
+import type { BookItemDto } from "@loomkeep/shared/contracts";
+import { BookSource } from "@loomkeep/shared/enums";
 import { ApiProperty } from "@nestjs/swagger";
 
 export class BookItemResponseDto implements BookItemDto {

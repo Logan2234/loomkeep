@@ -1,7 +1,7 @@
 import type {
   AdminImportSourceStatDto,
   AdminImportSummaryDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 
 /** How many sources the summary's per-source breakdown carries. */
 const TOP_SOURCES_LIMIT = 6;

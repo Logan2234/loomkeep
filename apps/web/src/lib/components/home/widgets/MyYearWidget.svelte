@@ -8,7 +8,8 @@
   import { formatHours, formatNumber } from "#lib/format.js";
   import { HOME_WIDGETS } from "#lib/home/widgets.js";
   import { m } from "#lib/paraglide/messages.js";
-  import { Domain, type MyYearDto } from "@loomkeep/shared";
+  import { Domain } from "@loomkeep/shared/enums";
+  import { type MyYearDto } from "@loomkeep/shared/contracts";
   import WidgetShell from "../WidgetShell.svelte";
 
   const def = HOME_WIDGETS.myYear;

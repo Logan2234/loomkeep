@@ -1,10 +1,9 @@
 import {
-  BookSource,
-  BookStatus,
   ENTRY_NOTES_MAX_LENGTH,
   MAX_REFERENCE_PAGE_COUNT,
   UpsertBookEntryDto as UpsertBookEntryContract,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import { BookSource, BookStatus } from "@loomkeep/shared/enums";
 import {
   IsBoolean,
   IsIn,

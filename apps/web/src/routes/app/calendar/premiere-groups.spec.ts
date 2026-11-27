@@ -1,4 +1,4 @@
-import type { PremiereDto } from "@loomkeep/shared";
+import type { PremiereDto } from "@loomkeep/shared/contracts";
 import { describe, expect, it } from "vitest";
 import { groupPremieres, pickHeadliner } from "./premiere-groups";
 

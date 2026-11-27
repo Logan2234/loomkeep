@@ -1,4 +1,5 @@
 import { normalizeAdminBackupInventory } from "#lib/admin-backup-inventory.js";
+import type { Locale } from "@loomkeep/shared/catalog";
 import type {
   AdminBackupRestoreRequestDto,
   AdminCacheSort,
@@ -8,23 +9,24 @@ import type {
   AdminUserOptionDto,
   AdminUserSort,
   CreateAdminInvitationRequestDto,
-  Domain,
-  Locale,
   MailTemplatePreviewDto,
   PagedResult,
-  Plan,
-  Role,
-  SecurityEventType,
   SendAdminBroadcastPushRequestDto,
   SendAdminTestPushRequestDto,
   SendTestEmailRequestDto,
   TrendPeriod,
   UpdateInstanceSettingsDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 import {
   type ModerationReasonRequestDto,
   type ReportResolution,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import type {
+  Domain,
+  Plan,
+  Role,
+  SecurityEventType,
+} from "@loomkeep/shared/enums";
 import { LONG_REQUEST_TIMEOUT_MS, request } from "./core";
 import { typedRequest } from "./generated/typed-request";
 import { limitParam, pageParam } from "./query-params";

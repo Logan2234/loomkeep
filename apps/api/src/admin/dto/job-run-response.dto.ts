@@ -1,4 +1,4 @@
-import type { JobRunDto, JobStatus } from "@loomkeep/shared";
+import type { JobRunDto, JobStatus } from "@loomkeep/shared/contracts";
 
 export class JobRunResponseDto implements JobRunDto {
   id!: string;

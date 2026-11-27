@@ -1,4 +1,5 @@
-import type { CommentDto, CommentTargetType, Emote } from "@loomkeep/shared";
+import type { CommentDto } from "@loomkeep/shared/contracts";
+import type { CommentTargetType, Emote } from "@loomkeep/shared/enums";
 import { UserSummaryResponseDto } from "../../common/dto/user-summary-response.dto";
 import { CommentMentionResponseDto } from "./comment-mention-response.dto";
 import { CommentReactionSummaryResponseDto } from "./comment-reaction-summary-response.dto";

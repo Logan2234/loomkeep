@@ -1,4 +1,4 @@
-import { DEFAULT_INSTANCE_SETTINGS } from "@loomkeep/shared";
+import { DEFAULT_INSTANCE_SETTINGS } from "@loomkeep/shared/contracts";
 import type { ConfigService } from "@nestjs/config";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";

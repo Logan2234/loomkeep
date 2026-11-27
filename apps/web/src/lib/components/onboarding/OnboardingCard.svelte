@@ -8,7 +8,7 @@
   import Icon from "#lib/components/Icon.svelte";
   import { useOnboardingChecklist } from "#lib/gamification/onboarding-checklist.svelte.js";
   import { m } from "#lib/paraglide/messages.js";
-  import type { OnboardingStepKey } from "@loomkeep/shared";
+  import type { OnboardingStepKey } from "@loomkeep/shared/contracts";
   import { deriveStepViews } from "./onboarding-checklist";
   import OnboardingChecklistRows from "./OnboardingChecklistRows.svelte";
 

@@ -2,7 +2,7 @@ import { auth } from "#lib/auth.svelte.js";
 import { m } from "#lib/paraglide/messages.js";
 import { apiUrl, server } from "#lib/test/msw.js";
 import { renderWithQuery } from "#lib/test/render.js";
-import type { CalendarEntryDto, UserDto } from "@loomkeep/shared";
+import type { CalendarEntryDto, UserDto } from "@loomkeep/shared/contracts";
 import { screen } from "@testing-library/svelte";
 import { http, HttpResponse } from "msw";
 import { afterEach, beforeEach, expect, it } from "vitest";

@@ -1,4 +1,4 @@
-import type { MyListDto } from "@loomkeep/shared";
+import type { MyListDto } from "@loomkeep/shared/contracts";
 import { describe, expect, it } from "vitest";
 import { listComparator } from "./list-sort";
 const older = {

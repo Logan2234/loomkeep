@@ -1,7 +1,7 @@
 import type {
   AdminPushSendOutcomeDto,
   AdminPushSendResponseDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 
 class AdminPushSendOutcomeResponseDto implements AdminPushSendOutcomeDto {
   userAgent!: string | null;

@@ -1,4 +1,4 @@
-import type { AddListWorkRequestDto } from "@loomkeep/shared";
+import type { AddListWorkRequestDto } from "@loomkeep/shared/contracts";
 import { IsString, Matches } from "class-validator";
 
 export class AddListWorkBody implements AddListWorkRequestDto {

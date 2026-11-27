@@ -1,8 +1,8 @@
+import { ErrorCode } from "@loomkeep/shared/catalog";
 import {
-  ErrorCode,
   type MailTemplatePreviewDto,
   type NewsletterSendDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 import { HttpStatus, Injectable, Logger } from "@nestjs/common";
 import type { NewsletterSend } from "@prisma/client";
 import { AppException } from "../common/app.exception";

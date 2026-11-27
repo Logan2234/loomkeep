@@ -3,11 +3,11 @@ import { apiUrl, server } from "#lib/test/msw.js";
 import { renderWithQuery } from "#lib/test/render.js";
 import { localDayKey } from "#lib/xp-history.js";
 import {
-  xpForLevel,
   type PagedResult,
   type XpHistoryDayDto,
   type XpHistoryItemDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import { xpForLevel } from "@loomkeep/shared/rules";
 import { screen } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";

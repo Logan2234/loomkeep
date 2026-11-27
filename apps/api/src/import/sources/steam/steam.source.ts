@@ -1,3 +1,4 @@
+import { ErrorCode } from "@loomkeep/shared/catalog";
 import type {
   ImportMatch,
   ImportPlan,
@@ -5,8 +6,8 @@ import type {
   ImportPlanItem,
   ImportReport,
   ImportReportTile,
-} from "@loomkeep/shared";
-import { Domain, ErrorCode, GameSource, GameStatus } from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import { Domain, GameSource, GameStatus } from "@loomkeep/shared/enums";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { AppException } from "../../../common/app.exception";

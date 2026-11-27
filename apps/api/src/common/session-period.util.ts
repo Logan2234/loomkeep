@@ -1,4 +1,4 @@
-import type { SessionWeekDayDto } from "@loomkeep/shared";
+import type { SessionWeekDayDto } from "@loomkeep/shared/contracts";
 import { utcDateKey } from "./date.util";
 import { localDayOrUtc } from "./local-day.util";
 

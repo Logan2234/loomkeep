@@ -49,17 +49,16 @@
     COMMON_LIBRARY_SORTS,
   } from "#lib/library-view.js";
   import { m } from "#lib/paraglide/messages.js";
+  import { type MediaType, Domain } from "@loomkeep/shared/enums";
   import {
     type LibraryEntryDto,
-    type MediaType,
-    Domain,
     isDormant,
     isGhost,
     MEDIA_BULK_STATUSES,
     progressPercent,
     type MediaSortKey,
     type MediaFilterStatus,
-  } from "@loomkeep/shared";
+  } from "@loomkeep/shared/contracts";
 
   const STATUS_OPTIONS = MEDIA_STATUS_ORDER.map((value) => ({
     value,

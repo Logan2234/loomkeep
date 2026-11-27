@@ -10,7 +10,7 @@
     CASCADE_STEP_MS,
   } from "#lib/notifications/actions.svelte.js";
   import { m } from "#lib/paraglide/messages.js";
-  import type { NotificationDto } from "@loomkeep/shared";
+  import type { NotificationDto } from "@loomkeep/shared/contracts";
   import Avatar from "../Avatar.svelte";
   import DomainOffMark from "../DomainOffMark.svelte";
   import Dropdown from "../Dropdown.svelte";

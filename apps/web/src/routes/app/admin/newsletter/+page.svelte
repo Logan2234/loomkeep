@@ -21,7 +21,7 @@
   import AdminQueryError from "../AdminQueryError.svelte";
   import { filterNewsletterSends } from "./newsletter-filters";
   import NewsletterPreviewModal from "./NewsletterPreviewModal.svelte";
-  import type { NewsletterSendDto } from "@loomkeep/shared";
+  import type { NewsletterSendDto } from "@loomkeep/shared/contracts";
 
   let previewed = $state<NewsletterSendDto | null>(null);
 

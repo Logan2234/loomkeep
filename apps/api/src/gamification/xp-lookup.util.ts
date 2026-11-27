@@ -1,4 +1,4 @@
-import type { UserSummaryDto } from "@loomkeep/shared";
+import type { UserSummaryDto } from "@loomkeep/shared/contracts";
 import type { PrismaService } from "../prisma/prisma.service";
 
 /**

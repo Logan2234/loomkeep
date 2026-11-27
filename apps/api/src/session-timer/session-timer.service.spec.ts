@@ -1,4 +1,5 @@
-import { Domain, ErrorCode } from "@loomkeep/shared";
+import { ErrorCode } from "@loomkeep/shared/catalog";
+import { Domain } from "@loomkeep/shared/enums";
 import { SessionSource, type SessionTimer } from "@prisma/client";
 import { vi } from "vitest";
 import type { BookSessionService } from "../books/book-session.service";

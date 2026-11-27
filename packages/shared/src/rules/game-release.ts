@@ -1,4 +1,4 @@
-import type { ReleaseDatePrecision } from "./enums";
+import type { ReleaseDatePrecision } from "../enums";
 
 /**
  * Not out yet: announced without a date, or its period hasn't begun. A game

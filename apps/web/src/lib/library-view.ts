@@ -7,9 +7,9 @@ import type {
   BulkEntriesResultDto,
   BulkEntriesTargetDto,
   BulkUpdateEntriesDto,
-  ReviewTargetType,
   SavedViewDomain,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import type { ReviewTargetType } from "@loomkeep/shared/enums";
 import { joinMeta } from "./format";
 import { readStorage, removeStorage, writeStorage } from "./local-storage";
 

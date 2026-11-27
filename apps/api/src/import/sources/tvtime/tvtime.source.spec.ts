@@ -1,10 +1,10 @@
+import { ErrorCode } from "@loomkeep/shared/catalog";
 import type {
   ImportAnalyzeRequest,
   ImportCommitRequest,
   ImportPlan,
   ImportPlanItem,
-} from "@loomkeep/shared";
-import { ErrorCode } from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 import { vi } from "vitest";
 import { makeZip } from "../../../../test/make-zip";
 import { ImportJobService } from "../../import-job.service";

@@ -9,7 +9,7 @@
   } from "#lib/constants/report-labels.js";
   import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
-  import type { ModerationMeasure } from "@loomkeep/shared";
+  import type { ModerationMeasure } from "@loomkeep/shared/enums";
   import { cubicOut } from "svelte/easing";
   import { fly } from "svelte/transition";
 

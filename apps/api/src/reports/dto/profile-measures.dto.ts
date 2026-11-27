@@ -1,4 +1,4 @@
-import { USER_LIMITS } from "@loomkeep/shared";
+import { USER_LIMITS } from "@loomkeep/shared/contracts";
 import {
   IsBoolean,
   IsDateString,

@@ -8,7 +8,7 @@
   import { HOME_WIDGETS } from "#lib/home/widgets.js";
   import type { BoxSize } from "#lib/home/sizing.js";
   import { m } from "#lib/paraglide/messages.js";
-  import type { OnThisDayEntryDto } from "@loomkeep/shared";
+  import type { OnThisDayEntryDto } from "@loomkeep/shared/contracts";
   import PosterRail from "../PosterRail.svelte";
   import WidgetShell from "../WidgetShell.svelte";
 

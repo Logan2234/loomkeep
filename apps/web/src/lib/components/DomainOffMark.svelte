@@ -4,7 +4,7 @@
   import { DOMAINS } from "#lib/constants/domains.js";
   import { domainOffReason } from "#lib/domain-availability.js";
   import { m } from "#lib/paraglide/messages.js";
-  import type { Domain } from "@loomkeep/shared";
+  import type { Domain } from "@loomkeep/shared/enums";
 
   // The warning shown in place of a link to a work whose domain the viewer
   // can't open (see `isDomainEnabled`): chat cards, lists, reviews.

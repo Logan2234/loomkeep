@@ -1,5 +1,5 @@
-import type { StatsDomain } from "@loomkeep/shared";
-import { STATS_DOMAINS, StatsStatusBucket } from "@loomkeep/shared";
+import type { StatsDomain } from "@loomkeep/shared/contracts";
+import { STATS_DOMAINS, StatsStatusBucket } from "@loomkeep/shared/contracts";
 import { Injectable } from "@nestjs/common";
 import { BookLibraryService } from "../../books/book-library.service";
 import { StatsService } from "../../stats/stats.service";

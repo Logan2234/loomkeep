@@ -1,7 +1,7 @@
 import type {
   AdminReportsSummaryDto,
   AdminTopReporterDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 
 class AdminTopReporterResponseDto implements AdminTopReporterDto {
   username!: string;

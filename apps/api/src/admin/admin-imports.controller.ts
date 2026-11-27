@@ -1,3 +1,4 @@
+import { ErrorCode } from "@loomkeep/shared/catalog";
 import type {
   AdminImportDetailDto,
   AdminImportDetails,
@@ -6,8 +7,7 @@ import type {
   AdminImportSummaryDto,
   ImportReportTile,
   PagedResult,
-} from "@loomkeep/shared";
-import { ErrorCode } from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 import { Controller, Get, HttpStatus, Param, Query } from "@nestjs/common";
 import { ApiOkResponse } from "@nestjs/swagger";
 import type { Prisma, RunStatus } from "@prisma/client";

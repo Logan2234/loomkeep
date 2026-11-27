@@ -1,4 +1,5 @@
-import { Domain, type MediaSummaryDto } from "@loomkeep/shared";
+import { type MediaSummaryDto } from "@loomkeep/shared/contracts";
+import { Domain } from "@loomkeep/shared/enums";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { OpenLibraryProvider } from "../books/providers/open-library.provider";

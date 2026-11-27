@@ -1,8 +1,5 @@
-import {
-  Locale,
-  type Locale as LocaleCode,
-  type SendTestEmailRequestDto,
-} from "@loomkeep/shared";
+import { Locale, type Locale as LocaleCode } from "@loomkeep/shared/catalog";
+import { type SendTestEmailRequestDto } from "@loomkeep/shared/contracts";
 import { IsEmail, IsIn, IsObject, IsOptional } from "class-validator";
 
 export class SendTestEmailDto implements SendTestEmailRequestDto {

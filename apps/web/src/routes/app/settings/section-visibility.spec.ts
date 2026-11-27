@@ -1,5 +1,5 @@
 import { auth } from "#lib/auth.svelte.js";
-import type { UserDto } from "@loomkeep/shared";
+import type { UserDto } from "@loomkeep/shared/contracts";
 import { afterEach, describe, expect, it } from "vitest";
 import { SETTINGS_SECTIONS } from "./nav";
 import { isSectionVisible } from "./section-visibility";

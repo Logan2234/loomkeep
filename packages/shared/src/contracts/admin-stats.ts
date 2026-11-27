@@ -1,4 +1,4 @@
-import type { Locale } from "../locale";
+import type { Locale } from "../catalog/locale";
 // Sections have separate endpoints, refresh cadences, and failure modes.
 
 import type {

@@ -12,17 +12,19 @@ import type {
   SeasonImagesDto,
   StudioPageDto,
   WatchProviderDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 import {
-  CatalogSource,
   CreatorCreditKind,
   CreatorGroupKey,
   CreatorSource,
+  StudioKind,
+} from "@loomkeep/shared/contracts";
+import {
+  CatalogSource,
   Domain,
   MediaSource,
   MediaType,
-  StudioKind,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/enums";
 import type {
   ProviderExternalId,
   ProviderMediaDetails,

@@ -1,4 +1,4 @@
-import type { CreatorWorkDto } from "@loomkeep/shared";
+import type { CreatorWorkDto } from "@loomkeep/shared/contracts";
 import { describe, expect, it } from "vitest";
 import {
   bySeries,

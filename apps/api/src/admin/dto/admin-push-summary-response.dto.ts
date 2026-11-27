@@ -1,7 +1,7 @@
 import type {
   AdminPushSummaryDto,
   AdminPushUserAgentStatDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 
 class AdminPushUserAgentStatResponseDto implements AdminPushUserAgentStatDto {
   label!: string;

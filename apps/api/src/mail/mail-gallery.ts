@@ -1,4 +1,7 @@
-import { ModerationLegalBasis, ModerationMeasure } from "@loomkeep/shared";
+import {
+  ModerationLegalBasis,
+  ModerationMeasure,
+} from "@loomkeep/shared/enums";
 import type { MailLayout } from "./mail-layout";
 import { SECURITY_ALERT_EVENTS } from "./mail.i18n";
 import type { GalleryTemplate, PausedReminderItem } from "./mail.types";

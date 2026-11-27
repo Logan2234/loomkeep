@@ -1,9 +1,9 @@
+import { type ErrorCode } from "@loomkeep/shared/catalog";
 import {
-  type ErrorCode,
   type ImportJobDto,
   type ImportJobStatus,
   IMPORT_JOB_STATUSES,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 import { ApiProperty } from "@nestjs/swagger";
 import { ImportPlanResponseDto } from "./import-plan-response.dto";
 import { ImportReportResponseDto } from "./import-report-response.dto";

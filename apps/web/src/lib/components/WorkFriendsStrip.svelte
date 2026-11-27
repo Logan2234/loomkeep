@@ -23,7 +23,7 @@
     ListItemTargetType,
     WorkFriendDto,
     WorkProgressDto,
-  } from "@loomkeep/shared";
+  } from "@loomkeep/shared/contracts";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { fade, slide } from "svelte/transition";
 

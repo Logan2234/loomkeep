@@ -2,7 +2,7 @@ import type {
   MusicOwnershipStatus,
   MusicSource,
   MusicStatus,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/enums";
 import type { DataExportMusicEntry } from "../../../account/data-export.types";
 
 class DataExportMusicExternalIdResponseDto {

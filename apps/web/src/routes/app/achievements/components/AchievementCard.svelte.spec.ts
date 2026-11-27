@@ -1,5 +1,5 @@
 import { renderWithQuery } from "#lib/test/render.js";
-import type { AchievementDto } from "@loomkeep/shared";
+import type { AchievementDto } from "@loomkeep/shared/contracts";
 import { tick } from "svelte";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { AchievementGroup } from "../achievements";

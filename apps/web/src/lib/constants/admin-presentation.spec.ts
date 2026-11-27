@@ -1,6 +1,6 @@
 import { m } from "#lib/paraglide/messages.js";
 import { getLocale, overwriteGetLocale } from "#lib/paraglide/runtime.js";
-import type { ServiceArea, ServiceStatusDto } from "@loomkeep/shared";
+import type { ServiceArea, ServiceStatusDto } from "@loomkeep/shared/contracts";
 import { afterEach, describe, expect, it } from "vitest";
 import {
   adminJobButtonState,

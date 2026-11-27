@@ -1,4 +1,5 @@
-import type { AlertPrefs } from "../alerts";
+import type { AlertPrefs } from "../catalog/alerts";
+import type { Locale } from "../catalog/locale";
 import {
   AcquisitionSource,
   DigestCadence,
@@ -9,7 +10,6 @@ import {
   Role,
   SpoilerSensitivity,
 } from "../enums";
-import type { Locale } from "../locale";
 import type { HomeLayoutDto, HomePhoneLayoutDto } from "./home-layout";
 import type { ListenService } from "./music";
 

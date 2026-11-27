@@ -43,7 +43,10 @@
   import { profileUsernameFromQr } from "#lib/scan-codes.js";
   import { toast } from "#lib/toast.svelte.js";
   import { goto } from "$app/navigation";
-  import type { RelationshipDto, SocialProfileDto } from "@loomkeep/shared";
+  import type {
+    RelationshipDto,
+    SocialProfileDto,
+  } from "@loomkeep/shared/contracts";
   import { useQueryClient } from "@tanstack/svelte-query";
   import LevelCard from "../LevelCard.svelte";
   import XpHistoryModal from "../XpHistoryModal.svelte";

@@ -1,7 +1,7 @@
 import type {
   FinishSessionTimerDto,
   StartSessionTimerDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 import { typedRequest } from "./generated/typed-request";
 
 export const getSessionTimer = () => typedRequest("/session-timer", {});

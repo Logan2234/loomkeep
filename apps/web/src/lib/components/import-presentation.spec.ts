@@ -1,12 +1,12 @@
 import { m } from "#lib/paraglide/messages.js";
 import { getLocale, overwriteGetLocale } from "#lib/paraglide/runtime.js";
+import { ErrorCode } from "@loomkeep/shared/catalog";
 import {
-  ErrorCode,
   type ImportItemContext,
   type ImportJobDto,
   type ImportPlanItem,
   type ImportReportTile,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 import { afterEach, describe, expect, it } from "vitest";
 import {
   importGroupLabel,

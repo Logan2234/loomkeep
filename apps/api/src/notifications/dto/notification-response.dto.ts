@@ -1,4 +1,4 @@
-import type { NotificationDto } from "@loomkeep/shared";
+import type { NotificationDto } from "@loomkeep/shared/contracts";
 
 export class NotificationResponseDto implements NotificationDto {
   id!: string;

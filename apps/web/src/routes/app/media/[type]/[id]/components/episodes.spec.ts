@@ -1,4 +1,4 @@
-import type { MediaDetailSeasonDto } from "@loomkeep/shared";
+import type { MediaDetailSeasonDto } from "@loomkeep/shared/contracts";
 import { describe, expect, it } from "vitest";
 import {
   arrivalTabKey,

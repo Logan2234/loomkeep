@@ -1,6 +1,5 @@
 import {
   GAME_PLATFORM_MAX_LENGTH,
-  MediaType,
   SAVED_VIEW_DOMAINS,
   SAVED_VIEW_LIMITS,
   SORT_ORDERS,
@@ -10,7 +9,8 @@ import {
   type SavedViewFiltersDto,
   type SortOrder,
   type UpdateSavedViewDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import { MediaType } from "@loomkeep/shared/enums";
 import { Type } from "class-transformer";
 import {
   ArrayMaxSize,

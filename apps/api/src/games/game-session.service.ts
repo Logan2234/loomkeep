@@ -2,15 +2,15 @@ import type {
   GameSessionDto,
   GameSessionMutationDto,
   GameSessionSummaryDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 import {
   ActivityType,
   Domain,
   ReviewTargetType,
   SessionCycleAction,
   TrackingCycleStatus,
-  estimateCompletionDate,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/enums";
+import { estimateCompletionDate } from "@loomkeep/shared/rules";
 import { Injectable } from "@nestjs/common";
 import {
   SessionSource,

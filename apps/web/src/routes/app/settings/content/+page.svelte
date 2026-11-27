@@ -8,7 +8,7 @@
   import Combobox from "#lib/components/Combobox.svelte";
   import Switch from "#lib/components/Switch.svelte";
   import { m } from "#lib/paraglide/messages.js";
-  import { SpoilerSensitivity } from "@loomkeep/shared";
+  import { SpoilerSensitivity } from "@loomkeep/shared/enums";
   import SettingRow from "../components/SettingRow.svelte";
   import SettingsSection from "../components/SettingsSection.svelte";
 

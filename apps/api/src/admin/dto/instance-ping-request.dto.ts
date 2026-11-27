@@ -1,4 +1,4 @@
-import type { InstancePingDto } from "@loomkeep/shared";
+import type { InstancePingDto } from "@loomkeep/shared/contracts";
 import { Matches, MaxLength } from "class-validator";
 
 // A pattern rather than @IsUUID: no other DTO uses that constraint, which

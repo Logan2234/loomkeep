@@ -2,7 +2,7 @@ import type {
   ReauthResultDto,
   ReauthStatusDto,
   WebauthnLoginOptionsResponseDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 import {
   Body,
   Controller,

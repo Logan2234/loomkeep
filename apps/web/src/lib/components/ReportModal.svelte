@@ -10,16 +10,18 @@
   import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
   import {
-    REPORT_MOTIFS_REQUIRING_REASON,
-    REPORT_PROFILE_PART_CATEGORIES,
-    isReportCategoryAllowed,
-    reportMotifsFor,
     type ReportCategory,
     type ReportMotif,
     type ReportProfilePart,
     type ReportTargetType,
-    REPORT_REASON_MAX_LENGTH,
-  } from "@loomkeep/shared";
+  } from "@loomkeep/shared/enums";
+  import { REPORT_REASON_MAX_LENGTH } from "@loomkeep/shared/contracts";
+  import {
+    REPORT_MOTIFS_REQUIRING_REASON,
+    REPORT_PROFILE_PART_CATEGORIES,
+    isReportCategoryAllowed,
+    reportMotifsFor,
+  } from "@loomkeep/shared/catalog";
   import { flip } from "svelte/animate";
   import { fade, slide } from "svelte/transition";
   import Icon from "./Icon.svelte";

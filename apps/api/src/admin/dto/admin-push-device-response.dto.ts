@@ -1,4 +1,4 @@
-import type { AdminPushDeviceDto } from "@loomkeep/shared";
+import type { AdminPushDeviceDto } from "@loomkeep/shared/contracts";
 
 export class AdminPushDeviceResponseDto implements AdminPushDeviceDto {
   id!: string;

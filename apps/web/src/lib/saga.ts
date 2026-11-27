@@ -3,14 +3,16 @@ import { gameReleaseLabel } from "#lib/game-release.js";
 import { m } from "#lib/paraglide/messages.js";
 import type {
   BookSagaMemberDto,
-  BookStatus,
-  EntryStatus,
   GameSagaMemberDto,
-  GameStatus,
   LibrarySagaDto,
   LibrarySagasDto,
   SagaMemberDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import type {
+  BookStatus,
+  EntryStatus,
+  GameStatus,
+} from "@loomkeep/shared/enums";
 
 /**
  * One work of a saga as the saga block and the sagas view draw it, whatever

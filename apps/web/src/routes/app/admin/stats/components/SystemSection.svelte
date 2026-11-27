@@ -7,7 +7,7 @@
   import RankBars from "#lib/components/stats/RankBars.svelte";
   import { m } from "#lib/paraglide/messages.js";
   import { adminServiceLabel } from "#lib/constants/admin-presentation.js";
-  import type { AdminSystemSectionDto } from "@loomkeep/shared";
+  import type { AdminSystemSectionDto } from "@loomkeep/shared/contracts";
   import StatFigure from "#lib/components/stats/StatFigure.svelte";
 
   let { stats }: { stats: AdminSystemSectionDto } = $props();

@@ -1,7 +1,7 @@
-import type { ReviewVisibility } from "@loomkeep/shared";
+import type { ReviewVisibility } from "@loomkeep/shared/enums";
 import type { ApiV1ReviewDto } from "../api-v1.types";
 
-import { ReviewVisibility as ReviewVisibilityValues } from "@loomkeep/shared";
+import { ReviewVisibility as ReviewVisibilityValues } from "@loomkeep/shared/enums";
 
 import { ApiProperty } from "@nestjs/swagger";
 import { ApiV1TargetResponseDto } from "./api-v1-target-response.dto";

@@ -8,8 +8,8 @@ import {
   type SocialProfileDto,
   type UserSummaryDto,
   type WorkFriendsDto,
-  Domain,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import { Domain } from "@loomkeep/shared/enums";
 import {
   Body,
   Controller,

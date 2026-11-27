@@ -3,7 +3,7 @@ import {
   type GameSortKey,
   type HomeWidgetSort,
   type MusicSortKey,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 
 /**
  * A widget's order as the library endpoints' `sort`. "recent" is their

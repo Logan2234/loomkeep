@@ -43,3 +43,13 @@ import relatif de `src/` : aucun gain pour ce coût.
 - Le web type les sources de shared avec ses propres options
   (`verbatimModuleSyntax`) : shared active `isolatedModules` pour qu'un type
   ré-exporté sans `export type` échoue déjà dans son propre `check`.
+
+## Complément — quatre points d'entrée (27/11/2026, MON-03)
+
+Le paquet n'a plus de point d'entrée racine : chaque import dit la nature de
+ce qu'il prend. `@loomkeep/shared/contracts` (DTO et événements temps réel,
+`src/contracts/`), `/enums` (`src/enums.ts`), `/rules` (logique exécutée des
+deux côtés, `src/rules/`) et `/catalog` (listes fixes : alertes, codes
+d'erreur, flags, locales…, `src/catalog/`). Chaque dossier a son `index.ts`,
+et chaque point d'entrée a sa variante `source` et sa version compilée.
+Un nouveau fichier rejoint le dossier de sa nature et son `index.ts`.

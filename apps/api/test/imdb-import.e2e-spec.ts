@@ -1,4 +1,4 @@
-import { CatalogSource, MediaSource, MediaType } from "@loomkeep/shared";
+import { CatalogSource, MediaSource, MediaType } from "@loomkeep/shared/enums";
 import { INestApplication } from "@nestjs/common";
 import request from "supertest";
 import { App } from "supertest/types";

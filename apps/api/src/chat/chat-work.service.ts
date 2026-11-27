@@ -1,8 +1,6 @@
-import {
-  ErrorCode,
-  type MessageWorkKind,
-  type ReviewTargetType,
-} from "@loomkeep/shared";
+import { ErrorCode } from "@loomkeep/shared/catalog";
+import { type MessageWorkKind } from "@loomkeep/shared/contracts";
+import { type ReviewTargetType } from "@loomkeep/shared/enums";
 import { HttpStatus, Injectable, Logger } from "@nestjs/common";
 import { AppException } from "../common/app.exception";
 import { LinkResolverService } from "../links/link-resolver.service";

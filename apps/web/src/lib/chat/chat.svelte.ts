@@ -1,5 +1,5 @@
 import { layout } from "#lib/layout.svelte.js";
-import type { CommentTargetType } from "@loomkeep/shared";
+import type { CommentTargetType } from "@loomkeep/shared/enums";
 
 export type ChatTab = "friends" | "works";
 

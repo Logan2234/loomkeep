@@ -1,6 +1,7 @@
 import { DOMAINS, DOMAIN_IDS } from "#lib/constants/domains.js";
 import { enumParam } from "#lib/url-params.js";
-import { Domain, type AdminCacheSort } from "@loomkeep/shared";
+import { type AdminCacheSort } from "@loomkeep/shared/contracts";
+import { Domain } from "@loomkeep/shared/enums";
 
 export function parseCacheFilters(params: Pick<URLSearchParams, "get">): {
   domain: Domain;

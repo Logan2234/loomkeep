@@ -1,7 +1,8 @@
 import { getMyReview } from "#lib/api/client.js";
 import { keys } from "#lib/api/keys.js";
 import { createApiQuery } from "#lib/api/query.svelte.js";
-import type { ReviewDto, ReviewTargetType } from "@loomkeep/shared";
+import type { ReviewDto } from "@loomkeep/shared/contracts";
+import type { ReviewTargetType } from "@loomkeep/shared/enums";
 import { useQueryClient } from "@tanstack/svelte-query";
 
 // The viewer's own review for a target, shared by every surface that shows

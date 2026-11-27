@@ -1,4 +1,4 @@
-import type { AdminPopularWorkDto } from "@loomkeep/shared";
+import type { AdminPopularWorkDto } from "@loomkeep/shared/contracts";
 
 /** How many works the mixed "most popular" ranking carries. */
 export const POPULAR_WORKS_LIMIT = 20;

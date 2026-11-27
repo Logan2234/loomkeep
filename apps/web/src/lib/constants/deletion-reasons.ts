@@ -2,7 +2,7 @@ import { m } from "#lib/paraglide/messages.js";
 import {
   AccountDeletionReason,
   type AccountDeletionReason as Reason,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/enums";
 
 /** In the order the deletion modal offers them, "Other" last. */
 export const DELETION_REASONS = Object.values(AccountDeletionReason);

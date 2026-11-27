@@ -1,7 +1,7 @@
 import { chat } from "#lib/chat/chat.svelte.js";
 import { apiUrl, server } from "#lib/test/msw.js";
 import { renderWithQuery } from "#lib/test/render.js";
-import type { WorkThreadDto } from "@loomkeep/shared";
+import type { WorkThreadDto } from "@loomkeep/shared/contracts";
 import { screen, waitFor } from "@testing-library/svelte";
 import { http, HttpResponse } from "msw";
 import { describe, expect, it, vi } from "vitest";

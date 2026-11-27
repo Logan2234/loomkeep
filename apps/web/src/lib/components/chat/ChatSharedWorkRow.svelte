@@ -10,7 +10,7 @@
   import { isDomainEnabled } from "#lib/domain-availability.js";
   import { formatDate } from "#lib/format.js";
   import { m } from "#lib/paraglide/messages.js";
-  import type { ConversationWorkDto } from "@loomkeep/shared";
+  import type { ConversationWorkDto } from "@loomkeep/shared/contracts";
   import { workKindLabel } from "./conversation-presentation";
 
   let { work, peerName }: { work: ConversationWorkDto; peerName: string } =

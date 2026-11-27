@@ -1,12 +1,12 @@
+import type { Locale } from "@loomkeep/shared/catalog";
 import type {
-  AcquisitionSource,
   AdminAccountsSectionDto,
   AdminNewAccountsTrendDto,
-  Locale,
-  ProfileAccess,
   TrendPeriod,
-} from "@loomkeep/shared";
-import { DigestCadence, DORMANT_AFTER_DAYS } from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import { DORMANT_AFTER_DAYS } from "@loomkeep/shared/contracts";
+import type { AcquisitionSource, ProfileAccess } from "@loomkeep/shared/enums";
+import { DigestCadence } from "@loomkeep/shared/enums";
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import {

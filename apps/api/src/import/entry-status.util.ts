@@ -1,4 +1,4 @@
-import type { EntryStatus } from "@loomkeep/shared";
+import type { EntryStatus } from "@loomkeep/shared/enums";
 
 /** Map a series' watched/total regular episodes to a library entry status. */
 export function entryStatusFromProgress(

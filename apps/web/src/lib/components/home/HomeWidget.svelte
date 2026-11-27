@@ -2,7 +2,7 @@
   // One widget of the home grid, picked by kind. Each kind fetches its own
   // data, so one failing endpoint only empties its own widget.
   import type { BoxSize } from "#lib/home/sizing.js";
-  import type { HomeWidgetDto } from "@loomkeep/shared";
+  import type { HomeWidgetDto } from "@loomkeep/shared/contracts";
   import ActivityWidget from "./widgets/ActivityWidget.svelte";
   import BooksReadingWidget from "./widgets/BooksReadingWidget.svelte";
   import DividerWidget from "./widgets/DividerWidget.svelte";

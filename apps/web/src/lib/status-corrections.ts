@@ -1,5 +1,5 @@
 import { m } from "#lib/paraglide/messages.js";
-import type { BookStatus, GameStatus } from "@loomkeep/shared";
+import type { BookStatus, GameStatus } from "@loomkeep/shared/enums";
 
 export const BOOK_DIRECT_STATUS_TARGETS: Partial<
   Record<BookStatus, readonly BookStatus[]>

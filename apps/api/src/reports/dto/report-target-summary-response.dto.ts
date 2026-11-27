@@ -2,7 +2,7 @@ import type {
   ReportContextMessageDto,
   ReportTargetOwnerDto,
   ReportTargetSummaryDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 
 export class ReportTargetOwnerResponseDto implements ReportTargetOwnerDto {
   username!: string;

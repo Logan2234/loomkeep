@@ -14,7 +14,7 @@
     connectRealtimeSocket,
     onRealtimeEvent,
   } from "#lib/realtime/socket.js";
-  import { RealtimeEvent } from "@loomkeep/shared";
+  import { RealtimeEvent } from "@loomkeep/shared/contracts";
 
   let pageReady = $state(false);
   let confirmed = $state(false);

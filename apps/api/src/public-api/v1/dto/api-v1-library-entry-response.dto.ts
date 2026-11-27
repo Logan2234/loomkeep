@@ -1,7 +1,7 @@
-import type { StatsDomain } from "@loomkeep/shared";
+import type { StatsDomain } from "@loomkeep/shared/contracts";
 import type { ApiV1LibraryEntryDto, ApiV1Phase } from "../api-v1.types";
 
-import { STATS_DOMAINS, StatsStatusBucket } from "@loomkeep/shared";
+import { STATS_DOMAINS, StatsStatusBucket } from "@loomkeep/shared/contracts";
 
 import { ApiProperty } from "@nestjs/swagger";
 import { ApiV1ProgressResponseDto } from "./api-v1-progress-response.dto";

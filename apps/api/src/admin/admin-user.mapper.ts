@@ -2,9 +2,8 @@ import type {
   AdminUserDto,
   AdminUserLibraryCountsDto,
   AdminUserSecondFactor,
-  Domain,
-  Plan,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import type { Domain, Plan } from "@loomkeep/shared/enums";
 import type { Prisma } from "@prisma/client";
 import { avatarUrl } from "../users/avatar.util";
 import { isSuspended } from "../users/suspension.util";

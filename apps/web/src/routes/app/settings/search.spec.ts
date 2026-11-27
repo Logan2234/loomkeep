@@ -1,6 +1,6 @@
 import { auth } from "#lib/auth.svelte.js";
 import { layout } from "#lib/layout.svelte.js";
-import type { UserDto } from "@loomkeep/shared";
+import type { UserDto } from "@loomkeep/shared/contracts";
 import { describe, expect, it } from "vitest";
 import { SETTINGS_SECTIONS } from "./nav";
 import { fold, groupSearchHits, hitHref, searchSettings } from "./search";

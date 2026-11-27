@@ -1,4 +1,4 @@
-import type { AdminPushBroadcastResponseDto } from "@loomkeep/shared";
+import type { AdminPushBroadcastResponseDto } from "@loomkeep/shared/contracts";
 
 export class AdminPushBroadcastResultResponseDto implements AdminPushBroadcastResponseDto {
   accountCount!: number;

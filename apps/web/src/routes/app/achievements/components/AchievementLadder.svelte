@@ -13,7 +13,7 @@
     MAX_EQUIPPED_BADGES,
     type AchievementDto,
     type AchievementTier,
-  } from "@loomkeep/shared";
+  } from "@loomkeep/shared/contracts";
   import type { AchievementGroup } from "../achievements";
   import {
     contextNote,

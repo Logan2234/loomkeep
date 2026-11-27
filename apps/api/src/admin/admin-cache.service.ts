@@ -1,3 +1,4 @@
+import { ErrorCode } from "@loomkeep/shared/catalog";
 import {
   type AdminCacheDeleteOrphansResultDto,
   type AdminCacheItemDetailDto,
@@ -5,10 +6,11 @@ import {
   type AdminCacheListResponseDto,
   type AdminCacheResyncStaleResultDto,
   type AdminCacheSort,
+} from "@loomkeep/shared/contracts";
+import {
   type CommentTargetType,
   type ReviewTargetType,
-  ErrorCode,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/enums";
 import { HttpStatus, Injectable, Logger } from "@nestjs/common";
 import type { Prisma } from "@prisma/client";
 import { BookItemService } from "../books/book-item.service";

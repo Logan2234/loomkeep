@@ -1,22 +1,21 @@
+import { ErrorCode } from "@loomkeep/shared/catalog";
 import type {
   BulkEntriesResultDto,
   GameSagaResponseDto as GameSagaResponse,
   LibraryGameSagasDto,
   PagedResult,
   PileSummaryDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 import {
-  Domain,
-  ErrorCode,
   GameDetailDto,
   GameEntryDto,
   GameSearchResponseDto,
   GameSessionMutationDto,
   GameSessionSummaryDto,
-  GameSource,
   LIBRARY_SAGA_SORTS,
   StoredGameDetailDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import { Domain, GameSource } from "@loomkeep/shared/enums";
 import {
   Body,
   Controller,

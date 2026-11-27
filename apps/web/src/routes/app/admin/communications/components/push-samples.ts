@@ -4,7 +4,7 @@ import {
   AlertGroup,
   type AlertKey,
   PUSH_SAMPLE_KEYS,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/catalog";
 
 // Settings › Communications names each alert the same way.
 const LABELS: Partial<Record<AlertKey, () => string>> = {

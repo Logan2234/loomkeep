@@ -2,7 +2,7 @@ import { updateMe } from "#lib/api/client.js";
 import { createApiMutation } from "#lib/api/mutation.svelte.js";
 import { auth } from "#lib/auth.svelte.js";
 import { toggleDomainSelection } from "#lib/domain-availability.js";
-import type { Domain } from "@loomkeep/shared";
+import type { Domain } from "@loomkeep/shared/enums";
 
 /**
  * Shared by the onboarding wizard and the settings tiles: toggling a domain,

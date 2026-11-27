@@ -1,8 +1,5 @@
-import type {
-  MusicEntryDto,
-  MusicOwnershipStatus,
-  MusicStatus,
-} from "@loomkeep/shared";
+import type { MusicEntryDto } from "@loomkeep/shared/contracts";
+import type { MusicOwnershipStatus, MusicStatus } from "@loomkeep/shared/enums";
 import { MusicItemResponseDto } from "./music-item-response.dto";
 
 export class MusicEntryResponseDto implements MusicEntryDto {

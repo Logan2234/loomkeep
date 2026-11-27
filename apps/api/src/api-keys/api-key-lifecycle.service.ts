@@ -1,7 +1,5 @@
-import {
-  API_KEY_EXPIRY_WARNING_DAYS,
-  NotificationType,
-} from "@loomkeep/shared";
+import { API_KEY_EXPIRY_WARNING_DAYS } from "@loomkeep/shared/contracts";
+import { NotificationType } from "@loomkeep/shared/enums";
 import { Injectable } from "@nestjs/common";
 import { Cron, CronExpression } from "@nestjs/schedule";
 import { addDays, sinceDaysAgo } from "../common/date.util";

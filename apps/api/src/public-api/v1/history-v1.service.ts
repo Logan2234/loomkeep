@@ -1,4 +1,5 @@
-import type { Locale, PagedResult, StatsDomain } from "@loomkeep/shared";
+import type { Locale } from "@loomkeep/shared/catalog";
+import type { PagedResult, StatsDomain } from "@loomkeep/shared/contracts";
 import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import type { Prisma } from "@prisma/client";

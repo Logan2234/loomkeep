@@ -1,4 +1,5 @@
-import { ErrorCode, MediaType } from "@loomkeep/shared";
+import { ErrorCode } from "@loomkeep/shared/catalog";
+import { MediaType } from "@loomkeep/shared/enums";
 import { vi } from "vitest";
 import type { JwtPayload } from "../auth/decorators/current-user.decorator";
 import type { DomainGateService } from "../users/domain-gate.service";

@@ -1,4 +1,5 @@
-import { ErrorCode, REAUTH_WINDOW_MS } from "@loomkeep/shared";
+import { ErrorCode } from "@loomkeep/shared/catalog";
+import { REAUTH_WINDOW_MS } from "@loomkeep/shared/contracts";
 import type { ExecutionContext } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
 import { vi } from "vitest";

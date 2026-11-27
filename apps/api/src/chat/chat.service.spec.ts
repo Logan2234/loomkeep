@@ -1,4 +1,5 @@
-import { ErrorCode, RealtimeEvent } from "@loomkeep/shared";
+import { ErrorCode } from "@loomkeep/shared/catalog";
+import { RealtimeEvent } from "@loomkeep/shared/contracts";
 import { type Mock, vi } from "vitest";
 import { AppException } from "../common/app.exception";
 import { parsePageQuery } from "../common/pagination.util";

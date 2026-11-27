@@ -1,9 +1,12 @@
 import type {
-  MediaType,
   VideoTypeSplitDto,
   WatchStaleness,
-} from "@loomkeep/shared";
-import { DORMANT_AFTER_DAYS, GHOST_AFTER_DAYS } from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import {
+  DORMANT_AFTER_DAYS,
+  GHOST_AFTER_DAYS,
+} from "@loomkeep/shared/contracts";
+import type { MediaType } from "@loomkeep/shared/enums";
 
 export interface TypeSplitInput {
   type: MediaType;

@@ -44,9 +44,10 @@
   import { formatNumber, PERCENT_OPTIONS } from "#lib/format.js";
   import { isPileEmpty, pileTile } from "#lib/pile.js";
   import { m } from "#lib/paraglide/messages.js";
-  import type { StatsDomain, StatsWindow } from "@loomkeep/shared";
+  import type { StatsDomain, StatsWindow } from "@loomkeep/shared/contracts";
   import { isDomainEnabled } from "#lib/domain-availability.js";
-  import { Domain, STATS_DOMAINS } from "@loomkeep/shared";
+  import { Domain } from "@loomkeep/shared/enums";
+  import { STATS_DOMAINS } from "@loomkeep/shared/contracts";
 
   // Tabs also carry the planned domains, which are never selectable.
   type TabValue =

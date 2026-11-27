@@ -2,7 +2,7 @@ import type {
   AchievementDto,
   AchievementFamily,
   AchievementTier,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 import { ApiProperty } from "@nestjs/swagger";
 
 /**

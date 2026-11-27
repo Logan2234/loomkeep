@@ -1,4 +1,4 @@
-import { ALERTS, type AlertDefinition } from "@loomkeep/shared";
+import { ALERTS, type AlertDefinition } from "@loomkeep/shared/catalog";
 import { Logger } from "@nestjs/common";
 import nodemailer from "nodemailer";
 import { vi, type Mock } from "vitest";

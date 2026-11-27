@@ -1,4 +1,5 @@
-import type { CatalogSource, MediaSagaDto, MediaType } from "@loomkeep/shared";
+import type { MediaSagaDto } from "@loomkeep/shared/contracts";
+import type { CatalogSource, MediaType } from "@loomkeep/shared/enums";
 import { Injectable } from "@nestjs/common";
 import type { ExternalSource as DbExternalSource } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";

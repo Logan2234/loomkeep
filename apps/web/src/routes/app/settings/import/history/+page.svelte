@@ -14,11 +14,11 @@
   import { DOMAINS } from "#lib/constants/domains.js";
   import { IMPORTS_DEFINITION } from "#lib/constants/import-sources.js";
   import { m } from "#lib/paraglide/messages.js";
+  import type { Domain } from "@loomkeep/shared/enums";
   import type {
-    Domain,
     ImportHistoryRunDto,
     PagedResult,
-  } from "@loomkeep/shared";
+  } from "@loomkeep/shared/contracts";
 
   const historyQuery = createApiInfiniteQuery<
     PagedResult<ImportHistoryRunDto>,

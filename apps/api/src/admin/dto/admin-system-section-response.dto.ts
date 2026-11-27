@@ -3,7 +3,7 @@ import type {
   AdminSelfHostedInstancesDto,
   AdminSelfHostedVersionDto,
   AdminSystemSectionDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 
 class AdminProviderCallsResponseDto implements AdminProviderCallsDto {
   provider!: string;

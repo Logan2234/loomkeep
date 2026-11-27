@@ -1,21 +1,25 @@
 import {
   ErrorCode,
-  NotificationType,
   REPORT_MOTIFS_REQUIRING_REASON,
   REPORT_PROFILE_PART_CATEGORIES,
   isReportCategoryAllowed,
   reportMotifsFor,
+} from "@loomkeep/shared/catalog";
+import {
   type PagedResult,
-  type ReportCategory,
   type ReportContextMessageDto,
   type ReportDto,
+  type ReportResolution,
+  type ReportTargetSummaryDto,
+} from "@loomkeep/shared/contracts";
+import {
+  NotificationType,
+  type ReportCategory,
   type ReportMotif,
   type ReportProfilePart,
-  type ReportResolution,
   type ReportStatus,
-  type ReportTargetSummaryDto,
   type ReportTargetType,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/enums";
 import { HttpStatus, Injectable, Logger } from "@nestjs/common";
 import { Cron, CronExpression } from "@nestjs/schedule";
 import type { Prisma } from "@prisma/client";

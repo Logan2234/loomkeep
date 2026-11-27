@@ -3,7 +3,7 @@ import {
   type ChatTypingEvent,
   RealtimeCommand,
   RealtimeEvent,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 import { Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { JwtService } from "@nestjs/jwt";

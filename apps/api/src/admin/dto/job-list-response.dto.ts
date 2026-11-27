@@ -1,4 +1,4 @@
-import type { JobDto, JobListResponseDto } from "@loomkeep/shared";
+import type { JobDto, JobListResponseDto } from "@loomkeep/shared/contracts";
 import { JobRunResponseDto } from "./job-run-response.dto";
 
 class JobResponseDto implements JobDto {

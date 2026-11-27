@@ -16,7 +16,10 @@
   import SegmentedControl from "#lib/components/SegmentedControl.svelte";
   import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
-  import type { ConnectionDto, RelationshipDto } from "@loomkeep/shared";
+  import type {
+    ConnectionDto,
+    RelationshipDto,
+  } from "@loomkeep/shared/contracts";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { flip } from "svelte/animate";
   import { fly, slide } from "svelte/transition";

@@ -1,4 +1,4 @@
-import type { OnThisDayEntryDto } from "@loomkeep/shared";
+import type { OnThisDayEntryDto } from "@loomkeep/shared/contracts";
 import { anniversaryWindow, rankByAnniversary } from "./on-this-day.util";
 
 describe("anniversaryWindow", () => {

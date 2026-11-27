@@ -2,8 +2,8 @@ import type {
   AdminSecuritySummaryDto,
   PagedResult,
   SecurityEventDto,
-  SecurityEventType,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import type { SecurityEventType } from "@loomkeep/shared/enums";
 import { Controller, Get, Query } from "@nestjs/common";
 import { ApiOkResponse } from "@nestjs/swagger";
 import { PagedResponseDto } from "../common/dto/paged-response.dto";

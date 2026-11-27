@@ -1,11 +1,13 @@
 import type {
+  StatsStatusBucket,
+  StatusBucketCountDto,
+} from "@loomkeep/shared/contracts";
+import type {
   BookStatus,
   EntryStatus,
   GameStatus,
   MusicStatus,
-  StatsStatusBucket,
-  StatusBucketCountDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/enums";
 
 /**
  * Maps each domain's own status enum onto the shared stats vocabulary, so a

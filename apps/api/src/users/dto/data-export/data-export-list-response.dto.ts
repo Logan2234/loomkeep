@@ -2,7 +2,7 @@ import type {
   ListKind,
   ListVisibility,
   ReviewTargetType,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/enums";
 import type {
   DataExportList,
   DataExportListItem,

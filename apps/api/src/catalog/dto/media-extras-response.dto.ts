@@ -1,4 +1,4 @@
-import type { MediaExtrasDto } from "@loomkeep/shared";
+import type { MediaExtrasDto } from "@loomkeep/shared/contracts";
 import { CastMemberResponseDto } from "./cast-member-response.dto";
 import { CreatorRefResponseDto } from "./creator-ref-response.dto";
 import { ExternalLinkResponseDto } from "./external-link-response.dto";

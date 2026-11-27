@@ -1,4 +1,4 @@
-import { ProfileAccess, VisibilityAudience } from "@loomkeep/shared";
+import { ProfileAccess, VisibilityAudience } from "@loomkeep/shared/enums";
 import { vi, type Mock } from "vitest";
 import { parsePageQuery } from "../common/pagination.util";
 import type { PrismaService } from "../prisma/prisma.service";

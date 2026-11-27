@@ -1,5 +1,4 @@
 import {
-  Domain as DomainValues,
   HOME_GRID_COLUMNS,
   HOME_LAYOUT_LIMITS,
   HOME_QUICK_LINK_KINDS,
@@ -8,8 +7,6 @@ import {
   HOME_WIDGET_TYPES,
   LEADERBOARD_PERIODS,
   LEADERBOARD_SCOPES,
-  MediaType,
-  type Domain,
   type HomeLayoutDto,
   type HomePhoneLayoutDto,
   type HomeQuickLinkKind,
@@ -18,7 +15,12 @@ import {
   type HomeWidgetType,
   type LeaderboardPeriod,
   type LeaderboardScope,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import {
+  Domain as DomainValues,
+  MediaType,
+  type Domain,
+} from "@loomkeep/shared/enums";
 
 import { Type } from "class-transformer";
 import {

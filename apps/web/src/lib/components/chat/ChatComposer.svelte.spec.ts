@@ -5,11 +5,11 @@ import { fieldText, focusField, selectInField } from "#lib/test/field.js";
 import { apiUrl, server } from "#lib/test/msw.js";
 import { renderWithQuery } from "#lib/test/render.js";
 import type {
-  ListVisibility,
   MessageDto,
   MyListDto,
   MyReviewDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import type { ListVisibility } from "@loomkeep/shared/enums";
 import { screen, waitFor } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";

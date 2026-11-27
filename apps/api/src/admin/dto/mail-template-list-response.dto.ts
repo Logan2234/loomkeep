@@ -2,7 +2,7 @@ import type {
   MailTemplateFieldDto,
   MailTemplateInfoDto,
   MailTemplateListResponseDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 
 class MailTemplateFieldResponseDto implements MailTemplateFieldDto {
   key!: string;

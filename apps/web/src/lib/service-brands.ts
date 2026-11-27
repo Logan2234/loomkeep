@@ -1,4 +1,4 @@
-import type { GameStore, ListenService } from "@loomkeep/shared";
+import type { GameStore, ListenService } from "@loomkeep/shared/contracts";
 
 /**
  * How a game store or music service is drawn next to its name: its logo

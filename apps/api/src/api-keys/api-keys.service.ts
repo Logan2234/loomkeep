@@ -1,15 +1,15 @@
+import { ErrorCode } from "@loomkeep/shared/catalog";
 import type {
   ApiKeyDto,
   ApiKeyScope,
   CreateApiKeyDto,
   CreatedApiKeyDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 import {
   API_KEY_SCOPES,
-  ErrorCode,
   MAX_API_KEYS_PER_USER,
-  NotificationType,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import { NotificationType } from "@loomkeep/shared/enums";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import type { ApiKey } from "@prisma/client";
 import { AppException } from "../common/app.exception";

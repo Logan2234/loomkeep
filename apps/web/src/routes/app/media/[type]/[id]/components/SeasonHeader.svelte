@@ -5,7 +5,7 @@
   import { appConfig } from "#lib/config.svelte.js";
   import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
-  import type { MediaDetailSeasonDto } from "@loomkeep/shared";
+  import type { MediaDetailSeasonDto } from "@loomkeep/shared/contracts";
   import { fly } from "svelte/transition";
   import { airDateLabel, scoreLabel } from "./episode-format";
 

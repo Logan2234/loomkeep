@@ -2,13 +2,12 @@ import type {
   CreatorRefDto,
   GameLanguageDto,
   GameSagaMemberDto,
-  GameSource,
   GameStoreLinkDto,
   GameSummaryDto,
   GameTimeToBeatDto,
   RatingDto,
-  ReleaseDatePrecision,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import type { GameSource, ReleaseDatePrecision } from "@loomkeep/shared/enums";
 import type { ProviderExternalId } from "../../common/provider-external-id";
 
 /** Everything a provider knows about one game, in canonical form. */

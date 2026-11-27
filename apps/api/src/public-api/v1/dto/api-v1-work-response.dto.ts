@@ -1,7 +1,9 @@
-import type { MediaType, StatsDomain } from "@loomkeep/shared";
+import type { StatsDomain } from "@loomkeep/shared/contracts";
+import type { MediaType } from "@loomkeep/shared/enums";
 import type { ApiV1WorkDto } from "../api-v1.types";
 
-import { MediaType as MediaTypeValues, STATS_DOMAINS } from "@loomkeep/shared";
+import { STATS_DOMAINS } from "@loomkeep/shared/contracts";
+import { MediaType as MediaTypeValues } from "@loomkeep/shared/enums";
 
 import { ApiProperty } from "@nestjs/swagger";
 export class ApiV1WorkResponseDto implements ApiV1WorkDto {

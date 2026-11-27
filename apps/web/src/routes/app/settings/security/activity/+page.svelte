@@ -11,12 +11,12 @@
   import { formatDateTime } from "#lib/format.js";
   import { m } from "#lib/paraglide/messages.js";
   import type { IconName } from "#lib/types/icon-name.js";
+  import { type SecurityEventType } from "@loomkeep/shared/enums";
   import {
-    deviceLabel,
     type AccountSecurityEventDto,
     type PagedResult,
-    type SecurityEventType,
-  } from "@loomkeep/shared";
+  } from "@loomkeep/shared/contracts";
+  import { deviceLabel } from "@loomkeep/shared/rules";
   import SettingsSection from "../../components/SettingsSection.svelte";
 
   // USER_DELETED never reaches this page: the account it belongs to is gone.

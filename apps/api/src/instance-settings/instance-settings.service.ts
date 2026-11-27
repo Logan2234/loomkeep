@@ -1,17 +1,17 @@
+import { ErrorCode } from "@loomkeep/shared/catalog";
 import type {
   InstanceDomainAccountsDto,
   InstanceSettingKey,
   InstanceSettingsDto,
   InstanceSettingsValues,
   UpdateInstanceSettingsDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 import {
   DEFAULT_INSTANCE_SETTINGS,
   DOMAIN_SETTING,
   type DomainSettingKey,
-  ErrorCode,
   INSTANCE_SETTING_ENV,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 import { HttpStatus, Injectable, type OnModuleInit } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import type { InstanceSettings } from "@prisma/client";

@@ -1,4 +1,5 @@
-import type { ProfileAccess, SocialProfileDto } from "@loomkeep/shared";
+import type { SocialProfileDto } from "@loomkeep/shared/contracts";
+import type { ProfileAccess } from "@loomkeep/shared/enums";
 import { AchievementResponseDto } from "../../gamification/achievements/dto/achievement-response.dto";
 import { ProfileActivityStatsResponseDto } from "./profile-activity-stats-response.dto";
 import { ProfileDomainStatResponseDto } from "./profile-domain-stat-response.dto";

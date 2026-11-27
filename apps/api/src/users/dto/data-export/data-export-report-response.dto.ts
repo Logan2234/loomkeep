@@ -3,7 +3,7 @@ import type {
   ReportMotif,
   ReportStatus,
   ReportTargetType,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/enums";
 import type { DataExportReport } from "../../../account/data-export.types";
 
 export class DataExportReportResponseDto implements DataExportReport {

@@ -22,13 +22,13 @@
   import { m } from "#lib/paraglide/messages.js";
   import { reauth } from "#lib/reauth.svelte.js";
   import { toast } from "#lib/toast.svelte.js";
+  import { type AccountDeletionReason } from "@loomkeep/shared/enums";
   import {
     ACCOUNT_DELETION_GRACE_DAYS,
     type AccountDeletionAnonymizedCategory,
     type AccountDeletionDeletedCategory,
     type AccountDeletionKeptCategory,
-    type AccountDeletionReason,
-  } from "@loomkeep/shared";
+  } from "@loomkeep/shared/contracts";
   import type { Snippet } from "svelte";
   import { slide } from "svelte/transition";
 

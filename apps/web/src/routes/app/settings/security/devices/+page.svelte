@@ -14,7 +14,8 @@
   import Modal from "#lib/components/Modal.svelte";
   import RelativeTime from "#lib/components/RelativeTime.svelte";
   import { m } from "#lib/paraglide/messages.js";
-  import { deviceLabel, type SessionDto } from "@loomkeep/shared";
+  import { type SessionDto } from "@loomkeep/shared/contracts";
+  import { deviceLabel } from "@loomkeep/shared/rules";
   import { flashAnchor } from "#lib/flash-anchor.js";
   import SettingsSection from "../../components/SettingsSection.svelte";
 

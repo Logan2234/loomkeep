@@ -1,7 +1,7 @@
 import type {
   AdminUpgradeNoteDto,
   AdminUpgradeNotesDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 
 export class AdminUpgradeNoteResponseDto implements AdminUpgradeNoteDto {
   version!: string;

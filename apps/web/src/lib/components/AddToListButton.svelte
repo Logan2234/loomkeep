@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { ListItemTargetType } from "@loomkeep/shared";
+  import type { ListItemTargetType } from "@loomkeep/shared/contracts";
   import { m } from "#lib/paraglide/messages.js";
   import AddToListModal from "./AddToListModal.svelte";
   import Icon from "./Icon.svelte";

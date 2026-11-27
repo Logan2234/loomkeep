@@ -1,14 +1,16 @@
 import {
+  type ListItemTargetType,
+  type WorkFriendsDto,
+  type WorkProgressDto,
+} from "@loomkeep/shared/contracts";
+import {
   Domain,
   VisibilityFacet,
   type EntryStatus,
-  type ListItemTargetType,
   type MediaType,
   type ProfileAccess,
   type VisibilityAudience,
-  type WorkFriendsDto,
-  type WorkProgressDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/enums";
 import { Injectable } from "@nestjs/common";
 import { deriveStatus, normalizeAiringFinished } from "../library/status.util";
 import { PrismaService } from "../prisma/prisma.service";

@@ -1,4 +1,5 @@
-import type { AdminCacheItemDto, Domain } from "@loomkeep/shared";
+import type { AdminCacheItemDto } from "@loomkeep/shared/contracts";
+import type { Domain } from "@loomkeep/shared/enums";
 
 export class AdminCacheItemResponseDto implements AdminCacheItemDto {
   id!: string;

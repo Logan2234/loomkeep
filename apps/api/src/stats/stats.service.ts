@@ -1,12 +1,9 @@
 import {
   type BookStatsDto,
   type DomainStatusBreakdownDto,
-  episodeRuntimeFor,
   type GameStatsDto,
   isSessionPaused,
   type MusicStatsDto,
-  type ReviewTargetType,
-  runtimeFor,
   type SocialStatsDto,
   type StatsDomain,
   type StatsOverviewDto,
@@ -16,7 +13,9 @@ import {
   type VideoStatsDto,
   type VideoTemporalDto,
   type WatchStaleness,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import { type ReviewTargetType } from "@loomkeep/shared/enums";
+import { episodeRuntimeFor, runtimeFor } from "@loomkeep/shared/rules";
 import { Injectable } from "@nestjs/common";
 import {
   CANONICAL_EXTERNAL_ID_SELECT,

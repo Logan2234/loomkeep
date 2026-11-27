@@ -2,11 +2,11 @@ import { achievementNameByKey } from "#lib/achievement-labels.js";
 import { m } from "#lib/paraglide/messages.js";
 import type { IconName } from "#lib/types/icon-name.js";
 import {
-  levelForXp,
   type XpHistoryDayDto,
   type XpHistoryItemDto,
-  type XpReason,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import { type XpReason } from "@loomkeep/shared/enums";
+import { levelForXp } from "@loomkeep/shared/rules";
 
 const REASON_LABEL: Record<XpReason, () => string> = {
   EPISODE_WATCHED: m.gamification_xp_reason_episode_watched,

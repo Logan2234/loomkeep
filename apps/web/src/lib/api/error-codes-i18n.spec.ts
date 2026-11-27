@@ -1,10 +1,10 @@
-import { ErrorCode, errorCodeToMessageKey } from "@loomkeep/shared";
+import { ErrorCode, errorCodeToMessageKey } from "@loomkeep/shared/catalog";
 import { describe, expect, it } from "vitest";
 import en from "../../../messages/en/errors.json";
 import fr from "../../../messages/fr/errors.json";
 
 // Guardrail for the "API error codes" rework: every code declared in
-// packages/shared/src/error-codes.ts must have a translated message in both
+// packages/shared/src/catalog/error-codes.ts must have a translated message in both
 // locales, and every apierr_* key in the message files must correspond to a
 // real code — otherwise a code silently falls back to the generic
 // per-status message (see resolveApiError in ./errors.ts) or a stale key

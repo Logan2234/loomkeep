@@ -1,5 +1,8 @@
 import { DOMAINS } from "#lib/constants/domains.js";
-import type { SavedViewDto, SavedViewFiltersDto } from "@loomkeep/shared";
+import type {
+  SavedViewDto,
+  SavedViewFiltersDto,
+} from "@loomkeep/shared/contracts";
 
 /** Each domain's library page. */
 

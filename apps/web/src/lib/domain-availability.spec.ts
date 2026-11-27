@@ -1,4 +1,4 @@
-import { Domain } from "@loomkeep/shared";
+import { Domain } from "@loomkeep/shared/enums";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { auth } from "./auth.svelte";
 import { appConfig } from "./config.svelte";

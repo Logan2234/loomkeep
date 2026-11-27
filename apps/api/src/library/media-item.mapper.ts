@@ -1,9 +1,9 @@
+import { type MediaItemDto } from "@loomkeep/shared/contracts";
 import {
   isAnimeUnaired,
-  type MediaItemDto,
   movieReleaseDates,
   movieReleaseInfo,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/rules";
 import type { MediaExternalId, MediaItem } from "@prisma/client";
 import { canonicalExternalId } from "../common/external-id.util";
 

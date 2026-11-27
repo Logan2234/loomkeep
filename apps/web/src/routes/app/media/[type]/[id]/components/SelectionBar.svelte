@@ -1,7 +1,7 @@
 <script lang="ts">
   import Icon from "#lib/components/Icon.svelte";
   import { m } from "#lib/paraglide/messages.js";
-  import type { EpisodeWatchBatchAction } from "@loomkeep/shared";
+  import type { EpisodeWatchBatchAction } from "@loomkeep/shared/contracts";
 
   let {
     count,

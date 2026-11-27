@@ -42,7 +42,7 @@
     type ListDto,
     type ListItemDto,
     RealtimeCommand,
-  } from "@loomkeep/shared";
+  } from "@loomkeep/shared/contracts";
   import { useQueryClient } from "@tanstack/svelte-query";
   import ListItemNoteModal from "./components/ListItemNoteModal.svelte";
   import NewBadge from "#lib/components/NewBadge.svelte";

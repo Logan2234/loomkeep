@@ -1,4 +1,5 @@
-import { ErrorCode, XpReason } from "@loomkeep/shared";
+import { ErrorCode } from "@loomkeep/shared/catalog";
+import { XpReason } from "@loomkeep/shared/enums";
 import { HttpStatus, Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { Cron, CronExpression } from "@nestjs/schedule";

@@ -5,7 +5,7 @@ import type {
   SetEmailMfaRequestDto,
   SetPasswordlessRequestDto,
   WebauthnRegistrationVerifyResponseDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 import {
   startRegistration,
   type PublicKeyCredentialCreationOptionsJSON,

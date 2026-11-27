@@ -15,7 +15,7 @@
   import { layout } from "#lib/layout.svelte.js";
   import { m } from "#lib/paraglide/messages.js";
   import { toast } from "#lib/toast.svelte.js";
-  import type { WorkThreadDto } from "@loomkeep/shared";
+  import type { WorkThreadDto } from "@loomkeep/shared/contracts";
   import {
     badgeTone,
     workThreadContext,

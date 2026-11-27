@@ -1,4 +1,7 @@
-import { USER_LIMITS, type UpdateUsernameRequestDto } from "@loomkeep/shared";
+import {
+  USER_LIMITS,
+  type UpdateUsernameRequestDto,
+} from "@loomkeep/shared/contracts";
 import { Transform } from "class-transformer";
 import { IsString, MaxLength, MinLength } from "class-validator";
 

@@ -1,4 +1,4 @@
-import type { JobDto, JobRunDto } from "@loomkeep/shared";
+import type { JobDto, JobRunDto } from "@loomkeep/shared/contracts";
 import { Injectable, Logger } from "@nestjs/common";
 import { SchedulerRegistry } from "@nestjs/schedule";
 import type { JobRun } from "@prisma/client";

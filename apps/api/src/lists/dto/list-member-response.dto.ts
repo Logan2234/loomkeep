@@ -1,4 +1,4 @@
-import type { ListMemberDto } from "@loomkeep/shared";
+import type { ListMemberDto } from "@loomkeep/shared/contracts";
 import { UserSummaryResponseDto } from "../../common/dto/user-summary-response.dto";
 
 export class ListMemberResponseDto implements ListMemberDto {

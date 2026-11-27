@@ -1,4 +1,5 @@
-import type { ProfileAccess, UserSummaryDto } from "@loomkeep/shared";
+import type { UserSummaryDto } from "@loomkeep/shared/contracts";
+import type { ProfileAccess } from "@loomkeep/shared/enums";
 
 export class UserSummaryResponseDto implements UserSummaryDto {
   id!: string;

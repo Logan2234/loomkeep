@@ -1,9 +1,5 @@
-import {
-  AlertGroup,
-  DigestCadence,
-  NotificationType,
-  type AlertChannel,
-} from "@loomkeep/shared";
+import { AlertGroup, type AlertChannel } from "@loomkeep/shared/catalog";
+import { DigestCadence, NotificationType } from "@loomkeep/shared/enums";
 import { Injectable, Logger } from "@nestjs/common";
 import { Cron, CronExpression } from "@nestjs/schedule";
 import { jsonObject } from "../common/json.util";

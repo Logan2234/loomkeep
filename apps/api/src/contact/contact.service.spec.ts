@@ -1,4 +1,4 @@
-import { ErrorCode } from "@loomkeep/shared";
+import { ErrorCode } from "@loomkeep/shared/catalog";
 import { vi } from "vitest";
 import type { TurnstileService } from "../auth/turnstile.service";
 import type { MailService } from "../mail/mail.service";

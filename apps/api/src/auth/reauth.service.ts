@@ -1,11 +1,11 @@
+import { ErrorCode } from "@loomkeep/shared/catalog";
 import {
-  ErrorCode,
   REAUTH_METHODS,
   REAUTH_WINDOW_MS,
   type ReauthRequestDto,
   type ReauthResultDto,
   type ReauthStatusDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import * as bcrypt from "bcryptjs";
 import { AppException } from "../common/app.exception";

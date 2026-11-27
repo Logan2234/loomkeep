@@ -2,7 +2,7 @@ import type {
   AuthorPagesDto,
   BookExtremeDto,
   BookStatsDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 
 class BookExtremeResponseDto implements BookExtremeDto {
   title!: string;

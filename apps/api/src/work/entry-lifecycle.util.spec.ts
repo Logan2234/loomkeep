@@ -1,9 +1,5 @@
-import {
-  ActivityType,
-  Domain,
-  ErrorCode,
-  ReviewTargetType,
-} from "@loomkeep/shared";
+import { ErrorCode } from "@loomkeep/shared/catalog";
+import { ActivityType, Domain, ReviewTargetType } from "@loomkeep/shared/enums";
 import { Prisma } from "@prisma/client";
 import { vi } from "vitest";
 import { AppException } from "../common/app.exception";

@@ -1,4 +1,4 @@
-import type { GamePlaythroughDto } from "@loomkeep/shared";
+import type { GamePlaythroughDto } from "@loomkeep/shared/contracts";
 import type { Prisma } from "@prisma/client";
 
 export function toPlaythroughDto(

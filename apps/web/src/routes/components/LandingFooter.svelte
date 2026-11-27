@@ -21,7 +21,7 @@
     PROVIDER_BRANDS,
     type ProviderBrandKey,
   } from "#lib/provider-brands.js";
-  import type { Locale } from "@loomkeep/shared";
+  import type { Locale } from "@loomkeep/shared/catalog";
 
   // The catalogues whose artwork the landing page shows. TMDB's API terms
   // require its notice wherever its data appears, signed out included.

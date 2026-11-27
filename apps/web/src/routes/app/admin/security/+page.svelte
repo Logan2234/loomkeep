@@ -30,11 +30,11 @@
   import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
   import { securityEventLabels } from "#lib/constants/security-events.js";
+  import type { SecurityEventType } from "@loomkeep/shared/enums";
   import type {
     PagedResult,
     SecurityEventDto,
-    SecurityEventType,
-  } from "@loomkeep/shared";
+  } from "@loomkeep/shared/contracts";
   import { flip } from "svelte/animate";
   import { fade } from "svelte/transition";
   import { onDestroy } from "svelte";

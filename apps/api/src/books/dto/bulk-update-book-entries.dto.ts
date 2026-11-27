@@ -1,5 +1,5 @@
-import type { BulkUpdateEntriesDto } from "@loomkeep/shared";
-import { BookOwnershipStatus, BookStatus } from "@loomkeep/shared";
+import type { BulkUpdateEntriesDto } from "@loomkeep/shared/contracts";
+import { BookOwnershipStatus, BookStatus } from "@loomkeep/shared/enums";
 import { IsIn, IsOptional } from "class-validator";
 import { BulkUpdateEntriesBaseBody } from "../../work/dto/bulk-entries.dto";
 

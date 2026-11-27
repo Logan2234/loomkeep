@@ -1,4 +1,4 @@
-import type { ActivityEventDto } from "@loomkeep/shared";
+import type { ActivityEventDto } from "@loomkeep/shared/contracts";
 import { fireEvent, render, waitFor } from "@testing-library/svelte";
 import { describe, expect, it } from "vitest";
 import ActivityItem from "./ActivityItem.svelte";

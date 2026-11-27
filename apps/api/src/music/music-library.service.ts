@@ -1,21 +1,23 @@
 import {
   type BulkEntriesResultDto,
   type BulkEntriesTargetDto,
-  Domain,
   MUSIC_SORT_KEYS,
   type MusicDetailDto,
   type MusicEntryDto,
   type MusicItemDto,
-  type MusicOwnershipStatus,
   type MusicSortKey,
-  type MusicSource,
-  MusicStatus,
   type PagedResult,
   type PileSummaryDto,
   RealtimeEvent,
+} from "@loomkeep/shared/contracts";
+import {
+  Domain,
+  type MusicOwnershipStatus,
+  type MusicSource,
+  MusicStatus,
   ReviewTargetType,
   XpReason,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/enums";
 import { revokeEntryXp } from "../work/entry-lifecycle.util";
 
 import { Injectable } from "@nestjs/common";

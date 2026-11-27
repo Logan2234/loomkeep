@@ -2,7 +2,7 @@ import type {
   EpisodeWatchBatchAction,
   EpisodeWatchBatchResultDto,
   EpisodeWatchRestoreDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 import { Type } from "class-transformer";
 import {
   ArrayNotEmpty,

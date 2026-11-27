@@ -1,11 +1,13 @@
+import { ErrorCode } from "@loomkeep/shared/catalog";
 import {
   type CommentCountDto,
   type CommentDto,
+  type PagedResult,
+} from "@loomkeep/shared/contracts";
+import {
   CommentTargetType,
   type CommentTargetType as CommentTargetTypeT,
-  ErrorCode,
-  type PagedResult,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/enums";
 import {
   Body,
   Controller,

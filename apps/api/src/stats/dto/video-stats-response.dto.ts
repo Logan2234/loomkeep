@@ -3,7 +3,7 @@ import type {
   VideoFilmExtremeDto,
   VideoStatsDto,
   VideoTypeSplitDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 
 class VideoTypeSplitResponseDto implements VideoTypeSplitDto {
   type!: VideoTypeSplitDto["type"];

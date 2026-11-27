@@ -25,7 +25,7 @@
   import { languageName } from "#lib/locales.js";
   import { m } from "#lib/paraglide/messages.js";
   import { theme } from "#lib/theme.svelte.js";
-  import { DigestCadence } from "@loomkeep/shared";
+  import { DigestCadence } from "@loomkeep/shared/enums";
   import SettingsNav from "./components/SettingsNav.svelte";
   import {
     LEGACY_HASH_ROUTES,

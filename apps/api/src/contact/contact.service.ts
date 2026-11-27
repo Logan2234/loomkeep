@@ -1,4 +1,4 @@
-import { ErrorCode } from "@loomkeep/shared";
+import { ErrorCode } from "@loomkeep/shared/catalog";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { TurnstileService } from "../auth/turnstile.service";
 import { AppException } from "../common/app.exception";

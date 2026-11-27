@@ -1,4 +1,4 @@
-import { XpReason } from "@loomkeep/shared";
+import { XpReason } from "@loomkeep/shared/enums";
 import { Injectable } from "@nestjs/common";
 import { addDays, sinceDaysAgo } from "../common/date.util";
 import { localDay, localDayOrUtc } from "../common/local-day.util";

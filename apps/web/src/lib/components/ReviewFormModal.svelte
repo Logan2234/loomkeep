@@ -21,11 +21,13 @@
     writeReviewDraft,
   } from "#lib/review-draft.js";
   import {
-    REVIEW_TEXT_MAX_LENGTH,
-    type ReviewDto,
     type ReviewTargetType,
     type ReviewVisibility,
-  } from "@loomkeep/shared";
+  } from "@loomkeep/shared/enums";
+  import {
+    REVIEW_TEXT_MAX_LENGTH,
+    type ReviewDto,
+  } from "@loomkeep/shared/contracts";
   import { onDestroy, untrack } from "svelte";
   import Modal from "./Modal.svelte";
   import Poster from "./Poster.svelte";

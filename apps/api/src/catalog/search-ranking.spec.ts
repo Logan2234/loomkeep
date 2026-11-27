@@ -1,4 +1,4 @@
-import type { MediaSummaryDto } from "@loomkeep/shared";
+import type { MediaSummaryDto } from "@loomkeep/shared/contracts";
 import { rankBySearchRelevance, relevanceScore } from "./search-ranking";
 
 const media = (

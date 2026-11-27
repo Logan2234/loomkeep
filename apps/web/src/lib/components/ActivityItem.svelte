@@ -4,7 +4,7 @@
   import { activityPhrase, activityRating } from "#lib/activity-phrase.js";
   import Avatar from "#lib/components/Avatar.svelte";
   import RelativeTime from "#lib/components/RelativeTime.svelte";
-  import type { ActivityEventDto } from "@loomkeep/shared";
+  import type { ActivityEventDto } from "@loomkeep/shared/contracts";
 
   let { event }: { event: ActivityEventDto } = $props();
 

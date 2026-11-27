@@ -9,7 +9,7 @@
   } from "#lib/format.js";
   import { layout } from "#lib/layout.svelte.js";
   import { m } from "#lib/paraglide/messages.js";
-  import type { MediaDetailEpisodeDto } from "@loomkeep/shared";
+  import type { MediaDetailEpisodeDto } from "@loomkeep/shared/contracts";
   import { airDateLabel, scoreLabel, upcomingLabel } from "./episode-format";
   import { isAired } from "./episodes";
 

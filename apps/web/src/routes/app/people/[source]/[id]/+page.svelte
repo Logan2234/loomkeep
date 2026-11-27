@@ -27,14 +27,13 @@
   import SeeMore from "#lib/components/SeeMore.svelte";
   import { cubicOut } from "svelte/easing";
   import { fade, slide } from "svelte/transition";
+  import type { BookStatus, EntryStatus } from "@loomkeep/shared/enums";
   import type {
-    BookStatus,
     CreatorCreditKind,
     CreatorGroupKey,
     CreatorSource,
     CreatorWorkDto,
-    EntryStatus,
-  } from "@loomkeep/shared";
+  } from "@loomkeep/shared/contracts";
   import { workHref } from "#lib/creator-href.js";
   import { lifeYears } from "#lib/life-years.js";
   import {

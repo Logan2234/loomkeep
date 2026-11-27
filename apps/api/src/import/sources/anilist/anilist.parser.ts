@@ -1,4 +1,4 @@
-import type { EntryStatus } from "@loomkeep/shared";
+import type { EntryStatus } from "@loomkeep/shared/enums";
 import { toSummary } from "../../../catalog/providers/anilist.mapper";
 import type {
   AnilistFuzzyDate,

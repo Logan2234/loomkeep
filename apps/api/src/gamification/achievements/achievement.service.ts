@@ -1,12 +1,12 @@
+import { ErrorCode } from "@loomkeep/shared/catalog";
 import {
-  ErrorCode,
   MAX_EQUIPPED_BADGES,
   RealtimeEvent,
-  XpReason,
   type AchievementDto,
   type AchievementRarityDto,
   type PendingAchievementDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import { XpReason } from "@loomkeep/shared/enums";
 import { HttpStatus, Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { Cron, CronExpression } from "@nestjs/schedule";

@@ -1,4 +1,4 @@
-import type { AdminOverviewDto } from "@loomkeep/shared";
+import type { AdminOverviewDto } from "@loomkeep/shared/contracts";
 import { Injectable } from "@nestjs/common";
 import { EventsGateway } from "../events/events.gateway";
 import { PrismaService } from "../prisma/prisma.service";

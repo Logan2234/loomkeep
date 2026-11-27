@@ -1,4 +1,4 @@
-import { ErrorCode } from "@loomkeep/shared";
+import { ErrorCode } from "@loomkeep/shared/catalog";
 import { AppException } from "./app.exception";
 import { parseEnumParam } from "./parse-enum-param.util";
 

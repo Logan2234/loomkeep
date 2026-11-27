@@ -1,10 +1,5 @@
+import { ErrorCode } from "@loomkeep/shared/catalog";
 import {
-  type BookStatus,
-  Domain,
-  type EntryStatus,
-  ErrorCode,
-  type GameStatus,
-  MediaType,
   type MessageSagaDto,
   type MessageWhereDto,
   type PickDomain,
@@ -13,7 +8,14 @@ import {
   type SagaStep,
   type UserSummaryDto,
   type WatchOfferKind,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import {
+  type BookStatus,
+  Domain,
+  type EntryStatus,
+  type GameStatus,
+  MediaType,
+} from "@loomkeep/shared/enums";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { BookSagaService } from "../books/book-saga.service";
 import { MediaItemService } from "../catalog/media-item.service";

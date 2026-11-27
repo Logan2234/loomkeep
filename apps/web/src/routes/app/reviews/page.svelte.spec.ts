@@ -4,7 +4,7 @@ import { formatNumber } from "#lib/format.js";
 import { m } from "#lib/paraglide/messages.js";
 import { apiUrl, server } from "#lib/test/msw.js";
 import { renderWithQuery } from "#lib/test/render.js";
-import type { MyReviewDto, UserDto } from "@loomkeep/shared";
+import type { MyReviewDto, UserDto } from "@loomkeep/shared/contracts";
 import { screen, waitFor, within } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";

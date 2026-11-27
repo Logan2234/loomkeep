@@ -1,4 +1,5 @@
-import type { CatalogSource, MediaItemDto, MediaType } from "@loomkeep/shared";
+import type { MediaItemDto } from "@loomkeep/shared/contracts";
+import type { CatalogSource, MediaType } from "@loomkeep/shared/enums";
 
 export class MediaItemResponseDto implements MediaItemDto {
   upcoming?: boolean;

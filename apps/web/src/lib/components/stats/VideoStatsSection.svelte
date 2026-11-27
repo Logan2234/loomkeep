@@ -9,11 +9,11 @@
   import { keys } from "#lib/api/keys.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
   import { getVideoSeries, getVideoStats } from "#lib/api/stats.js";
+  import { type MediaType } from "@loomkeep/shared/enums";
   import {
     type DomainStatusBreakdownDto,
     type WatchStaleness,
-    type MediaType,
-  } from "@loomkeep/shared";
+  } from "@loomkeep/shared/contracts";
   import { isFeatureNew } from "#lib/feature-badges.js";
   import NewBadge from "#lib/components/NewBadge.svelte";
   import PremiumTeaser from "../PremiumTeaser.svelte";

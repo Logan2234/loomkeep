@@ -1,6 +1,6 @@
 import { m } from "#lib/paraglide/messages.js";
 import { renderWithQuery } from "#lib/test/render.js";
-import type { MediaDetailSeasonDto } from "@loomkeep/shared";
+import type { MediaDetailSeasonDto } from "@loomkeep/shared/contracts";
 import { screen } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { MAX_SESSION_DURATION_MINUTES } from "@loomkeep/shared";
+  import { MAX_SESSION_DURATION_MINUTES } from "@loomkeep/shared/contracts";
 
   import { m } from "#lib/paraglide/messages.js";
   import { formatSessionMinutes } from "#lib/session-presentation.js";

@@ -1,8 +1,8 @@
 import type {
   AdminCacheExternalIdDto,
   AdminCacheItemDetailDto,
-  Domain,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import type { Domain } from "@loomkeep/shared/enums";
 
 class AdminCacheExternalIdResponseDto implements AdminCacheExternalIdDto {
   source!: string;

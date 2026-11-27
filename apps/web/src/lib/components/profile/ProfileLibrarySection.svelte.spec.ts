@@ -1,6 +1,6 @@
 import { auth } from "#lib/auth.svelte.js";
 import { m } from "#lib/paraglide/messages.js";
-import type { ProfileDomainStatDto, UserDto } from "@loomkeep/shared";
+import type { ProfileDomainStatDto, UserDto } from "@loomkeep/shared/contracts";
 import { render, screen } from "@testing-library/svelte";
 import { afterEach, describe, expect, it } from "vitest";
 import ProfileLibrarySection from "./ProfileLibrarySection.svelte";

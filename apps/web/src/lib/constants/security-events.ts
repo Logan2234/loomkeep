@@ -1,5 +1,5 @@
 import { m } from "#lib/paraglide/messages.js";
-import type { SecurityEventType } from "@loomkeep/shared";
+import type { SecurityEventType } from "@loomkeep/shared/enums";
 
 /** What each security event is called, for the admin security log and account page. */
 export function securityEventLabels(): Record<SecurityEventType, string> {
