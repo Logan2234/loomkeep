@@ -137,6 +137,7 @@
                 {:else if selection?.active}
                   <SearchSelectMark
                     on={selection.has(hit.href)}
+                    overArtwork={false}
                     class="relative" />
                 {:else}
                   <button

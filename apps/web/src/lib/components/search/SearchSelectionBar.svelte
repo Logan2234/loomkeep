@@ -94,12 +94,19 @@
     class="pointer-events-auto flex w-full items-center gap-1 rounded-2xl border border-[#2A2E38] bg-[#15171C] p-1.5 text-[#ECECEA] shadow-2xl shadow-black/40 sm:w-auto sm:pl-4"
     in:fly|global={{ y: 24, duration: reduced ? 0 : 260 }}
     out:fly|global={{ y: 24, duration: reduced ? 0 : 180 }}>
-    <span
-      aria-live="polite"
-      class="mr-auto pl-2 font-mono text-sm font-bold tabular-nums sm:mr-2 sm:pl-0">
-      {count === 1
-        ? m.library_bulk_count_one({ count })
-        : m.library_bulk_count_many({ count })}
+    <span aria-live="polite" class="mr-auto sm:mr-2">
+      <!-- Phones: the count alone, as a badge, so the bar fits one row. -->
+      <span
+        aria-hidden="true"
+        class="bg-accent text-accent-fg ml-1 grid h-7 min-w-7 place-items-center rounded-full px-2 font-mono text-sm font-bold tabular-nums sm:hidden">
+        {count}
+      </span>
+      <span
+        class="sr-only font-mono text-sm font-bold tabular-nums sm:not-sr-only">
+        {count === 1
+          ? m.library_bulk_count_one({ count })
+          : m.library_bulk_count_many({ count })}
+      </span>
     </span>
     <button
       type="button"

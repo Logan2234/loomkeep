@@ -51,7 +51,10 @@
   <section aria-label={m.profile_figures_title()}>
     <ProfileSectionHeading label={m.profile_figures_title()}>
       {#snippet action()}
-        {#if isFeatureNew("profile-figures")}<NewBadge />{/if}
+        <!-- A phone's heading has no room for both badge and switch. -->
+        {#if isFeatureNew("profile-figures")}
+          <span class="max-sm:hidden"><NewBadge /></span>
+        {/if}
         <div
           role="group"
           aria-label={m.profile_figures_period()}
@@ -63,7 +66,7 @@
             <button
               type="button"
               aria-pressed={period === value}
-              class="decoration-accent rounded px-1 py-0.5 underline-offset-[3px] transition-colors {period ===
+              class="decoration-accent rounded px-1 py-0.5 whitespace-nowrap underline-offset-[3px] transition-colors {period ===
               value
                 ? 'text-fg font-bold underline'
                 : 'text-dim hover:text-fg'}"
