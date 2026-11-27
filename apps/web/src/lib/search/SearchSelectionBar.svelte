@@ -16,7 +16,7 @@
     type BulkOutcome,
     type SearchSelection,
   } from "#lib/search/search-selection.svelte.js";
-  import { toast } from "#lib/ui/toast.svelte.js";
+  import { toast } from "#lib/ui/toast-store.svelte.js";
   import { fly } from "svelte/transition";
 
   let { selection }: { selection: SearchSelection } = $props();

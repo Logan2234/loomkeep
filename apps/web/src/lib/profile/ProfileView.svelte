@@ -42,7 +42,7 @@
     scanNatively,
   } from "#lib/native/scan.js";
   import { profileUsernameFromQr } from "#lib/share/scan-codes.js";
-  import { toast } from "#lib/ui/toast.svelte.js";
+  import { toast } from "#lib/ui/toast-store.svelte.js";
   import { goto } from "$app/navigation";
   import type {
     RelationshipDto,

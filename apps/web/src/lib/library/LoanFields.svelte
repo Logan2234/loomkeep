@@ -21,7 +21,7 @@
   import { appConfig } from "#lib/shell/config.svelte.js";
   import { prefersReducedMotion } from "#lib/ui/motion.js";
   import { m } from "#lib/paraglide/messages.js";
-  import { toast } from "#lib/ui/toast.svelte.js";
+  import { toast } from "#lib/ui/toast-store.svelte.js";
   import { LOAN_PERSON_MAX_LENGTH } from "@loomkeep/shared/contracts";
   import Combobox from "../ui/Combobox.svelte";
   import Icon from "../ui/Icon.svelte";

@@ -10,7 +10,7 @@
   import Icon from "#lib/ui/Icon.svelte";
   import { downloadBlob, datedFilename } from "#lib/ui/download.js";
   import { m } from "#lib/paraglide/messages.js";
-  import { toast } from "#lib/ui/toast.svelte.js";
+  import { toast } from "#lib/ui/toast-store.svelte.js";
   import { Domain } from "@loomkeep/shared/enums";
   import { flashAnchor } from "#lib/shell/flash-anchor.js";
 

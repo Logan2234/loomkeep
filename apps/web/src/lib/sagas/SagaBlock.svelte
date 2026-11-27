@@ -7,7 +7,7 @@
   import { prefersReducedMotion } from "#lib/ui/motion.js";
   import { m } from "#lib/paraglide/messages.js";
   import type { SagaMemberView } from "#lib/sagas/saga.js";
-  import { toast } from "#lib/ui/toast.svelte.js";
+  import { toast } from "#lib/ui/toast-store.svelte.js";
   import { cubicOut } from "svelte/easing";
   import { fly, scale, slide } from "svelte/transition";
 

@@ -6,7 +6,7 @@ import { appConfig } from "#lib/shell/config.svelte.js";
 import { layout } from "#lib/shell/layout.svelte.js";
 import { apiUrl, server } from "#lib/test/msw.js";
 import { renderWithQuery } from "#lib/test/render.js";
-import { toast } from "#lib/ui/toast.svelte.js";
+import { toast } from "#lib/ui/toast-store.svelte.js";
 import { ErrorCode } from "@loomkeep/shared/catalog";
 import {
   type LibraryEntryDto,

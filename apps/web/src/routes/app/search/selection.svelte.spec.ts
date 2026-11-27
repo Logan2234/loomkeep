@@ -3,7 +3,7 @@ import { m } from "#lib/paraglide/messages.js";
 import { apiUrl, server } from "#lib/test/msw.js";
 import { visit } from "#lib/test/navigation.svelte.js";
 import { renderWithQuery } from "#lib/test/render.js";
-import { toast } from "#lib/ui/toast.svelte.js";
+import { toast } from "#lib/ui/toast-store.svelte.js";
 import { ErrorCode } from "@loomkeep/shared/catalog";
 import { screen, waitFor } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";

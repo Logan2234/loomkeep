@@ -30,7 +30,7 @@
   import { DATE_MEDIUM_OPTIONS, formatDate } from "#lib/ui/format.js";
 
   import { m } from "#lib/paraglide/messages.js";
-  import { toast } from "#lib/ui/toast.svelte.js";
+  import { toast } from "#lib/ui/toast-store.svelte.js";
   import type {
     MfaStatusDto,
     WebauthnCredentialDto,

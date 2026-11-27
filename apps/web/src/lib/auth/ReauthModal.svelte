@@ -17,7 +17,7 @@
   import { normalizeCodeInput } from "#lib/auth/one-time-code.js";
   import { m } from "#lib/paraglide/messages.js";
   import { reauth } from "#lib/auth/reauth.svelte.js";
-  import { toast } from "#lib/ui/toast.svelte.js";
+  import { toast } from "#lib/ui/toast-store.svelte.js";
   import {
     OTP_CODE_LENGTH,
     type ReauthMethod,

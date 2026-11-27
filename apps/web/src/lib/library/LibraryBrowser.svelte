@@ -97,7 +97,7 @@
   import { m } from "#lib/paraglide/messages.js";
   import { pileHeaderLabel } from "#lib/library/pile.js";
   import { filtersToSearchParams } from "#lib/library/saved-views.js";
-  import { toast } from "#lib/ui/toast.svelte.js";
+  import { toast } from "#lib/ui/toast-store.svelte.js";
   import type { MediaType } from "@loomkeep/shared/enums";
   import type {
     BulkEntriesResultDto,

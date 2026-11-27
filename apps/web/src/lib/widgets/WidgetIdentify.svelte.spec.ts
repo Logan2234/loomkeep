@@ -1,7 +1,7 @@
 import { auth } from "#lib/auth/auth.svelte.js";
 import { onboardingReplay } from "#lib/onboarding/onboarding-replay.svelte.js";
 import { layout } from "#lib/shell/layout.svelte.js";
-import { toast } from "#lib/ui/toast.svelte.js";
+import { toast } from "#lib/ui/toast-store.svelte.js";
 import type { UserDto } from "@loomkeep/shared/contracts";
 import { render } from "@testing-library/svelte";
 import { createRawSnippet, flushSync } from "svelte";

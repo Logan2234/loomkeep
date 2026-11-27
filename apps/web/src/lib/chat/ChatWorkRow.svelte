@@ -14,7 +14,7 @@
   import Poster from "#lib/work/Poster.svelte";
   import { layout } from "#lib/shell/layout.svelte.js";
   import { m } from "#lib/paraglide/messages.js";
-  import { toast } from "#lib/ui/toast.svelte.js";
+  import { toast } from "#lib/ui/toast-store.svelte.js";
   import type { WorkThreadDto } from "@loomkeep/shared/contracts";
   import {
     badgeTone,

@@ -4,7 +4,7 @@ import { layout } from "#lib/shell/layout.svelte.js";
 import { apiUrl, server } from "#lib/test/msw.js";
 import { page, visit } from "#lib/test/navigation.svelte.js";
 import { renderWithQuery } from "#lib/test/render.js";
-import { toast } from "#lib/ui/toast.svelte.js";
+import { toast } from "#lib/ui/toast-store.svelte.js";
 import { ErrorCode } from "@loomkeep/shared/catalog";
 import { type NotificationDto, type UserDto } from "@loomkeep/shared/contracts";
 import { screen, waitFor, within } from "@testing-library/svelte";

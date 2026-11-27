@@ -23,7 +23,7 @@
   import PasswordRequirements from "#lib/auth/PasswordRequirements.svelte";
   import { normalizeCodeInput } from "#lib/auth/one-time-code.js";
   import { m } from "#lib/paraglide/messages.js";
-  import { toast } from "#lib/ui/toast.svelte.js";
+  import { toast } from "#lib/ui/toast-store.svelte.js";
   import { USER_LIMITS, OTP_CODE_LENGTH } from "@loomkeep/shared/contracts";
   import {
     isPasswordValid,

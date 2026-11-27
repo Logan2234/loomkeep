@@ -7,7 +7,7 @@
   import Switch from "#lib/ui/Switch.svelte";
   import { downloadBlob, datedFilename } from "#lib/ui/download.js";
   import { m } from "#lib/paraglide/messages.js";
-  import { toast } from "#lib/ui/toast.svelte.js";
+  import { toast } from "#lib/ui/toast-store.svelte.js";
   import type { MigrationExportDto } from "@loomkeep/shared/contracts";
   import { flashAnchor } from "#lib/shell/flash-anchor.js";
   import type { ProviderBrandKey } from "#lib/work/provider-brands.js";

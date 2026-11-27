@@ -1,5 +1,5 @@
 import { m } from "#lib/paraglide/messages.js";
-import { toast } from "#lib/ui/toast.svelte.js";
+import { toast } from "#lib/ui/toast-store.svelte.js";
 
 const COPY_FEEDBACK_MS = 2000;
 

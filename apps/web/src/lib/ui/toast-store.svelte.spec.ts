@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { ToastStore } from "./toast.svelte";
+import { ToastStore } from "./toast-store.svelte.js";
 
 describe("ToastStore actions", () => {
   afterEach(() => vi.useRealTimers());

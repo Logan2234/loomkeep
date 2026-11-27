@@ -41,7 +41,7 @@
     scanNatively,
   } from "#lib/native/scan.js";
   import { isIsbnBarcode } from "#lib/share/scan-codes.js";
-  import { toast } from "#lib/ui/toast.svelte.js";
+  import { toast } from "#lib/ui/toast-store.svelte.js";
   import { quickAddTarget } from "#lib/library/quick-add.js";
   import {
     SearchSelection,
