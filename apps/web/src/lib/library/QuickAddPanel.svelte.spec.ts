@@ -78,7 +78,7 @@ describe("QuickAddPanel", () => {
           ),
         ),
       ),
-      http.put(apiUrl("/library"), async ({ request }) => {
+      http.put(apiUrl("/media"), async ({ request }) => {
         calls.push(`upsert ${JSON.stringify(await request.json())}`);
         tracked = true;
         return HttpResponse.json({
@@ -95,7 +95,7 @@ describe("QuickAddPanel", () => {
         calls.push(`unlist ${params.id} ${params.itemId}`);
         return new HttpResponse(null, { status: 204 });
       }),
-      http.delete(apiUrl("/library/entries/:id"), ({ params }) => {
+      http.delete(apiUrl("/media/entries/:id"), ({ params }) => {
         calls.push(`remove ${params.id}`);
         tracked = false;
         return new HttpResponse(null, { status: 204 });
@@ -153,7 +153,7 @@ describe("QuickAddPanel", () => {
       http.get(apiUrl("/media/series/95396"), () =>
         HttpResponse.json(mediaDetail("SERIES")),
       ),
-      http.put(apiUrl("/library"), async ({ request }) => {
+      http.put(apiUrl("/media"), async ({ request }) => {
         calls.push(`upsert ${JSON.stringify(await request.json())}`);
         return HttpResponse.json({
           id: "entry-1",
@@ -161,7 +161,7 @@ describe("QuickAddPanel", () => {
           mediaItem: { id: "item-1" },
         });
       }),
-      http.post(apiUrl("/library/entries/bulk"), async ({ request }) => {
+      http.post(apiUrl("/media/entries/bulk"), async ({ request }) => {
         calls.push(`bulk ${JSON.stringify(await request.json())}`);
         return HttpResponse.json({ updated: 1, skipped: 0 });
       }),

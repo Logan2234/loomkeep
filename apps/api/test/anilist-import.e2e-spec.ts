@@ -72,7 +72,7 @@ describe("AniList import (e2e)", () => {
     expect((await settled(committed.body.id)).status).toBe("completed");
 
     const library = await request(http)
-      .get("/api/library")
+      .get("/api/media")
       .set("Cookie", cookies)
       .expect(200);
     expect(library.body.items).toHaveLength(1);

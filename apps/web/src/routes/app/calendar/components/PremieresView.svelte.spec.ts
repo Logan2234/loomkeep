@@ -59,9 +59,9 @@ beforeEach(() => {
   vi.setSystemTime(new Date(2026, 10, 15, 15, 0));
   upserts = [];
   server.use(
-    http.get(apiUrl("/catalog/premieres"), () => HttpResponse.json(PREMIERES)),
-    http.get(apiUrl("/library/tracked"), () => HttpResponse.json([])),
-    http.put(apiUrl("/library"), async ({ request }) => {
+    http.get(apiUrl("/media/premieres"), () => HttpResponse.json(PREMIERES)),
+    http.get(apiUrl("/media/tracked"), () => HttpResponse.json([])),
+    http.put(apiUrl("/media"), async ({ request }) => {
       upserts.push(await request.json());
       return HttpResponse.json({});
     }),

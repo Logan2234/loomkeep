@@ -91,7 +91,7 @@ describe("XP isolation between users (e2e)", () => {
       });
       viewer.entryId = entry.id;
       await request(http)
-        .post(`/api/library/seasons/${seasonId}/watches`)
+        .post(`/api/media/seasons/${seasonId}/watches`)
         .set("Cookie", viewer.cookie)
         .expect(204);
     }
@@ -108,7 +108,7 @@ describe("XP isolation between users (e2e)", () => {
     const scoreBefore = await score(viewers.a.id);
 
     await request(http)
-      .delete(`/api/library/episodes/${episodeIds[0]}/watches`)
+      .delete(`/api/media/episodes/${episodeIds[0]}/watches`)
       .set("Cookie", viewers.b.cookie)
       .expect(204);
 
@@ -119,7 +119,7 @@ describe("XP isolation between users (e2e)", () => {
 
   it("revokes it only for the viewer who removes the show", async () => {
     await request(http)
-      .post(`/api/library/episodes/${episodeIds[0]}/watches`)
+      .post(`/api/media/episodes/${episodeIds[0]}/watches`)
       .set("Cookie", viewers.b.cookie)
       .send({})
       .expect(201);
@@ -127,7 +127,7 @@ describe("XP isolation between users (e2e)", () => {
     const scoreBefore = await score(viewers.a.id);
 
     await request(http)
-      .delete(`/api/library/entries/${viewers.b.entryId}`)
+      .delete(`/api/media/entries/${viewers.b.entryId}`)
       .set("Cookie", viewers.b.cookie)
       .expect(204);
 

@@ -132,7 +132,7 @@ describe("SagaSection", () => {
     serveSaga(titans);
     let body: unknown = null;
     server.use(
-      http.put(apiUrl("/library"), async ({ request }) => {
+      http.put(apiUrl("/media"), async ({ request }) => {
         body = await request.json();
         return HttpResponse.json({ id: "entry-5" });
       }),

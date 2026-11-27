@@ -25,7 +25,7 @@ beforeEach(() => {
     listenServices: ["BANDCAMP"],
   } as unknown as UserDto;
   server.use(
-    http.get(apiUrl("/catalog/watch-providers"), () =>
+    http.get(apiUrl("/media/watch-providers"), () =>
       HttpResponse.json({ region: "FR", regions: ["FR"], providers: [] }),
     ),
     http.patch(apiUrl("/users/me"), async ({ request }) => {
@@ -59,7 +59,7 @@ describe("Streaming settings › music services", () => {
     auth.user = { ...auth.user!, enabledDomains: ["MUSIC"] } as UserDto;
     let catalogFetched = false;
     server.use(
-      http.get(apiUrl("/catalog/watch-providers"), () => {
+      http.get(apiUrl("/media/watch-providers"), () => {
         catalogFetched = true;
         return HttpResponse.json({ region: "FR", regions: [], providers: [] });
       }),

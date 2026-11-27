@@ -89,7 +89,7 @@ const modeSwitch = createRawSnippet(() => ({ render: () => "<span></span>" }));
 function serve(sagas: LibrarySagasDto = SAGAS) {
   const requests: URL[] = [];
   server.use(
-    http.get(apiUrl("/library/sagas"), ({ request }) => {
+    http.get(apiUrl("/media/sagas"), ({ request }) => {
       requests.push(new URL(request.url));
       return HttpResponse.json(sagas);
     }),
@@ -169,7 +169,7 @@ describe("SagasView", () => {
     serve();
     let body: unknown = null;
     server.use(
-      http.put(apiUrl("/library"), async ({ request }) => {
+      http.put(apiUrl("/media"), async ({ request }) => {
         body = await request.json();
         return HttpResponse.json({ id: "entry-1" });
       }),

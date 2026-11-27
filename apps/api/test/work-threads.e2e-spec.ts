@@ -36,7 +36,7 @@ describe("Work threads (e2e)", () => {
     session[key] = authCookies(registered);
 
     const entry = await request(http)
-      .put("/api/library")
+      .put("/api/media")
       .set("Cookie", session[key])
       .send({
         source: "ANILIST",

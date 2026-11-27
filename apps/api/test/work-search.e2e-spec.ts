@@ -44,7 +44,7 @@ describe("Work search (e2e)", () => {
     await prisma.user.updateMany({ data: { enabledDomains: ["MEDIA"] } });
 
     const entry = await request(http)
-      .put("/api/library")
+      .put("/api/media")
       .set("Cookie", session.alice)
       .send({
         source: "ANILIST",

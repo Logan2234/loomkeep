@@ -44,7 +44,7 @@ export interface LibrarySagaFilters {
 
 /** The library's sagas in progress, and the ones waiting on a sequel. */
 export const listLibrarySagas = (filters: LibrarySagaFilters = {}) =>
-  typedRequest("/library/sagas", {
+  typedRequest("/media/sagas", {
     query: {
       q: filters.query || undefined,
       type: filters.types,
@@ -59,10 +59,10 @@ export const getLibraryDomainCounts = () =>
   typedRequest("/library/domain-counts");
 
 /** Every tracked work and its effective status, in one request (search's "already added" flags). */
-export const listTrackedMedia = () => typedRequest("/library/tracked");
+export const listTrackedMedia = () => typedRequest("/media/tracked");
 
 export function listLibrary(filters: ListLibraryFilters = {}) {
-  return typedRequest("/library", {
+  return typedRequest("/media", {
     query: {
       lang: getLocale(),
       q: filters.query,
@@ -79,7 +79,7 @@ export function listLibrary(filters: ListLibraryFilters = {}) {
 
 /** What's left to watch among the entries `listLibrary` returns for the same filters. */
 export function getLibraryPile(filters: ListLibraryFilters = {}) {
-  return typedRequest("/library/pile", {
+  return typedRequest("/media/pile", {
     query: {
       lang: getLocale(),
       q: filters.query,
@@ -92,7 +92,7 @@ export function getLibraryPile(filters: ListLibraryFilters = {}) {
 }
 
 export const upsertLibraryEntry = (body: UpsertLibraryEntryDto) =>
-  typedRequest("/library", { method: "PUT", body });
+  typedRequest("/media", { method: "PUT", body });
 
 export const updateLibraryEntry = (
   entryId: string,
@@ -114,34 +114,34 @@ export const updateLibraryEntry = (
     >
   > & { loanReturned?: boolean },
 ) =>
-  typedRequest("/library/entries/{id}", {
+  typedRequest("/media/entries/{id}", {
     method: "PATCH",
     params: { id: entryId },
     body,
   });
 
 export const deleteLibraryEntry = (entryId: string): Promise<void> =>
-  typedRequest("/library/entries/{id}", {
+  typedRequest("/media/entries/{id}", {
     method: "DELETE",
     params: { id: entryId },
   });
 
 // Movies only.
 export const addLibraryReplay = (entryId: string) =>
-  typedRequest("/library/entries/{id}/replays", {
+  typedRequest("/media/entries/{id}/replays", {
     method: "POST",
     params: { id: entryId },
     body: {},
   });
 
 export const deleteLibraryReplay = (replayId: string): Promise<void> =>
-  typedRequest("/library/replays/{id}", {
+  typedRequest("/media/replays/{id}", {
     method: "DELETE",
     params: { id: replayId },
   });
 
 export const watchEpisode = (episodeId: string) =>
-  typedRequest("/library/episodes/{episodeId}/watches", {
+  typedRequest("/media/episodes/{episodeId}/watches", {
     method: "POST",
     params: { episodeId },
     body: {},
@@ -149,21 +149,21 @@ export const watchEpisode = (episodeId: string) =>
 
 /** Mark every not-yet-watched episode of a season as watched. */
 export const watchSeason = (seasonId: string): Promise<void> =>
-  typedRequest("/library/seasons/{seasonId}/watches", {
+  typedRequest("/media/seasons/{seasonId}/watches", {
     method: "POST",
     params: { seasonId },
   });
 
 /** Mark all regular episodes up to and including this one (specials excluded). */
 export const watchThrough = (episodeId: string): Promise<void> =>
-  typedRequest("/library/episodes/{episodeId}/watch-through", {
+  typedRequest("/media/episodes/{episodeId}/watch-through", {
     method: "POST",
     params: { episodeId },
   });
 
 /** Undo the most recent watch of an episode (unwatches it at a single watch). */
 export const unwatchEpisode = (episodeId: string): Promise<void> =>
-  typedRequest("/library/episodes/{episodeId}/watches", {
+  typedRequest("/media/episodes/{episodeId}/watches", {
     method: "DELETE",
     params: { episodeId },
   });
@@ -173,7 +173,7 @@ export const batchEpisodeWatches = (
   action: EpisodeWatchBatchAction,
   episodeIds: string[],
 ): Promise<EpisodeWatchBatchResultDto> =>
-  typedRequest("/library/episodes/watches/batch", {
+  typedRequest("/media/episodes/watches/batch", {
     method: "POST",
     body: { action, episodeIds },
   });
@@ -183,11 +183,11 @@ export const undoEpisodeWatches = (body: {
   deleteWatchIds?: string[];
   restore?: EpisodeWatchRestoreDto[];
 }): Promise<void> =>
-  typedRequest("/library/episodes/watches/undo", { method: "POST", body });
+  typedRequest("/media/episodes/watches/undo", { method: "POST", body });
 
 /** Clear every watch (all rewatches included) for every episode of a season. */
 export const unwatchSeason = (seasonId: string): Promise<void> =>
-  typedRequest("/library/seasons/{seasonId}/watches", {
+  typedRequest("/media/seasons/{seasonId}/watches", {
     method: "DELETE",
     params: { seasonId },
   });
@@ -199,7 +199,7 @@ export const bulkUpdateLibraryEntries = (
     (typeof MEDIA_BULK_STATUSES)[number],
     MediaOwnershipStatus
   >,
-) => typedRequest("/library/entries/bulk", { method: "POST", body });
+) => typedRequest("/media/entries/bulk", { method: "POST", body });
 
 export const bulkDeleteLibraryEntries = (body: BulkEntriesTargetDto) =>
-  typedRequest("/library/entries/bulk-delete", { method: "POST", body });
+  typedRequest("/media/entries/bulk-delete", { method: "POST", body });

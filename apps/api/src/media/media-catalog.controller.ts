@@ -42,7 +42,7 @@ import { TmdbProvider } from "./providers/tmdb.provider";
 import { rankBySearchRelevance } from "./search-ranking";
 import { resolveWatchRegion } from "./watch-region.util";
 
-@Controller("catalog")
+@Controller("media")
 export class MediaCatalogController {
   private readonly logger = new Logger(MediaCatalogController.name);
 

@@ -100,43 +100,40 @@ beforeEach(() => {
   };
 
   server.use(
-    http.post(apiUrl("/library/episodes/:id/watches"), record),
-    http.delete(apiUrl("/library/episodes/:id/watches"), record),
-    http.post(apiUrl("/library/episodes/:id/watch-through"), record),
-    http.post(apiUrl("/library/seasons/:id/watches"), record),
-    http.post(
-      apiUrl("/library/episodes/watches/batch"),
-      async ({ request }) => {
-        const body = (await request.json()) as {
-          action: string;
-          episodeIds: string[];
-        };
-        batches.push(body);
-        return HttpResponse.json({
-          created:
-            body.action === "unwatch"
-              ? []
-              : body.episodeIds.map((episodeId, i) => ({
-                  id: `new${i}`,
-                  episodeId,
-                })),
-          removed:
-            body.action === "unwatch"
-              ? body.episodeIds.map((episodeId) => ({
-                  episodeId,
-                  watchedAt: "2024-03-03T00:00:00.000Z",
-                }))
-              : [],
-        });
-      },
-    ),
-    http.post(apiUrl("/library/episodes/watches/undo"), async ({ request }) => {
+    http.post(apiUrl("/media/episodes/:id/watches"), record),
+    http.delete(apiUrl("/media/episodes/:id/watches"), record),
+    http.post(apiUrl("/media/episodes/:id/watch-through"), record),
+    http.post(apiUrl("/media/seasons/:id/watches"), record),
+    http.post(apiUrl("/media/episodes/watches/batch"), async ({ request }) => {
+      const body = (await request.json()) as {
+        action: string;
+        episodeIds: string[];
+      };
+      batches.push(body);
+      return HttpResponse.json({
+        created:
+          body.action === "unwatch"
+            ? []
+            : body.episodeIds.map((episodeId, i) => ({
+                id: `new${i}`,
+                episodeId,
+              })),
+        removed:
+          body.action === "unwatch"
+            ? body.episodeIds.map((episodeId) => ({
+                episodeId,
+                watchedAt: "2024-03-03T00:00:00.000Z",
+              }))
+            : [],
+      });
+    }),
+    http.post(apiUrl("/media/episodes/watches/undo"), async ({ request }) => {
       undos.push(await request.json());
       return new HttpResponse(null, { status: 204 });
     }),
-    http.delete(apiUrl("/library/seasons/:id/watches"), record),
+    http.delete(apiUrl("/media/seasons/:id/watches"), record),
     http.get(
-      apiUrl("/catalog/tmdb/:id/seasons/:season/episodes/:episode/media"),
+      apiUrl("/media/tmdb/:id/seasons/:season/episodes/:episode/media"),
       () => HttpResponse.json({ images: [], videos: [] }),
     ),
   );
@@ -237,7 +234,7 @@ describe("EpisodesSection", () => {
     await user.click(markButtons()[0]);
 
     await waitFor(() =>
-      expect(requests).toEqual(["POST /library/episodes/s1e2/watches"]),
+      expect(requests).toEqual(["POST /media/episodes/s1e2/watches"]),
     );
     expect(props.reload).toHaveBeenCalled();
   });
@@ -258,7 +255,7 @@ describe("EpisodesSection", () => {
     );
 
     await waitFor(() =>
-      expect(requests).toEqual(["POST /library/episodes/s2e2/watch-through"]),
+      expect(requests).toEqual(["POST /media/episodes/s2e2/watch-through"]),
     );
   });
 
@@ -270,15 +267,15 @@ describe("EpisodesSection", () => {
       screen.getByRole("button", { name: m.media_catch_up_cancel() }),
     );
     await waitFor(() =>
-      expect(requests).toEqual(["POST /library/episodes/s1e4/watches"]),
+      expect(requests).toEqual(["POST /media/episodes/s1e4/watches"]),
     );
 
     await user.click(markButtons()[1]);
 
     await waitFor(() =>
       expect(requests).toEqual([
-        "POST /library/episodes/s1e4/watches",
-        "POST /library/episodes/s1e3/watches",
+        "POST /media/episodes/s1e4/watches",
+        "POST /media/episodes/s1e3/watches",
       ]),
     );
     expect(screen.queryByText(m.media_catch_up_title())).toBeNull();
@@ -369,8 +366,8 @@ describe("EpisodesSection", () => {
 
     await waitFor(() =>
       expect(requests).toEqual([
-        "POST /library/episodes/s1e1/watches",
-        "DELETE /library/episodes/s1e1/watches",
+        "POST /media/episodes/s1e1/watches",
+        "DELETE /media/episodes/s1e1/watches",
       ]),
     );
   });
@@ -386,7 +383,7 @@ describe("EpisodesSection", () => {
     );
 
     await waitFor(() =>
-      expect(requests).toEqual(["POST /library/episodes/s1e2/watches"]),
+      expect(requests).toEqual(["POST /media/episodes/s1e2/watches"]),
     );
     expect(
       within(panel()).getByRole("heading", { name: /Episode 1\.3/ }),
@@ -423,7 +420,7 @@ describe("EpisodesSection", () => {
 
   it("opens every poster of a season from its own", async () => {
     server.use(
-      http.get(apiUrl("/catalog/tmdb/:id/seasons/:season/images"), () =>
+      http.get(apiUrl("/media/tmdb/:id/seasons/:season/images"), () =>
         HttpResponse.json({
           images: [
             "https://image.tmdb.org/t/p/w780/main.jpg",
@@ -462,7 +459,7 @@ describe("EpisodesSection", () => {
     );
 
     await waitFor(() =>
-      expect(requests).toEqual(["POST /library/seasons/season1/watches"]),
+      expect(requests).toEqual(["POST /media/seasons/season1/watches"]),
     );
   });
 
@@ -479,7 +476,7 @@ describe("EpisodesSection", () => {
     await user.click(screen.getByRole("button", { name: m.media_undo_all() }));
 
     await waitFor(() =>
-      expect(requests).toEqual(["DELETE /library/seasons/season1/watches"]),
+      expect(requests).toEqual(["DELETE /media/seasons/season1/watches"]),
     );
   });
 
@@ -498,7 +495,7 @@ describe("EpisodesSection", () => {
   it("reports a failed update through onError", async () => {
     const failure = new ApiError(0, "offline", ErrorCode.NetworkOffline);
     server.use(
-      http.post(apiUrl("/library/episodes/:id/watches"), () =>
+      http.post(apiUrl("/media/episodes/:id/watches"), () =>
         HttpResponse.error(),
       ),
     );
@@ -648,7 +645,7 @@ describe("EpisodesSection", () => {
       await user.click(barMark("S01E02"));
 
       await waitFor(() =>
-        expect(requests).toEqual(["POST /library/episodes/s1e2/watches"]),
+        expect(requests).toEqual(["POST /media/episodes/s1e2/watches"]),
       );
       expect(screen.queryByText(m.media_catch_up_title())).toBeNull();
       expect(
@@ -697,7 +694,7 @@ describe("EpisodesSection", () => {
       );
 
       await waitFor(() =>
-        expect(requests).toEqual(["POST /library/episodes/s1e1/watches"]),
+        expect(requests).toEqual(["POST /media/episodes/s1e1/watches"]),
       );
       expect(toast.items).toHaveLength(0);
     });
@@ -705,7 +702,7 @@ describe("EpisodesSection", () => {
     it("asks whether a finished show is being rewatched, and starts it on yes", async () => {
       const patches: unknown[] = [];
       server.use(
-        http.patch(apiUrl("/library/entries/:id"), async ({ request }) => {
+        http.patch(apiUrl("/media/entries/:id"), async ({ request }) => {
           patches.push(await request.json());
           return HttpResponse.json({});
         }),
@@ -744,7 +741,7 @@ describe("EpisodesSection", () => {
       );
 
       await waitFor(() =>
-        expect(requests).toEqual(["POST /library/episodes/s1e1/watches"]),
+        expect(requests).toEqual(["POST /media/episodes/s1e1/watches"]),
       );
       expect(
         screen.queryByRole("dialog", { name: m.media_rewatch_prompt_title() }),

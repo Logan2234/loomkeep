@@ -58,7 +58,7 @@ import { MediaEpisodesService } from "./media-episodes.service";
 import { MediaLibraryService } from "./media-library.service";
 import { MediaSagaService } from "./media-saga.service";
 
-@Controller("library")
+@Controller("media")
 export class MediaLibraryController {
   constructor(
     private readonly libraryService: MediaLibraryService,
