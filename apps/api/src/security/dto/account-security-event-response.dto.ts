@@ -1,7 +1,5 @@
-import type {
-  AccountSecurityEventDto,
-  SecurityEventType,
-} from "@loomkeep/shared";
+import type { AccountSecurityEventDto } from "@loomkeep/shared/contracts";
+import type { SecurityEventType } from "@loomkeep/shared/enums";
 
 export class AccountSecurityEventResponseDto implements AccountSecurityEventDto {
   id!: string;

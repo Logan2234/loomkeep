@@ -20,11 +20,11 @@
   import SettingsSection from "../components/SettingsSection.svelte";
   import { flashAnchor } from "#lib/flash-anchor.js";
   import type { ImportSourceDescriptor } from "#lib/types/import-descriptor.js";
+  import { Domain } from "@loomkeep/shared/enums";
   import {
-    Domain,
     type ImportAvailabilityDto,
     type ImportSource,
-  } from "@loomkeep/shared";
+  } from "@loomkeep/shared/contracts";
 
   const groups = Object.entries(IMPORTS_DEFINITION).reduce(
     (prev, [importType, descriptor]) => {

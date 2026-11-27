@@ -3,7 +3,7 @@ import {
   MAX_SESSION_DURATION_MINUTES,
   SESSION_NOTES_MAX_LENGTH,
   type UpdateBookSessionDto as Contract,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 import {
   IsDateString,
   IsInt,

@@ -2,7 +2,7 @@ import {
   REAUTH_METHODS,
   type ReauthMethod,
   type ReauthRequestDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 import type { AuthenticationResponseJSON } from "@simplewebauthn/server";
 import { IsIn, IsObject, IsOptional, IsString } from "class-validator";
 

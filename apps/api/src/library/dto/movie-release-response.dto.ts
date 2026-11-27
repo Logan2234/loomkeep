@@ -1,4 +1,4 @@
-import type { MovieReleaseInfo } from "@loomkeep/shared";
+import type { MovieReleaseInfo } from "@loomkeep/shared/rules";
 
 export class MovieReleaseResponseDto implements MovieReleaseInfo {
   upcoming!: boolean;

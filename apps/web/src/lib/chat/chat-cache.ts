@@ -2,7 +2,7 @@ import type {
   ConversationDto,
   MessageDto,
   PagedResult,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 import type { InfiniteData } from "@tanstack/svelte-query";
 
 /** A conversation's messages as cached: pages newest first, each newest first. */

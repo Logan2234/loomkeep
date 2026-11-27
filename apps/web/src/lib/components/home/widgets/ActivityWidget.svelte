@@ -6,7 +6,7 @@
   import { HOME_WIDGETS } from "#lib/home/widgets.js";
   import { bodyOf, type BoxSize } from "#lib/home/sizing.js";
   import { m } from "#lib/paraglide/messages.js";
-  import type { HomeWidgetDto } from "@loomkeep/shared";
+  import type { HomeWidgetDto } from "@loomkeep/shared/contracts";
   import WidgetShell from "../WidgetShell.svelte";
   import { loadActivity } from "./activity";
   import { widgetDomains } from "./domains";

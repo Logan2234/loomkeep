@@ -1,6 +1,6 @@
 import { auth } from "#lib/auth.svelte.js";
 import { renderWithQuery } from "#lib/test/render.js";
-import type { UserDto } from "@loomkeep/shared";
+import type { UserDto } from "@loomkeep/shared/contracts";
 import { screen } from "@testing-library/svelte";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import ChatMessageText from "./ChatMessageText.svelte";

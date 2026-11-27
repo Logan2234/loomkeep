@@ -7,7 +7,7 @@
   import { prefersReducedMotion } from "#lib/motion.js";
   import { profileHref } from "#lib/navigation.js";
   import { m } from "#lib/paraglide/messages.js";
-  import { levelProgress, xpForLevel } from "@loomkeep/shared";
+  import { levelProgress, xpForLevel } from "@loomkeep/shared/rules";
 
   // The phone home's level and streak, in two pills that lead to the profile:
   // they replace the level widget at the top of a phone's home.

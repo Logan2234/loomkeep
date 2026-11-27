@@ -1,5 +1,5 @@
 import { m } from "#lib/paraglide/messages.js";
-import type { ReportTargetSummaryDto } from "@loomkeep/shared";
+import type { ReportTargetSummaryDto } from "@loomkeep/shared/contracts";
 import { describe, expect, it } from "vitest";
 import { reportTargetLabel } from "./report-target-label";
 

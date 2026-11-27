@@ -1,4 +1,4 @@
-import { ErrorCode } from "@loomkeep/shared";
+import { ErrorCode } from "@loomkeep/shared/catalog";
 import { vi, type Mock } from "vitest";
 import type { EventsGateway } from "../../events/events.gateway";
 import type { JobRunService } from "../../jobs/job-run.service";

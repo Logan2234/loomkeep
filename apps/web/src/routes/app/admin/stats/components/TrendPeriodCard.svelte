@@ -11,7 +11,7 @@
   import TrendChart from "#lib/components/TrendChart.svelte";
   import SegmentedControl from "#lib/components/SegmentedControl.svelte";
   import { m } from "#lib/paraglide/messages.js";
-  import type { TrendPeriod, TrendPointDto } from "@loomkeep/shared";
+  import type { TrendPeriod, TrendPointDto } from "@loomkeep/shared/contracts";
   import type { Snippet } from "svelte";
 
   let {

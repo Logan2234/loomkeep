@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
+import { NotificationType } from "../enums";
 import {
   ALERTS,
   type AlertDefinition,
   isAlertEnabled,
   isAlertToggleable,
 } from "./alerts";
-import { NotificationType } from "./enums";
 
 describe("ALERTS", () => {
   it("lists every notification type", () => {

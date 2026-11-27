@@ -1,4 +1,7 @@
-import type { HomeLayoutDto, HomePhoneLayoutDto } from "@loomkeep/shared";
+import type {
+  HomeLayoutDto,
+  HomePhoneLayoutDto,
+} from "@loomkeep/shared/contracts";
 import { plainToInstance } from "class-transformer";
 import { validateSync } from "class-validator";
 import "reflect-metadata";

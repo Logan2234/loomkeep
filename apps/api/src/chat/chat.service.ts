@@ -1,5 +1,9 @@
 import {
   AlertGroup,
+  ErrorCode,
+  isAlertEnabled,
+} from "@loomkeep/shared/catalog";
+import {
   CHAT_SEARCH_MIN_LENGTH,
   type ChatMessageEvent,
   type ChatReadEvent,
@@ -7,11 +11,6 @@ import {
   type ConversationDto,
   type ConversationReadOnlyReason,
   type ConversationWorkDto,
-  type Domain,
-  type Emote,
-  ErrorCode,
-  FollowStatus,
-  isAlertEnabled,
   type MessageDto,
   type MessageListDto,
   type MessagePickDto,
@@ -21,10 +20,15 @@ import {
   type MessageWorkKind,
   type PagedResult,
   PINNED_MESSAGES_MAX,
-  ProfileAccess,
   RealtimeEvent,
   type UserSummaryDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import {
+  type Domain,
+  type Emote,
+  FollowStatus,
+  ProfileAccess,
+} from "@loomkeep/shared/enums";
 import { HttpStatus, Injectable, Logger } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
 import { AppException } from "../common/app.exception";

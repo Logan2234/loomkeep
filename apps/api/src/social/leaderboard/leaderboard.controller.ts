@@ -1,4 +1,4 @@
-import type { LeaderboardDto } from "@loomkeep/shared";
+import type { LeaderboardDto } from "@loomkeep/shared/contracts";
 import { Controller, Get, Query, UseGuards } from "@nestjs/common";
 import { ApiOkResponse } from "@nestjs/swagger";
 import {

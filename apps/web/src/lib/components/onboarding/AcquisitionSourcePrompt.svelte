@@ -14,11 +14,11 @@
   import { tapFeedback } from "#lib/native/haptics.js";
   import { auth } from "#lib/auth.svelte.js";
   import { m } from "#lib/paraglide/messages.js";
+  import { AcquisitionSource } from "@loomkeep/shared/enums";
   import {
     ACQUISITION_SOURCE_OTHER_MAX_LENGTH,
-    AcquisitionSource,
     type SetAcquisitionSourceRequestDto,
-  } from "@loomkeep/shared";
+  } from "@loomkeep/shared/contracts";
   import { fade, slide } from "svelte/transition";
   import Icon from "../Icon.svelte";
 

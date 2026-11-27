@@ -2,7 +2,7 @@ import type {
   WorkFriendDto,
   WorkFriendsDto,
   WorkProgressDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 import { UserSummaryResponseDto } from "../../common/dto/user-summary-response.dto";
 
 export class WorkProgressResponseDto implements WorkProgressDto {

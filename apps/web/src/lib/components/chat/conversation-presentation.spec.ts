@@ -1,5 +1,8 @@
 import { m } from "#lib/paraglide/messages.js";
-import type { ConversationDto, WorkThreadDto } from "@loomkeep/shared";
+import type {
+  ConversationDto,
+  WorkThreadDto,
+} from "@loomkeep/shared/contracts";
 import { describe, expect, it } from "vitest";
 import {
   neighbourConversation,

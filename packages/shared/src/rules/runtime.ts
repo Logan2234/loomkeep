@@ -1,4 +1,4 @@
-import type { MediaType } from "./enums";
+import type { MediaType } from "../enums";
 
 /**
  * Fallback runtime (minutes) for a title with no captured `runtimeMin` yet —

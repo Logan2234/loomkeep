@@ -1,5 +1,6 @@
 import { getFeed } from "#lib/api/client.js";
-import type { ActivityEventDto, Domain } from "@loomkeep/shared";
+import type { ActivityEventDto } from "@loomkeep/shared/contracts";
+import type { Domain } from "@loomkeep/shared/enums";
 
 /**
  * The first page of the feed, as /app/feed shows it — or of each picked

@@ -13,7 +13,7 @@
   import { IMPORTS_DEFINITION } from "#lib/constants/import-sources.js";
   import { formatDateTime, formatDurationMs } from "#lib/format.js";
   import { m } from "#lib/paraglide/messages.js";
-  import type { AdminImportDetailDto } from "@loomkeep/shared";
+  import type { AdminImportDetailDto } from "@loomkeep/shared/contracts";
   let { id, onclose }: { id: string; onclose: () => void } = $props();
   const query = createApiQuery<AdminImportDetailDto>(() => ({
     key: keys.admin.importDetail(id),

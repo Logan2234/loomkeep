@@ -1,10 +1,10 @@
 import type {
-  ReviewTargetType,
   SocialStatsDto,
   StatsWindow,
   VideoTemporalDto,
-} from "@loomkeep/shared";
-import { episodeRuntimeFor } from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import type { ReviewTargetType } from "@loomkeep/shared/enums";
+import { episodeRuntimeFor } from "@loomkeep/shared/rules";
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../../prisma/prisma.service";
 import { ReviewService } from "../../reviews/review.service";

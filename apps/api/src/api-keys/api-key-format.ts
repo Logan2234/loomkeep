@@ -1,4 +1,4 @@
-import { API_KEY_PREFIX } from "@loomkeep/shared";
+import { API_KEY_PREFIX } from "@loomkeep/shared/contracts";
 import { randomBytes } from "node:crypto";
 import { crc32 } from "node:zlib";
 

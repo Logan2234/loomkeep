@@ -1,4 +1,4 @@
-import { ErrorCode } from "@loomkeep/shared";
+import { ErrorCode } from "@loomkeep/shared/catalog";
 import type { ExecutionContext } from "@nestjs/common";
 import type { ConfigService } from "@nestjs/config";
 import { vi } from "vitest";

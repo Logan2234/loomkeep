@@ -21,14 +21,14 @@
   import { isFeatureNew, type FeatureBadgeKey } from "#lib/feature-badges.js";
   import { m } from "#lib/paraglide/messages.js";
   import { toast } from "#lib/toast.svelte.js";
+  import { Domain } from "@loomkeep/shared/enums";
   import {
     API_RATE_LIMIT_BOUNDS,
     DOMAIN_SETTING,
-    Domain,
     type InstanceDomain,
     type InstanceSettingKey,
     type UpdateInstanceSettingsDto,
-  } from "@loomkeep/shared";
+  } from "@loomkeep/shared/contracts";
 
   type ToggleKey = Extract<
     InstanceSettingKey,

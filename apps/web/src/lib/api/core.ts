@@ -1,6 +1,7 @@
 import * as env from "$app/env/public";
-import type { ApiErrorBody, PagedResult } from "@loomkeep/shared";
-import { ErrorCode } from "@loomkeep/shared";
+import type { ApiErrorBody } from "@loomkeep/shared/catalog";
+import { ErrorCode } from "@loomkeep/shared/catalog";
+import type { PagedResult } from "@loomkeep/shared/contracts";
 import * as Sentry from "@sentry/sveltekit";
 import { auth } from "../auth.svelte";
 import { getLocale } from "../paraglide/runtime.js";

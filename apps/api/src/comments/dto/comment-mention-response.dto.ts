@@ -1,4 +1,4 @@
-import type { CommentMentionDto } from "@loomkeep/shared";
+import type { CommentMentionDto } from "@loomkeep/shared/contracts";
 
 export class CommentMentionResponseDto implements CommentMentionDto {
   id!: string;

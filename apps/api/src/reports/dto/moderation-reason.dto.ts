@@ -1,7 +1,5 @@
-import {
-  ModerationLegalBasis,
-  type ModerationReasonRequestDto,
-} from "@loomkeep/shared";
+import { type ModerationReasonRequestDto } from "@loomkeep/shared/contracts";
+import { ModerationLegalBasis } from "@loomkeep/shared/enums";
 import { IsIn, IsString, MinLength, ValidateIf } from "class-validator";
 
 /**

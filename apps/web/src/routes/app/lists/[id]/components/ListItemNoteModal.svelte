@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { LIST_LIMITS, type ListItemDto } from "@loomkeep/shared";
+  import { LIST_LIMITS, type ListItemDto } from "@loomkeep/shared/contracts";
 
   import { setListItemNote } from "#lib/api/lists.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";

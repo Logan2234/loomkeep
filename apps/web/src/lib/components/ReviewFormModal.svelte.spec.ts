@@ -4,12 +4,12 @@ import { auth } from "#lib/auth.svelte.js";
 import { m } from "#lib/paraglide/messages.js";
 import { apiUrl, server } from "#lib/test/msw.js";
 import { renderWithQuery } from "#lib/test/render.js";
+import { ErrorCode } from "@loomkeep/shared/catalog";
 import {
-  ErrorCode,
   type ReviewDto,
   type UpsertReviewDto,
   type UserDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 import { fireEvent, screen, waitFor } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";

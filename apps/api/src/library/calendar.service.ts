@@ -1,5 +1,5 @@
-import type { CalendarEntryDto } from "@loomkeep/shared";
-import { movieReleaseDates, movieReleaseInfo } from "@loomkeep/shared";
+import type { CalendarEntryDto } from "@loomkeep/shared/contracts";
+import { movieReleaseDates, movieReleaseInfo } from "@loomkeep/shared/rules";
 import { Injectable } from "@nestjs/common";
 import { resolveWatchRegion } from "../catalog/watch-region.util";
 import { addDays } from "../common/date.util";

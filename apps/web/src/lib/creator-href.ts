@@ -3,7 +3,7 @@ import type {
   CreatorSource,
   CreatorWorkDto,
   StudioKind,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 
 // The sources whose people have a page so far: AniList staff stay plain
 // names until theirs ship.

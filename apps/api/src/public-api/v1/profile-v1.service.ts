@@ -1,4 +1,4 @@
-import { levelProgress } from "@loomkeep/shared";
+import { levelProgress } from "@loomkeep/shared/rules";
 import { Injectable } from "@nestjs/common";
 import { AchievementService } from "../../gamification/achievements/achievement.service";
 import { XpService } from "../../gamification/xp.service";

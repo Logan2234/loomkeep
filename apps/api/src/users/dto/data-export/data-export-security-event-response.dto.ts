@@ -1,4 +1,4 @@
-import type { SecurityEventType } from "@loomkeep/shared";
+import type { SecurityEventType } from "@loomkeep/shared/enums";
 import type { DataExportSecurityEvent } from "../../../account/data-export.types";
 
 export class DataExportSecurityEventResponseDto implements DataExportSecurityEvent {

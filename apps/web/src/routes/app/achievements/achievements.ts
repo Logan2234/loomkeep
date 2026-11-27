@@ -3,7 +3,7 @@ import type {
   AchievementDto,
   AchievementFamily,
   AchievementTier,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 
 /** Section order of the page. Mirrors ACHIEVEMENT_FAMILIES on the API side. */
 export const FAMILY_ORDER: AchievementFamily[] = [

@@ -10,7 +10,6 @@ import type {
   ChangePasswordRequestDto,
   ConfirmEmailChangeRequestDto,
   CreateApiKeyDto,
-  Domain,
   HomeLayoutDto,
   HomePhoneLayoutDto,
   LoginRequestDto,
@@ -25,7 +24,8 @@ import type {
   UploadAvatarRequestDto,
   UserDto,
   WidgetTokenDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import type { Domain } from "@loomkeep/shared/enums";
 import {
   startAuthentication,
   type PublicKeyCredentialRequestOptionsJSON,

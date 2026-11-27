@@ -25,7 +25,8 @@
   import { prefersReducedMotion } from "#lib/motion.js";
   import { formatRecoveryCode } from "#lib/one-time-code.js";
   import { m } from "#lib/paraglide/messages.js";
-  import { ErrorCode, type MfaMethod, OTP_CODE_LENGTH } from "@loomkeep/shared";
+  import { type MfaMethod, OTP_CODE_LENGTH } from "@loomkeep/shared/contracts";
+  import { ErrorCode } from "@loomkeep/shared/catalog";
   import { fly, slide } from "svelte/transition";
 
   const reduced = prefersReducedMotion();

@@ -1,4 +1,4 @@
-import type { PileSummaryDto } from "@loomkeep/shared";
+import type { PileSummaryDto } from "@loomkeep/shared/contracts";
 
 /** One entry's share of a pile; `amount` null means no data to count it with. */
 export interface PileItem {

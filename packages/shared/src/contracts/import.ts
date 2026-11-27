@@ -1,3 +1,4 @@
+import type { ErrorCode } from "../catalog/error-codes";
 import type {
   BookStatus,
   Domain,
@@ -5,8 +6,7 @@ import type {
   GameStatus,
   MediaType,
 } from "../enums";
-import type { ErrorCode } from "../error-codes";
-import type { ImportJobStatus } from "../realtime";
+import type { ImportJobStatus } from "./realtime";
 
 // Every import source runs through one async job framework: `analyze`
 // parses the export and resolves it against the catalogue into a reviewable

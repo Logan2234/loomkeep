@@ -2,7 +2,7 @@ import {
   SESSION_DOMAINS,
   type SessionDomain,
   type SessionTimerDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 import { ApiProperty } from "@nestjs/swagger";
 
 export class SessionTimerResponseDto implements SessionTimerDto {

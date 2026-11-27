@@ -22,10 +22,10 @@
   import type {
     ReportCategory,
     ReportMotif,
-    ReviewDto,
     ReviewTargetType,
     ReviewVoteValue,
-  } from "@loomkeep/shared";
+  } from "@loomkeep/shared/enums";
+  import type { ReviewDto } from "@loomkeep/shared/contracts";
   import Icon from "./Icon.svelte";
   import ReportModal from "./ReportModal.svelte";
   import ReviewCard from "./ReviewCard.svelte";

@@ -5,7 +5,7 @@ import type {
   ImportLastRunDto,
   ImportSource,
   PagedResult,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 import { Body, Controller, Get, Param, Post, Query } from "@nestjs/common";
 import { ApiCreatedResponse, ApiOkResponse } from "@nestjs/swagger";
 import type { JwtPayload } from "../auth/decorators/current-user.decorator";

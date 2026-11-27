@@ -1,4 +1,4 @@
-import { ErrorCode } from "@loomkeep/shared";
+import { ErrorCode } from "@loomkeep/shared/catalog";
 import { Prisma } from "@prisma/client";
 import { vi } from "vitest";
 import { BookSessionService } from "./book-session.service";

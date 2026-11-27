@@ -1,4 +1,4 @@
-import type { WebauthnMfaOptionsRequestDto } from "@loomkeep/shared";
+import type { WebauthnMfaOptionsRequestDto } from "@loomkeep/shared/contracts";
 import { IsString, MinLength } from "class-validator";
 
 export class WebauthnMfaOptionsDto implements WebauthnMfaOptionsRequestDto {

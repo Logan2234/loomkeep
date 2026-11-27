@@ -1,14 +1,13 @@
-import type { RegisterRequestDto } from "@loomkeep/shared";
+import { Locale, type Locale as LocaleCode } from "@loomkeep/shared/catalog";
+import type { RegisterRequestDto } from "@loomkeep/shared/contracts";
+import { USER_LIMITS } from "@loomkeep/shared/contracts";
 import {
-  Locale,
-  type Locale as LocaleCode,
   PASSWORD_DIGIT_RE,
   PASSWORD_MAX_LENGTH,
   PASSWORD_MIN_LENGTH,
   PASSWORD_SPECIAL_RE,
   PASSWORD_UPPERCASE_RE,
-  USER_LIMITS,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/rules";
 import { Transform } from "class-transformer";
 import {
   Equals,

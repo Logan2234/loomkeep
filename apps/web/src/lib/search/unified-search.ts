@@ -6,14 +6,16 @@ import {
   MUSIC_STATUS_LABELS,
 } from "#lib/constants/status-labels.js";
 import {
+  type WorkSearchHitDto,
+  type WorkSearchResultDto,
+} from "@loomkeep/shared/contracts";
+import {
   Domain,
   type BookStatus,
   type EntryStatus,
   type GameStatus,
   type MusicStatus,
-  type WorkSearchHitDto,
-  type WorkSearchResultDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/enums";
 
 /** The domains the unified search covers: the ones with a catalogue. */
 const SEARCHABLE: Domain[] = [

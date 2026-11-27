@@ -2,7 +2,7 @@ import type {
   HomePhoneLayoutDto,
   HomePhoneWidgetDto,
   HomeWidgetType,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 import type { BoxSize } from "./sizing";
 import {
   HOME_WIDGETS,

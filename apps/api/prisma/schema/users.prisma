@@ -248,7 +248,7 @@ model UserPreferences {
   notifyEmail             DigestCadence      @default(WEEKLY)
   notifyPush              DigestCadence      @default(WEEKLY)
   // Per-alert channel choices that differ from the default, keyed like
-  // ALERTS in packages/shared/src/alerts.ts: { COMMENT_REPLY: { push: true } }.
+  // ALERTS in packages/shared/src/catalog/alerts.ts: { COMMENT_REPLY: { push: true } }.
   alertPrefs              Json               @default("{}")
   // Opt-in to the release newsletter (sent automatically when a changelog
   // entry is published on Quackback — see NewsletterService) — separate

@@ -22,7 +22,7 @@
   import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
   import { toast } from "#lib/toast.svelte.js";
-  import { LOAN_PERSON_MAX_LENGTH } from "@loomkeep/shared";
+  import { LOAN_PERSON_MAX_LENGTH } from "@loomkeep/shared/contracts";
   import Combobox from "./Combobox.svelte";
   import Icon from "./Icon.svelte";
 

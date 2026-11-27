@@ -5,7 +5,8 @@
   import { DOMAINS } from "#lib/constants/domains.js";
   import { isDomainEnabled, orderedDomains } from "#lib/domain-availability.js";
   import { m } from "#lib/paraglide/messages.js";
-  import type { Domain, ProfileDomainStatDto } from "@loomkeep/shared";
+  import type { Domain } from "@loomkeep/shared/enums";
+  import type { ProfileDomainStatDto } from "@loomkeep/shared/contracts";
 
   let {
     domains,

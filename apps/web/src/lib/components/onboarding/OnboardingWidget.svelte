@@ -9,7 +9,7 @@
   import { layout } from "#lib/layout.svelte.js";
   import { welcomeCelebration } from "#lib/onboarding-celebration.svelte.js";
   import { m } from "#lib/paraglide/messages.js";
-  import type { OnboardingStepKey } from "@loomkeep/shared";
+  import type { OnboardingStepKey } from "@loomkeep/shared/contracts";
   import { fly } from "svelte/transition";
   import { deriveStepViews } from "./onboarding-checklist";
   import OnboardingChecklistRows from "./OnboardingChecklistRows.svelte";

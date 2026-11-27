@@ -16,7 +16,7 @@
     LOAN_FILTERS,
     type LoanFilter,
     type SortOrder,
-  } from "@loomkeep/shared";
+  } from "@loomkeep/shared/contracts";
 
   export interface LibraryLoadParams {
     query: string;
@@ -98,16 +98,16 @@
   import { pileHeaderLabel } from "#lib/pile.js";
   import { filtersToSearchParams } from "#lib/saved-views.js";
   import { toast } from "#lib/toast.svelte.js";
+  import type { MediaType } from "@loomkeep/shared/enums";
   import type {
     BulkEntriesResultDto,
     BulkEntriesTargetDto,
     BulkUpdateEntriesDto,
-    MediaType,
     PagedResult,
     PileSummaryDto,
     SavedViewDomain,
     SavedViewFiltersDto,
-  } from "@loomkeep/shared";
+  } from "@loomkeep/shared/contracts";
   import type { Snippet } from "svelte";
   import { useQueryClient, type InfiniteData } from "@tanstack/svelte-query";
   import { onDestroy, untrack } from "svelte";

@@ -3,7 +3,7 @@
 // Social on.
 process.env.SOCIAL_ENABLED = "true";
 
-import { ProfileAccess } from "@loomkeep/shared";
+import { ProfileAccess } from "@loomkeep/shared/enums";
 import { INestApplication } from "@nestjs/common";
 import request from "supertest";
 import { App } from "supertest/types";

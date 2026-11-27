@@ -1,7 +1,7 @@
 import type {
   AdminImportSourceStatDto,
   AdminImportSummaryDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 
 class AdminImportSourceStatResponseDto implements AdminImportSourceStatDto {
   sourceId!: string;

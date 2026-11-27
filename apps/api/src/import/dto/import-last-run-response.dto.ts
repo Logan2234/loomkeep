@@ -1,9 +1,9 @@
 import type {
-  Domain,
   ImportLastRunDto,
   ImportRunDto,
   ImportSource,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import type { Domain } from "@loomkeep/shared/enums";
 import { ImportReportTileResponseDto } from "./import-report-tile-response.dto";
 
 export class ImportRunResponseDto implements ImportRunDto {

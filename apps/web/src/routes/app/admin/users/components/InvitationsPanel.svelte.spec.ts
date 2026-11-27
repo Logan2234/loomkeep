@@ -2,7 +2,7 @@ import { m } from "#lib/paraglide/messages.js";
 import { apiUrl, server } from "#lib/test/msw.js";
 import { page, visit } from "#lib/test/navigation.svelte.js";
 import { renderWithQuery } from "#lib/test/render.js";
-import type { AdminInvitationDto } from "@loomkeep/shared";
+import type { AdminInvitationDto } from "@loomkeep/shared/contracts";
 import { screen, within } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";

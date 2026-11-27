@@ -2,7 +2,7 @@ import {
   episodeCode,
   progressPercent,
   type LibraryEntryDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 
 export const epCode = (e: { seasonNumber: number; episodeNumber: number }) =>
   episodeCode(e.seasonNumber, e.episodeNumber);

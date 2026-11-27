@@ -4,7 +4,7 @@ import {
   DEFAULT_BOTTOM_SHORTCUTS,
   isBottomShortcutChoice,
 } from "#lib/navigation.js";
-import { MOBILE_NAV_SHORTCUT_LIMITS } from "@loomkeep/shared";
+import { MOBILE_NAV_SHORTCUT_LIMITS } from "@loomkeep/shared/contracts";
 
 // What's stored is the bar without Library, which is always there, at the
 // centre: its limits count it.

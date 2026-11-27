@@ -1,10 +1,8 @@
 import type {
   ChatUnreadDto,
-  CommentTargetType,
   ConversationDto,
   ConversationWorkDto,
   EditMessageRequestDto,
-  Emote,
   ForwardMessageRequestDto,
   MarkWorkUnreadRequestDto,
   MessageDto,
@@ -16,12 +14,16 @@ import type {
   PinConversationRequestDto,
   RecommendWorkRequestDto,
   RecommendWorkResultDto,
-  ReportCategory,
-  ReportMotif,
   SendMessageRequestDto,
   UserSummaryDto,
   WorkThreadDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import type {
+  CommentTargetType,
+  Emote,
+  ReportCategory,
+  ReportMotif,
+} from "@loomkeep/shared/enums";
 import { getLocale } from "../paraglide/runtime.js";
 import { request } from "./core";
 

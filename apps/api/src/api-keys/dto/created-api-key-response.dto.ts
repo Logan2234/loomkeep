@@ -1,4 +1,4 @@
-import type { CreatedApiKeyDto } from "@loomkeep/shared";
+import type { CreatedApiKeyDto } from "@loomkeep/shared/contracts";
 import { ApiKeyResponseDto } from "./api-key-response.dto";
 
 export class CreatedApiKeyResponseDto implements CreatedApiKeyDto {

@@ -1,4 +1,4 @@
-import { RATING_STEP } from "@loomkeep/shared";
+import { RATING_STEP } from "@loomkeep/shared/contracts";
 import { registerDecorator, ValidationOptions } from "class-validator";
 
 // class-validator's @IsDivisibleBy truncates its divisor to an integer, so

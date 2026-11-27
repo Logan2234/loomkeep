@@ -1,14 +1,13 @@
 import {
   CreatorSource,
   CreatorWorkDto,
-  Domain,
-  MediaType,
   PagedResult,
   PersonPageDto,
   StudioKind,
   StudioPageDto,
   StudioWorkOrder,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import { Domain, MediaType } from "@loomkeep/shared/enums";
 import { Controller, Get, Param, Query } from "@nestjs/common";
 import { ApiOkResponse } from "@nestjs/swagger";
 import type { JwtPayload } from "../auth/decorators/current-user.decorator";

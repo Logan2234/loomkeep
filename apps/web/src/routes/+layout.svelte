@@ -14,7 +14,7 @@
   import { navStyle } from "#lib/nav-style.svelte.js";
   import { m } from "#lib/paraglide/messages.js";
   import { getLocale } from "#lib/paraglide/runtime.js";
-  import { regionalLocale } from "@loomkeep/shared";
+  import { regionalLocale } from "@loomkeep/shared/catalog";
   import { queryClient } from "#lib/query-client.js";
   import { accessibility } from "#lib/accessibility.svelte.js";
   import { theme } from "#lib/theme.svelte.js";

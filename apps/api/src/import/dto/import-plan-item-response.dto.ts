@@ -1,4 +1,7 @@
-import type { ImportItemContext, ImportPlanItem } from "@loomkeep/shared";
+import type {
+  ImportItemContext,
+  ImportPlanItem,
+} from "@loomkeep/shared/contracts";
 import { ApiExtraModels, ApiProperty, getSchemaPath } from "@nestjs/swagger";
 import { IMPORT_ITEM_CONTEXT_MODELS } from "./import-item-context-response.dto";
 import { ImportMatchResponseDto } from "./import-match-response.dto";

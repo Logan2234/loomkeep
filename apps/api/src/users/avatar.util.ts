@@ -1,4 +1,7 @@
-import { AVATAR_MAX_DIMENSION, type UserSummaryDto } from "@loomkeep/shared";
+import {
+  AVATAR_MAX_DIMENSION,
+  type UserSummaryDto,
+} from "@loomkeep/shared/contracts";
 import sharp from "sharp";
 
 const MAGIC_BYTES: Record<string, (buf: Buffer) => boolean> = {

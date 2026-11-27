@@ -3,7 +3,7 @@ import type {
   AdminUpgradeNotesDto,
   InstancePingDto,
   InstancePingResultDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 import { Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { Cron } from "@nestjs/schedule";

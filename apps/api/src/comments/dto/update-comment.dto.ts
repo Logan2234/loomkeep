@@ -1,5 +1,5 @@
-import type { UpdateCommentDto } from "@loomkeep/shared";
-import { COMMENT_TEXT_MAX_LENGTH } from "@loomkeep/shared";
+import type { UpdateCommentDto } from "@loomkeep/shared/contracts";
+import { COMMENT_TEXT_MAX_LENGTH } from "@loomkeep/shared/contracts";
 import { Type } from "class-transformer";
 import {
   ArrayMaxSize,

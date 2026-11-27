@@ -3,7 +3,7 @@
   // labels, no tooltip. Distinct from LineChart/TrendChart on purpose — inside
   // a row there is no space for anything but the shape.
   import { m } from "#lib/paraglide/messages.js";
-  import type { TrendPointDto } from "@loomkeep/shared";
+  import type { TrendPointDto } from "@loomkeep/shared/contracts";
 
   let {
     points,

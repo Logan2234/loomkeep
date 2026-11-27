@@ -1,5 +1,6 @@
-import type { ImportPlan, ImportPlanItem } from "@loomkeep/shared";
-import { ErrorCode, GameSource } from "@loomkeep/shared";
+import { ErrorCode } from "@loomkeep/shared/catalog";
+import type { ImportPlan, ImportPlanItem } from "@loomkeep/shared/contracts";
+import { GameSource } from "@loomkeep/shared/enums";
 import { ConfigService } from "@nestjs/config";
 import { vi, type Mock } from "vitest";
 import { GameItemService } from "../../../games/game-item.service";

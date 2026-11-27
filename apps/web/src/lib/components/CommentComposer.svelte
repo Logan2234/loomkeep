@@ -1,5 +1,5 @@
 <script lang="ts" module>
-  import type { CommentMentionInputDto } from "@loomkeep/shared";
+  import type { CommentMentionInputDto } from "@loomkeep/shared/contracts";
 
   export interface CommentDraft {
     text: string;
@@ -37,13 +37,13 @@
   import { layout } from "#lib/layout.svelte.js";
   import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
+  import { type CommentTargetType } from "@loomkeep/shared/enums";
   import {
     COMMENT_TEXT_MAX_LENGTH,
     type CommentMentionDto,
-    type CommentTargetType,
     type MessageWorkDto,
     type UserSummaryDto,
-  } from "@loomkeep/shared";
+  } from "@loomkeep/shared/contracts";
   import { tick } from "svelte";
   import { scale } from "svelte/transition";
   import Avatar from "./Avatar.svelte";

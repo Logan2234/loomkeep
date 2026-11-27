@@ -60,14 +60,13 @@
   import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
   import { timeLeftToWatch } from "#lib/pile.js";
+  import { type MediaType } from "@loomkeep/shared/enums";
   import {
-    type MediaType,
-    isAnimeUnaired,
     isDormant,
     isGhost,
     progressPercent,
-    isMovieUpcoming,
-  } from "@loomkeep/shared";
+  } from "@loomkeep/shared/contracts";
+  import { isAnimeUnaired, isMovieUpcoming } from "@loomkeep/shared/rules";
 
   import { useQueryClient } from "@tanstack/svelte-query";
   import { slide } from "svelte/transition";

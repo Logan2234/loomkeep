@@ -1,3 +1,4 @@
+import { ErrorCode } from "@loomkeep/shared/catalog";
 import {
   type AdminUserCommentDto,
   type AdminUserDetailDto,
@@ -20,11 +21,12 @@ import {
   ADMIN_USER_FILTERS,
   ADMIN_USER_LIBRARY_KINDS,
   ADMIN_USER_SORTS,
+} from "@loomkeep/shared/contracts";
+import {
   Domain,
-  ErrorCode,
   ModerationMeasure,
   ReportTargetType,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/enums";
 import { type UserDataExportDto } from "../account/data-export.types";
 
 import {

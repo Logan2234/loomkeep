@@ -1,4 +1,4 @@
-import { XpReason } from "@loomkeep/shared";
+import { XpReason } from "@loomkeep/shared/enums";
 import { Prisma } from "@prisma/client";
 import { vi, type Mock } from "vitest";
 import type { JobRunService } from "../jobs/job-run.service";

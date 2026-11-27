@@ -1,4 +1,4 @@
-import type { AdminUserOptionDto } from "@loomkeep/shared";
+import type { AdminUserOptionDto } from "@loomkeep/shared/contracts";
 import { describe, expect, it } from "vitest";
 import { normalizeAdminUserOptionsPage } from "./admin";
 

@@ -17,12 +17,11 @@
   import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
   import { fetchTrackedMedia, trackKey } from "#lib/tracked-media.js";
+  import type { EntryStatus, MediaType } from "@loomkeep/shared/enums";
   import type {
-    EntryStatus,
     MediaSummaryDto,
-    MediaType,
     SearchResponseDto,
-  } from "@loomkeep/shared";
+  } from "@loomkeep/shared/contracts";
   import { onMount } from "svelte";
   import { fly } from "svelte/transition";
 

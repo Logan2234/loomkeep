@@ -6,7 +6,7 @@
   // this narrows *which* entries count, not how a curve is bucketed.
   import SegmentedStatusControl from "#lib/components/SegmentedStatusControl.svelte";
   import { m } from "#lib/paraglide/messages.js";
-  import { type StatsWindow, STATS_WINDOWS } from "@loomkeep/shared";
+  import { type StatsWindow, STATS_WINDOWS } from "@loomkeep/shared/contracts";
 
   const LABEL: Record<StatsWindow, string> = {
     ALL: m.common_all(),

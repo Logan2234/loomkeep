@@ -1,4 +1,4 @@
-import type { BookEditionDto } from "@loomkeep/shared";
+import type { BookEditionDto } from "@loomkeep/shared/contracts";
 
 export class BookEditionResponseDto implements BookEditionDto {
   key!: string;

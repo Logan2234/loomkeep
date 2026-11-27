@@ -1,5 +1,5 @@
-import type { AdminSystemSectionDto } from "@loomkeep/shared";
-import { SecurityEventType } from "@loomkeep/shared";
+import type { AdminSystemSectionDto } from "@loomkeep/shared/contracts";
+import { SecurityEventType } from "@loomkeep/shared/enums";
 import { Injectable } from "@nestjs/common";
 import { sinceDaysAgo, startOfUtcDay } from "../common/date.util";
 import { PrismaService } from "../prisma/prisma.service";

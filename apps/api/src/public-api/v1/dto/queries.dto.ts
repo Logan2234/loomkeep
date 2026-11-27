@@ -1,11 +1,11 @@
+import { Locale } from "@loomkeep/shared/catalog";
 import {
-  Locale,
   SORT_ORDERS,
   STATS_DOMAINS,
   StatsStatusBucket,
   type SortOrder,
   type StatsDomain,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 import { ApiPropertyOptional } from "@nestjs/swagger";
 import { Transform, Type } from "class-transformer";
 import { IsIn, IsInt, IsISO8601, IsOptional, Max, Min } from "class-validator";

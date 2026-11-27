@@ -1,4 +1,5 @@
-import { ProfileAccess, type UserSummaryDto } from "@loomkeep/shared";
+import { type UserSummaryDto } from "@loomkeep/shared/contracts";
+import { ProfileAccess } from "@loomkeep/shared/enums";
 import { anonymizeAuthor, derivePseudonym } from "./pseudonym.util";
 
 function author(over: Partial<UserSummaryDto> = {}): UserSummaryDto {

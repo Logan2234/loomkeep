@@ -2,8 +2,8 @@ import type {
   AdminReportCategoryCountDto,
   AdminSocialStatsDto,
   AdminTopContributorDto,
-  ReportCategory,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import type { ReportCategory } from "@loomkeep/shared/enums";
 import { RatingBucketResponseDto } from "../../stats/dto/rating-bucket-response.dto";
 import { AdminSocialActivityTrendResponseDto } from "./admin-social-activity-trend-response.dto";
 

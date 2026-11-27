@@ -1,4 +1,4 @@
-import type { TrendPointDto } from "@loomkeep/shared";
+import type { TrendPointDto } from "@loomkeep/shared/contracts";
 
 export class TrendPointResponseDto implements TrendPointDto {
   periodStart!: string;

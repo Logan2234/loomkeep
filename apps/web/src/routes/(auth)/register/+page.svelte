@@ -15,12 +15,12 @@
   import Icon from "#lib/components/Icon.svelte";
   import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
+  import { USER_LIMITS } from "@loomkeep/shared/contracts";
   import {
     isPasswordValid,
     PASSWORD_MIN_LENGTH,
     PASSWORD_MAX_LENGTH,
-    USER_LIMITS,
-  } from "@loomkeep/shared";
+  } from "@loomkeep/shared/rules";
   import { untrack } from "svelte";
   import { fade, slide } from "svelte/transition";
 

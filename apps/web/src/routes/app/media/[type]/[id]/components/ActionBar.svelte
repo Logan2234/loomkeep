@@ -12,7 +12,7 @@
   import { prefersReducedMotion } from "#lib/motion.js";
   import { releaseDigestOff } from "#lib/release-alerts.js";
   import { m } from "#lib/paraglide/messages.js";
-  import type { LibraryEntryDto } from "@loomkeep/shared";
+  import type { LibraryEntryDto } from "@loomkeep/shared/contracts";
   import type { Snippet } from "svelte";
   import { scale } from "svelte/transition";
 

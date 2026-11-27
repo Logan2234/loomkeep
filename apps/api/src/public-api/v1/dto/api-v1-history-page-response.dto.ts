@@ -1,4 +1,4 @@
-import type { PagedResult } from "@loomkeep/shared";
+import type { PagedResult } from "@loomkeep/shared/contracts";
 import type { ApiV1HistoryEventDto } from "../api-v1.types";
 
 import { ApiProperty } from "@nestjs/swagger";

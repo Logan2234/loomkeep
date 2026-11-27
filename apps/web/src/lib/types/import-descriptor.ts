@@ -1,5 +1,5 @@
 import { type FeatureBadgeKey } from "#lib/feature-badges.js";
-import type { Domain } from "@loomkeep/shared";
+import type { Domain } from "@loomkeep/shared/enums";
 
 type ImportSourceBase = {
   domain: Domain;

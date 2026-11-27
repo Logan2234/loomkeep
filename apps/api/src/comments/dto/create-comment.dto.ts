@@ -1,9 +1,9 @@
-import type { CreateCommentDto } from "@loomkeep/shared";
+import type { CreateCommentDto } from "@loomkeep/shared/contracts";
+import { COMMENT_TEXT_MAX_LENGTH } from "@loomkeep/shared/contracts";
 import {
-  COMMENT_TEXT_MAX_LENGTH,
   CommentTargetType,
   type CommentTargetType as CommentTargetTypeT,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/enums";
 import { Type } from "class-transformer";
 import {
   ArrayMaxSize,

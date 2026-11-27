@@ -1,4 +1,4 @@
-import type { ReviewDto } from "@loomkeep/shared";
+import type { ReviewDto } from "@loomkeep/shared/contracts";
 
 type Rated = Pick<ReviewDto, "rating" | "byFriend">;
 type Arrangeable = Pick<ReviewDto, "voteScore" | "byFriend" | "updatedAt">;

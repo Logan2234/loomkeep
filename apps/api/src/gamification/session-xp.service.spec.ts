@@ -1,4 +1,4 @@
-import { XpReason } from "@loomkeep/shared";
+import { XpReason } from "@loomkeep/shared/enums";
 import { vi } from "vitest";
 import { SessionXpService } from "./session-xp.service";
 

@@ -1,4 +1,4 @@
-import type { AdminSelfHostedInstancesDto } from "@loomkeep/shared";
+import type { AdminSelfHostedInstancesDto } from "@loomkeep/shared/contracts";
 import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { sinceDaysAgo } from "../common/date.util";

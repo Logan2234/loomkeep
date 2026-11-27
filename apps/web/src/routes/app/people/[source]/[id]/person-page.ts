@@ -2,7 +2,7 @@ import type {
   CreatorCreditKind,
   CreatorGroupDto,
   CreatorWorkDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 
 export type WorkTypeFilter = "ALL" | "MOVIE" | "SERIES";
 /** "known": most published first, for books, whose dates Open Library often gets wrong. */

@@ -1,7 +1,7 @@
 import type {
   GhostSwitchImpactDto,
   VisibilitySettingsDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 import { Body, Controller, Get, Patch, UseGuards } from "@nestjs/common";
 import { ApiOkResponse } from "@nestjs/swagger";
 import {

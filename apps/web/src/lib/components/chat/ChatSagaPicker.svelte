@@ -10,7 +10,7 @@
   import { DOMAINS } from "#lib/constants/domains.js";
   import { isDomainEnabled, orderedDomains } from "#lib/domain-availability.js";
   import { m } from "#lib/paraglide/messages.js";
-  import type { SagaDomain } from "@loomkeep/shared";
+  import type { SagaDomain } from "@loomkeep/shared/contracts";
   import ChatPicker from "./ChatPicker.svelte";
 
   let {

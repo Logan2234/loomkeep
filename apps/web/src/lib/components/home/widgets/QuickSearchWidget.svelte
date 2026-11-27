@@ -9,7 +9,7 @@
   import type { BoxSize } from "#lib/home/sizing.js";
   import { layout } from "#lib/layout.svelte.js";
   import { m } from "#lib/paraglide/messages.js";
-  import type { Domain } from "@loomkeep/shared";
+  import type { Domain } from "@loomkeep/shared/enums";
 
   let { size }: { size: BoxSize } = $props();
 

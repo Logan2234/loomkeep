@@ -1,4 +1,4 @@
-import type { AuthTokensDto } from "@loomkeep/shared";
+import type { AuthTokensDto } from "@loomkeep/shared/contracts";
 import type { FastifyReply } from "fastify";
 import {
   createCipheriv,

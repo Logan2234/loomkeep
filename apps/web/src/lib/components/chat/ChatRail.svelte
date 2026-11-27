@@ -7,7 +7,10 @@
   import ChatSearchField from "./ChatSearchField.svelte";
   import type { IconName } from "#lib/types/icon-name.js";
   import Poster from "#lib/components/Poster.svelte";
-  import type { ConversationDto, WorkThreadDto } from "@loomkeep/shared";
+  import type {
+    ConversationDto,
+    WorkThreadDto,
+  } from "@loomkeep/shared/contracts";
   import { fade, scale } from "svelte/transition";
   import {
     conversationName,

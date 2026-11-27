@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { RatingDto } from "@loomkeep/shared";
+  import type { RatingDto } from "@loomkeep/shared/contracts";
   import {
     RATING_SOURCE_BRANDS,
     RATING_SOURCE_STYLES,

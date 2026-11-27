@@ -1,16 +1,14 @@
+import { ErrorCode } from "@loomkeep/shared/catalog";
 import {
-  BookStatus,
-  ErrorCode,
-  GameStatus,
   MEDIA_FILTER_STATUSES,
-  MusicStatus,
   SAVED_VIEW_LIMITS,
   type CreateSavedViewDto,
   type SavedViewDomain,
   type SavedViewDto,
   type SavedViewFiltersDto,
   type UpdateSavedViewDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import { BookStatus, GameStatus, MusicStatus } from "@loomkeep/shared/enums";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import type { Prisma, SavedView } from "@prisma/client";
 import { AppException } from "../common/app.exception";

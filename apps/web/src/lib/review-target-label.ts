@@ -1,5 +1,5 @@
 import { m } from "#lib/paraglide/messages.js";
-import type { MyReviewDto } from "@loomkeep/shared";
+import type { MyReviewDto } from "@loomkeep/shared/contracts";
 
 /** "Season 2" / "Season 2 · Episode 5" for a season or episode review, else null. */
 export function seasonEpisodeLabel(review: MyReviewDto): string | null {

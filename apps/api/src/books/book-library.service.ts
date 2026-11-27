@@ -3,22 +3,24 @@ import {
   type BookDetailDto,
   type BookEntryDto,
   type BookItemDto,
-  type BookOwnershipStatus,
   type BookSortKey,
-  type BookSource,
-  BookStatus,
   type BulkEntriesResultDto,
   type BulkEntriesTargetDto,
-  Domain,
   type PagedResult,
   type PileSummaryDto,
   type ReadingGoalDto,
   RealtimeEvent,
-  ReviewTargetType,
   SESSION_FILTER_PAUSED,
+} from "@loomkeep/shared/contracts";
+import {
+  type BookOwnershipStatus,
+  type BookSource,
+  BookStatus,
+  Domain,
+  ReviewTargetType,
   TrackingCycleStatus,
   XpReason,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/enums";
 import { Injectable } from "@nestjs/common";
 import type {
   BookExternalId,

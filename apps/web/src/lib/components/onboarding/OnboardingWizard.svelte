@@ -50,12 +50,8 @@
   import { disablePush, enablePush, isPushSupported } from "#lib/push.js";
   import { createWatchProviderToggle } from "#lib/watch-provider-toggle.svelte.js";
   import type { IconName } from "#lib/types/icon-name.js";
-  import {
-    DigestCadence,
-    Domain,
-    ProfileAccess,
-    USER_LIMITS,
-  } from "@loomkeep/shared";
+  import { DigestCadence, Domain, ProfileAccess } from "@loomkeep/shared/enums";
+  import { USER_LIMITS } from "@loomkeep/shared/contracts";
   import { useQueryClient } from "@tanstack/svelte-query";
   import type { Snippet } from "svelte";
   import { backOut } from "svelte/easing";

@@ -27,14 +27,14 @@
   import { formatRegion, joinMeta } from "#lib/format.js";
   import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
+  import type { EntryStatus } from "@loomkeep/shared/enums";
   import type {
     CreatorSource,
     CreatorWorkDto,
-    EntryStatus,
     PagedResult,
     StudioKind,
     StudioWorkOrder,
-  } from "@loomkeep/shared";
+  } from "@loomkeep/shared/contracts";
   import { flip } from "svelte/animate";
   import { fade } from "svelte/transition";
 

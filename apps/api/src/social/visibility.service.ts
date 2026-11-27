@@ -1,10 +1,10 @@
+import type { RelationshipDto } from "@loomkeep/shared/contracts";
 import type {
   Domain,
   ProfileAccess,
-  RelationshipDto,
   VisibilityAudience,
   VisibilityFacet,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/enums";
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { BlockService } from "./block.service";

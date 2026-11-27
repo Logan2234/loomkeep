@@ -1,9 +1,9 @@
-import type { UpsertReviewDto } from "@loomkeep/shared";
+import type { UpsertReviewDto } from "@loomkeep/shared/contracts";
+import { REVIEW_TEXT_MAX_LENGTH } from "@loomkeep/shared/contracts";
 import {
-  REVIEW_TEXT_MAX_LENGTH,
   ReviewVisibility as ReviewVisibilityEnum,
   type ReviewVisibility,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/enums";
 import {
   IsBoolean,
   IsIn,

@@ -12,12 +12,12 @@ import { resolve } from "node:path";
 config({ path: resolve(__dirname, "../.env"), quiet: true });
 config({ path: resolve(__dirname, "../../../.env"), quiet: true });
 
+import { LEGAL_VERSION } from "@loomkeep/shared/catalog";
 import {
   ActivityType,
   DigestCadence,
-  LEGAL_VERSION,
   NotificationType,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/enums";
 import { PrismaPg } from "@prisma/adapter-pg";
 import {
   BookSource,

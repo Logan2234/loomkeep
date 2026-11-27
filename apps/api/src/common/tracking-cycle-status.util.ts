@@ -2,7 +2,7 @@ import {
   BookStatus,
   GameStatus,
   type TrackingCycleStatus,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/enums";
 
 export const GAME_STATUS_BY_CYCLE: Record<TrackingCycleStatus, GameStatus> = {
   ACTIVE: GameStatus.PLAYING,

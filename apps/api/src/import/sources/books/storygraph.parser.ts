@@ -1,4 +1,4 @@
-import type { BookOwnershipStatus, BookStatus } from "@loomkeep/shared";
+import type { BookOwnershipStatus, BookStatus } from "@loomkeep/shared/enums";
 import { parseCsv } from "../../../common/csv.util";
 import {
   parseReadCount,

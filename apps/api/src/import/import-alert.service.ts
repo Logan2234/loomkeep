@@ -1,4 +1,7 @@
-import { IMPORT_SOURCE_NAMES, type ImportSource } from "@loomkeep/shared";
+import {
+  IMPORT_SOURCE_NAMES,
+  type ImportSource,
+} from "@loomkeep/shared/contracts";
 import { Injectable, Logger } from "@nestjs/common";
 import { MailService } from "../mail/mail.service";
 import { AdminAlertService } from "../notifications/admin-alert.service";

@@ -1,9 +1,5 @@
-import {
-  ErrorCode,
-  MediaSource,
-  MediaType,
-  PREMIERE_NETWORKS,
-} from "@loomkeep/shared";
+import { ErrorCode, PREMIERE_NETWORKS } from "@loomkeep/shared/catalog";
+import { MediaSource, MediaType } from "@loomkeep/shared/enums";
 import { ConfigService } from "@nestjs/config";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";

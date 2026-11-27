@@ -11,7 +11,7 @@
   import { m } from "#lib/paraglide/messages.js";
   import { shelves } from "#lib/search/unified-search.js";
   import { createWorkSearch } from "#lib/search/work-search.svelte.js";
-  import type { WorkSearchHitDto } from "@loomkeep/shared";
+  import type { WorkSearchHitDto } from "@loomkeep/shared/contracts";
   import { onMount } from "svelte";
 
   // "Ajouter" on a list: the unified search, compact, by domain. A pick joins

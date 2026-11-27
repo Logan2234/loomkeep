@@ -2,7 +2,7 @@ import { auth } from "#lib/auth.svelte.js";
 import { layout } from "#lib/layout.svelte.js";
 import { onboardingReplay } from "#lib/onboarding-replay.svelte.js";
 import { toast } from "#lib/toast.svelte.js";
-import type { UserDto } from "@loomkeep/shared";
+import type { UserDto } from "@loomkeep/shared/contracts";
 import { render } from "@testing-library/svelte";
 import { createRawSnippet, flushSync } from "svelte";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";

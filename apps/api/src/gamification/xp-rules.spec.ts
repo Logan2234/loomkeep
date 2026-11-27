@@ -1,4 +1,4 @@
-import { XpReason } from "@loomkeep/shared";
+import { XpReason } from "@loomkeep/shared/enums";
 import { describe, expect, it } from "vitest";
 import {
   bookFinishedXp,

@@ -1,4 +1,4 @@
-import { RealtimeEvent } from "@loomkeep/shared";
+import { RealtimeEvent } from "@loomkeep/shared/contracts";
 import type { ConfigService } from "@nestjs/config";
 import type { JwtService } from "@nestjs/jwt";
 import type { FastifyReply } from "fastify";

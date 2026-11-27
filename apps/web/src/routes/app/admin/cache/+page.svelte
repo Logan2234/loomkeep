@@ -35,12 +35,12 @@
   import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
   import type { IconName } from "#lib/types/icon-name.js";
+  import type { Domain } from "@loomkeep/shared/enums";
   import type {
     AdminCacheItemDto,
     AdminCacheListResponseDto,
     AdminCacheSort,
-    Domain,
-  } from "@loomkeep/shared";
+  } from "@loomkeep/shared/contracts";
   import { flip } from "svelte/animate";
   import { fade } from "svelte/transition";
   import { onDestroy } from "svelte";

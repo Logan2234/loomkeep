@@ -3,8 +3,8 @@ import {
   type LeaderboardEntryDto,
   type LeaderboardPeriod,
   type LeaderboardScope,
-  ProfileAccess,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import { ProfileAccess } from "@loomkeep/shared/enums";
 import { Injectable } from "@nestjs/common";
 import assert from "node:assert/strict";
 import { utcMonthRange, utcYearRange } from "../../common/date.util";

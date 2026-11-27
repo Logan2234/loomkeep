@@ -7,7 +7,7 @@ import type {
   ReportProfilePart,
   ReportStatus,
   ReportTargetType,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/enums";
 
 export const REPORT_STATUS_LABELS: Record<ReportStatus, string> = {
   get PENDING() {

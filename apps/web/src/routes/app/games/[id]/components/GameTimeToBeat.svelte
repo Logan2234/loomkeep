@@ -1,7 +1,7 @@
 <script lang="ts">
   import { formatHours } from "#lib/format.js";
   import { m } from "#lib/paraglide/messages.js";
-  import type { GameTimeToBeatDto } from "@loomkeep/shared";
+  import type { GameTimeToBeatDto } from "@loomkeep/shared/contracts";
 
   // Its own card under "Détails". Deliberately never compared
   // with the player's own playtime: someone taking their time is not "at 40 %

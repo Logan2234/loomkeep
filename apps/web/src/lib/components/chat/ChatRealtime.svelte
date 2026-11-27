@@ -13,6 +13,7 @@
   } from "#lib/chat/chat-cache.js";
   import { chat } from "#lib/chat/chat.svelte.js";
   import { onRealtimeEvent, socket } from "#lib/realtime/socket.js";
+  import { type CommentTargetType } from "@loomkeep/shared/enums";
   import {
     RealtimeEvent,
     type ChatMessageEvent,
@@ -20,11 +21,10 @@
     type ChatReadEvent,
     type ChatTypingEvent,
     type ChatWorkActivityEvent,
-    type CommentTargetType,
     type ConversationDto,
     type MessageDto,
     type PagedResult,
-  } from "@loomkeep/shared";
+  } from "@loomkeep/shared/contracts";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { auth } from "#lib/auth.svelte.js";
 

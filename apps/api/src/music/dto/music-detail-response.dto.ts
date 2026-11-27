@@ -2,8 +2,9 @@ import type {
   ListenLinkDto,
   MusicDetailDto,
   StoredMusicDetailDto,
-} from "@loomkeep/shared";
-import { LISTEN_SERVICES, MusicSource } from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import { LISTEN_SERVICES } from "@loomkeep/shared/contracts";
+import { MusicSource } from "@loomkeep/shared/enums";
 import { ApiProperty } from "@nestjs/swagger";
 import { MusicEntryResponseDto } from "./music-entry-response.dto";
 import { MusicExternalLinkResponseDto } from "./music-external-link-response.dto";

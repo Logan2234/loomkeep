@@ -1,18 +1,15 @@
+import { ErrorCode, LEGAL_VERSION } from "@loomkeep/shared/catalog";
 import {
-  AcquisitionSource,
-  Domain,
-  ErrorCode,
   HOME_GRID_COLUMNS,
-  LEGAL_VERSION,
   OTP_CODE_LENGTH,
   RealtimeEvent,
   UserDto,
   UsernameAvailabilityDto,
-  XpReason,
   type AccountDeletionSummaryDto,
   type SocialProfileDto,
   type WidgetTokenDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import { AcquisitionSource, Domain, XpReason } from "@loomkeep/shared/enums";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { Prisma, type User } from "@prisma/client";

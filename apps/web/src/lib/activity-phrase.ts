@@ -1,5 +1,5 @@
 import { m } from "#lib/paraglide/messages.js";
-import type { ActivityEventDto } from "@loomkeep/shared";
+import type { ActivityEventDto } from "@loomkeep/shared/contracts";
 
 /**
  * Localized action phrase for an activity event. PROGRESS/LIST_ITEM_ADDED

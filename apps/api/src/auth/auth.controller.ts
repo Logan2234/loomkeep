@@ -1,12 +1,12 @@
+import { ErrorCode } from "@loomkeep/shared/catalog";
 import {
   type AuthTokensDto,
-  ErrorCode,
   type InvitationPreviewDto,
   type LoginResponseDto,
   type UserDto,
   WebauthnLoginOptionsResponseDto,
   WebauthnMfaOptionsResponseDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 import {
   Body,
   Controller,

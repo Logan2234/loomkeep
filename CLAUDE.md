@@ -14,7 +14,11 @@ music), open-core under AGPL-3.0. pnpm monorepo:
   JSDoc description and `@example`; `generate:openapi` fails on a gap.
 - `apps/mobile` — Capacitor Android shell that loads the instance's `/app`
   rather than bundling the web ([ADR 0009](docs/adr/0009-capacitor-remote-shell.md)).
-- `packages/shared` — DTOs/enums and rules both apps use. The web and the
+- `packages/shared` — what both apps use, behind four entry points by nature:
+  `@loomkeep/shared/contracts` (request/response DTOs, socket events),
+  `/enums` (mirrors of Prisma's), `/rules` (logic both sides run: levels,
+  release dates, password strength…) and `/catalog` (fixed lists: `ALERTS`,
+  error codes, flags, locales…); there is no root import. The web and the
   docs read its TypeScript source (the `source` export condition), the API
   its built `dist/` ([ADR 0007](docs/adr/0007-shared-package-source.md)): run
   `pnpm build:package` after a change there before typechecking or running
@@ -103,7 +107,7 @@ wording change or a rename.
   module goes there. To tell a higher layer something, publish an event:
   a class in `<module>.events.ts`, `emitAsync()` it, `@OnEvent` in a
   `*.listener.ts` of the module that reacts (`auth.events.ts`).
-- Errors are typed codes (`packages/shared/src/error-codes.ts`) thrown via
+- Errors are typed codes (`packages/shared/src/catalog/error-codes.ts`) thrown via
   `AppException`. The web maps each code to an i18n message in
   `apps/web/src/lib/api/errors.ts` — never display API-supplied text; a new
   failure mode means a new code.
@@ -211,7 +215,7 @@ wording change or a rename.
   (ESLint), whose wrappers check it. A new plugin goes in `apps/web` and `apps/mobile`
   at the same version.
 - Every alert (bell, push, email) is declared once in `ALERTS`
-  (`packages/shared/src/alerts.ts`). A new alert starts there.
+  (`packages/shared/src/catalog/alerts.ts`). A new alert starts there.
 - An email is a `build…()` function in `apps/api/src/mail/templates/<theme>.ts`
   drawn with `MailLayout`, an entry in `mail-gallery.ts` (Admin's preview),
   and a `send…()` on `MailService`, which keeps only transport and sending.

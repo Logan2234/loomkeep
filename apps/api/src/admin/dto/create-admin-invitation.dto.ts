@@ -1,9 +1,9 @@
-import type { CreateAdminInvitationRequestDto } from "@loomkeep/shared";
+import type { CreateAdminInvitationRequestDto } from "@loomkeep/shared/contracts";
 import {
   INVITATION_LABEL_MAX_LENGTH,
   INVITATION_MAX_USES,
   INVITATION_VALIDITY_DAYS,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 import { Transform } from "class-transformer";
 import {
   IsEmail,

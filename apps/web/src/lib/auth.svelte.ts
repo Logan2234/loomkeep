@@ -1,4 +1,5 @@
-import { FeatureFlag, type UserDto } from "@loomkeep/shared";
+import { FeatureFlag } from "@loomkeep/shared/catalog";
+import { type UserDto } from "@loomkeep/shared/contracts";
 import { chat } from "./chat/chat.svelte";
 import { liveFlags } from "./feature-flags-live.svelte";
 import { queryClient } from "./query-client";

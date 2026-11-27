@@ -1,4 +1,4 @@
-import { DEFAULT_INSTANCE_SETTINGS } from "@loomkeep/shared";
+import { DEFAULT_INSTANCE_SETTINGS } from "@loomkeep/shared/contracts";
 import type { ConfigService } from "@nestjs/config";
 import type { Prisma } from "@prisma/client";
 import { type Mock, vi } from "vitest";

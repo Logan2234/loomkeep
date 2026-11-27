@@ -1,9 +1,9 @@
+import type { VisibilitySettingItemDto } from "@loomkeep/shared/contracts";
 import type {
   Domain,
   VisibilityAudience,
   VisibilityFacet,
-  VisibilitySettingItemDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/enums";
 
 export class VisibilitySettingItemResponseDto implements VisibilitySettingItemDto {
   domain!: Domain;

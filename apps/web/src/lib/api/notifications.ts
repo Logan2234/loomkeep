@@ -1,4 +1,4 @@
-import type { PushSubscriptionRequestDto } from "@loomkeep/shared";
+import type { PushSubscriptionRequestDto } from "@loomkeep/shared/contracts";
 import { typedRequest } from "./generated/typed-request";
 
 /** Looks for new releases now: they go out by push and email, not the bell. */

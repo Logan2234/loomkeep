@@ -3,16 +3,18 @@ import type {
   CreatorSeriesRefDto,
   CreatorWorkDto,
   PersonPageDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 import {
-  BookStatus,
   CreatorCreditKind,
   CreatorGroupKey,
   CreatorSource,
+} from "@loomkeep/shared/contracts";
+import {
+  BookStatus,
   Domain,
   EntryStatus,
   MediaType,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/enums";
 import { ApiProperty } from "@nestjs/swagger";
 
 export class CreatorSeriesRefResponseDto implements CreatorSeriesRefDto {

@@ -2,7 +2,7 @@ import type {
   DomainPileDto,
   PileSummaryDto,
   StatsDomain,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 import { ApiProperty } from "@nestjs/swagger";
 
 export class PileSummaryResponseDto implements PileSummaryDto {

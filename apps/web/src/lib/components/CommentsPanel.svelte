@@ -8,11 +8,11 @@
   import { m } from "#lib/paraglide/messages.js";
   import { joinRealtimeRoom, onRealtimeEvent } from "#lib/realtime/socket.js";
   import { revealSpoilersOnOpen } from "#lib/spoiler-default.js";
+  import { type CommentTargetType } from "@loomkeep/shared/enums";
   import {
     type CommentPresenceEvent,
-    type CommentTargetType,
     RealtimeCommand,
-  } from "@loomkeep/shared";
+  } from "@loomkeep/shared/contracts";
   import { createQuery } from "@tanstack/svelte-query";
   import { onMount } from "svelte";
   import CommentThread from "./CommentThread.svelte";

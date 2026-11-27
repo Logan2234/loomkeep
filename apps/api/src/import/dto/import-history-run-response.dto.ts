@@ -1,4 +1,4 @@
-import type { ImportHistoryRunDto } from "@loomkeep/shared";
+import type { ImportHistoryRunDto } from "@loomkeep/shared/contracts";
 import { ImportRunResponseDto } from "./import-last-run-response.dto";
 
 export class ImportHistoryRunResponseDto

@@ -1,4 +1,4 @@
-import { CatalogSource, MediaType } from "@loomkeep/shared";
+import { CatalogSource, MediaType } from "@loomkeep/shared/enums";
 import { vi } from "vitest";
 import type { MediaItemService } from "../../../catalog/media-item.service";
 import type { ListService } from "../../../lists/list.service";

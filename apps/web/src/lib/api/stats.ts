@@ -1,5 +1,5 @@
 import { type StatsDomainChoice } from "#lib/components/stats/stats-domain.js";
-import type { StatsWindow, WatchStaleness } from "@loomkeep/shared";
+import type { StatsWindow, WatchStaleness } from "@loomkeep/shared/contracts";
 import { typedRequest } from "./generated/typed-request";
 
 /** What's left in each enabled domain's pile, unfiltered. */

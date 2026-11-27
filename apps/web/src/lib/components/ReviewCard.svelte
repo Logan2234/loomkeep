@@ -8,11 +8,11 @@
   import { m } from "#lib/paraglide/messages.js";
   import { ratingWord } from "#lib/rating-words.js";
   import {
-    levelProgress,
     SpoilerSensitivity,
-    type ReviewDto,
     type ReviewVoteValue,
-  } from "@loomkeep/shared";
+  } from "@loomkeep/shared/enums";
+  import { type ReviewDto } from "@loomkeep/shared/contracts";
+  import { levelProgress } from "@loomkeep/shared/rules";
   import { tick, untrack } from "svelte";
   import Avatar from "./Avatar.svelte";
   import Dropdown from "./Dropdown.svelte";

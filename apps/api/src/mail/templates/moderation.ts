@@ -1,8 +1,8 @@
+import { type Locale } from "@loomkeep/shared/catalog";
 import {
   ModerationLegalBasis,
   ModerationMeasure,
-  type Locale,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/enums";
 import { resolveCopyLocale } from "../../common/copy-locale.util";
 import { DEFAULT_SUPPORT_ADDRESS } from "../../common/instance-defaults";
 import { COLOR_MUTED, escapeHtml } from "../mail-html";

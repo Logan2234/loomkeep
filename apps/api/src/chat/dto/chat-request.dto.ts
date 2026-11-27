@@ -1,12 +1,10 @@
 import {
-  Emote,
   MESSAGE_TEXT_MAX_LENGTH,
   POLL_OPTION_MAX_LENGTH,
   POLL_OPTIONS_MAX,
   POLL_OPTIONS_MIN,
   POLL_QUESTION_MAX_LENGTH,
   RECOMMEND_MAX_FRIENDS,
-  type Emote as CommentEmoteT,
   type EditMessageRequestDto,
   type ForwardMessageRequestDto,
   type MarkWorkUnreadRequestDto,
@@ -23,7 +21,8 @@ import {
   type SendPickRequestDto,
   type SendPollRequestDto,
   type VotePollRequestDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import { Emote, type Emote as CommentEmoteT } from "@loomkeep/shared/enums";
 import { Type } from "class-transformer";
 import {
   ArrayMaxSize,

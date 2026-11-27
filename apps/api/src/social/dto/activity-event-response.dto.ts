@@ -2,8 +2,8 @@ import type {
   ActivityDomain,
   ActivityEventDto,
   ActivityLevel,
-  ActivityType,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import type { ActivityType } from "@loomkeep/shared/enums";
 import { ActivityActorResponseDto } from "./activity-actor-response.dto";
 
 export class ActivityEventResponseDto implements ActivityEventDto {

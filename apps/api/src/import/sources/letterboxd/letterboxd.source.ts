@@ -1,4 +1,4 @@
-import { CatalogSource, MediaType } from "@loomkeep/shared";
+import { CatalogSource, MediaType } from "@loomkeep/shared/enums";
 import { Injectable } from "@nestjs/common";
 import { MediaItemService } from "../../../catalog/media-item.service";
 import { ListService } from "../../../lists/list.service";

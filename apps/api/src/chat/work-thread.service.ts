@@ -1,10 +1,9 @@
+import { ErrorCode } from "@loomkeep/shared/catalog";
 import {
-  ErrorCode,
-  type CommentTargetType,
-  type Domain,
   type MessageWorkKind,
   type WorkThreadDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import { type CommentTargetType, type Domain } from "@loomkeep/shared/enums";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
 import { AppException } from "../common/app.exception";

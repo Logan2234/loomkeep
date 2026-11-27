@@ -20,7 +20,7 @@
   import { m } from "#lib/paraglide/messages.js";
   import { useAdminUpdateAvailable } from "#lib/admin-update.svelte.js";
   import { useReportsPendingCount } from "#lib/reports-pending.svelte.js";
-  import type { ServiceStatusDto } from "@loomkeep/shared";
+  import type { ServiceStatusDto } from "@loomkeep/shared/contracts";
   import { useQueryClient } from "@tanstack/svelte-query";
   import StatsSectionError from "./stats/components/StatsSectionError.svelte";
   import AttentionLink from "./AttentionLink.svelte";

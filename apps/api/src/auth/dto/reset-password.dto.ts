@@ -1,11 +1,11 @@
-import type { ResetPasswordRequestDto } from "@loomkeep/shared";
+import type { ResetPasswordRequestDto } from "@loomkeep/shared/contracts";
 import {
   PASSWORD_DIGIT_RE,
   PASSWORD_MAX_LENGTH,
   PASSWORD_MIN_LENGTH,
   PASSWORD_SPECIAL_RE,
   PASSWORD_UPPERCASE_RE,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/rules";
 import { IsString, Matches, MaxLength, MinLength } from "class-validator";
 
 export class ResetPasswordDto implements ResetPasswordRequestDto {

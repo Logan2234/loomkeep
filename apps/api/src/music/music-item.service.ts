@@ -1,8 +1,8 @@
 import type {
   MusicDetailsDto,
-  MusicSource,
   MusicSummaryDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import type { MusicSource } from "@loomkeep/shared/enums";
 import { Injectable, Logger } from "@nestjs/common";
 import type { MusicItem } from "@prisma/client";
 import { isCatalogFresh } from "../common/catalog-sync.util";

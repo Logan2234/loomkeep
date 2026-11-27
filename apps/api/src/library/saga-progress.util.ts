@@ -1,4 +1,7 @@
-import type { LibrarySagaSort, SagaMemberDto } from "@loomkeep/shared";
+import type {
+  LibrarySagaSort,
+  SagaMemberDto,
+} from "@loomkeep/shared/contracts";
 
 type SagaProgress<M> =
   | {

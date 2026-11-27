@@ -20,11 +20,11 @@
   import ServiceMark from "#lib/components/ServiceMark.svelte";
   import { SERVICE_BRANDS } from "#lib/service-brands.js";
   import { isDomainEnabled } from "#lib/domain-availability.js";
+  import { Domain } from "@loomkeep/shared/enums";
   import {
-    Domain,
     LISTEN_SERVICES,
     type WatchProviderDto,
-  } from "@loomkeep/shared";
+  } from "@loomkeep/shared/contracts";
   import { flip } from "svelte/animate";
   import { backOut } from "svelte/easing";
   import { scale, slide } from "svelte/transition";

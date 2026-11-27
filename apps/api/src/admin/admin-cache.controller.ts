@@ -4,7 +4,7 @@ import {
   type AdminCacheItemDetailDto,
   type AdminCacheListResponseDto,
   type AdminCacheResyncStaleResultDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 import {
   Controller,
   Delete,

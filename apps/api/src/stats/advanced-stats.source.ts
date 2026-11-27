@@ -7,7 +7,7 @@ import type {
   StatsWindow,
   VideoStatsDto,
   VideoTemporalDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 import { computeRatingDistribution } from "./rating-distribution.util";
 import { computeHourCounts, computeWeekdayCounts } from "./video-temporal.util";
 

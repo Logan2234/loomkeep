@@ -28,7 +28,7 @@
   import { successFeedback } from "#lib/native/haptics.js";
   import { m } from "#lib/paraglide/messages.js";
   import { onRealtimeEvent } from "#lib/realtime/socket.js";
-  import { levelForXp } from "@loomkeep/shared";
+  import { levelForXp } from "@loomkeep/shared/rules";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { backOut } from "svelte/easing";
   import { fly } from "svelte/transition";

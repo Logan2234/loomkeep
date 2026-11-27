@@ -1,4 +1,4 @@
-import type { LoginResponseDto, MfaMethod } from "@loomkeep/shared";
+import type { LoginResponseDto, MfaMethod } from "@loomkeep/shared/contracts";
 import { ApiProperty } from "@nestjs/swagger";
 import { UserResponseDto } from "../../users/dto/user-response.dto";
 

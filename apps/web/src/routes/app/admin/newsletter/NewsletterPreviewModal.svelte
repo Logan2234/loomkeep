@@ -7,7 +7,7 @@
   import { DATETIME_NUMERIC_OPTIONS, formatDateTime } from "#lib/format.js";
   import { m } from "#lib/paraglide/messages.js";
   import { getLocale } from "#lib/paraglide/runtime.js";
-  import type { NewsletterSendDto } from "@loomkeep/shared";
+  import type { NewsletterSendDto } from "@loomkeep/shared/contracts";
   import AdminQueryError from "../AdminQueryError.svelte";
 
   let { send, onclose }: { send: NewsletterSendDto; onclose: () => void } =

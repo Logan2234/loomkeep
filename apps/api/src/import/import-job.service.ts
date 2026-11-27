@@ -1,10 +1,7 @@
+import { ErrorCode } from "@loomkeep/shared/catalog";
 import {
-  Domain,
-  ErrorCode,
   IMPORT_SOURCE_NAMES,
-  NotificationType,
   RealtimeEvent,
-  XpReason,
   type AdminImportDetails,
   type AdminImportRunDto,
   type ImportAnalyzeRequest,
@@ -20,7 +17,8 @@ import {
   type ImportReportTile,
   type ImportSource,
   type PagedResult,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import { Domain, NotificationType, XpReason } from "@loomkeep/shared/enums";
 import { toJsonInput } from "../common/json.util";
 
 import { HttpStatus, Inject, Injectable, Logger } from "@nestjs/common";

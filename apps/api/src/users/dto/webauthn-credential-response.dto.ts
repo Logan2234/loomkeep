@@ -1,4 +1,4 @@
-import type { WebauthnCredentialDto } from "@loomkeep/shared";
+import type { WebauthnCredentialDto } from "@loomkeep/shared/contracts";
 
 export class WebauthnCredentialResponseDto implements WebauthnCredentialDto {
   id!: string;

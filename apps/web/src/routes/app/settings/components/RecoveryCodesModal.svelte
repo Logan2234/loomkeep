@@ -5,7 +5,7 @@
   import { downloadBlob, datedFilename } from "#lib/download.js";
   import { formatDate } from "#lib/format.js";
   import { m } from "#lib/paraglide/messages.js";
-  import { RECOVERY_CODE_LENGTH } from "@loomkeep/shared";
+  import { RECOVERY_CODE_LENGTH } from "@loomkeep/shared/contracts";
   let {
     codes,
     accountEmail,

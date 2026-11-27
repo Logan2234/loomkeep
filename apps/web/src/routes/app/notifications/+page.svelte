@@ -26,7 +26,10 @@
   import { type DaySection, groupByDay } from "#lib/notifications/cache.js";
   import { rowIn, rowOut } from "#lib/notifications/transitions.js";
   import { m } from "#lib/paraglide/messages.js";
-  import type { NotificationDto, PagedResult } from "@loomkeep/shared";
+  import type {
+    NotificationDto,
+    PagedResult,
+  } from "@loomkeep/shared/contracts";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { fade } from "svelte/transition";
 

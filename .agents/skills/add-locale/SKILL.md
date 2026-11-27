@@ -72,7 +72,7 @@ validation of `user.locale`, the admin email preview, the PWA manifest.
 
 ## 3. Regional variant
 
-`LOCALE_REGIONS` in `packages/shared/src/locale.ts` (`it: "it-IT"`). It drives date
+`LOCALE_REGIONS` in `packages/shared/src/catalog/locale.ts` (`it: "it-IT"`). It drives date
 and number formatting on the web and the language TMDB answers in. Without an
 entry the bare code is used, which works but loses regional formatting.
 
@@ -105,7 +105,7 @@ Skipping this step is valid: a shipped locale without API copy receives English.
   tests: `pnpm --filter @loomkeep/web exec vitest run src/catalogs.spec.ts src/lib/locales.spec.ts`
   and, if step 4 was done, the API `src/common src/mail src/notifications src/ee` tests.
 - Update `src/lib/locales.spec.ts` (the options list) and
-  `packages/shared/src/locale.spec.ts` / `copy-locale.util.spec.ts` for the new code.
+  `packages/shared/src/catalog/locale.spec.ts` / `copy-locale.util.spec.ts` for the new code.
 - A running dev server keeps a stale pre-bundle of `@loomkeep/shared`: after
   `build:package`, restart `pnpm dev` (delete `apps/web/node_modules/.vite` if the
   app renders blank with "… is not a function").

@@ -1,7 +1,7 @@
 import type {
   MediaDetailEpisodeDto,
   MediaDetailSeasonDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 import { EpisodeWatchResponseDto } from "./episode-watch-response.dto";
 
 export class MediaDetailEpisodeResponseDto implements MediaDetailEpisodeDto {

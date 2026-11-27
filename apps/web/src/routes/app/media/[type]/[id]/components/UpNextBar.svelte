@@ -2,7 +2,7 @@
   import Icon from "#lib/components/Icon.svelte";
   import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
-  import type { MediaDetailEpisodeDto } from "@loomkeep/shared";
+  import type { MediaDetailEpisodeDto } from "@loomkeep/shared/contracts";
   import { fly } from "svelte/transition";
 
   const reduced = prefersReducedMotion();

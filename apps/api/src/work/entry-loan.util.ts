@@ -1,4 +1,5 @@
-import { type LoanFilter, OwnershipStatus } from "@loomkeep/shared";
+import { type LoanFilter } from "@loomkeep/shared/contracts";
+import { OwnershipStatus } from "@loomkeep/shared/enums";
 import type { Prisma } from "@prisma/client";
 
 export interface LoanInput {

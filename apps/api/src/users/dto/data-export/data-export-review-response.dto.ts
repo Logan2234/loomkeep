@@ -1,4 +1,7 @@
-import type { ReviewTargetType, ReviewVisibility } from "@loomkeep/shared";
+import type {
+  ReviewTargetType,
+  ReviewVisibility,
+} from "@loomkeep/shared/enums";
 import type { DataExportReview } from "../../../account/data-export.types";
 
 class DataExportReviewRevisionResponseDto {

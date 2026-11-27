@@ -1,11 +1,11 @@
+import { ErrorCode } from "@loomkeep/shared/catalog";
 import {
   type CalendarEntryDto,
-  Domain,
-  ErrorCode,
-  levelProgress,
   type LibraryEntryDto,
   type SessionDomain,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import { Domain } from "@loomkeep/shared/enums";
+import { levelProgress } from "@loomkeep/shared/rules";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { AppException } from "../common/app.exception";
 import { canonicalExternalId } from "../common/external-id.util";

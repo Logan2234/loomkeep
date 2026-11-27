@@ -1,4 +1,4 @@
-import type { FollowStatus } from "@loomkeep/shared";
+import type { FollowStatus } from "@loomkeep/shared/enums";
 import type { DataExportFollow } from "../../../account/data-export.types";
 
 export class DataExportFollowResponseDto implements DataExportFollow {

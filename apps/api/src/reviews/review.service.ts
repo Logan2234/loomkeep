@@ -1,22 +1,24 @@
+import { ErrorCode } from "@loomkeep/shared/catalog";
 import {
-  ActivityType,
   type CommunityRatingDto,
-  ErrorCode,
   type MessageReviewDto,
   type MyReviewDto,
-  NotificationType,
   REVIEW_TARGET_DOMAIN,
   REVIEW_VOTE_NOTIFY_THRESHOLD,
   type ReviewDto,
   type ReviewRevisionDto,
   type ReviewTargetSummaryDto,
+  type UpsertReviewDto,
+  type UserSummaryDto,
+} from "@loomkeep/shared/contracts";
+import {
+  ActivityType,
+  NotificationType,
   ReviewTargetType,
   type ReviewVisibility,
   ReviewVoteValue,
-  type UpsertReviewDto,
-  type UserSummaryDto,
   XpReason,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/enums";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import type { Prisma } from "@prisma/client";

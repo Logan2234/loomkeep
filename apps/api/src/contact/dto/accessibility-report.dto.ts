@@ -1,4 +1,4 @@
-import { Locale, type Locale as LocaleCode } from "@loomkeep/shared";
+import { Locale, type Locale as LocaleCode } from "@loomkeep/shared/catalog";
 import {
   IsEmail,
   IsIn,

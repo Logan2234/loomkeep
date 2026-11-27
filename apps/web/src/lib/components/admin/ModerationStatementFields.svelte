@@ -3,7 +3,7 @@
   import FieldError from "../FieldError.svelte";
   import { MODERATION_LEGAL_BASIS_LABELS } from "#lib/constants/report-labels.js";
   import { m } from "#lib/paraglide/messages.js";
-  import type { ModerationLegalBasis } from "@loomkeep/shared";
+  import type { ModerationLegalBasis } from "@loomkeep/shared/enums";
   let {
     reasonText = $bindable(""),
     legalBasis = $bindable<ModerationLegalBasis>("TOS_BREACH"),

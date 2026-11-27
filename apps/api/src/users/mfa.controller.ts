@@ -8,7 +8,7 @@ import type {
   TotpSetupDto,
   WebauthnRegistrationOptionsDto,
   WebauthnRegistrationVerifyResponseDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 import {
   Body,
   Controller,

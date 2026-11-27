@@ -1,4 +1,5 @@
-import { ErrorCode, type JobListResponseDto } from "@loomkeep/shared";
+import { ErrorCode } from "@loomkeep/shared/catalog";
+import { type JobListResponseDto } from "@loomkeep/shared/contracts";
 import {
   Controller,
   Get,

@@ -1,4 +1,4 @@
-import { DigestCadence, NotificationType } from "@loomkeep/shared";
+import { DigestCadence, NotificationType } from "@loomkeep/shared/enums";
 import { vi } from "vitest";
 import type { EntitlementService } from "../entitlements/entitlement.service";
 import type { JobRunService } from "../jobs/job-run.service";

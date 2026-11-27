@@ -1,7 +1,7 @@
 <script lang="ts">
   import ServiceMark from "#lib/components/ServiceMark.svelte";
   import { SERVICE_BRANDS } from "#lib/service-brands.js";
-  import type { GameStore, ListenService } from "@loomkeep/shared";
+  import type { GameStore, ListenService } from "@loomkeep/shared/contracts";
 
   let {
     links,

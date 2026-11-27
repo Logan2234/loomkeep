@@ -9,7 +9,7 @@
   import { bodyOf, type BoxSize } from "#lib/home/sizing.js";
   import { HOME_WIDGETS } from "#lib/home/widgets.js";
   import { m } from "#lib/paraglide/messages.js";
-  import { levelProgress, xpForLevel } from "@loomkeep/shared";
+  import { levelProgress, xpForLevel } from "@loomkeep/shared/rules";
   import WidgetShell from "../WidgetShell.svelte";
 
   let { size }: { size: BoxSize } = $props();

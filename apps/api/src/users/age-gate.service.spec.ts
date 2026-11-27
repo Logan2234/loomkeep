@@ -1,4 +1,4 @@
-import { ErrorCode } from "@loomkeep/shared";
+import { ErrorCode } from "@loomkeep/shared/catalog";
 import { vi } from "vitest";
 import { AppException } from "../common/app.exception";
 import type { PrismaService } from "../prisma/prisma.service";

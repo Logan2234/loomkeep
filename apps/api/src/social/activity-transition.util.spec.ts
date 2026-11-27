@@ -1,4 +1,4 @@
-import { ActivityType } from "@loomkeep/shared";
+import { ActivityType } from "@loomkeep/shared/enums";
 import { classifyStatusTransition } from "./activity-transition.util";
 
 describe("classifyStatusTransition", () => {

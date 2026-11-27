@@ -8,7 +8,7 @@
     MessageWorkDto,
     PickDomain,
     PickReelWorkDto,
-  } from "@loomkeep/shared";
+  } from "@loomkeep/shared/contracts";
   import { fly, scale } from "svelte/transition";
 
   let {

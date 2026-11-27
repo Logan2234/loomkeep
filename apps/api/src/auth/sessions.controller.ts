@@ -1,4 +1,4 @@
-import type { SessionDto } from "@loomkeep/shared";
+import type { SessionDto } from "@loomkeep/shared/contracts";
 import {
   Controller,
   Delete,

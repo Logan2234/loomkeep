@@ -1,4 +1,4 @@
-import type { ShowcaseDto } from "@loomkeep/shared";
+import type { ShowcaseDto } from "@loomkeep/shared/contracts";
 import { Controller, Get } from "@nestjs/common";
 import { ApiOkResponse } from "@nestjs/swagger";
 import { Public } from "../auth/decorators/public.decorator";

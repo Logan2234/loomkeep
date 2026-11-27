@@ -1,9 +1,5 @@
-import {
-  BookStatus,
-  GameStatus,
-  MusicStatus,
-  type OnboardingStepKey,
-} from "@loomkeep/shared";
+import { type OnboardingStepKey } from "@loomkeep/shared/contracts";
+import { BookStatus, GameStatus, MusicStatus } from "@loomkeep/shared/enums";
 import type { PrismaService } from "../../prisma/prisma.service";
 
 /**

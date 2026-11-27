@@ -1,9 +1,8 @@
 import {
   ENTRY_NOTES_MAX_LENGTH,
-  MusicSource,
-  MusicStatus,
   UpsertMusicEntryDto as UpsertMusicEntryContract,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import { MusicSource, MusicStatus } from "@loomkeep/shared/enums";
 import {
   IsBoolean,
   IsIn,

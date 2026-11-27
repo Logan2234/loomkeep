@@ -8,7 +8,8 @@
   } from "#lib/components/saga/SagasView.svelte";
   import { m } from "#lib/paraglide/messages.js";
   import { librarySagasView, mediaSagaMember } from "#lib/saga.js";
-  import type { MediaType, SagaMemberDto } from "@loomkeep/shared";
+  import type { MediaType } from "@loomkeep/shared/enums";
+  import type { SagaMemberDto } from "@loomkeep/shared/contracts";
   import type { Snippet } from "svelte";
 
   let { modeSwitch }: { modeSwitch: Snippet } = $props();

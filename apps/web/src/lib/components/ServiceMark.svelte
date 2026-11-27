@@ -1,6 +1,6 @@
 <script lang="ts">
   import { SERVICE_BRANDS } from "#lib/service-brands.js";
-  import type { GameStore, ListenService } from "@loomkeep/shared";
+  import type { GameStore, ListenService } from "@loomkeep/shared/contracts";
 
   let {
     service,

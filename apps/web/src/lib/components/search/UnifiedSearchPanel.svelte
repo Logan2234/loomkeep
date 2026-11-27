@@ -12,7 +12,8 @@
   import { m } from "#lib/paraglide/messages.js";
   import { shelves, statusLabel } from "#lib/search/unified-search.js";
   import { createWorkSearch } from "#lib/search/work-search.svelte.js";
-  import type { Domain, WorkSearchHitDto } from "@loomkeep/shared";
+  import type { Domain } from "@loomkeep/shared/enums";
+  import type { WorkSearchHitDto } from "@loomkeep/shared/contracts";
   import { fade, fly } from "svelte/transition";
 
   // The "Tout" tab: one shelf per domain, a few works each, in the user's

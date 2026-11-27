@@ -15,7 +15,7 @@
   import { layout } from "#lib/layout.svelte.js";
   import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
-  import type { ConversationDto } from "@loomkeep/shared";
+  import type { ConversationDto } from "@loomkeep/shared/contracts";
   import { fade } from "svelte/transition";
   import {
     conversationName,

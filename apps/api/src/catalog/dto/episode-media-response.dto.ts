@@ -1,4 +1,4 @@
-import type { EpisodeMediaDto } from "@loomkeep/shared";
+import type { EpisodeMediaDto } from "@loomkeep/shared/contracts";
 
 class EpisodeVideoResponseDto {
   key!: string;

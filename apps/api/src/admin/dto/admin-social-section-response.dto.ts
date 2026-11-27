@@ -1,4 +1,4 @@
-import type { AdminSocialSectionDto } from "@loomkeep/shared";
+import type { AdminSocialSectionDto } from "@loomkeep/shared/contracts";
 import { ApiProperty } from "@nestjs/swagger";
 import { AdminSocialStatsResponseDto } from "./admin-social-stats-response.dto";
 

@@ -1,13 +1,15 @@
 import type {
-  CatalogSource,
-  EntryStatus,
   LibrarySagaSort,
   LibrarySagasDto,
   MediaSagaDto,
-  MediaType,
   SagaMemberDto,
-} from "@loomkeep/shared";
-import { type SortOrder } from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import { type SortOrder } from "@loomkeep/shared/contracts";
+import type {
+  CatalogSource,
+  EntryStatus,
+  MediaType,
+} from "@loomkeep/shared/enums";
 import { Injectable, Logger } from "@nestjs/common";
 import type { SagaMember } from "@prisma/client";
 import { SagaSyncService } from "../catalog/saga-sync.service";

@@ -1,5 +1,4 @@
 import type {
-  AcquisitionSource,
   AdminUserApiKeyDto,
   AdminUserDetailDto,
   AdminUserDeviceDto,
@@ -8,6 +7,9 @@ import type {
   AdminUserPushSubscriptionDto,
   AdminUserRecentAdditionDto,
   AdminUserSecurityEventDto,
+} from "@loomkeep/shared/contracts";
+import type {
+  AcquisitionSource,
   DigestCadence,
   Domain,
   ModerationMeasure,
@@ -15,7 +17,7 @@ import type {
   PushPlatform,
   ReviewVisibility,
   SecurityEventType,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/enums";
 import { AdminUserResponseDto } from "./admin-user-response.dto";
 
 class AdminUserJourneyResponseDto {

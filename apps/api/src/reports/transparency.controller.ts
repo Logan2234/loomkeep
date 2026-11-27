@@ -1,4 +1,4 @@
-import type { ModerationTransparencyDto } from "@loomkeep/shared";
+import type { ModerationTransparencyDto } from "@loomkeep/shared/contracts";
 import { Controller, Get, Query, UseGuards } from "@nestjs/common";
 import { ApiOkResponse } from "@nestjs/swagger";
 import { Public } from "../auth/decorators/public.decorator";

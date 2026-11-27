@@ -4,7 +4,10 @@
   import { findWorks } from "#lib/chat/work-search.js";
   import Poster from "#lib/components/Poster.svelte";
   import { m } from "#lib/paraglide/messages.js";
-  import type { MessageWorkDto, MessageWorkKind } from "@loomkeep/shared";
+  import type {
+    MessageWorkDto,
+    MessageWorkKind,
+  } from "@loomkeep/shared/contracts";
   import ChatPicker from "./ChatPicker.svelte";
   import { workKindLabel } from "./conversation-presentation";
 

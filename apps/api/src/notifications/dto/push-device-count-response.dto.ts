@@ -1,4 +1,4 @@
-import type { PushDeviceCountDto } from "@loomkeep/shared";
+import type { PushDeviceCountDto } from "@loomkeep/shared/contracts";
 
 export class PushDeviceCountResponseDto implements PushDeviceCountDto {
   /**

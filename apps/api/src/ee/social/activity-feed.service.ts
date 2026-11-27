@@ -1,5 +1,8 @@
-import type { ActivityEventDto, ActivityFeedTokenDto } from "@loomkeep/shared";
-import { ErrorCode } from "@loomkeep/shared";
+import { ErrorCode } from "@loomkeep/shared/catalog";
+import type {
+  ActivityEventDto,
+  ActivityFeedTokenDto,
+} from "@loomkeep/shared/contracts";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { AppException } from "../../common/app.exception";

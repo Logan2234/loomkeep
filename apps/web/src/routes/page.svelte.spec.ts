@@ -1,7 +1,10 @@
 import { auth } from "#lib/auth.svelte.js";
 import { m } from "#lib/paraglide/messages.js";
 import { renderWithQuery } from "#lib/test/render.js";
-import { ACCOUNT_DELETION_GRACE_DAYS, type UserDto } from "@loomkeep/shared";
+import {
+  ACCOUNT_DELETION_GRACE_DAYS,
+  type UserDto,
+} from "@loomkeep/shared/contracts";
 import { fireEvent, screen, waitFor, within } from "@testing-library/svelte";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import LandingPage from "./+page.svelte";

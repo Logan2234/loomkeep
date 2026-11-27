@@ -1,13 +1,15 @@
 import { m } from "#lib/paraglide/messages.js";
 import {
+  type MediaFilterStatus,
+  type SavedViewDomain,
+  SESSION_FILTER_PAUSED,
+} from "@loomkeep/shared/contracts";
+import {
   type BookStatus,
   type EntryStatus,
   type GameStatus,
-  type MediaFilterStatus,
   type MusicStatus,
-  type SavedViewDomain,
-  SESSION_FILTER_PAUSED,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/enums";
 
 export const MEDIA_STATUS_META: Record<
   EntryStatus,

@@ -1,9 +1,9 @@
 import type {
-  Domain,
   MessageWorkKind,
   WorkSearchHitDto,
   WorkSearchResultDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import type { Domain } from "@loomkeep/shared/enums";
 
 export class WorkSearchHitResponseDto implements WorkSearchHitDto {
   kind!: MessageWorkKind;

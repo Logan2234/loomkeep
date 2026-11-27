@@ -51,14 +51,14 @@
   } from "#lib/format.js";
   import { m } from "#lib/paraglide/messages.js";
   import { toast } from "#lib/toast.svelte.js";
+  import { type ModerationLegalBasis } from "@loomkeep/shared/enums";
   import {
     IMPORT_SOURCE_NAMES,
-    levelForXp,
     type AdminUserDetailDto,
     type AdminUserLibraryKind,
     type ImportSource,
-    type ModerationLegalBasis,
-  } from "@loomkeep/shared";
+  } from "@loomkeep/shared/contracts";
+  import { levelForXp } from "@loomkeep/shared/rules";
   import {
     CADENCE_LABELS,
     MEASURE_LABELS,

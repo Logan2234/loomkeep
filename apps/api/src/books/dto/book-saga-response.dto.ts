@@ -2,10 +2,10 @@ import type {
   BookSagaDto,
   BookSagaMemberDto,
   BookSagaResponseDto as BookSagaResponse,
-  BookStatus,
   LibraryBookSagasDto,
   LibrarySagaDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import type { BookStatus } from "@loomkeep/shared/enums";
 import { BookSummaryResponseDto } from "./book-summary-response.dto";
 
 export class BookSagaMemberResponseDto

@@ -1,4 +1,5 @@
-import { Domain, type WorkSearchHitDto } from "@loomkeep/shared";
+import { type WorkSearchHitDto } from "@loomkeep/shared/contracts";
+import { Domain } from "@loomkeep/shared/enums";
 import { titleRelevance } from "../catalog/search-ranking";
 
 /** The domains a work search covers: the ones with a catalogue. */

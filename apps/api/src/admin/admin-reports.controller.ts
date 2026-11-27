@@ -1,15 +1,17 @@
+import { ErrorCode } from "@loomkeep/shared/catalog";
 import {
-  ErrorCode,
-  ModerationMeasure,
-  ReportStatus,
   type AdminReportsSummaryDto,
   type PagedResult,
-  type ReportCategory,
   type ReportDto,
-  type ReportMotif,
   type ReportPendingCountDto,
+} from "@loomkeep/shared/contracts";
+import {
+  ModerationMeasure,
+  ReportStatus,
+  type ReportCategory,
+  type ReportMotif,
   type ReportTargetType,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/enums";
 import {
   Body,
   Controller,

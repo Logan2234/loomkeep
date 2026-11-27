@@ -1,6 +1,5 @@
+import { ErrorCode } from "@loomkeep/shared/catalog";
 import type {
-  BookOwnershipStatus,
-  BookSource,
   BookSummaryDto,
   ImportMatch,
   ImportPlan,
@@ -9,13 +8,9 @@ import type {
   ImportReport,
   ImportReportTile,
   ImportSource,
-} from "@loomkeep/shared";
-import {
-  BookStatus,
-  Domain,
-  ErrorCode,
-  ReviewTargetType,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import type { BookOwnershipStatus, BookSource } from "@loomkeep/shared/enums";
+import { BookStatus, Domain, ReviewTargetType } from "@loomkeep/shared/enums";
 import assert from "node:assert/strict";
 import { BookEntryImportWriter } from "../../../books/book-entry-import.writer";
 import { BookItemService } from "../../../books/book-item.service";

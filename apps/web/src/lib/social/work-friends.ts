@@ -7,7 +7,10 @@ import {
 import { STATUS_LOOKS, type StatusTone } from "#lib/constants/status-looks.js";
 import { formatHours } from "#lib/format.js";
 import { m } from "#lib/paraglide/messages.js";
-import type { WorkFriendsDto, WorkProgressDto } from "@loomkeep/shared";
+import type {
+  WorkFriendsDto,
+  WorkProgressDto,
+} from "@loomkeep/shared/contracts";
 
 export type WorkDomain = "MEDIA" | "BOOKS" | "GAMES" | "MUSIC";
 

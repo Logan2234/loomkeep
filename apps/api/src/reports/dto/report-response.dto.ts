@@ -1,11 +1,11 @@
+import type { ReportDto } from "@loomkeep/shared/contracts";
 import type {
   ReportCategory,
-  ReportDto,
   ReportMotif,
   ReportProfilePart,
   ReportStatus,
   ReportTargetType,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/enums";
 import { UserSummaryResponseDto } from "../../common/dto/user-summary-response.dto";
 import {
   ReportTargetOwnerResponseDto,

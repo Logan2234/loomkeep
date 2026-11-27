@@ -1,7 +1,7 @@
 import {
   type ReviewVisibility,
   ReviewVisibility as ReviewVisibilityEnum,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/enums";
 import { ArrayNotEmpty, IsArray, IsIn, IsString } from "class-validator";
 
 export class BatchDeleteReviewsBody {

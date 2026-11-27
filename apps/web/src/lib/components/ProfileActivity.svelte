@@ -16,7 +16,10 @@
   import { useEeLock } from "#lib/ee/license.svelte.js";
   import ActivityFeedSubscribeModal from "#lib/ee/social/ActivityFeedSubscribeModal.svelte";
   import { m } from "#lib/paraglide/messages.js";
-  import type { ActivityEventDto, PagedResult } from "@loomkeep/shared";
+  import type {
+    ActivityEventDto,
+    PagedResult,
+  } from "@loomkeep/shared/contracts";
 
   let {
     username,

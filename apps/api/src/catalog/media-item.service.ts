@@ -1,9 +1,6 @@
-import type {
-  CatalogSource,
-  MediaDetailsDto,
-  MediaType,
-} from "@loomkeep/shared";
-import { Domain } from "@loomkeep/shared";
+import type { MediaDetailsDto } from "@loomkeep/shared/contracts";
+import type { CatalogSource, MediaType } from "@loomkeep/shared/enums";
+import { Domain } from "@loomkeep/shared/enums";
 import { Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { Cron, CronExpression } from "@nestjs/schedule";

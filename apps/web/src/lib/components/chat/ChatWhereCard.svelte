@@ -7,7 +7,10 @@
   import Modal from "#lib/components/Modal.svelte";
   import Poster from "#lib/components/Poster.svelte";
   import { m } from "#lib/paraglide/messages.js";
-  import type { MessageWorkDto, WatchOfferKind } from "@loomkeep/shared";
+  import type {
+    MessageWorkDto,
+    WatchOfferKind,
+  } from "@loomkeep/shared/contracts";
   import { workKindLabel } from "./conversation-presentation";
 
   let { messageId, work }: { messageId: string; work: MessageWorkDto } =

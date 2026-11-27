@@ -1,9 +1,9 @@
+import { ErrorCode } from "@loomkeep/shared/catalog";
 import {
   ACCOUNT_DELETION_GRACE_DAYS,
-  type AccountDeletionReason,
   type AccountDeletionScheduleDto,
-  ErrorCode,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import { type AccountDeletionReason } from "@loomkeep/shared/enums";
 import { HttpStatus, Injectable, Logger } from "@nestjs/common";
 import { Cron } from "@nestjs/schedule";
 import { AppException } from "../common/app.exception";

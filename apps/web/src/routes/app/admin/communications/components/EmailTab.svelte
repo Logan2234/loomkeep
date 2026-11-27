@@ -8,7 +8,7 @@
   import { foldAdminSearch } from "#lib/admin-search.js";
   import FieldError from "#lib/components/FieldError.svelte";
   import AdminQueryError from "../../AdminQueryError.svelte";
-  import { Locale } from "@loomkeep/shared";
+  import { Locale } from "@loomkeep/shared/catalog";
   import {
     getAdminEmailPreview,
     getAdminEmailTemplates,

@@ -1,4 +1,4 @@
-import type { LeaderboardDto } from "@loomkeep/shared";
+import type { LeaderboardDto } from "@loomkeep/shared/contracts";
 import { ApiProperty } from "@nestjs/swagger";
 import { LeaderboardEntryResponseDto } from "./leaderboard-entry-response.dto";
 

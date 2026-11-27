@@ -2,8 +2,8 @@ import type {
   HomeLayoutDto,
   HomeWidgetDto,
   HomeWidgetType,
-} from "@loomkeep/shared";
-import { HOME_GRID_COLUMNS } from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import { HOME_GRID_COLUMNS } from "@loomkeep/shared/contracts";
 import { compact } from "./grid";
 import { DEFAULT_QUICK_LINKS } from "./quick-links";
 import {

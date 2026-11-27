@@ -1,5 +1,5 @@
-import type { GameStatus } from "@loomkeep/shared";
-import { GameOwnershipStatus } from "@loomkeep/shared";
+import type { GameStatus } from "@loomkeep/shared/enums";
+import { GameOwnershipStatus } from "@loomkeep/shared/enums";
 import type { PrismaService } from "../prisma/prisma.service";
 
 /**

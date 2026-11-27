@@ -1,4 +1,4 @@
-import type { CreatorWorkDto, PersonPageDto } from "@loomkeep/shared";
+import type { CreatorWorkDto, PersonPageDto } from "@loomkeep/shared/contracts";
 
 /**
  * The few works a peek shows: from the group the person is best known for,

@@ -1,4 +1,8 @@
-import { AlertGroup, type AlertKey, isAlertEnabled } from "@loomkeep/shared";
+import {
+  AlertGroup,
+  type AlertKey,
+  isAlertEnabled,
+} from "@loomkeep/shared/catalog";
 import { Injectable, Logger } from "@nestjs/common";
 import type { MailRecipient } from "../mail/mail.types";
 import { PrismaService } from "../prisma/prisma.service";

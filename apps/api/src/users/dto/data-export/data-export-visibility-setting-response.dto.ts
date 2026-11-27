@@ -2,7 +2,7 @@ import type {
   Domain,
   VisibilityAudience,
   VisibilityFacet,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/enums";
 import type { DataExportVisibilitySetting } from "../../../account/data-export.types";
 
 export class DataExportVisibilitySettingResponseDto implements DataExportVisibilitySetting {

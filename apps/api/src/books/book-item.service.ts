@@ -1,10 +1,10 @@
 import type {
   BookDetailsDto,
   BookEditionDto,
-  BookSource,
   BookSummaryDto,
-} from "@loomkeep/shared";
-import { Domain } from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import type { BookSource } from "@loomkeep/shared/enums";
+import { Domain } from "@loomkeep/shared/enums";
 import { Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { Cron, CronExpression } from "@nestjs/schedule";

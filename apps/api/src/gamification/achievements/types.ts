@@ -1,4 +1,7 @@
-import { type AchievementFamily, type AchievementTier } from "@loomkeep/shared";
+import {
+  type AchievementFamily,
+  type AchievementTier,
+} from "@loomkeep/shared/contracts";
 
 import type { PrismaService } from "../../prisma/prisma.service";
 

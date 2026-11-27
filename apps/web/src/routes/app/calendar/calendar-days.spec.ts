@@ -1,4 +1,4 @@
-import type { CalendarEntryDto } from "@loomkeep/shared";
+import type { CalendarEntryDto } from "@loomkeep/shared/contracts";
 import { describe, expect, it } from "vitest";
 import {
   type CalendarFilter,

@@ -9,7 +9,7 @@
   } from "#lib/chat/attachments.js";
   import Poster from "#lib/components/Poster.svelte";
   import { m } from "#lib/paraglide/messages.js";
-  import type { MyReviewDto } from "@loomkeep/shared";
+  import type { MyReviewDto } from "@loomkeep/shared/contracts";
   import ChatPicker from "./ChatPicker.svelte";
 
   let {

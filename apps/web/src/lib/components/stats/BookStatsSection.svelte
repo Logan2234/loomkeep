@@ -4,7 +4,7 @@
   import { createApiQuery } from "#lib/api/query.svelte.js";
   import { getBookStats } from "#lib/api/stats.js";
   import { formatNumber } from "#lib/format.js";
-  import type { DomainStatusBreakdownDto } from "@loomkeep/shared";
+  import type { DomainStatusBreakdownDto } from "@loomkeep/shared/contracts";
   import PremiumTeaser from "../PremiumTeaser.svelte";
   import RankBars from "./RankBars.svelte";
   import StatTile from "./StatTile.svelte";

@@ -1,13 +1,15 @@
+import type { Locale } from "@loomkeep/shared/catalog";
 import type {
-  AccountDeletionReason,
-  AcquisitionSource,
   AdminAccountsSectionDto,
   AdminAgeBucketDto,
   AdminCohortRowDto,
   AdminEnabledDomainsBucketDto,
-  Locale,
+} from "@loomkeep/shared/contracts";
+import type {
+  AccountDeletionReason,
+  AcquisitionSource,
   ProfileAccess,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/enums";
 import { AdminNewAccountsTrendResponseDto } from "./admin-new-accounts-trend-response.dto";
 
 class AdminCohortRowResponseDto implements AdminCohortRowDto {

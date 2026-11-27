@@ -1,4 +1,4 @@
-import type { HomeWidgetDisplay } from "@loomkeep/shared";
+import type { HomeWidgetDisplay } from "@loomkeep/shared/contracts";
 
 // How a widget's content reflows with the room it's given. Widgets get their
 // pixel size from the grid (not a CSS container query) so the editor can

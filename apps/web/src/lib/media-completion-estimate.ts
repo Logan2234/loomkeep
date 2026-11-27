@@ -1,8 +1,8 @@
+import { type MediaDetailDto } from "@loomkeep/shared/contracts";
 import {
   episodeRuntimeFor,
   estimateCompletionDate,
-  type MediaDetailDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/rules";
 import { timeLeftToWatch } from "./pile";
 
 export function mediaCompletionEstimate(

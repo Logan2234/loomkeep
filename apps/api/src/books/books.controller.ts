@@ -1,10 +1,11 @@
+import { ErrorCode } from "@loomkeep/shared/catalog";
 import type {
   BookSagaResponseDto as BookSagaResponse,
   BulkEntriesResultDto,
   LibraryBookSagasDto,
   PagedResult,
   PileSummaryDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 import {
   BookDetailDto,
   BookEditionDto,
@@ -12,13 +13,11 @@ import {
   BookSearchResponseDto,
   BookSessionMutationDto,
   BookSessionSummaryDto,
-  BookSource,
-  Domain,
-  ErrorCode,
   LIBRARY_SAGA_SORTS,
   ReadingGoalDto,
   StoredBookDetailDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import { BookSource, Domain } from "@loomkeep/shared/enums";
 import {
   Body,
   Controller,

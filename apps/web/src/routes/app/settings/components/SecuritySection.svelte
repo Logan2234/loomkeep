@@ -24,13 +24,12 @@
   import { normalizeCodeInput } from "#lib/one-time-code.js";
   import { m } from "#lib/paraglide/messages.js";
   import { toast } from "#lib/toast.svelte.js";
+  import { USER_LIMITS, OTP_CODE_LENGTH } from "@loomkeep/shared/contracts";
   import {
     isPasswordValid,
     PASSWORD_MIN_LENGTH,
     PASSWORD_MAX_LENGTH,
-    USER_LIMITS,
-    OTP_CODE_LENGTH,
-  } from "@loomkeep/shared";
+  } from "@loomkeep/shared/rules";
   import { flashAnchor } from "#lib/flash-anchor.js";
   import { sectionHref } from "../nav";
 

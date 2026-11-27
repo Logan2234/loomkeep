@@ -1,11 +1,10 @@
 import {
   ENTRY_NOTES_MAX_LENGTH,
   LOAN_PERSON_MAX_LENGTH,
-  MusicOwnershipStatus,
-  MusicStatus,
   OWNERSHIP_SOURCE_MAX_LENGTH,
   UpdateMusicEntryDto as UpdateMusicEntryContract,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import { MusicOwnershipStatus, MusicStatus } from "@loomkeep/shared/enums";
 import {
   IsBoolean,
   IsDateString,

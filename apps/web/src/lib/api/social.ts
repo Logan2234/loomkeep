@@ -1,12 +1,14 @@
 import type {
   ListItemTargetType,
   PagedResult,
+  UpdateVisibilitySettingsDto,
+  UserSummaryDto,
+} from "@loomkeep/shared/contracts";
+import type {
   ReportCategory,
   ReportMotif,
   ReportProfilePart,
-  UpdateVisibilitySettingsDto,
-  UserSummaryDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/enums";
 import { request } from "./core";
 import { typedRequest } from "./generated/typed-request";
 

@@ -1,4 +1,4 @@
-import type { AchievementRarityDto } from "@loomkeep/shared";
+import type { AchievementRarityDto } from "@loomkeep/shared/contracts";
 
 // Below this many eligible members (a family instance), a share is one or
 // two people's doing and says nothing about how hard an achievement is.

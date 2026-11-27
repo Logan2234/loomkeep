@@ -6,7 +6,7 @@ import type {
   LibrarySagaDto,
   LibrarySagasDto,
   SagaMemberDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 import { screen, waitFor, within } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";

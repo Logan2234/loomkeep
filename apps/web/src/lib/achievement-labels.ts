@@ -1,7 +1,10 @@
 // Shared by the achievements page, profile badge showcase, and unlock bubble.
 import { m } from "#lib/paraglide/messages.js";
 import type { IconName } from "#lib/types/icon-name.js";
-import type { AchievementDto, AchievementFamily } from "@loomkeep/shared";
+import type {
+  AchievementDto,
+  AchievementFamily,
+} from "@loomkeep/shared/contracts";
 
 /**
  * Names and descriptions are keyed by the achievement's own registry key

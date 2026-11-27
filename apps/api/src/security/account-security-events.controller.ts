@@ -1,4 +1,7 @@
-import type { AccountSecurityEventDto, PagedResult } from "@loomkeep/shared";
+import type {
+  AccountSecurityEventDto,
+  PagedResult,
+} from "@loomkeep/shared/contracts";
 import { Controller, Get, Query } from "@nestjs/common";
 import { ApiOkResponse } from "@nestjs/swagger";
 import type { JwtPayload } from "../auth/decorators/current-user.decorator";

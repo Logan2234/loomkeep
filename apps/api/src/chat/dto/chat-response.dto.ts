@@ -1,12 +1,8 @@
 import type {
   ChatUnreadDto,
-  CommentTargetType,
   ConversationDto,
   ConversationReadOnlyReason,
   ConversationWorkDto,
-  Emote,
-  ListKind,
-  ListVisibility,
   MessageDto,
   MessageGoneAttachment,
   MessageListDto,
@@ -27,7 +23,13 @@ import type {
   SagaStep,
   WatchOfferKind,
   WorkThreadDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import type {
+  CommentTargetType,
+  Emote,
+  ListKind,
+  ListVisibility,
+} from "@loomkeep/shared/enums";
 import { CommentReactionSummaryResponseDto } from "../../comments/dto/comment-reaction-summary-response.dto";
 import { UserSummaryResponseDto } from "../../common/dto/user-summary-response.dto";
 import { ReviewTargetSummaryResponseDto } from "../../reviews/dto/review-target-summary-response.dto";

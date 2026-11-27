@@ -28,7 +28,7 @@
     AdminInvitationRedeemerDto,
     AdminInvitationStatus,
     PagedResult,
-  } from "@loomkeep/shared";
+  } from "@loomkeep/shared/contracts";
   import { flip } from "svelte/animate";
   import { fade } from "svelte/transition";
 

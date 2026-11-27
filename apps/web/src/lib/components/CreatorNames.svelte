@@ -3,7 +3,7 @@
   // when their source has one, with a peek on hover.
   import { creatorPeek } from "#lib/creator-peek/peek.svelte.js";
   import { creatorHref, studioHref } from "#lib/creator-href.js";
-  import type { CreatorRefDto, StudioKind } from "@loomkeep/shared";
+  import type { CreatorRefDto, StudioKind } from "@loomkeep/shared/contracts";
   import NewBadge from "./NewBadge.svelte";
 
   let {

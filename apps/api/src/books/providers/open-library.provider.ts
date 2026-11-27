@@ -1,15 +1,12 @@
+import { ErrorCode } from "@loomkeep/shared/catalog";
 import type {
   BookEditionDto,
   CreatorRefDto,
   PersonPageDto,
   RatingDto,
-} from "@loomkeep/shared";
-import {
-  BookSource,
-  BookSummaryDto,
-  CreatorSource,
-  ErrorCode,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import { BookSummaryDto, CreatorSource } from "@loomkeep/shared/contracts";
+import { BookSource } from "@loomkeep/shared/enums";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { AppException } from "../../common/app.exception";

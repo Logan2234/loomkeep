@@ -1,9 +1,9 @@
 import {
   type StartSessionTimerDto as Contract,
   SESSION_DOMAINS,
-  SessionCycleAction,
   type SessionDomain,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import { SessionCycleAction } from "@loomkeep/shared/enums";
 
 import { IsIn, IsOptional, IsString } from "class-validator";
 

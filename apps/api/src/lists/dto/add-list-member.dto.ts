@@ -1,4 +1,4 @@
-import type { AddListMemberDto } from "@loomkeep/shared";
+import type { AddListMemberDto } from "@loomkeep/shared/contracts";
 import { IsString, MinLength } from "class-validator";
 
 export class AddListMemberBody implements AddListMemberDto {

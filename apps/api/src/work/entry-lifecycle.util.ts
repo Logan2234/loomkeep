@@ -1,15 +1,17 @@
+import { ErrorCode } from "@loomkeep/shared/catalog";
 import {
-  ActivityType,
   DORMANT_AFTER_DAYS,
-  ErrorCode,
   LOAN_FILTERS,
-  XpReason,
-  type Domain,
   type LoanFilter,
   type PagedResult,
-  type ReviewTargetType,
   type SortOrder,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import {
+  ActivityType,
+  XpReason,
+  type Domain,
+  type ReviewTargetType,
+} from "@loomkeep/shared/enums";
 import { HttpStatus } from "@nestjs/common";
 import type { Prisma } from "@prisma/client";
 import type { AchievementService } from "../gamification/achievements/achievement.service";

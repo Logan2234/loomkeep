@@ -5,7 +5,7 @@
   import Modal from "#lib/components/Modal.svelte";
 
   import { m } from "#lib/paraglide/messages.js";
-  import type { ModerationLegalBasis } from "@loomkeep/shared";
+  import type { ModerationLegalBasis } from "@loomkeep/shared/enums";
 
   let {
     username,

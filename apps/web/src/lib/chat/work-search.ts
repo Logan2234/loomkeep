@@ -8,10 +8,10 @@ import {
   type BookSummaryDto,
   type GameSummaryDto,
   type MediaSummaryDto,
-  type MediaType,
   type MessageWorkDto,
   type MusicSummaryDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import { type MediaType } from "@loomkeep/shared/enums";
 
 export const mediaWork = (media: MediaSummaryDto): MessageWorkDto => ({
   kind: media.type,

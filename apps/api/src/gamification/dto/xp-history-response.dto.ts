@@ -1,8 +1,8 @@
 import type {
   XpHistoryDayDto,
   XpHistoryItemDto,
-  XpReason,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import type { XpReason } from "@loomkeep/shared/enums";
 
 export class XpHistoryItemResponseDto implements XpHistoryItemDto {
   reason!: XpReason;

@@ -29,13 +29,15 @@
   import { onRealtimeEvent } from "#lib/realtime/socket.js";
   import { toast } from "#lib/toast.svelte.js";
   import {
-    type CommentDto,
     type Emote,
     type CommentTargetType,
-    type PagedResult,
     type ReportCategory,
     type ReportMotif,
-  } from "@loomkeep/shared";
+  } from "@loomkeep/shared/enums";
+  import {
+    type CommentDto,
+    type PagedResult,
+  } from "@loomkeep/shared/contracts";
   import {
     createInfiniteQuery,
     createMutation,

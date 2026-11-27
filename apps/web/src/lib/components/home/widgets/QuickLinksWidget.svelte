@@ -7,7 +7,7 @@
   } from "#lib/home/quick-links.js";
   import type { BoxSize } from "#lib/home/sizing.js";
   import { m } from "#lib/paraglide/messages.js";
-  import type { HomeWidgetDto } from "@loomkeep/shared";
+  import type { HomeWidgetDto } from "@loomkeep/shared/contracts";
 
   let { widget, size }: { widget: HomeWidgetDto; size: BoxSize } = $props();
 

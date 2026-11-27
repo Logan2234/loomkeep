@@ -1,11 +1,11 @@
-import type { CreateListDto } from "@loomkeep/shared";
+import type { CreateListDto } from "@loomkeep/shared/contracts";
+import { LIST_LIMITS } from "@loomkeep/shared/contracts";
 import {
-  LIST_LIMITS,
   ListKind,
   type ListKind as ListKindT,
   type ListVisibility,
   ListVisibility as ListVisibilityEnum,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/enums";
 import {
   IsIn,
   IsOptional,

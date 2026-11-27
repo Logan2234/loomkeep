@@ -1,8 +1,8 @@
 import {
-  AccountDeletionReason,
   type CancelAccountDeletionRequestDto,
   type ScheduleAccountDeletionRequestDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import { AccountDeletionReason } from "@loomkeep/shared/enums";
 import { ApiPropertyOptional } from "@nestjs/swagger";
 import { IsIn, IsOptional, IsString } from "class-validator";
 

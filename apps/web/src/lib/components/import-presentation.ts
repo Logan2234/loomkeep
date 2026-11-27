@@ -4,13 +4,13 @@ import { formatNumber } from "#lib/format.js";
 import { m } from "#lib/paraglide/messages.js";
 import { getLocale } from "#lib/paraglide/runtime.js";
 import type {
-  EntryStatus,
   ImportJobDto,
   ImportPlanItem,
   ImportPlanList,
   ImportReportTile,
   ImportRunDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import type { EntryStatus } from "@loomkeep/shared/enums";
 
 // Functions read the current locale even when a plan was loaded in another one.
 const LABELS = {

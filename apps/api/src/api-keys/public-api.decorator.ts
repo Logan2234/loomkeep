@@ -1,4 +1,4 @@
-import type { ApiKeyResource } from "@loomkeep/shared";
+import type { ApiKeyResource } from "@loomkeep/shared/contracts";
 import { applyDecorators, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { SkipThrottle } from "@nestjs/throttler";

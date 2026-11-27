@@ -1,7 +1,7 @@
 import type {
   InstanceDomainAccountsDto,
   InstanceSettingsDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 import { Body, Controller, Get, Patch } from "@nestjs/common";
 import { ApiOkResponse } from "@nestjs/swagger";
 import { RequireRecentAuth } from "../auth/recent-auth.guard";

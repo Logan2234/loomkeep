@@ -1,4 +1,4 @@
-import type { MyListDto } from "@loomkeep/shared";
+import type { MyListDto } from "@loomkeep/shared/contracts";
 
 export type ListTile =
   | { kind: "create"; key: "create" }

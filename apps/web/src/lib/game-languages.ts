@@ -1,4 +1,4 @@
-import type { GameLanguageDto } from "@loomkeep/shared";
+import type { GameLanguageDto } from "@loomkeep/shared/contracts";
 
 export type GameLanguageLevel = "full" | "text" | "none";
 

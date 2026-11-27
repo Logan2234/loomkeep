@@ -1,4 +1,4 @@
-import { MAX_API_KEYS_PER_USER } from "@loomkeep/shared";
+import { MAX_API_KEYS_PER_USER } from "@loomkeep/shared/contracts";
 import { vi } from "vitest";
 import type { InstanceSettingsService } from "../instance-settings/instance-settings.service";
 import type { MailService } from "../mail/mail.service";

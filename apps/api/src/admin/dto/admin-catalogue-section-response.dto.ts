@@ -3,7 +3,7 @@ import type {
   AdminCatalogueSectionDto,
   AdminPopularWorkDto,
   StatsDomain,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 import { TrendPointResponseDto } from "./trend-point-response.dto";
 
 class AdminCacheDomainRowResponseDto implements AdminCacheDomainRowDto {

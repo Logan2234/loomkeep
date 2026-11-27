@@ -1,4 +1,8 @@
-import { Domain, VisibilityAudience, VisibilityFacet } from "@loomkeep/shared";
+import {
+  Domain,
+  VisibilityAudience,
+  VisibilityFacet,
+} from "@loomkeep/shared/enums";
 import { describe, expect, it } from "vitest";
 import { commonAudience } from "./privacy-options";
 

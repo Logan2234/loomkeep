@@ -1,4 +1,5 @@
-import { STATS_DOMAINS, type Domain, type StatsDomain } from "@loomkeep/shared";
+import { STATS_DOMAINS, type StatsDomain } from "@loomkeep/shared/contracts";
+import { type Domain } from "@loomkeep/shared/enums";
 
 /**
  * Resolves which domains a stats request should aggregate: the intersection

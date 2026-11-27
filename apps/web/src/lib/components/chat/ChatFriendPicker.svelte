@@ -8,7 +8,7 @@
   import Icon from "#lib/components/Icon.svelte";
   import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
-  import { RECOMMEND_MAX_FRIENDS } from "@loomkeep/shared";
+  import { RECOMMEND_MAX_FRIENDS } from "@loomkeep/shared/contracts";
   import { scale } from "svelte/transition";
 
   let {

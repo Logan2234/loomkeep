@@ -1,4 +1,4 @@
-import type { ListViewerRole, MyListDto } from "@loomkeep/shared";
+import type { ListViewerRole, MyListDto } from "@loomkeep/shared/contracts";
 import { ListResponseDto } from "./list-response.dto";
 
 export class MyListResponseDto extends ListResponseDto implements MyListDto {

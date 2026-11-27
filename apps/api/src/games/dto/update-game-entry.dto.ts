@@ -1,12 +1,11 @@
 import {
   ENTRY_NOTES_MAX_LENGTH,
   GAME_PLATFORM_MAX_LENGTH,
-  GameOwnershipStatus,
-  GameStatus,
   LOAN_PERSON_MAX_LENGTH,
   OWNERSHIP_SOURCE_MAX_LENGTH,
   UpdateGameEntryDto as UpdateGameEntryContract,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import { GameOwnershipStatus, GameStatus } from "@loomkeep/shared/enums";
 import {
   IsBoolean,
   IsDateString,

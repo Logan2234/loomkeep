@@ -1,4 +1,4 @@
-import type { ReportCategory } from "@loomkeep/shared";
+import type { ReportCategory } from "@loomkeep/shared/enums";
 import {
   contributorIds,
   foundedPercent,

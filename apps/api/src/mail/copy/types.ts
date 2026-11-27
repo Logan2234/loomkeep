@@ -1,4 +1,4 @@
-import type { SecurityEventType } from "@loomkeep/shared";
+import type { SecurityEventType } from "@loomkeep/shared/enums";
 
 /** The security events that email the account's owner (see SecurityEventService). */
 export const SECURITY_ALERT_EVENTS = [

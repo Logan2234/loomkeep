@@ -6,7 +6,7 @@
   import Avatar from "#lib/components/Avatar.svelte";
   import Poster from "#lib/components/Poster.svelte";
   import { m } from "#lib/paraglide/messages.js";
-  import type { MessageDto, MessagePollDto } from "@loomkeep/shared";
+  import type { MessageDto, MessagePollDto } from "@loomkeep/shared/contracts";
   import { useQueryClient } from "@tanstack/svelte-query";
 
   let {

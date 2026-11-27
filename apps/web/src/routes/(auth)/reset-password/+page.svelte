@@ -10,7 +10,7 @@
     isPasswordValid,
     PASSWORD_MIN_LENGTH,
     PASSWORD_MAX_LENGTH,
-  } from "@loomkeep/shared";
+  } from "@loomkeep/shared/rules";
 
   const token = page.url.searchParams.get("token") ?? "";
 

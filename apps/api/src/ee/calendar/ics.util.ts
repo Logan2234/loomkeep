@@ -2,7 +2,7 @@ import {
   episodeCode,
   type CalendarEntryDto,
   type PremiereDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 import { utcDateKey } from "../../common/date.util";
 
 const CRLF = "\r\n";

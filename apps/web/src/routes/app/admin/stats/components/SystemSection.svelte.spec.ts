@@ -1,6 +1,6 @@
 import { m } from "#lib/paraglide/messages.js";
 import { renderWithQuery } from "#lib/test/render.js";
-import type { AdminSystemSectionDto } from "@loomkeep/shared";
+import type { AdminSystemSectionDto } from "@loomkeep/shared/contracts";
 import { screen } from "@testing-library/svelte";
 import { describe, expect, it } from "vitest";
 import SystemSection from "./SystemSection.svelte";

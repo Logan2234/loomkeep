@@ -3,8 +3,8 @@ import type {
   AdminSecuritySummaryDto,
   PagedResult,
   SecurityEventDto,
-  SecurityEventType,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import type { SecurityEventType } from "@loomkeep/shared/enums";
 import { Injectable, Logger } from "@nestjs/common";
 import { Cron, CronExpression } from "@nestjs/schedule";
 import { sinceDaysAgo } from "../common/date.util";

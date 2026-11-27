@@ -1,24 +1,26 @@
+import { ErrorCode } from "@loomkeep/shared/catalog";
 import {
   type BulkEntriesResultDto,
   type BulkEntriesTargetDto,
-  Domain,
-  ErrorCode,
   GAME_SORT_KEYS,
   type GameDetailDto,
   type GameEntryDto,
   type GameItemDto,
-  GameOwnershipStatus,
   type GameSortKey,
-  type GameSource,
-  GameStatus,
   type PagedResult,
   type PileSummaryDto,
   RealtimeEvent,
-  ReviewTargetType,
   SESSION_FILTER_PAUSED,
+} from "@loomkeep/shared/contracts";
+import {
+  Domain,
+  GameOwnershipStatus,
+  type GameSource,
+  GameStatus,
+  ReviewTargetType,
   TrackingCycleStatus,
   XpReason,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/enums";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import type { GameStatus as DbGameStatus, Prisma } from "@prisma/client";
 import { AppException } from "../common/app.exception";

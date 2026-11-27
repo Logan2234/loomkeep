@@ -8,8 +8,8 @@ import type {
   MusicEntryDto,
   MusicItemDto,
   ReviewTargetSummaryDto,
-  ReviewTargetType,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import type { ReviewTargetType } from "@loomkeep/shared/enums";
 import {
   bucketizeBookStatus,
   bucketizeEntryStatus,

@@ -1,4 +1,5 @@
-import { ProfileAccess, type UserSummaryDto } from "@loomkeep/shared";
+import { type UserSummaryDto } from "@loomkeep/shared/contracts";
+import { ProfileAccess } from "@loomkeep/shared/enums";
 
 /**
  * Derives a stable-but-uncorrelatable display pseudonym for a Figurant

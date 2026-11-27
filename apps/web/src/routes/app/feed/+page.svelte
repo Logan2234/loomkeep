@@ -18,7 +18,11 @@
   import { DOMAINS } from "#lib/constants/domains.js";
   import { isDomainEnabled, orderedDomains } from "#lib/domain-availability.js";
   import { m } from "#lib/paraglide/messages.js";
-  import type { ActivityEventDto, Domain, PagedResult } from "@loomkeep/shared";
+  import type { Domain } from "@loomkeep/shared/enums";
+  import type {
+    ActivityEventDto,
+    PagedResult,
+  } from "@loomkeep/shared/contracts";
 
   type Tab = "ALL" | Domain;
 

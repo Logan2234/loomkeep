@@ -1,3 +1,4 @@
+import { Locale } from "@loomkeep/shared/catalog";
 import type {
   BulkEntriesResultDto,
   CalendarEntryDto,
@@ -7,12 +8,13 @@ import type {
   LibraryDomainCountsDto,
   LibraryEntryDto,
   LibrarySagasDto,
-  MediaType,
   PagedResult,
   PileSummaryDto,
   TrackedMediaDto,
-} from "@loomkeep/shared";
-import { Domain, LIBRARY_SAGA_SORTS, Locale } from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import { LIBRARY_SAGA_SORTS } from "@loomkeep/shared/contracts";
+import type { MediaType } from "@loomkeep/shared/enums";
+import { Domain } from "@loomkeep/shared/enums";
 import {
   Body,
   Controller,

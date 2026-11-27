@@ -1,18 +1,18 @@
+import { ErrorCode } from "@loomkeep/shared/catalog";
 import type {
   BookSessionDto,
   BookSessionMutationDto,
   BookSessionSummaryDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 import {
   ActivityType,
   BookStatus,
   Domain,
-  ErrorCode,
   ReviewTargetType,
   SessionCycleAction,
   TrackingCycleStatus,
   XpReason,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/enums";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import {
   SessionSource,

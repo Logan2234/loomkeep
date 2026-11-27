@@ -1,4 +1,4 @@
-import type { CastDetailDto } from "@loomkeep/shared";
+import type { CastDetailDto } from "@loomkeep/shared/contracts";
 import { MediaSummaryResponseDto } from "./media-summary-response.dto";
 
 export class CastDetailResponseDto implements CastDetailDto {

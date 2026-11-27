@@ -1,7 +1,7 @@
 import { auth } from "#lib/auth.svelte.js";
 import { m } from "#lib/paraglide/messages.js";
 import { renderWithQuery } from "#lib/test/render.js";
-import type { UserDto } from "@loomkeep/shared";
+import type { UserDto } from "@loomkeep/shared/contracts";
 import { screen } from "@testing-library/svelte";
 import { afterEach, expect, it, vi } from "vitest";
 import ContentSettings from "./+page.svelte";

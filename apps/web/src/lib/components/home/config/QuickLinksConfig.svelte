@@ -8,7 +8,10 @@
   } from "#lib/home/quick-links.js";
   import { m } from "#lib/paraglide/messages.js";
   import { prefersReducedMotion } from "#lib/motion.js";
-  import { HOME_LAYOUT_LIMITS, type HomeQuickLinkDto } from "@loomkeep/shared";
+  import {
+    HOME_LAYOUT_LIMITS,
+    type HomeQuickLinkDto,
+  } from "@loomkeep/shared/contracts";
   import { untrack } from "svelte";
   import { dndzone } from "svelte-dnd-action";
   import { fade } from "svelte/transition";

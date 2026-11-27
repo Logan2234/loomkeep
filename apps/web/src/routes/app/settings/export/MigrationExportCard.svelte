@@ -8,7 +8,7 @@
   import { downloadBlob, datedFilename } from "#lib/download.js";
   import { m } from "#lib/paraglide/messages.js";
   import { toast } from "#lib/toast.svelte.js";
-  import type { MigrationExportDto } from "@loomkeep/shared";
+  import type { MigrationExportDto } from "@loomkeep/shared/contracts";
   import { flashAnchor } from "#lib/flash-anchor.js";
   import type { ProviderBrandKey } from "#lib/provider-brands.js";
 

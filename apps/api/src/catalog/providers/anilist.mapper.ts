@@ -3,14 +3,9 @@ import type {
   CreatorRefDto,
   MediaExtrasDto,
   SagaMemberDto,
-} from "@loomkeep/shared";
-import {
-  CatalogSource,
-  CreatorSource,
-  MediaSource,
-  MediaSummaryDto,
-  MediaType,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import { CreatorSource, MediaSummaryDto } from "@loomkeep/shared/contracts";
+import { CatalogSource, MediaSource, MediaType } from "@loomkeep/shared/enums";
 import { stripTags } from "../../common/text.util";
 import type { ProviderEpisode, ProviderMediaDetails } from "./provider.types";
 

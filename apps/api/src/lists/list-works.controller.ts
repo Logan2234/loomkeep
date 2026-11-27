@@ -1,4 +1,6 @@
-import { Domain, ErrorCode, type ListItemDto } from "@loomkeep/shared";
+import { ErrorCode } from "@loomkeep/shared/catalog";
+import { type ListItemDto } from "@loomkeep/shared/contracts";
+import { Domain } from "@loomkeep/shared/enums";
 import { Body, Controller, HttpStatus, Param, Post } from "@nestjs/common";
 import { ApiCreatedResponse } from "@nestjs/swagger";
 import {

@@ -14,7 +14,10 @@
   import { tapFeedback } from "#lib/native/haptics.js";
   import type { BoxSize } from "#lib/home/sizing.js";
   import { m } from "#lib/paraglide/messages.js";
-  import type { HomeWidgetDto, LibraryEntryDto } from "@loomkeep/shared";
+  import type {
+    HomeWidgetDto,
+    LibraryEntryDto,
+  } from "@loomkeep/shared/contracts";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { tick } from "svelte";
   import PosterRail from "../PosterRail.svelte";

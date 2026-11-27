@@ -1,4 +1,4 @@
-import type { OnThisDayEntryDto } from "@loomkeep/shared";
+import type { OnThisDayEntryDto } from "@loomkeep/shared/contracts";
 
 const DAY_MS = 86_400_000;
 /** Days either side of the anniversary still counted as "that day". */

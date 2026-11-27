@@ -1,11 +1,11 @@
 import type {
-  Domain,
   ImportCommitOverride,
   ImportMatch,
   ImportPlan,
   ImportReport,
   ImportSource,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import type { Domain } from "@loomkeep/shared/enums";
 
 /**
  * DI token collecting every {@link ImportReq} provider into an array, so the

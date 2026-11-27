@@ -1,4 +1,4 @@
-import type { AdminOverviewDto } from "@loomkeep/shared";
+import type { AdminOverviewDto } from "@loomkeep/shared/contracts";
 
 export class AdminOverviewResponseDto implements AdminOverviewDto {
   accounts!: number;

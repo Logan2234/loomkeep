@@ -1,4 +1,4 @@
-import { ErrorCode } from "@loomkeep/shared";
+import { ErrorCode } from "@loomkeep/shared/catalog";
 
 import type { ConfigService } from "@nestjs/config";
 import { Prisma } from "@prisma/client";

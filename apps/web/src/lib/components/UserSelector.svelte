@@ -1,7 +1,7 @@
 <script lang="ts">
   import { debounce } from "#lib/debounce.js";
 
-  import { DEFAULT_PAGE_SIZE } from "@loomkeep/shared";
+  import { DEFAULT_PAGE_SIZE } from "@loomkeep/shared/contracts";
 
   import {
     getAdminUserOptions,

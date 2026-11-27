@@ -1,4 +1,4 @@
-import type { ApiKeyScope, ApiV1MeDto } from "@loomkeep/shared";
+import type { ApiKeyScope, ApiV1MeDto } from "@loomkeep/shared/contracts";
 import { Injectable } from "@nestjs/common";
 import { ApiRateLimitService } from "../../api-keys/api-rate-limit.service";
 import { PrismaService } from "../../prisma/prisma.service";

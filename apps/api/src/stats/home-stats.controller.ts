@@ -1,5 +1,5 @@
-import type { MyYearDto, OnThisDayEntryDto } from "@loomkeep/shared";
-import { ErrorCode } from "@loomkeep/shared";
+import { ErrorCode } from "@loomkeep/shared/catalog";
+import type { MyYearDto, OnThisDayEntryDto } from "@loomkeep/shared/contracts";
 import { Controller, Get, HttpStatus, Query } from "@nestjs/common";
 import { ApiOkResponse } from "@nestjs/swagger";
 import type { JwtPayload } from "../auth/decorators/current-user.decorator";

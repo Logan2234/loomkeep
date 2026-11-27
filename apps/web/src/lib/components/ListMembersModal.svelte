@@ -11,7 +11,7 @@
   import { DATE_MEDIUM_OPTIONS, formatDate, compareText } from "#lib/format.js";
   import { prefersReducedMotion } from "#lib/motion.js";
   import { m } from "#lib/paraglide/messages.js";
-  import type { UserSummaryDto } from "@loomkeep/shared";
+  import type { UserSummaryDto } from "@loomkeep/shared/contracts";
   import { flip } from "svelte/animate";
   import { fly, scale, slide } from "svelte/transition";
   import Avatar from "./Avatar.svelte";

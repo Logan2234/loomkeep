@@ -1,7 +1,7 @@
 import {
   WEBAUTHN_NAME_MAX_LENGTH,
   type RenameWebauthnCredentialRequestDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 import { IsString, MaxLength, MinLength } from "class-validator";
 
 export class RenameWebauthnCredentialDto implements RenameWebauthnCredentialRequestDto {

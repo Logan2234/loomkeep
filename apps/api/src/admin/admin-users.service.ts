@@ -1,12 +1,12 @@
+import { ErrorCode } from "@loomkeep/shared/catalog";
 import {
   type AdminUserDetailDto,
   type AdminUserDto,
   type AdminUserLibraryCountsDto,
   type AdminUserRecentAdditionDto,
   type AdminUserSort,
-  type Domain,
-  ErrorCode,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import { type Domain } from "@loomkeep/shared/enums";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { type Plan, Prisma } from "@prisma/client";
 import { AppException } from "../common/app.exception";

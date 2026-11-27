@@ -17,7 +17,7 @@
     AdminUserLibraryEntryDto,
     AdminUserLibraryKind,
     PagedResult,
-  } from "@loomkeep/shared";
+  } from "@loomkeep/shared/contracts";
 
   let {
     userId,

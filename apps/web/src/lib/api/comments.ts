@@ -1,14 +1,16 @@
 import type {
   CommentDto,
-  CommentTargetType,
   CreateCommentDto,
-  Emote,
   PagedResult,
-  ReportCategory,
-  ReportMotif,
   UpdateCommentDto,
   UserSummaryDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import type {
+  CommentTargetType,
+  Emote,
+  ReportCategory,
+  ReportMotif,
+} from "@loomkeep/shared/enums";
 import { request } from "./core";
 import { typedRequest } from "./generated/typed-request";
 

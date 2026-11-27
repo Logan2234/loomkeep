@@ -2,7 +2,7 @@ import type {
   MonthCountDto,
   RatingVsCommunityDto,
   SocialStatsDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 import { ApiExtraModels, ApiProperty, getSchemaPath } from "@nestjs/swagger";
 import {
   InsufficientRatingVsCommunityResponseDto,

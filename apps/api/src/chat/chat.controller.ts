@@ -1,9 +1,8 @@
+import { ErrorCode, Locale } from "@loomkeep/shared/catalog";
 import {
   type ChatUnreadDto,
   type ConversationDto,
   type ConversationWorkDto,
-  ErrorCode,
-  Locale,
   type MessageDto,
   type MessageSagaDto,
   type MessageWhereDto,
@@ -12,7 +11,7 @@ import {
   type RecommendWorkResultDto,
   type UserSummaryDto,
   type WorkThreadDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 import {
   Body,
   Controller,

@@ -1,4 +1,4 @@
-import { XpReason } from "@loomkeep/shared";
+import { XpReason } from "@loomkeep/shared/enums";
 import type { ConfigService } from "@nestjs/config";
 import { vi, type Mock } from "vitest";
 import { parsePageQuery } from "../common/pagination.util";

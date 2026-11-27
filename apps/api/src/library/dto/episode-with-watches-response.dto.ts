@@ -1,4 +1,4 @@
-import type { EpisodeWithWatchesDto } from "@loomkeep/shared";
+import type { EpisodeWithWatchesDto } from "@loomkeep/shared/contracts";
 
 export class EpisodeWithWatchesResponseDto implements EpisodeWithWatchesDto {
   id!: string;

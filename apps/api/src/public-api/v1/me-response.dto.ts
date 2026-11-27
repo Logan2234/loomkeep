@@ -1,5 +1,5 @@
-import type { ApiKeyScope, ApiV1MeDto } from "@loomkeep/shared";
-import { API_KEY_SCOPES } from "@loomkeep/shared";
+import type { ApiKeyScope, ApiV1MeDto } from "@loomkeep/shared/contracts";
+import { API_KEY_SCOPES } from "@loomkeep/shared/contracts";
 import { ApiProperty } from "@nestjs/swagger";
 
 class ApiV1MeUserResponseDto {

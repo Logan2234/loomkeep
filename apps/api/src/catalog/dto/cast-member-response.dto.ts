@@ -1,4 +1,4 @@
-import type { CastMemberDto } from "@loomkeep/shared";
+import type { CastMemberDto } from "@loomkeep/shared/contracts";
 
 export class CastMemberResponseDto implements CastMemberDto {
   id!: string | null;

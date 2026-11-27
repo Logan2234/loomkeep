@@ -31,15 +31,15 @@ import {
 } from "#lib/constants/status-labels.js";
 import { presentParts } from "#lib/format.js";
 import { m } from "#lib/paraglide/messages.js";
+import type { ListItemTargetType } from "@loomkeep/shared/contracts";
 import type {
   BookStatus,
   EntryStatus,
   GameStatus,
-  ListItemTargetType,
   MediaType,
   MusicStatus,
-} from "@loomkeep/shared";
-import { isAnimeUnaired } from "@loomkeep/shared";
+} from "@loomkeep/shared/enums";
+import { isAnimeUnaired } from "@loomkeep/shared/rules";
 
 /** A work page the quick-add panel can track, read from a resolved link's href. */
 export type QuickAddTarget =

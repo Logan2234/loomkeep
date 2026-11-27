@@ -2,7 +2,7 @@ import { m } from "#lib/paraglide/messages.js";
 import { apiUrl, server } from "#lib/test/msw.js";
 import { visit } from "#lib/test/navigation.svelte.js";
 import { renderWithQuery } from "#lib/test/render.js";
-import { ErrorCode } from "@loomkeep/shared";
+import { ErrorCode } from "@loomkeep/shared/catalog";
 import { fireEvent, screen } from "@testing-library/svelte";
 import { http, HttpResponse } from "msw";
 import { beforeEach, expect, it, vi } from "vitest";

@@ -1,13 +1,15 @@
+import { ErrorCode } from "@loomkeep/shared/catalog";
+import {
+  COMMENT_TEXT_MAX_LENGTH,
+  MESSAGE_TEXT_MAX_LENGTH,
+} from "@loomkeep/shared/contracts";
 import {
   type CatalogSource,
-  COMMENT_TEXT_MAX_LENGTH,
   type CommentTargetType,
-  ErrorCode,
   GameSource,
   GameStatus,
   type MediaType,
-  MESSAGE_TEXT_MAX_LENGTH,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/enums";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { ChatService } from "../chat/chat.service";
 import { CommentService } from "../comments/comment.service";

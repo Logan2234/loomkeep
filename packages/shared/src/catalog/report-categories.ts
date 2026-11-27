@@ -3,7 +3,7 @@ import {
   ReportMotif,
   ReportProfilePart,
   ReportTargetType,
-} from "./enums";
+} from "../enums";
 
 /**
  * Which ReportMotif values are valid under each ReportCategory — the single

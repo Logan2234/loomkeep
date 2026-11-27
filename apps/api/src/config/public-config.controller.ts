@@ -1,4 +1,4 @@
-import type { PublicConfigDto } from "@loomkeep/shared";
+import type { PublicConfigDto } from "@loomkeep/shared/contracts";
 import { Controller, Get } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { ApiOkResponse } from "@nestjs/swagger";

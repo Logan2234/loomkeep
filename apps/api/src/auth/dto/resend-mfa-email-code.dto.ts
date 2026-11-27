@@ -1,4 +1,4 @@
-import type { ResendMfaEmailCodeRequestDto } from "@loomkeep/shared";
+import type { ResendMfaEmailCodeRequestDto } from "@loomkeep/shared/contracts";
 import { IsString, MinLength } from "class-validator";
 
 export class ResendMfaEmailCodeDto implements ResendMfaEmailCodeRequestDto {

@@ -4,7 +4,7 @@ import { mobileNav } from "#lib/mobile-nav.svelte.js";
 import { m } from "#lib/paraglide/messages.js";
 import { visit } from "#lib/test/navigation.svelte.js";
 import { renderWithQuery } from "#lib/test/render.js";
-import type { UserDto } from "@loomkeep/shared";
+import type { UserDto } from "@loomkeep/shared/contracts";
 import { fireEvent, screen } from "@testing-library/svelte";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import BottomNavigation from "./BottomNavigation.svelte";

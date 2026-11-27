@@ -1,5 +1,5 @@
-import type { AlertKey } from "../alerts";
-import type { Locale } from "../locale";
+import type { AlertKey } from "../catalog/alerts";
+import type { Locale } from "../catalog/locale";
 
 export interface MailTemplateFieldDto {
   key: string;

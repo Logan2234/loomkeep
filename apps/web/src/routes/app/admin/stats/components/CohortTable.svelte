@@ -4,7 +4,7 @@
   // more recent (no future months), which draws the staircase.
   import { MONTH_SHORT_OPTIONS, formatDate } from "#lib/format.js";
   import { m } from "#lib/paraglide/messages.js";
-  import type { AdminCohortRowDto } from "@loomkeep/shared";
+  import type { AdminCohortRowDto } from "@loomkeep/shared/contracts";
 
   let { cohorts }: { cohorts: AdminCohortRowDto[] } = $props();
 

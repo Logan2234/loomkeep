@@ -1,4 +1,4 @@
-import type { AdminCacheListResponseDto } from "@loomkeep/shared";
+import type { AdminCacheListResponseDto } from "@loomkeep/shared/contracts";
 import { AdminCacheItemResponseDto } from "./admin-cache-item-response.dto";
 
 export class AdminCacheListResultResponseDto implements AdminCacheListResponseDto {

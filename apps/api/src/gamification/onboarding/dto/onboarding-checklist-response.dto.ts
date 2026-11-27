@@ -2,7 +2,7 @@ import type {
   OnboardingChecklistDto,
   OnboardingStepDto,
   OnboardingStepKey,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 import { ApiProperty } from "@nestjs/swagger";
 
 // Not exported: nothing outside this file references it, and

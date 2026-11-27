@@ -1,4 +1,4 @@
-import type { PagedResult } from "@loomkeep/shared";
+import type { PagedResult } from "@loomkeep/shared/contracts";
 import { Controller, Get, Param, Query } from "@nestjs/common";
 import { ApiOperation, ApiParam } from "@nestjs/swagger";
 import { PublicApi } from "../../../api-keys/public-api.decorator";

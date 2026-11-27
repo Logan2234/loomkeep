@@ -1,7 +1,7 @@
 import type {
   ImportCommitOverride,
   ImportCommitRequest,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 import {
   IsArray,
   IsBoolean,

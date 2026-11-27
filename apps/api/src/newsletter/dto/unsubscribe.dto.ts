@@ -1,4 +1,4 @@
-import type { UnsubscribeNewsletterRequestDto } from "@loomkeep/shared";
+import type { UnsubscribeNewsletterRequestDto } from "@loomkeep/shared/contracts";
 import { IsString } from "class-validator";
 
 export class UnsubscribeDto implements UnsubscribeNewsletterRequestDto {

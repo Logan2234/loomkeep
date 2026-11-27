@@ -1,5 +1,5 @@
-import type { UpsertReadingGoalDto as UpsertReadingGoalContract } from "@loomkeep/shared";
-import { READING_GOAL_LIMITS } from "@loomkeep/shared";
+import type { UpsertReadingGoalDto as UpsertReadingGoalContract } from "@loomkeep/shared/contracts";
+import { READING_GOAL_LIMITS } from "@loomkeep/shared/contracts";
 import { IsInt, Max, Min } from "class-validator";
 
 export class UpsertReadingGoalDto implements UpsertReadingGoalContract {

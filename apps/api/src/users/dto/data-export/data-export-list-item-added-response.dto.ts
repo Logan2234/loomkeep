@@ -1,4 +1,4 @@
-import type { ReviewTargetType } from "@loomkeep/shared";
+import type { ReviewTargetType } from "@loomkeep/shared/enums";
 import type { DataExportListItemAdded } from "../../../account/data-export.types";
 
 export class DataExportListItemAddedResponseDto implements DataExportListItemAdded {

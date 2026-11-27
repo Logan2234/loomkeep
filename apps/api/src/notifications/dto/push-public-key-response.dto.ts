@@ -1,4 +1,4 @@
-import type { PushPublicKeyDto } from "@loomkeep/shared";
+import type { PushPublicKeyDto } from "@loomkeep/shared/contracts";
 
 export class PushPublicKeyResponseDto implements PushPublicKeyDto {
   publicKey!: string;

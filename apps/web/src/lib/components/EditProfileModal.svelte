@@ -1,11 +1,11 @@
 <script lang="ts">
-  import { USER_LIMITS } from "@loomkeep/shared";
+  import { USER_LIMITS } from "@loomkeep/shared/contracts";
 
   import { updateMe } from "#lib/api/client.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import { appConfig } from "#lib/config.svelte.js";
   import { m } from "#lib/paraglide/messages.js";
-  import type { UserDto } from "@loomkeep/shared";
+  import type { UserDto } from "@loomkeep/shared/contracts";
   import Modal from "./Modal.svelte";
 
   let {

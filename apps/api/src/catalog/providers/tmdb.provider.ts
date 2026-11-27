@@ -1,3 +1,9 @@
+import type { PremiereNetwork } from "@loomkeep/shared/catalog";
+import {
+  ErrorCode,
+  PREMIERE_NETWORKS,
+  regionalLocale,
+} from "@loomkeep/shared/catalog";
 import type {
   CastDetailDto,
   CreatorWorkDto,
@@ -7,21 +13,16 @@ import type {
   PagedResult,
   PersonPageDto,
   PremiereDto,
-  PremiereNetwork,
   SeasonImagesDto,
   StudioPageDto,
   WatchProviderDto,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
 import {
-  CatalogSource,
-  ErrorCode,
   MediaSummaryDto,
-  MediaType,
-  PREMIERE_NETWORKS,
-  regionalLocale,
   StudioKind,
   StudioWorkOrder,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import { CatalogSource, MediaType } from "@loomkeep/shared/enums";
 import { HttpStatus, Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { AppException } from "../../common/app.exception";

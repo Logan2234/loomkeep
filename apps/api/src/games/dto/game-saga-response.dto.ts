@@ -2,11 +2,10 @@ import type {
   GameSagaDto,
   GameSagaMemberDto,
   GameSagaResponseDto as GameSagaResponse,
-  GameStatus,
   LibraryGameSagasDto,
   LibrarySagaDto,
-  ReleaseDatePrecision,
-} from "@loomkeep/shared";
+} from "@loomkeep/shared/contracts";
+import type { GameStatus, ReleaseDatePrecision } from "@loomkeep/shared/enums";
 import { GameSummaryResponseDto } from "./game-summary-response.dto";
 
 export class GameSagaMemberResponseDto
