@@ -1,3 +1,6 @@
+import { Domain } from "@loomkeep/shared/enums";
+import type { Type } from "@nestjs/common";
+import { GUARDS_METADATA } from "@nestjs/common/constants";
 import { Prisma } from "@prisma/client";
 import { vi, type Mock } from "vitest";
 import {
@@ -6,17 +9,21 @@ import {
 } from "../admin/admin-cache.service";
 import { BookItemService } from "../books/book-item.service";
 import { BookLibraryService } from "../books/book-library.service";
+import { BooksController } from "../books/books.controller";
 import { MediaItemService } from "../catalog/media-item.service";
 import { isUniqueViolation } from "../common/prisma-error.util";
 import { GameItemService } from "../games/game-item.service";
 import { GameLibraryService } from "../games/game-library.service";
+import { GamesController } from "../games/games.controller";
 import { XP_RULES } from "../gamification/xp-rules";
 import { JOB_KEYS } from "../jobs/job-keys";
 import { LibraryService } from "../library/library.service";
 import { MusicItemService } from "../music/music-item.service";
 import { MusicLibraryService } from "../music/music-library.service";
+import { MusicController } from "../music/music.controller";
 import type { PrismaService } from "../prisma/prisma.service";
 import { allDomainsConfig, stubSagas } from "../test-utils/stubs";
+import { DOMAIN_GATE, DomainGateGuard } from "../users/domain-gate.guard";
 
 /**
  * Parity across the four library domains. Each has its own services and
@@ -800,6 +807,32 @@ describe.each(Object.keys(UPSERT_ENTRY) as CacheDomain[])(
 
       expect(upsert).toHaveBeenCalledTimes(2);
       expect(isUniqueViolation(outcome)).toBe(false);
+    });
+  },
+);
+
+// Games and books used to check the gate on search and lists only: writes,
+// sessions and the detail page stayed open on a domain the user turned off
+// or the instance withdrew (audit 2026-11-17, PRM-02). Media is left out:
+// its LibraryController also serves cross-domain routes (calendar, counts).
+const GATED_CONTROLLER: Record<
+  Exclude<CacheDomain, "MEDIA">,
+  [Type, Domain]
+> = {
+  GAME: [GamesController, Domain.GAMES],
+  BOOK: [BooksController, Domain.BOOKS],
+  MUSIC: [MusicController, Domain.MUSIC],
+};
+
+describe.each(Object.keys(GATED_CONTROLLER) as Exclude<CacheDomain, "MEDIA">[])(
+  "%s controller",
+  (domain) => {
+    it("gates every route on the user's domain", () => {
+      const [controller, gatedDomain] = GATED_CONTROLLER[domain];
+      expect(Reflect.getMetadata(DOMAIN_GATE, controller)).toBe(gatedDomain);
+      expect(Reflect.getMetadata(GUARDS_METADATA, controller)).toContain(
+        DomainGateGuard,
+      );
     });
   },
 );

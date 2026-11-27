@@ -34,6 +34,7 @@ import { REPORT_THROTTLE } from "../common/throttle.constants";
 import { CreateReportBody } from "../reports/dto/create-report.dto";
 import { ReportService } from "../reports/report.service";
 import { SocialFeatureGuard } from "../social/social-feature.guard";
+import { DomainGateService, TARGET_DOMAIN } from "../users/domain-gate.service";
 import { AddListItemBody } from "./dto/add-list-item.dto";
 import { AddListMemberBody } from "./dto/add-list-member.dto";
 import { CreateListBody } from "./dto/create-list.dto";
@@ -54,6 +55,7 @@ export class ListController {
   constructor(
     private readonly lists: ListService,
     private readonly reports: ReportService,
+    private readonly domainGate: DomainGateService,
   ) {}
 
   // Owned + editor lists — feeds "Ajouter à une liste" on a work's page, so an
@@ -131,11 +133,15 @@ export class ListController {
 
   @Post(":id/items")
   @ApiCreatedResponse({ type: ListItemResponseDto })
-  addItem(
+  async addItem(
     @CurrentUser() user: JwtPayload,
     @Param("id") id: string,
     @Body() body: AddListItemBody,
   ): Promise<ListItemDto> {
+    await this.domainGate.assertEnabled(
+      user.sub,
+      TARGET_DOMAIN[body.targetType],
+    );
     return this.lists.addItem(user.sub, id, body);
   }
 

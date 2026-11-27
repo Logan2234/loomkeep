@@ -1,11 +1,25 @@
 import { ErrorCode } from "@loomkeep/shared/catalog";
-import { Domain, PREMIUM_DOMAINS } from "@loomkeep/shared/enums";
+import {
+  Domain,
+  PREMIUM_DOMAINS,
+  type ReviewTargetType,
+} from "@loomkeep/shared/enums";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { AppException } from "../common/app.exception";
 import { EntitlementService } from "../entitlements/entitlement.service";
 import { instanceDomains } from "../instance-settings/instance-domains";
 import { PrismaService } from "../prisma/prisma.service";
+
+/** The domain a review, list item or comment target belongs to. */
+export const TARGET_DOMAIN = {
+  MEDIA: Domain.MEDIA,
+  SEASON: Domain.MEDIA,
+  EPISODE: Domain.MEDIA,
+  GAME: Domain.GAMES,
+  BOOK: Domain.BOOKS,
+  MUSIC: Domain.MUSIC,
+} as const satisfies Record<ReviewTargetType, Domain>;
 
 /**
  * Enforces `User.enabledDomains` server-side: a domain the user turned off is

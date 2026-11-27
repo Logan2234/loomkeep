@@ -31,7 +31,7 @@ import { AppException } from "../common/app.exception";
 import { PagedResponseDto } from "../common/dto/paged-response.dto";
 import { parseEnumParam } from "../common/parse-enum-param.util";
 import { PileSummaryResponseDto } from "../stats/dto/pile-summary-response.dto";
-import { DomainGateService } from "../users/domain-gate.service";
+import { DomainGated } from "../users/domain-gate.guard";
 import {
   BulkEntriesResultResponseDto,
   BulkEntriesTargetBody,
@@ -49,12 +49,12 @@ import { UpsertMusicEntryDto } from "./dto/upsert-music-entry.dto";
 import { MusicItemService } from "./music-item.service";
 import { MusicLibraryService } from "./music-library.service";
 
+@DomainGated(Domain.MUSIC)
 @Controller("music")
 export class MusicController {
   constructor(
     private readonly musicItemService: MusicItemService,
     private readonly musicLibraryService: MusicLibraryService,
-    private readonly domainGate: DomainGateService,
   ) {}
 
   /** Live catalogue search (MusicBrainz). */
@@ -72,8 +72,6 @@ export class MusicController {
         ErrorCode.CatalogSearchQueryRequired,
       );
     }
-
-    await this.domainGate.assertEnabled(user.sub, Domain.MUSIC);
 
     const results = await this.musicItemService.search(query);
     return { results };
@@ -93,7 +91,6 @@ export class MusicController {
     @Query("lang") lang?: string,
     @Query("loan") loan?: string,
   ): Promise<PagedResult<MusicEntryDto>> {
-    await this.domainGate.assertEnabled(user.sub, Domain.MUSIC);
     return this.musicLibraryService.listEntries(user.sub, {
       ...parseListEntriesQuery({
         q,
@@ -120,7 +117,6 @@ export class MusicController {
     @Query("lang") lang?: string,
     @Query("loan") loan?: string,
   ): Promise<PileSummaryDto> {
-    await this.domainGate.assertEnabled(user.sub, Domain.MUSIC);
     return this.musicLibraryService.getPile(user.sub, {
       ...parseListEntriesQuery({ q, favorite, status, lang, loan }),
     });
@@ -132,7 +128,6 @@ export class MusicController {
     @CurrentUser() user: JwtPayload,
     @Body() dto: UpsertMusicEntryDto,
   ): Promise<MusicEntryDto> {
-    await this.domainGate.assertEnabled(user.sub, Domain.MUSIC);
     return this.musicLibraryService.upsertEntry(user.sub, dto);
   }
 
@@ -142,7 +137,6 @@ export class MusicController {
     @CurrentUser() user: JwtPayload,
     @Param("id") entryId: string,
   ): Promise<MusicEntryDto> {
-    await this.domainGate.assertEnabled(user.sub, Domain.MUSIC);
     return this.musicLibraryService.getEntry(user.sub, entryId);
   }
 
@@ -153,7 +147,6 @@ export class MusicController {
     @Param("id") entryId: string,
     @Body() dto: UpdateMusicEntryDto,
   ): Promise<MusicEntryDto> {
-    await this.domainGate.assertEnabled(user.sub, Domain.MUSIC);
     return this.musicLibraryService.updateEntry(user.sub, entryId, dto);
   }
 
@@ -165,7 +158,6 @@ export class MusicController {
     @CurrentUser() user: JwtPayload,
     @Body() dto: BulkUpdateMusicEntriesBody,
   ): Promise<BulkEntriesResultDto> {
-    await this.domainGate.assertEnabled(user.sub, Domain.MUSIC);
     return this.musicLibraryService.bulkUpdate(user.sub, dto);
   }
 
@@ -176,7 +168,6 @@ export class MusicController {
     @CurrentUser() user: JwtPayload,
     @Body() dto: BulkEntriesTargetBody,
   ): Promise<BulkEntriesResultDto> {
-    await this.domainGate.assertEnabled(user.sub, Domain.MUSIC);
     return this.musicLibraryService.bulkDelete(user.sub, dto);
   }
 
@@ -186,7 +177,6 @@ export class MusicController {
     @CurrentUser() user: JwtPayload,
     @Param("id") entryId: string,
   ): Promise<void> {
-    await this.domainGate.assertEnabled(user.sub, Domain.MUSIC);
     await this.musicLibraryService.deleteEntry(user.sub, entryId);
   }
 
@@ -198,7 +188,6 @@ export class MusicController {
     @Param("source") sourceParam: string,
     @Param("sourceId") sourceId: string,
   ): Promise<StoredMusicDetailDto> {
-    await this.domainGate.assertEnabled(user.sub, Domain.MUSIC);
     return {
       detail: await this.musicLibraryService.getStoredMusicDetail(
         user.sub,
@@ -216,7 +205,6 @@ export class MusicController {
     @Param("source") sourceParam: string,
     @Param("sourceId") sourceId: string,
   ): Promise<MusicDetailDto> {
-    await this.domainGate.assertEnabled(user.sub, Domain.MUSIC);
     return this.musicLibraryService.getMusicDetail(
       user.sub,
       parseMusicSource(sourceParam),

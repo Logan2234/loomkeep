@@ -3,6 +3,7 @@ import { GamificationModule } from "../gamification/gamification.module";
 import { NotificationsModule } from "../notifications/notifications.module";
 import { ReportsModule } from "../reports/reports.module";
 import { SocialModule } from "../social/social.module";
+import { UserGatesModule } from "../users/user-gates.module";
 import { ReviewController } from "./review.controller";
 import { ReviewService } from "./review.service";
 
@@ -15,6 +16,7 @@ import { ReviewService } from "./review.service";
 @Module({
   imports: [
     SocialModule,
+    UserGatesModule,
     GamificationModule,
     ReportsModule,
     NotificationsModule,

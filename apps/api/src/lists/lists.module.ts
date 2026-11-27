@@ -4,6 +4,7 @@ import { GamificationModule } from "../gamification/gamification.module";
 import { NotificationsModule } from "../notifications/notifications.module";
 import { ReportsModule } from "../reports/reports.module";
 import { SocialModule } from "../social/social.module";
+import { UserGatesModule } from "../users/user-gates.module";
 import { ListController } from "./list.controller";
 import { ListService } from "./list.service";
 
@@ -13,6 +14,7 @@ import { ListService } from "./list.service";
 @Module({
   imports: [
     SocialModule,
+    UserGatesModule,
     NotificationsModule,
     GamificationModule,
     EventsModule,

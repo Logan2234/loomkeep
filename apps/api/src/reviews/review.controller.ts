@@ -29,6 +29,7 @@ import { REPORT_THROTTLE } from "../common/throttle.constants";
 import { CreateReportBody } from "../reports/dto/create-report.dto";
 import { ReportService } from "../reports/report.service";
 import { SocialFeatureGuard } from "../social/social-feature.guard";
+import { DomainGateService, TARGET_DOMAIN } from "../users/domain-gate.service";
 import {
   BatchDeleteReviewsBody,
   BatchVisibilityBody,
@@ -57,6 +58,7 @@ export class ReviewController {
   constructor(
     private readonly reviews: ReviewService,
     private readonly reports: ReportService,
+    private readonly domainGate: DomainGateService,
   ) {}
 
   // Own reviews remain available when social features are disabled.
@@ -103,13 +105,15 @@ export class ReviewController {
 
   @Put("me/:type/:id")
   @ApiOkResponse({ type: ReviewResponseDto })
-  upsert(
+  async upsert(
     @CurrentUser() user: JwtPayload,
     @Param("type") type: string,
     @Param("id") id: string,
     @Body() body: UpsertReviewBody,
   ): Promise<ReviewDto> {
-    return this.reviews.upsert(user.sub, parseTarget(type), id, body);
+    const target = parseTarget(type);
+    await this.domainGate.assertEnabled(user.sub, TARGET_DOMAIN[target]);
+    return this.reviews.upsert(user.sub, target, id, body);
   }
 
   @Delete("me/:type/:id")
