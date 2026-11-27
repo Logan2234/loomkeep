@@ -43,6 +43,12 @@ import {
 } from "./import-source";
 
 const JOB_RETENTION_MS = 60 * 60 * 1000;
+/**
+ * How long a finished analysis stays committable. Its parse model can weigh
+ * hundreds of MB, and an analysis left without a commit (the tab closed)
+ * would otherwise hold it for the whole retention window.
+ */
+const ANALYSIS_PAYLOAD_RETENTION_MS = 15 * 60 * 1000;
 const MAX_RETAINED_JOBS_PER_USER = 20;
 /** Caps how often a live progress push goes out during a hot tick loop (a large CSV can tick thousands of times). */
 const PROGRESS_EMIT_THROTTLE_MS = 250;
@@ -615,6 +621,14 @@ export class ImportJobService {
           : ErrorCode.InternalError;
     } finally {
       job.finishedAt = Date.now();
+
+      if (job.kind === "analyze") {
+        setTimeout(
+          () => this.releasePayload(job),
+          ANALYSIS_PAYLOAD_RETENTION_MS,
+        ).unref();
+      }
+
       // Unthrottled: the final status change is rare (once per job) and the
       // client needs it precisely, unlike the tick stream above.
       this.emitProgress(job);
@@ -667,7 +681,8 @@ export class ImportJobService {
    * export model, which for a media import is bounded only by Fastify's 25 MB
    * body limit. The job record around it is a few hundred bytes, and the
    * report the user comes back for lives there — so the retention window
-   * doesn't need shortening, the payload just shouldn't outlive its use.
+   * doesn't need shortening, the payload just shouldn't outlive its use
+   * (nor ANALYSIS_PAYLOAD_RETENTION_MS for an analysis never committed).
    */
   private releasePayload(job: JobRecord): void {
     job.parsed = null;

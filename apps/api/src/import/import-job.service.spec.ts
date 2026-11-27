@@ -756,6 +756,45 @@ describe("ImportJobService — retained payloads", () => {
     expect(jobs(service).get("done-1")!.parsed).toBeNull();
   });
 
+  // An analysis left without a commit (the tab closed) kept its parse model
+  // in memory for the whole hour of retention (audit 2026-11-17, PRF-23).
+  describe("an analysis left without a commit", () => {
+    afterEach(() => vi.useRealTimers());
+
+    async function analyzed() {
+      vi.useFakeTimers();
+      const service = makeService();
+      const { id } = await service.startAnalyze("u1", "tvtime", {
+        input: {},
+      } as never);
+      await vi.waitFor(() => {
+        expect(service.getJob("u1", id).status).toBe("completed");
+      });
+      return { service, id };
+    }
+
+    it("stays committable for a quarter of an hour", async () => {
+      const { service, id } = await analyzed();
+
+      vi.advanceTimersByTime(14 * 60 * 1000);
+
+      expect(jobs(service).get(id)!.parsed).not.toBeNull();
+    });
+
+    it("drops its parse model after that, and asks for a new analysis", async () => {
+      const { service, id } = await analyzed();
+
+      vi.advanceTimersByTime(15 * 60 * 1000);
+
+      expect(jobs(service).get(id)!.parsed).toBeNull();
+      expect(() =>
+        service.commit("u1", "tvtime", id, { include: [] } as never),
+      ).toThrow(
+        expect.objectContaining({ code: ErrorCode.ImportJobNoAnalysis }),
+      );
+    });
+  });
+
   it("keeps the job record itself, so its report stays readable", async () => {
     const service = makeService(async () => ({
       overwrite: false,
