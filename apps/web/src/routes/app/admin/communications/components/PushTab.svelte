@@ -14,15 +14,15 @@
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
   import AdminQueryError from "../../AdminQueryError.svelte";
-  import Banner from "#lib/components/Banner.svelte";
-  import ConfirmationModal from "#lib/components/ConfirmationModal.svelte";
-  import KpiStrip from "#lib/components/stats/KpiStrip.svelte";
-  import RankBars from "#lib/components/stats/RankBars.svelte";
-  import SectionLabel from "#lib/components/stats/SectionLabel.svelte";
-  import Combobox from "#lib/components/Combobox.svelte";
-  import UserSelector from "#lib/components/UserSelector.svelte";
-  import { formatNumber } from "#lib/format.js";
-  import { prefersReducedMotion } from "#lib/motion.js";
+  import Banner from "#lib/ui/Banner.svelte";
+  import ConfirmationModal from "#lib/ui/ConfirmationModal.svelte";
+  import KpiStrip from "#lib/stats/KpiStrip.svelte";
+  import RankBars from "#lib/stats/RankBars.svelte";
+  import SectionLabel from "#lib/stats/SectionLabel.svelte";
+  import Combobox from "#lib/ui/Combobox.svelte";
+  import UserSelector from "#lib/social/UserSelector.svelte";
+  import { formatNumber } from "#lib/ui/format.js";
+  import { prefersReducedMotion } from "#lib/ui/motion.js";
   import { m } from "#lib/paraglide/messages.js";
   import { pushSampleOptions } from "./push-samples";
 

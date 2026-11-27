@@ -1,4 +1,4 @@
-import { prefersReducedMotion } from "#lib/motion.js";
+import { prefersReducedMotion } from "#lib/ui/motion.js";
 import { cubicIn, cubicOut } from "svelte/easing";
 import type { TransitionConfig } from "svelte/transition";
 

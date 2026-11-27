@@ -3,15 +3,19 @@
   import { keys } from "#lib/api/keys.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
-  import { auth } from "#lib/auth.svelte.js";
-  import { scrollToAdminAnchor } from "#lib/admin-anchor.js";
+  import { auth } from "#lib/auth/auth.svelte.js";
+  import { scrollToAdminAnchor } from "#lib/admin/admin-anchor.js";
   import AdminQueryError from "../AdminQueryError.svelte";
-  import Icon from "#lib/components/Icon.svelte";
-  import PageHeader from "#lib/components/PageHeader.svelte";
-  import SectionRail from "#lib/components/SectionRail.svelte";
-  import StatFigure from "#lib/components/stats/StatFigure.svelte";
-  import { prefersReducedMotion } from "#lib/motion.js";
-  import { formatDate, formatDurationMs, formatPercent } from "#lib/format.js";
+  import Icon from "#lib/ui/Icon.svelte";
+  import PageHeader from "#lib/ui/PageHeader.svelte";
+  import SectionRail from "#lib/ui/SectionRail.svelte";
+  import StatFigure from "#lib/stats/StatFigure.svelte";
+  import { prefersReducedMotion } from "#lib/ui/motion.js";
+  import {
+    formatDate,
+    formatDurationMs,
+    formatPercent,
+  } from "#lib/ui/format.js";
   import {
     adminJobLabel,
     adminJobDescription,

@@ -1,13 +1,13 @@
 <script lang="ts">
   import { fade } from "svelte/transition";
-  import { buildGallery, galleryIndex } from "#lib/gallery.js";
+  import { buildGallery, galleryIndex } from "#lib/ui/gallery.js";
 
-  import DetailsCard from "#lib/components/DetailsCard.svelte";
-  import ServiceLinks from "#lib/components/ServiceLinks.svelte";
-  import NewBadge from "#lib/components/NewBadge.svelte";
-  import { isFeatureNew } from "#lib/feature-badges.js";
-  import { auth } from "#lib/auth.svelte.js";
-  import WorkSocialSection from "#lib/components/WorkSocialSection.svelte";
+  import DetailsCard from "#lib/work/DetailsCard.svelte";
+  import ServiceLinks from "#lib/work/ServiceLinks.svelte";
+  import NewBadge from "#lib/premium/NewBadge.svelte";
+  import { isFeatureNew } from "#lib/shell/feature-badges.js";
+  import { auth } from "#lib/auth/auth.svelte.js";
+  import WorkSocialSection from "#lib/social/WorkSocialSection.svelte";
   import { page } from "$app/state";
   import {
     deleteMusicEntry,
@@ -18,27 +18,27 @@
   } from "#lib/api/client.js";
   import { keys } from "#lib/api/keys.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
-  import { goBack } from "#lib/back-nav.svelte.js";
-  import { toCarouselItems } from "#lib/carousel.js";
-  import Banner from "#lib/components/Banner.svelte";
-  import WorkFriendsStrip from "#lib/components/WorkFriendsStrip.svelte";
-  import { appConfig } from "#lib/config.svelte.js";
-  import ConfirmationModal from "#lib/components/ConfirmationModal.svelte";
-  import DetailHeroSkeleton from "#lib/components/DetailHeroSkeleton.svelte";
-  import TrackingStatusBadge from "#lib/components/TrackingStatusBadge.svelte";
-  import Lightbox from "#lib/components/Lightbox.svelte";
-  import MyRatingBadge from "#lib/components/MyRatingBadge.svelte";
-  import NoteField from "#lib/components/NoteField.svelte";
-  import OwnershipField from "#lib/components/OwnershipField.svelte";
-  import Poster from "#lib/components/Poster.svelte";
-  import RelatedCarousel from "#lib/components/RelatedCarousel.svelte";
+  import { goBack } from "#lib/shell/back-nav.svelte.js";
+  import { toCarouselItems } from "#lib/ui/carousel.js";
+  import Banner from "#lib/ui/Banner.svelte";
+  import WorkFriendsStrip from "#lib/social/WorkFriendsStrip.svelte";
+  import { appConfig } from "#lib/shell/config.svelte.js";
+  import ConfirmationModal from "#lib/ui/ConfirmationModal.svelte";
+  import DetailHeroSkeleton from "#lib/ui/DetailHeroSkeleton.svelte";
+  import TrackingStatusBadge from "#lib/library/TrackingStatusBadge.svelte";
+  import Lightbox from "#lib/ui/Lightbox.svelte";
+  import MyRatingBadge from "#lib/reviews/MyRatingBadge.svelte";
+  import NoteField from "#lib/library/NoteField.svelte";
+  import OwnershipField from "#lib/library/OwnershipField.svelte";
+  import Poster from "#lib/work/Poster.svelte";
+  import RelatedCarousel from "#lib/work/RelatedCarousel.svelte";
 
-  import SegmentedStatusControl from "#lib/components/SegmentedStatusControl.svelte";
-  import CommentsPanel from "#lib/components/CommentsPanel.svelte";
-  import WorkActionBar from "#lib/components/work/WorkActionBar.svelte";
-  import WorkHero from "#lib/components/work/WorkHero.svelte";
-  import WorkTrackingFold from "#lib/components/work/WorkTrackingFold.svelte";
-  import ShareWorkModal from "#lib/components/ShareWorkModal.svelte";
+  import SegmentedStatusControl from "#lib/library/SegmentedStatusControl.svelte";
+  import CommentsPanel from "#lib/comments/CommentsPanel.svelte";
+  import WorkActionBar from "#lib/work/WorkActionBar.svelte";
+  import WorkHero from "#lib/work/WorkHero.svelte";
+  import WorkTrackingFold from "#lib/work/WorkTrackingFold.svelte";
+  import ShareWorkModal from "#lib/work/ShareWorkModal.svelte";
   import { musicWork } from "#lib/chat/work-search.js";
 
   import {
@@ -51,8 +51,8 @@
     MUSIC_STATUS_META as STATUS_META,
     MUSIC_STATUS_ORDER as STATUS_ORDER,
   } from "#lib/constants/status-labels.js";
-  import { createEntryTrackingMutations } from "#lib/entry-tracking-mutations.svelte.js";
-  import { MONTH_YEAR_OPTIONS, formatDate, joinMeta } from "#lib/format.js";
+  import { createEntryTrackingMutations } from "#lib/library/entry-tracking-mutations.svelte.js";
+  import { MONTH_YEAR_OPTIONS, formatDate, joinMeta } from "#lib/ui/format.js";
   import { m } from "#lib/paraglide/messages.js";
 
   // MusicBrainz is the only music source today; the web route carries just the id.

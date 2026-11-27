@@ -1,16 +1,16 @@
 <script lang="ts">
-  import LoadMoreButton from "#lib/components/LoadMoreButton.svelte";
+  import LoadMoreButton from "#lib/ui/LoadMoreButton.svelte";
 
   import { getImportHistory } from "#lib/api/client.js";
   import { createApiInfiniteQuery } from "#lib/api/infinite-query.svelte.js";
   import { keys } from "#lib/api/keys.js";
-  import Banner from "#lib/components/Banner.svelte";
-  import CardRowSkeleton from "#lib/components/CardRowSkeleton.svelte";
-  import EmptyState from "#lib/components/EmptyState.svelte";
-  import Icon from "#lib/components/Icon.svelte";
-  import { importRunFigures } from "#lib/components/import-presentation.js";
-  import PageHeader from "#lib/components/PageHeader.svelte";
-  import RelativeTime from "#lib/components/RelativeTime.svelte";
+  import Banner from "#lib/ui/Banner.svelte";
+  import CardRowSkeleton from "#lib/ui/CardRowSkeleton.svelte";
+  import EmptyState from "#lib/ui/EmptyState.svelte";
+  import Icon from "#lib/ui/Icon.svelte";
+  import { importRunFigures } from "#lib/import/import-presentation.js";
+  import PageHeader from "#lib/ui/PageHeader.svelte";
+  import RelativeTime from "#lib/ui/RelativeTime.svelte";
   import { DOMAINS } from "#lib/constants/domains.js";
   import { IMPORTS_DEFINITION } from "#lib/constants/import-sources.js";
   import { m } from "#lib/paraglide/messages.js";

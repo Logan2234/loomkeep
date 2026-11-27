@@ -1,12 +1,12 @@
 <script lang="ts">
-  import { CopyFeedback } from "#lib/clipboard.svelte.js";
+  import { CopyFeedback } from "#lib/ui/clipboard.svelte.js";
 
   import { untrack } from "svelte";
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
-  import { adminFilterHref } from "#lib/url-params.js";
-  import { foldAdminSearch } from "#lib/admin-search.js";
-  import FieldError from "#lib/components/FieldError.svelte";
+  import { adminFilterHref } from "#lib/shell/url-params.js";
+  import { foldAdminSearch } from "#lib/admin/admin-search.js";
+  import FieldError from "#lib/ui/FieldError.svelte";
   import AdminQueryError from "../../AdminQueryError.svelte";
   import { Locale } from "@loomkeep/shared/catalog";
   import {
@@ -18,15 +18,15 @@
   import { resolveApiError } from "#lib/api/errors.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
-  import Banner from "#lib/components/Banner.svelte";
-  import Combobox from "#lib/components/Combobox.svelte";
+  import Banner from "#lib/ui/Banner.svelte";
+  import Combobox from "#lib/ui/Combobox.svelte";
   import {
     adminTemplateLabel,
     adminTemplateFieldLabel,
     groupAdminEmailTemplates,
   } from "#lib/constants/admin-presentation.js";
-  import { debounce, SEARCH_DEBOUNCE_MS } from "#lib/debounce.js";
-  import { languageName } from "#lib/locales.js";
+  import { debounce, SEARCH_DEBOUNCE_MS } from "#lib/ui/debounce.js";
+  import { languageName } from "#lib/shell/locales.js";
   import { m } from "#lib/paraglide/messages.js";
   import { getLocale } from "#lib/paraglide/runtime.js";
   import { createLatestEmailPreviewRequest } from "./email-preview";

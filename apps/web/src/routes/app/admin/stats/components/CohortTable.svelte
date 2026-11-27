@@ -2,7 +2,7 @@
   // Monthly retention grid: one row per signup month, one column per month
   // elapsed since, cell intensity = retention %. Rows shorten as cohorts get
   // more recent (no future months), which draws the staircase.
-  import { MONTH_SHORT_OPTIONS, formatDate } from "#lib/format.js";
+  import { MONTH_SHORT_OPTIONS, formatDate } from "#lib/ui/format.js";
   import { m } from "#lib/paraglide/messages.js";
   import type { AdminCohortRowDto } from "@loomkeep/shared/contracts";
 

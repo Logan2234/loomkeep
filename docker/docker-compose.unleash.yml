@@ -9,7 +9,7 @@
 # (UNLEASH_API_URL). The web additionally talks to Unleash's Frontend API
 # straight from the browser, over the public subdomain, to refresh
 # MAINTENANCE_<DOMAIN> flags live without a page reload — see
-# apps/web/src/lib/feature-flags-live.ts. CORS for the web origin must be
+# apps/web/src/lib/shell/feature-flags-live.svelte.ts. CORS for the web origin must be
 # allowed in Unleash's own admin UI (Admin settings > Access control > CORS
 # origins).
 x-unleash-logging: &unleash-logging

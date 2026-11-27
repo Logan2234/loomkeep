@@ -1,9 +1,9 @@
 <script lang="ts">
-  import ClampedText from "#lib/components/ClampedText.svelte";
-  import CommentsPanel from "#lib/components/CommentsPanel.svelte";
-  import Icon from "#lib/components/Icon.svelte";
-  import { appConfig } from "#lib/config.svelte.js";
-  import { prefersReducedMotion } from "#lib/motion.js";
+  import ClampedText from "#lib/ui/ClampedText.svelte";
+  import CommentsPanel from "#lib/comments/CommentsPanel.svelte";
+  import Icon from "#lib/ui/Icon.svelte";
+  import { appConfig } from "#lib/shell/config.svelte.js";
+  import { prefersReducedMotion } from "#lib/ui/motion.js";
   import { m } from "#lib/paraglide/messages.js";
   import type { MediaDetailSeasonDto } from "@loomkeep/shared/contracts";
   import { fly } from "svelte/transition";

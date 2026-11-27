@@ -2,7 +2,7 @@
   import type { HTMLAnchorAttributes } from "svelte/elements";
   import type { Snippet } from "svelte";
   import type { IconName } from "#lib/types/icon-name.js";
-  import Icon from "#lib/components/Icon.svelte";
+  import Icon from "#lib/ui/Icon.svelte";
   let {
     icon,
     children,

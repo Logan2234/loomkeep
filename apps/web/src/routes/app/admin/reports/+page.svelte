@@ -1,13 +1,13 @@
 <script lang="ts">
-  import ModerationStatementFields from "#lib/components/admin/ModerationStatementFields.svelte";
-  import KpiStripSkeleton from "#lib/components/stats/KpiStripSkeleton.svelte";
-  import RankBarsSkeleton from "#lib/components/stats/RankBarsSkeleton.svelte";
-  import LoadMoreButton from "#lib/components/LoadMoreButton.svelte";
+  import ModerationStatementFields from "#lib/admin/ModerationStatementFields.svelte";
+  import KpiStripSkeleton from "#lib/stats/KpiStripSkeleton.svelte";
+  import RankBarsSkeleton from "#lib/stats/RankBarsSkeleton.svelte";
+  import LoadMoreButton from "#lib/ui/LoadMoreButton.svelte";
 
-  import { typedEntries } from "#lib/object.js";
-  import { reportTargetLabel } from "#lib/report-target-label.js";
+  import { typedEntries } from "#lib/ui/object.js";
+  import { reportTargetLabel } from "#lib/reports/report-target-label.js";
 
-  import { labeledOptions } from "#lib/options.js";
+  import { labeledOptions } from "#lib/ui/options.js";
 
   import {
     type ReportResolution,
@@ -16,10 +16,10 @@
 
   import AdminFilterBar from "../AdminFilterBar.svelte";
   import AdminQueryError from "../AdminQueryError.svelte";
-  import { appConfig } from "#lib/config.svelte.js";
+  import { appConfig } from "#lib/shell/config.svelte.js";
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
-  import { adminFilterHref, enumParam } from "#lib/url-params.js";
+  import { adminFilterHref, enumParam } from "#lib/shell/url-params.js";
   import {
     deleteAdminUser,
     getAdminReports,
@@ -34,16 +34,16 @@
   import { keys } from "#lib/api/keys.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
-  import Banner from "#lib/components/Banner.svelte";
-  import Combobox from "#lib/components/Combobox.svelte";
-  import EmptyState from "#lib/components/EmptyState.svelte";
-  import Modal from "#lib/components/Modal.svelte";
-  import PageHeader from "#lib/components/PageHeader.svelte";
-  import SegmentedControl from "#lib/components/SegmentedControl.svelte";
-  import KpiStrip from "#lib/components/stats/KpiStrip.svelte";
-  import RankBars from "#lib/components/stats/RankBars.svelte";
-  import SectionLabel from "#lib/components/stats/SectionLabel.svelte";
-  import UserSelector from "#lib/components/UserSelector.svelte";
+  import Banner from "#lib/ui/Banner.svelte";
+  import Combobox from "#lib/ui/Combobox.svelte";
+  import EmptyState from "#lib/ui/EmptyState.svelte";
+  import Modal from "#lib/ui/Modal.svelte";
+  import PageHeader from "#lib/ui/PageHeader.svelte";
+  import SegmentedControl from "#lib/ui/SegmentedControl.svelte";
+  import KpiStrip from "#lib/stats/KpiStrip.svelte";
+  import RankBars from "#lib/stats/RankBars.svelte";
+  import SectionLabel from "#lib/stats/SectionLabel.svelte";
+  import UserSelector from "#lib/social/UserSelector.svelte";
   import {
     defaultModerationBasis,
     REPORT_CATEGORY_LABELS,
@@ -53,8 +53,8 @@
     REPORT_STATUS_LABELS,
     REPORT_TARGET_LABELS,
   } from "#lib/constants/report-labels.js";
-  import { formatDateTime, formatNumber } from "#lib/format.js";
-  import { prefersReducedMotion } from "#lib/motion.js";
+  import { formatDateTime, formatNumber } from "#lib/ui/format.js";
+  import { prefersReducedMotion } from "#lib/ui/motion.js";
   import { m } from "#lib/paraglide/messages.js";
   import type {
     ModerationLegalBasis,

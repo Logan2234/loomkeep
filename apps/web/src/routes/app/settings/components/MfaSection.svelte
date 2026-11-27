@@ -19,18 +19,18 @@
   import { keys } from "#lib/api/keys.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
-  import { auth } from "#lib/auth.svelte.js";
-  import CardRowSkeleton from "#lib/components/CardRowSkeleton.svelte";
-  import ConfirmationModal from "#lib/components/ConfirmationModal.svelte";
-  import Icon from "#lib/components/Icon.svelte";
-  import Modal from "#lib/components/Modal.svelte";
+  import { auth } from "#lib/auth/auth.svelte.js";
+  import CardRowSkeleton from "#lib/ui/CardRowSkeleton.svelte";
+  import ConfirmationModal from "#lib/ui/ConfirmationModal.svelte";
+  import Icon from "#lib/ui/Icon.svelte";
+  import Modal from "#lib/ui/Modal.svelte";
 
-  import Switch from "#lib/components/Switch.svelte";
+  import Switch from "#lib/ui/Switch.svelte";
 
-  import { DATE_MEDIUM_OPTIONS, formatDate } from "#lib/format.js";
+  import { DATE_MEDIUM_OPTIONS, formatDate } from "#lib/ui/format.js";
 
   import { m } from "#lib/paraglide/messages.js";
-  import { toast } from "#lib/toast.svelte.js";
+  import { toast } from "#lib/ui/toast.svelte.js";
   import type {
     MfaStatusDto,
     WebauthnCredentialDto,

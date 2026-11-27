@@ -2,9 +2,9 @@
   import { getAdminNewsletterPreview } from "#lib/api/client.js";
   import { keys } from "#lib/api/keys.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
-  import Modal from "#lib/components/Modal.svelte";
+  import Modal from "#lib/ui/Modal.svelte";
   import { CHANGELOG_URL } from "#lib/constants/external-links.js";
-  import { DATETIME_NUMERIC_OPTIONS, formatDateTime } from "#lib/format.js";
+  import { DATETIME_NUMERIC_OPTIONS, formatDateTime } from "#lib/ui/format.js";
   import { m } from "#lib/paraglide/messages.js";
   import { getLocale } from "#lib/paraglide/runtime.js";
   import type { NewsletterSendDto } from "@loomkeep/shared/contracts";

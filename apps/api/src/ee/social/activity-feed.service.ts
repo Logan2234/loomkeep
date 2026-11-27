@@ -31,7 +31,7 @@ interface ActivityFeedCopy {
 }
 
 /**
- * Duplicated wording from `apps/web/src/lib/activity-phrase.ts`, which can't
+ * Duplicated wording from `apps/web/src/lib/social/activity-phrase.ts`, which can't
  * be imported here (Paraglide compiles messages for the SvelteKit app only).
  */
 const FEED_COPY = {

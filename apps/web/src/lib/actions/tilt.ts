@@ -1,4 +1,4 @@
-import { prefersReducedMotion } from "#lib/motion.js";
+import { prefersReducedMotion } from "#lib/ui/motion.js";
 
 type TiltParams = {
   /** Rotation in degrees at the node's edge. */

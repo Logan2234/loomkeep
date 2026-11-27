@@ -1,7 +1,7 @@
 <script lang="ts">
   // A name wired to the peek, and the peek itself, as the app layout mounts it.
-  import CreatorPeek from "#lib/creator-peek/CreatorPeek.svelte";
-  import { creatorPeek } from "#lib/creator-peek/peek.svelte.js";
+  import CreatorPeek from "#lib/creators/peek/CreatorPeek.svelte";
+  import { creatorPeek } from "#lib/creators/peek/peek.svelte.js";
 </script>
 
 <a

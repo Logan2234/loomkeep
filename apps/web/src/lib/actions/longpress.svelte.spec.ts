@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { longpress } from "./longpress";
 
-vi.mock("#lib/motion.js", () => ({ prefersReducedMotion: () => false }));
+vi.mock("#lib/ui/motion.js", () => ({ prefersReducedMotion: () => false }));
 
 function press(node: HTMLElement, pointerType = "touch") {
   node.dispatchEvent(

@@ -2,16 +2,16 @@
   import { getAdminUserLibrary } from "#lib/api/client.js";
   import { createApiInfiniteQuery } from "#lib/api/infinite-query.svelte.js";
   import { keys } from "#lib/api/keys.js";
-  import Banner from "#lib/components/Banner.svelte";
-  import Icon from "#lib/components/Icon.svelte";
-  import Modal from "#lib/components/Modal.svelte";
+  import Banner from "#lib/ui/Banner.svelte";
+  import Icon from "#lib/ui/Icon.svelte";
+  import Modal from "#lib/ui/Modal.svelte";
   import {
     BOOK_STATUS_LABELS,
     GAME_STATUS_LABELS,
     MEDIA_STATUS_META,
     MUSIC_STATUS_LABELS,
   } from "#lib/constants/status-labels.js";
-  import { formatDate } from "#lib/format.js";
+  import { formatDate } from "#lib/ui/format.js";
   import { m } from "#lib/paraglide/messages.js";
   import type {
     AdminUserLibraryEntryDto,

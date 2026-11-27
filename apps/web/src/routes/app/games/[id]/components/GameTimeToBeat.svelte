@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { formatHours } from "#lib/format.js";
+  import { formatHours } from "#lib/ui/format.js";
   import { m } from "#lib/paraglide/messages.js";
   import type { GameTimeToBeatDto } from "@loomkeep/shared/contracts";
 

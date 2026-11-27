@@ -1,0 +1,1431 @@
+<script module lang="ts">
+  import { longpress } from "#lib/actions/longpress.js";
+  import { inView } from "#lib/actions/inView.js";
+
+  import { MEDIA_TYPE_OPTIONS } from "#lib/constants/media-types.js";
+
+  import { TABLET_QUERY } from "#lib/constants/media-queries.js";
+
+  import { type SelectOption } from "#lib/types/select-option.js";
+
+  import { type IconName } from "#lib/types/icon-name.js";
+
+  import { SEARCH_DEBOUNCE_MS } from "#lib/ui/debounce.js";
+
+  import {
+    LOAN_FILTERS,
+    type LoanFilter,
+    type SortOrder,
+  } from "@loomkeep/shared/contracts";
+
+  export interface LibraryLoadParams {
+    query: string;
+    statuses: string[];
+    favoritesOnly: boolean;
+    /** Only the entries lent out, or borrowed and to give back. */
+    loan: LoanFilter | null;
+    /** The domain's extra filter value (media's types, games' platforms), opaque here. */
+    extra: unknown;
+    sort: string;
+    order: SortOrder;
+    /** 1-indexed. */
+    page: number;
+  }
+
+  /** The list's filters without its order: what a pile is summed over. */
+  export type PileLoadParams = Omit<
+    LibraryLoadParams,
+    "sort" | "order" | "page"
+  >;
+</script>
+
+<script lang="ts" generics="T extends { favorite: boolean }">
+  // Generic library browser shared by the games / books / media / music list
+  // pages: server-paginated infinite scroll (mirrors MediaSearchPanel's
+  // debounce + sentinel pattern), text filter, status pills on a sticky
+  // toolbar, everything else (favorites, sort, saved views, display mode) in
+  // the "Filtres et affichage" panel, loading states, the three empty states
+  // and the results in the mode picked there (cards, table, wall, compact). Filtering/sorting itself happens server-side (see each domain's
+  // `listEntries`); everything domain-specific (labels, card markup, the
+  // table's columns, the actual `load` call, and media's extra "type"
+  // filter) is injected via props/snippets.
+  import { goto } from "$app/navigation";
+  import { page } from "$app/state";
+  import { resolveApiError } from "#lib/api/errors.js";
+  import { createApiInfiniteQuery } from "#lib/api/infinite-query.svelte.js";
+  import { keys } from "#lib/api/keys.js";
+  import { getSavedViews } from "#lib/api/client.js";
+  import { getLibraryDomainCounts } from "#lib/api/library.js";
+  import { createApiMutation } from "#lib/api/mutation.svelte.js";
+  import { createApiQuery } from "#lib/api/query.svelte.js";
+  import Banner from "#lib/ui/Banner.svelte";
+  import ConfirmationModal from "#lib/ui/ConfirmationModal.svelte";
+  import EmptyState from "#lib/ui/EmptyState.svelte";
+  import type { EmptyArtName } from "#lib/ui/EmptyArt.svelte";
+  import Icon from "#lib/ui/Icon.svelte";
+  import LibraryBulkBar from "#lib/library/LibraryBulkBar.svelte";
+  import LibraryEntrySheet from "#lib/library/LibraryEntrySheet.svelte";
+  import LibraryFiltersButton from "#lib/library/LibraryFiltersButton.svelte";
+  import LibraryFiltersPanel from "#lib/library/LibraryFiltersPanel.svelte";
+  import LibraryReviewEditor from "#lib/reviews/LibraryReviewEditor.svelte";
+  import LibrarySearchField from "#lib/library/LibrarySearchField.svelte";
+  import LibraryTable from "#lib/library/LibraryTable.svelte";
+  import LibraryWall from "#lib/library/LibraryWall.svelte";
+  import PageHeader from "#lib/ui/PageHeader.svelte";
+  import PosterGrid from "#lib/work/PosterGrid.svelte";
+  import PosterGridSkeleton from "#lib/work/PosterGridSkeleton.svelte";
+  import SavedViewBar from "#lib/library/SavedViewBar.svelte";
+  import { debounce } from "#lib/ui/debounce.js";
+  import { layout } from "#lib/shell/layout.svelte.js";
+  import {
+    readLibraryColumns,
+    readLibraryPosterSize,
+    readLibraryViewMode,
+    writeLibraryColumns,
+    writeLibraryPosterSize,
+    writeLibraryViewMode,
+    type LibraryBulkActions,
+    type LibraryColumn,
+    type LibraryInlineEdit,
+    type LibraryItemView,
+    type LibraryPosterSize,
+    type LibrarySelection,
+    type LibraryViewMode,
+  } from "#lib/library/library-view.js";
+  import { prefersReducedMotion } from "#lib/ui/motion.js";
+  import { isFeatureNew } from "#lib/shell/feature-badges.js";
+  import { m } from "#lib/paraglide/messages.js";
+  import { pileHeaderLabel } from "#lib/library/pile.js";
+  import { filtersToSearchParams } from "#lib/library/saved-views.js";
+  import { toast } from "#lib/ui/toast.svelte.js";
+  import type { MediaType } from "@loomkeep/shared/enums";
+  import type {
+    BulkEntriesResultDto,
+    BulkEntriesTargetDto,
+    BulkUpdateEntriesDto,
+    PagedResult,
+    PileSummaryDto,
+    SavedViewDomain,
+    SavedViewFiltersDto,
+  } from "@loomkeep/shared/contracts";
+  import type { Snippet } from "svelte";
+  import { useQueryClient, type InfiniteData } from "@tanstack/svelte-query";
+  import { onDestroy, untrack } from "svelte";
+  import { flip } from "svelte/animate";
+  import { MediaQuery, SvelteSet } from "svelte/reactivity";
+  import { fade, fly, scale, slide } from "svelte/transition";
+
+  type Option = SelectOption;
+
+  let {
+    icon,
+    title,
+    subtitle,
+    noun,
+    domain,
+    load,
+    loadPile,
+    keyOf,
+    statusOptions,
+    unpickedStatuses = [],
+    sorts,
+    defaultSort,
+    card,
+    itemView,
+    columns,
+    catalogPreview,
+    headerActions,
+    notice,
+    bulk,
+    setFavorite,
+    platformOptions = [],
+  }: {
+    icon: IconName;
+    title: string;
+    /** Header subtitle, e.g. `(n) => "3 livres"`. */
+    subtitle: (count: number) => string;
+    /** Masculine noun for the empty-state copy, from the catalogs: `m.common_book()`, never a literal. */
+    noun: string;
+    /** This library's domain: its saved views, and the tab to preselect on /search. */
+    domain: SavedViewDomain;
+    load: (params: LibraryLoadParams) => Promise<PagedResult<T>>;
+    /** What's left in the pile under the same filters, for the header. */
+    loadPile?: (params: PileLoadParams) => Promise<PileSummaryDto>;
+    /** Stable key for the poster grid's keyed each. */
+    keyOf: (entry: T) => string;
+    statusOptions: Option[];
+    /**
+     * What the list shows while no status pill is picked, e.g. what's still
+     * ahead, leaving the finished and dropped to their own pills. None means
+     * every status.
+     */
+    unpickedStatuses?: string[];
+    sorts: Option[];
+    defaultSort: string;
+    /** Gets the toggle the card's favorite star should call. */
+    card: Snippet<[T, (next: boolean) => void]>;
+    /** An entry as the table, compact and wall modes show it. */
+    itemView: (entry: T) => LibraryItemView;
+    /** The table and compact modes' columns. */
+    columns: LibraryColumn<T>[];
+    /** Renders a capped catalogue-search preview for the current query, when a
+     * library search comes up empty (no filters). Receives the trimmed query
+     * and a callback to report back how many catalogue results it found. */
+    catalogPreview?: Snippet<[string, (count: number) => void]>;
+    /** Rendered beside the title, e.g. books' reading-goal chip. */
+    headerActions?: Snippet;
+    /** A notice between the header and the filters (e.g. a domain in early access). */
+    notice?: Snippet;
+    /** The selection mode's actions (UX-04); without them there's no selection mode. */
+    bulk?: LibraryBulkActions;
+    /** Saves an entry's favorite flag; the list shows it at once. */
+    setFavorite: (entry: T, next: boolean) => Promise<unknown>;
+    /** GAMES only: the platforms played on, for the platform filter. */
+    platformOptions?: Option[];
+  } = $props();
+
+  // Result count reported by `catalogPreview`, reset whenever the query
+  // changes so a stale count never lingers across searches.
+  const DOMAIN_ART: Record<SavedViewDomain, EmptyArtName> = {
+    MEDIA: "tv",
+    GAMES: "controller",
+    BOOKS: "book",
+    MUSIC: "vinyl",
+  };
+
+  let previewCount = $state<number | null>(null);
+
+  // Seeded from the URL so a filtered/sorted view survives a real browser
+  // back navigation (the page that navigated away last kept the URL in sync
+  // via `replaceState`, see `syncUrl` below).
+  const initialParams = page.url.searchParams;
+
+  let statuses = $state<string[]>(
+    initialParams.get("status")?.split(",").filter(Boolean) ?? [],
+  );
+  let favoritesOnly = $state(initialParams.get("fav") === "1");
+  let sort = $state<string>(initialParams.get("sort") ?? defaultSort);
+  let reversed = $state(initialParams.get("order") === "asc");
+  // `query` is the raw input; `queryFilter` is the debounced value that
+  // actually drives the fetch (see the input's oninput below).
+  let query = $state(initialParams.get("q") ?? "");
+  let queryFilter = $state(initialParams.get("q") ?? "");
+  let activeViewId = $state(initialParams.get("view"));
+
+  // Extra "type" filter, owned by the page and passed to LibraryBrowser.
+  let types = $state<MediaType[]>(
+    (initialParams.get("type")?.split(",").filter(Boolean) as MediaType[]) ??
+      [],
+  );
+
+  // GAMES' extra filter: the platforms played on.
+  let platforms = $state<string[]>(
+    initialParams.get("platform")?.split(",").filter(Boolean) ?? [],
+  );
+  let loan = $state<LoanFilter | null>(
+    LOAN_FILTERS.find((value) => value === initialParams.get("loan")) ?? null,
+  );
+  // BOOKS' extra filter: books anyone can read online for free.
+  let freeToRead = $state(initialParams.get("free") === "1");
+  // Each domain has at most one extra filter, opaque to the loaders.
+  const extra = $derived(
+    domain === "GAMES" ? platforms : domain === "BOOKS" ? freeToRead : types,
+  );
+
+  const reduced = prefersReducedMotion();
+
+  let mode = $state<LibraryViewMode>(readLibraryViewMode(domain));
+
+  function setMode(next: LibraryViewMode) {
+    mode = next;
+    writeLibraryViewMode(domain, next);
+  }
+
+  let posterSize = $state<LibraryPosterSize>(
+    readLibraryPosterSize(domain, layout.compact),
+  );
+
+  function setPosterSize(next: LibraryPosterSize) {
+    posterSize = next;
+    writeLibraryPosterSize(domain, next);
+  }
+
+  let filtersOpen = $state(false);
+  // On a phone the search hides behind a magnifier, unless a query is set.
+  let searchOpen = $state(!!initialParams.get("q"));
+  let searchInput = $state<HTMLInputElement | null>(null);
+
+  function openSearch() {
+    searchOpen = true;
+    requestAnimationFrame(() => searchInput?.focus());
+  }
+
+  // Hiding the field also drops its query: no filter left out of sight.
+  function closeSearch() {
+    searchOpen = false;
+    query = "";
+    previewCount = null;
+    debouncedQueryFilter.call();
+  }
+
+  function toggleStatus(value: string) {
+    statuses = statuses.includes(value)
+      ? statuses.filter((v) => v !== value)
+      : [...statuses, value];
+  }
+
+  function sortBy(value: string) {
+    if (sort === value) reversed = !reversed;
+    else sort = value;
+  }
+
+  const current = $derived<SavedViewFiltersDto>({
+    q: queryFilter,
+    statuses,
+    favorite: favoritesOnly,
+    types,
+    platforms,
+    freeToRead,
+    sort,
+    order: reversed ? "asc" : "desc",
+  });
+
+  function applyFilters(filters: SavedViewFiltersDto) {
+    query = queryFilter = filters.q ?? "";
+    statuses = filters.statuses ?? [];
+    favoritesOnly = filters.favorite ?? false;
+    types = filters.types ?? [];
+    platforms = filters.platforms ?? [];
+    freeToRead = filters.freeToRead ?? false;
+    // A sort this library no longer offers falls back to its default.
+    sort = sorts.some((o) => o.value === filters.sort)
+      ? filters.sort!
+      : defaultSort;
+    reversed = filters.order === "asc";
+    previewCount = null;
+  }
+
+  const debouncedQueryFilter = debounce(() => {
+    queryFilter = query.trim();
+  }, SEARCH_DEBOUNCE_MS);
+
+  const TYPE_OPTIONS = MEDIA_TYPE_OPTIONS;
+
+  // Mirrors the current filters/sort/query into the URL so navigating back
+  // here — either the browser's back button or a page's "← retour" link —
+  // restores this view instead of resetting to defaults. Uses `goto` rather
+  // than the shallow-routing `replaceState` from $app/navigation: the latter
+  // only patches the raw history entry without updating SvelteKit's own
+  // router state, so `page.url` (and therefore the filters read back from it)
+  // stays stale when the browser later navigates back to that entry.
+  //
+  // `page.url.pathname` is read via `untrack` deliberately: this function
+  // runs inside the `$effect` below, and Svelte tracks every reactive read
+  // that happens during an effect's synchronous execution — including ones
+  // buried in a called function, not just ones written directly in the
+  // effect body. Reading it untracked keeps the effect's dependencies to
+  // exactly the filters and the view in use; without this,
+  // `goto()` (which updates `page.url`) makes the effect see its own output
+  // as a fresh dependency change and re-fire itself, forever.
+  function syncUrl() {
+    const params = filtersToSearchParams(current, defaultSort);
+    if (activeViewId) params.set("view", activeViewId);
+    const qs = params.toString();
+    void goto(qs ? `?${qs}` : untrack(() => page.url.pathname), {
+      replace: true,
+      reset: false,
+    });
+  }
+
+  $effect(() => {
+    // Tracked: the filters in `current`, and the view in use.
+    syncUrl();
+  });
+
+  // The pills picked, or else what the page shows unpicked.
+  const shownStatuses = $derived(
+    statuses.length > 0 ? statuses : unpickedStatuses,
+  );
+
+  const browseKey = $derived(
+    keys.library.browse(domain, {
+      query: queryFilter,
+      statuses: shownStatuses,
+      favoritesOnly,
+      loan,
+      extra,
+      sort,
+      order: reversed ? "asc" : "desc",
+    }),
+  );
+
+  const browseQuery = createApiInfiniteQuery<PagedResult<T>, number, T>(() => ({
+    key: browseKey,
+    fetch: (pageNum) =>
+      load({
+        query: queryFilter,
+        statuses: shownStatuses,
+        favoritesOnly,
+        loan,
+        extra,
+        sort,
+        order: reversed ? "asc" : "desc",
+        page: pageNum,
+      }),
+    getPageItems: (p) => p.items,
+    initialPageParam: 1,
+    getNextPageParam: (last, allPages) =>
+      last.hasMore ? allPages.length + 1 : undefined,
+    keepPreviousData: true,
+  }));
+
+  const pileParams = $derived<PileLoadParams>({
+    query: queryFilter,
+    statuses: shownStatuses,
+    favoritesOnly,
+    loan,
+    extra,
+  });
+  const pileQuery = createApiQuery(() => ({
+    key: keys.library.pile(domain, pileParams),
+    fetch: () => loadPile!(pileParams),
+    enabled: !!loadPile,
+    keepPreviousData: true,
+  }));
+
+  const items = $derived(browseQuery.data);
+  const error = $derived(browseQuery.error);
+  const total = $derived(browseQuery.pages.at(-1)?.total ?? 0);
+  const loading = $derived(browseQuery.loading);
+  const loadingMore = $derived(browseQuery.isFetchingNextPage);
+  const headerSubtitle = $derived(
+    [subtitle(total), pileQuery.data && pileHeaderLabel(domain, pileQuery.data)]
+      .filter(Boolean)
+      .join(" · "),
+  );
+
+  let showSkeleton = $state(false);
+  $effect(() => {
+    if (!loading || items.length > 0) {
+      showSkeleton = false;
+      return;
+    }
+    const timer = setTimeout(() => (showSkeleton = true), 200);
+    return () => clearTimeout(timer);
+  });
+
+  // Infinite scroll: load the next page when the sentinel nears the viewport.
+
+  // ── Selection mode (UX-04)
+  const UNDO_DELAY_MS = 6000;
+  const queryClient = useQueryClient();
+
+  let selecting = $state(false);
+  const selected = new SvelteSet<string>();
+  // Every entry the filters match, loaded or not: sent as the filters
+  // themselves, since the pages past the loaded ones have no ids here yet.
+  let allMatching = $state(false);
+  let anchor: string | null = null;
+  let confirmingRemove = $state(false);
+  // Removed entries stay hidden, not deleted, while their undo toast shows.
+  const hidden = new SvelteSet<string>();
+  let hideAll = $state(false);
+  let pendingRemoval: {
+    timer: ReturnType<typeof setTimeout>;
+    commit: () => Promise<void>;
+  } | null = null;
+
+  const shown = $derived(
+    hideAll ? [] : items.filter((entry) => !hidden.has(keyOf(entry))),
+  );
+  const selectedCount = $derived(allMatching ? total : selected.size);
+  const allLoaded = $derived(
+    shown.length > 0 && shown.every((entry) => selected.has(keyOf(entry))),
+  );
+
+  function toggle(entry: T, range: boolean) {
+    const key = keyOf(entry);
+    if (allMatching) {
+      allMatching = false;
+      for (const e of shown) selected.add(keyOf(e));
+    }
+    const order = shown.map(keyOf);
+    const from = anchor ? order.indexOf(anchor) : -1;
+    const to = order.indexOf(key);
+    if (range && from >= 0 && to >= 0) {
+      for (const k of order.slice(Math.min(from, to), Math.max(from, to) + 1))
+        selected.add(k);
+    } else if (selected.has(key)) {
+      selected.delete(key);
+    } else {
+      selected.add(key);
+    }
+    anchor = key;
+  }
+
+  function selectLoaded() {
+    allMatching = false;
+    for (const entry of shown) selected.add(keyOf(entry));
+  }
+
+  function clearSelection() {
+    selected.clear();
+    allMatching = false;
+    anchor = null;
+  }
+
+  function exitSelecting() {
+    selecting = false;
+    clearSelection();
+  }
+
+  const selection: LibrarySelection<T> = {
+    get active() {
+      return selecting;
+    },
+    has: (entry) => allMatching || selected.has(keyOf(entry)),
+    toggle,
+    get allLoaded() {
+      return allMatching || allLoaded;
+    },
+    get someLoaded() {
+      return !allLoaded && shown.some((entry) => selected.has(keyOf(entry)));
+    },
+    toggleLoaded: () =>
+      allMatching || allLoaded ? clearSelection() : selectLoaded(),
+  };
+
+  // Other filters show other entries: a selection made under the previous
+  // ones would act on rows no longer in sight.
+  $effect(() => {
+    void browseKey;
+    untrack(clearSelection);
+  });
+
+  function bulkTarget(): BulkEntriesTargetDto {
+    return allMatching
+      ? { filters: { ...current, statuses: shownStatuses } }
+      : { ids: [...selected] };
+  }
+
+  function resultMessage(result: BulkEntriesResultDto): string {
+    const done =
+      result.updated === 1
+        ? m.library_bulk_done_one({ count: result.updated })
+        : m.library_bulk_done_many({ count: result.updated });
+    return result.skipped > 0
+      ? `${done} · ${m.library_bulk_skipped({ count: result.skipped })}`
+      : done;
+  }
+
+  // The list's pages come from the query cache, not a deep $state: flipping
+  // `entry.favorite` in place wouldn't re-render. Patch the cached pages
+  // instead, and put the flag back if the save fails.
+  function patchFavorite(key: string, favorite: boolean) {
+    queryClient.setQueriesData<InfiniteData<PagedResult<T>>>(
+      { queryKey: keys.library.browseDomain(domain) },
+      (data) =>
+        data?.pages
+          ? {
+              ...data,
+              pages: data.pages.map((p) => ({
+                ...p,
+                items: p.items.map((e) =>
+                  keyOf(e) === key ? { ...e, favorite } : e,
+                ),
+              })),
+            }
+          : data,
+    );
+  }
+
+  async function toggleFavorite(entry: T, next: boolean) {
+    const key = keyOf(entry);
+    patchFavorite(key, next);
+    try {
+      await setFavorite(entry, next);
+    } catch (err) {
+      patchFavorite(key, !next);
+      toast.error(resolveApiError(err));
+    }
+  }
+
+  // ── Table columns and in-place editing
+  const wide = new MediaQuery(TABLET_QUERY);
+  const defaultColumns = $derived(
+    columns.filter((c) => !c.defaultHidden).map((c) => c.key),
+  );
+  let visibleColumns = $state<string[] | null>(readLibraryColumns(domain));
+  const shownColumns = $derived(
+    columns.filter(
+      (c) =>
+        c.kind === "title" ||
+        (visibleColumns ?? defaultColumns).includes(c.key),
+    ),
+  );
+  // Only where the table is a table: phones get rows with no columns.
+  const columnMenu = $derived(
+    wide.current && (mode === "table" || mode === "compact")
+      ? columns.map((c) => ({
+          key: c.key,
+          label: c.label,
+          visible: shownColumns.includes(c),
+          locked: c.kind === "title",
+        }))
+      : undefined,
+  );
+
+  function toggleColumn(key: string) {
+    const current = visibleColumns ?? defaultColumns;
+    visibleColumns = current.includes(key)
+      ? current.filter((k) => k !== key)
+      : [...current, key];
+    writeLibraryColumns(domain, visibleColumns);
+  }
+
+  function resetColumns() {
+    visibleColumns = null;
+    writeLibraryColumns(domain, null);
+  }
+
+  let reviewing = $state<T | null>(null);
+  let savedCell = $state<LibraryInlineEdit<T>["saved"]>(null);
+  let savedTimer: ReturnType<typeof setTimeout> | undefined;
+
+  // A single row goes through the bulk endpoint too, so completing a series
+  // in place marks its episodes exactly as the selection bar would.
+  const inlineMut = createApiMutation(() => ({
+    mutate: ({
+      entry,
+      action,
+    }: {
+      entry: T;
+      action: {
+        status?: string;
+        ownershipStatus?: string;
+        ownershipSource?: string | null;
+      };
+    }) => bulk!.update({ ids: [keyOf(entry)], ...action }),
+    invalidates: [keys.library.all()],
+    errorToast: true,
+    onSuccess: (_result, { entry, action }) => {
+      clearTimeout(savedTimer);
+      savedCell = {
+        key: keyOf(entry),
+        field: action.status !== undefined ? "status" : "ownership",
+      };
+      savedTimer = setTimeout(() => (savedCell = null), 1600);
+    },
+  }));
+
+  const inlineEdit: LibraryInlineEdit<T> | undefined = bulk && {
+    statusOptions: bulk.statusOptions,
+    ownershipOptions: bulk.ownershipOptions,
+    ownershipSources: bulk.ownershipSources,
+    save: (entry, action) => inlineMut.mutate({ entry, action }),
+    get saved() {
+      return savedCell;
+    },
+    review: (entry) => (reviewing = entry),
+  };
+
+  const bulkMut = createApiMutation(() => ({
+    mutate: (dto: BulkUpdateEntriesDto) => bulk!.update(dto),
+    invalidates: [keys.library.all()],
+    successToast: resultMessage,
+    errorToast: true,
+  }));
+
+  function removeSelection() {
+    confirmingRemove = false;
+    const target = bulkTarget();
+    const count = selectedCount;
+    if (allMatching) hideAll = true;
+    else for (const key of selected) hidden.add(key);
+    exitSelecting();
+
+    const restore = () => {
+      hidden.clear();
+      hideAll = false;
+    };
+    // The toast can outlive the delay (held open while hovered): once the
+    // removal goes through, its "Cancel" would only fake an undo.
+    let undoToast = -1;
+    const commit = async () => {
+      pendingRemoval = null;
+      toast.dismiss(undoToast);
+      try {
+        await bulk!.remove(target);
+        await queryClient.invalidateQueries({ queryKey: keys.library.all() });
+      } catch (err) {
+        toast.error(resolveApiError(err));
+      } finally {
+        restore();
+      }
+    };
+    pendingRemoval = { timer: setTimeout(commit, UNDO_DELAY_MS), commit };
+    undoToast = toast.show(
+      count === 1
+        ? m.library_bulk_removed_one({ count })
+        : m.library_bulk_removed_many({ count }),
+      "info",
+      UNDO_DELAY_MS,
+      [
+        {
+          label: m.common_cancel(),
+          onSelect: () => {
+            if (pendingRemoval) clearTimeout(pendingRemoval.timer);
+            pendingRemoval = null;
+            restore();
+          },
+        },
+      ],
+    );
+  }
+
+  // Leaving the page before the undo delay runs out confirms the removal.
+  onDestroy(() => {
+    if (!pendingRemoval) return;
+    clearTimeout(pendingRemoval.timer);
+    void pendingRemoval.commit();
+  });
+
+  let container = $state<HTMLElement | null>(null);
+
+  function entryOf(element: Element | null): T | undefined {
+    const key = element?.closest<HTMLElement>("[data-library-item]")?.dataset
+      .libraryItem;
+    return key === undefined ? undefined : shown.find((e) => keyOf(e) === key);
+  }
+
+  function focusItem(element: HTMLElement | undefined) {
+    if (!element) return;
+    const target = element.matches("a, button, input, [tabindex]")
+      ? element
+      : element.querySelector<HTMLElement>("input, a, button");
+    // Keyboard-driven, so the focus ring must show even where the browser
+    // would not infer it from a script call.
+    target?.focus({ focusVisible: true } as FocusOptions);
+    element.scrollIntoView({ block: "nearest" });
+  }
+
+  // J/K move to the next/previous entry, as do the arrows along the mode's
+  // own axis (left/right in a grid, up/down in a list) once an entry has
+  // focus. X toggles the focused one, Shift+A selects every loaded one,
+  // Escape leaves selection mode.
+  function onKeydown(e: KeyboardEvent) {
+    if (e.defaultPrevented || e.ctrlKey || e.metaKey || e.altKey) return;
+    const target = e.target as HTMLElement;
+    if (
+      target.closest(
+        "input:not([type=checkbox]), textarea, select, [role=dialog]",
+      )
+    )
+      return;
+
+    if (e.key === "Escape" && selecting) {
+      exitSelecting();
+      return;
+    }
+
+    if (e.key === "/" && !layout.compact && searchInput) {
+      e.preventDefault();
+      searchInput.focus();
+      return;
+    }
+
+    const elements = [
+      ...(container?.querySelectorAll<HTMLElement>("[data-library-item]") ??
+        []),
+    ];
+    const index = elements.indexOf(
+      target.closest<HTMLElement>("[data-library-item]")!,
+    );
+    const key = e.key.toLowerCase();
+    const grid = mode === "cards" || mode === "wall";
+    const [next, previous] = grid
+      ? ["ArrowRight", "ArrowLeft"]
+      : ["ArrowDown", "ArrowUp"];
+    const isArrow = e.key === next || e.key === previous;
+    const step =
+      key === "j" || e.key === next
+        ? 1
+        : key === "k" || e.key === previous
+          ? -1
+          : 0;
+
+    if (step !== 0 && (!isArrow || index >= 0)) {
+      e.preventDefault();
+      focusItem(
+        elements[
+          index < 0
+            ? 0
+            : Math.min(elements.length - 1, Math.max(0, index + step))
+        ],
+      );
+    } else if (key === "x" && bulk) {
+      const entry = entryOf(target);
+      if (!entry) return;
+      e.preventDefault();
+      selecting = true;
+      toggle(entry, e.shiftKey);
+    } else if (e.key === "A" && e.shiftKey && selecting) {
+      e.preventDefault();
+      selectLoaded();
+    }
+  }
+
+  function selectPressed(element: HTMLElement) {
+    const entry = entryOf(element);
+    if (!entry) return;
+    selecting = true;
+    if (!selection.has(entry)) toggle(entry, false);
+  }
+
+  const hasQuery = $derived(query.trim() !== "");
+  const hasPanelFilters = $derived(
+    favoritesOnly ||
+      freeToRead ||
+      loan !== null ||
+      types.length > 0 ||
+      platforms.length > 0,
+  );
+  const hasFilters = $derived(statuses.length > 0 || hasPanelFilters);
+  // The pills of what the list shows unpicked first, then, past a divider,
+  // the ones only shown once picked.
+  const alwaysShownOptions = $derived(
+    unpickedStatuses.length > 0
+      ? statusOptions.filter((o) => unpickedStatuses.includes(o.value))
+      : statusOptions,
+  );
+  const pickToShowOptions = $derived(
+    unpickedStatuses.length > 0
+      ? statusOptions.filter((o) => !unpickedStatuses.includes(o.value))
+      : [],
+  );
+
+  // Some statuses left out while no pill is picked.
+  const narrowedUnpicked = $derived(
+    statuses.length === 0 && unpickedStatuses.length > 0,
+  );
+
+  // Nothing ahead on a page that opens on what's ahead: an empty library, or
+  // one where everything is done? Only the whole library's count tells.
+  const needsCounts = $derived(
+    narrowedUnpicked &&
+      !hasPanelFilters &&
+      !hasQuery &&
+      !loading &&
+      items.length === 0,
+  );
+  const countsQuery = createApiQuery(() => ({
+    key: keys.library.domainCounts(),
+    fetch: getLibraryDomainCounts,
+    enabled: needsCounts,
+  }));
+  const awaitingCounts = $derived(
+    needsCounts && !countsQuery.data && !countsQuery.error,
+  );
+  // Nothing tracked at all: the invitation to search or import.
+  const libraryEmpty = $derived(
+    !hasQuery &&
+      !hasPanelFilters &&
+      statuses.length === 0 &&
+      (!narrowedUnpicked || countsQuery.data?.[domain] === 0),
+  );
+
+  function clearFilters() {
+    statuses = [];
+    favoritesOnly = false;
+    freeToRead = false;
+    loan = null;
+    types = [];
+    platforms = [];
+  }
+
+  function resetFilters() {
+    clearFilters();
+    sort = defaultSort;
+    reversed = false;
+    activeViewId = null;
+  }
+
+  // The statuses show on the toolbar itself: the badge counts the rest.
+  const panelFilterCount = $derived(
+    types.length +
+      platforms.length +
+      (favoritesOnly ? 1 : 0) +
+      (freeToRead ? 1 : 0) +
+      (loan !== null ? 1 : 0),
+  );
+
+  const savedViewsQuery = createApiQuery(() => ({
+    key: keys.savedViews.all(),
+    fetch: getSavedViews,
+  }));
+  const activeView = $derived(
+    savedViewsQuery.data?.find((view) => view.id === activeViewId),
+  );
+
+  // What the panel filters on, kept in sight on the toolbar and removable
+  // without opening it.
+  const tokens = $derived([
+    ...(activeView
+      ? [
+          {
+            key: `view-${activeView.id}`,
+            label: activeView.name,
+            remove: () => {
+              activeViewId = null;
+              applyFilters({});
+            },
+          },
+        ]
+      : []),
+    ...types.map((type) => ({
+      key: `type-${type}`,
+      label: TYPE_OPTIONS.find((o) => o.value === type)?.label ?? type,
+      remove: () => (types = types.filter((t) => t !== type)),
+    })),
+    ...platforms.map((platform) => ({
+      key: `platform-${platform}`,
+      label:
+        platformOptions.find((o) => o.value === platform)?.label ?? platform,
+      remove: () => (platforms = platforms.filter((p) => p !== platform)),
+    })),
+    ...(favoritesOnly
+      ? [
+          {
+            key: "favorites",
+            label: m.common_favorites(),
+            remove: () => (favoritesOnly = false),
+          },
+        ]
+      : []),
+    ...(loan !== null
+      ? [
+          {
+            key: "loan",
+            label:
+              loan === "LENT"
+                ? m.library_loan_lent()
+                : m.library_loan_borrowed(),
+            remove: () => (loan = null),
+          },
+        ]
+      : []),
+    ...(freeToRead
+      ? [
+          {
+            key: "free-to-read",
+            label: m.library_free_to_read_chip(),
+            remove: () => (freeToRead = false),
+          },
+        ]
+      : []),
+  ]);
+
+  const sortLabel = $derived(
+    sorts.find((option) => option.value === sort)?.label ?? sort,
+  );
+
+  // A long press on a phone opens the entry's shortcuts; in selection mode
+  // it adds the entry instead.
+  let pressed = $state<T | null>(null);
+
+  function onLongPress(element: HTMLElement) {
+    if (selecting) {
+      selectPressed(element);
+      return;
+    }
+    pressed = entryOf(element) ?? null;
+  }
+</script>
+
+<div class="mx-auto max-w-6xl px-5 py-6 md:px-8 md:py-10">
+  <PageHeader
+    back="/app"
+    backInHistory
+    backOnPhoneOnly
+    {icon}
+    {title}
+    subtitle={headerSubtitle}
+    actions={pageActions}
+    class="mb-4 md:mb-6" />
+
+  {@render notice?.()}
+
+  {#if layout.compact && searchOpen}
+    <div class="mb-3 flex" transition:slide={{ duration: reduced ? 0 : 180 }}>
+      {@render searchField()}
+    </div>
+  {/if}
+
+  <!-- Under the phone's compact title bar once the header scrolls away. -->
+  <div
+    class="bg-bg sticky z-20 -mx-5 px-5 py-2 md:-mx-8 md:px-8"
+    style:top={layout.compact
+      ? "calc(env(safe-area-inset-top) + 3rem)"
+      : "0px"}>
+    <div class="flex items-center gap-2">
+      <div
+        class="flex min-w-0 flex-1 gap-2 {layout.compact
+          ? 'no-scrollbar -my-1 overflow-x-auto py-1'
+          : 'flex-wrap items-center'}">
+        <div
+          class="flex shrink-0 gap-2"
+          role="group"
+          aria-label={m.common_status()}>
+          {#each alwaysShownOptions as option (option.value)}
+            {@render statusPill(option)}
+          {/each}
+          {#if pickToShowOptions.length > 0}
+            <!-- Left: what the list shows unpicked. Right: what only
+                 shows once picked (finished, dropped). -->
+            <span
+              class="bg-border mx-0.5 w-px shrink-0 self-stretch"
+              aria-hidden="true"></span>
+            {#each pickToShowOptions as option (option.value)}
+              {@render statusPill(option)}
+            {/each}
+          {/if}
+        </div>
+        {#if !layout.compact && tokens.length > 0}
+          <span class="bg-border mx-1 h-5 w-px shrink-0" aria-hidden="true"
+          ></span>
+          {@render tokenList()}
+        {/if}
+      </div>
+      {#if layout.compact}
+        <button
+          type="button"
+          class="btn-icon h-9 w-9 rounded-full {searchOpen
+            ? 'bg-accent/14 text-accent hover:bg-accent/22 hover:text-accent'
+            : ''}"
+          aria-label={m.library_filter_placeholder()}
+          aria-pressed={searchOpen}
+          onclick={() => (searchOpen ? closeSearch() : openSearch())}>
+          <Icon name="search" class="h-5 w-5" />
+        </button>
+      {/if}
+      <LibraryFiltersButton
+        count={panelFilterCount}
+        expanded={filtersOpen}
+        onclick={() => (filtersOpen = true)} />
+    </div>
+    {#if layout.compact && tokens.length > 0}
+      <div class="no-scrollbar mt-2 flex gap-1.5 overflow-x-auto">
+        {@render tokenList()}
+      </div>
+    {/if}
+  </div>
+
+  {#if layout.compact}
+    <div class="mb-3"></div>
+  {:else}
+    <button
+      type="button"
+      class="timecode hover:text-fg mt-1 mb-4 text-xs transition-colors"
+      onclick={() => (filtersOpen = true)}>
+      {m.library_sorted_by({ sort: sortLabel.toLowerCase() })}
+      {reversed ? "↑" : "↓"}
+    </button>
+  {/if}
+
+  {#if selecting}
+    <div
+      transition:slide={{ duration: reduced ? 0 : 180 }}
+      class="mb-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm {allMatching ||
+      (allLoaded && total > shown.length)
+        ? 'bg-accent/10 justify-center rounded-xl px-4 py-2.5'
+        : 'text-dim'}">
+      {#if allMatching}
+        <span>{m.library_selected_matching({ count: total })}</span>
+        <button type="button" class="link-accent" onclick={clearSelection}>
+          {m.library_clear_selection()}
+        </button>
+      {:else if allLoaded && total > shown.length}
+        <span>{m.library_selected_loaded({ count: shown.length })}</span>
+        <button
+          type="button"
+          class="link-accent"
+          onclick={() => (allMatching = true)}>
+          {m.library_select_matching({ count: total })}
+        </button>
+      {:else}
+        <span>{m.library_select_hint()}</span>
+        {#if allLoaded}
+          <button type="button" class="link-accent" onclick={clearSelection}>
+            {m.library_clear_selection()}
+          </button>
+        {:else}
+          <button type="button" class="link-accent" onclick={selectLoaded}>
+            {m.common_select_all()}
+          </button>
+        {/if}
+        <button type="button" class="link-accent" onclick={exitSelecting}>
+          {m.common_cancel()}
+        </button>
+      {/if}
+    </div>
+  {/if}
+
+  {#if error}
+    <Banner variant="error">{error}</Banner>
+  {:else if showSkeleton}
+    {@render skeleton(10)}
+  {:else if items.length === 0 && hasQuery && !hasFilters && !loading}
+    <!-- No local match: a live catalogue preview instead of only a link out
+         to /search — `previewCount` (reported by the panel) decides whether
+         we're still waiting, have suggestions, or truly found nothing. -->
+    {#if catalogPreview}
+      {#if previewCount === 0}
+        <p class="text-dim py-10 text-center text-sm">
+          {m.library_empty_search_catalog({ noun, query: query.trim() })}
+        </p>
+      {:else if previewCount !== null}
+        <p class="text-dim mb-3 text-xs font-semibold tracking-wide uppercase">
+          {m.library_catalog_suggestions()}
+        </p>
+      {/if}
+      {@render catalogPreview(query.trim(), (n) => (previewCount = n))}
+      {#if previewCount !== null && previewCount > 0}
+        <div class="mt-4 text-center">
+          <a
+            href={`/app/search?query=${encodeURIComponent(query.trim())}&type=${domain}`}
+            class="btn btn-ghost">
+            {m.library_catalog_more()}
+            <Icon name="chevron-right" class="h-4 w-4" />
+          </a>
+        </div>
+      {/if}
+    {:else}
+      <p class="text-dim py-10 text-center text-sm">
+        {m.library_empty_search({ noun, query: query.trim() })}
+      </p>
+    {/if}
+  {:else if items.length === 0 && !loading && !awaitingCounts}
+    <div in:fade|global={{ duration: reduced ? 0 : 150 }}>
+      <EmptyState
+        art={libraryEmpty ? DOMAIN_ART[domain] : undefined}
+        title={libraryEmpty ? m.library_empty_domain({ noun }) : undefined}>
+        {#if libraryEmpty}
+          <div class="mt-4 flex flex-wrap justify-center gap-2">
+            <a href={`/app/search?type=${domain}`} class="btn btn-primary">
+              <Icon name="search" class="h-4 w-4" />
+              {domain === "MUSIC"
+                ? m.library_search_album()
+                : m.library_search_noun({ noun })}
+            </a>
+            <a href="/app/settings/import" class="btn btn-ghost">
+              {m.library_empty_import()}
+            </a>
+          </div>
+        {:else if narrowedUnpicked && !hasQuery && !hasPanelFilters}
+          <!-- Everything here is done: nothing to clear, only pills to pick. -->
+          <p>{m.library_empty_unpicked()}</p>
+        {:else}
+          <p>
+            {#if hasQuery}
+              {m.library_empty_filters_query({ noun, query: query.trim() })}
+            {:else}
+              {m.library_empty_filters({ noun })}
+            {/if}
+          </p>
+          <button class="btn btn-ghost mt-4" onclick={clearFilters}>
+            {m.common_clear_filters()}
+          </button>
+        {/if}
+      </EmptyState>
+    </div>
+  {:else if items.length > 0}
+    {#key mode}
+      <!-- Long press opens an entry's shortcuts on touch, selection mode
+           among them; the keyboard has X and the panel. -->
+      <div
+        bind:this={container}
+        in:fly={{ y: 8, duration: reduced ? 0 : 220 }}
+        use:longpress={{
+          onLongPress,
+          enabled: !!bulk,
+          pick: (target) => target.closest<HTMLElement>("[data-library-item]"),
+        }}>
+        {#if mode === "cards"}
+          <PosterGrid size={posterSize}>
+            {#each shown as entry (keyOf(entry))}
+              {@const on = selection.has(entry)}
+              <div
+                class="has-focus-visible:ring-accent has-focus-visible:ring-offset-bg relative rounded-lg transition-shadow has-focus-visible:ring-2 has-focus-visible:ring-offset-2"
+                data-library-item={keyOf(entry)}
+                animate:flip={{ duration: reduced ? 0 : 250 }}
+                in:fade|global={{ duration: reduced ? 0 : 150 }}
+                out:fade={{ duration: reduced ? 0 : 100 }}>
+                {@render card(entry, (next) => toggleFavorite(entry, next))}
+                {#if selecting}
+                  <button
+                    type="button"
+                    class="absolute inset-0 z-20 rounded-lg transition-[background-color,box-shadow] duration-150 active:bg-black/10 {on
+                      ? 'bg-accent/10 ring-accent ring-2'
+                      : ''}"
+                    aria-pressed={on}
+                    aria-label={itemView(entry).title}
+                    in:fade={{ duration: reduced ? 0 : 120 }}
+                    onclick={(e) => toggle(entry, e.shiftKey)}>
+                    <span
+                      class="absolute top-2 left-2 grid h-6 w-6 place-items-center rounded-lg border-2 transition-colors {on
+                        ? 'border-accent bg-accent text-accent-fg'
+                        : 'border-white bg-black/40'}">
+                      {#if on}
+                        <span
+                          in:scale={{
+                            duration: reduced ? 0 : 160,
+                            start: 0.4,
+                          }}>
+                          <Icon name="check" class="h-3.5 w-3.5" />
+                        </span>
+                      {/if}
+                    </span>
+                  </button>
+                {/if}
+              </div>
+            {/each}
+          </PosterGrid>
+        {:else if mode === "wall"}
+          <LibraryWall items={shown} {keyOf} {itemView} {selection} />
+        {:else}
+          <LibraryTable
+            items={shown}
+            {keyOf}
+            {itemView}
+            columns={shownColumns}
+            {sort}
+            {reversed}
+            onSort={sortBy}
+            {selection}
+            edit={inlineEdit}
+            onToggleFavorite={toggleFavorite}
+            compact={mode === "compact"} />
+        {/if}
+      </div>
+    {/key}
+    {#if browseQuery.hasNextPage}
+      <!-- Sentinel: entering the viewport triggers the next page. -->
+      <div
+        use:inView={{
+          onEnter: () => browseQuery.fetchNextPage(),
+          rootMargin: "400px",
+        }}
+        class="absolute h-10">
+      </div>
+    {/if}
+    {#if loadingMore}
+      <div class="mt-4">
+        {@render skeleton(5)}
+      </div>
+    {/if}
+  {/if}
+</div>
+
+<svelte:window onkeydown={onKeydown} />
+
+{#if bulk && selecting && selectedCount > 0}
+  <LibraryBulkBar
+    count={selectedCount}
+    {bulk}
+    busy={bulkMut.loading}
+    onUpdate={(action) => bulkMut.mutate({ ...bulkTarget(), ...action })}
+    onRemove={() => (confirmingRemove = true)}
+    onExit={exitSelecting} />
+{/if}
+
+{#if reviewing}
+  <LibraryReviewEditor
+    item={itemView(reviewing)}
+    onClose={() => (reviewing = null)} />
+{/if}
+
+{#if confirmingRemove}
+  <ConfirmationModal
+    title={selectedCount === 1
+      ? m.library_bulk_remove_title_one({ count: selectedCount })
+      : m.library_bulk_remove_title_many({ count: selectedCount })}
+    message={m.library_bulk_remove_message()}
+    confirmLabel={m.common_remove()}
+    danger
+    onConfirm={removeSelection}
+    onCancel={() => (confirmingRemove = false)} />
+{/if}
+
+{#if filtersOpen}
+  <LibraryFiltersPanel
+    onclose={() => (filtersOpen = false)}
+    {total}
+    {savedViews}
+    extraLabel={domain === "MEDIA"
+      ? m.common_type()
+      : domain === "GAMES"
+        ? m.game_platform_filter()
+        : undefined}
+    extraOptions={domain === "GAMES" ? platformOptions : TYPE_OPTIONS}
+    extra={domain === "GAMES" ? platforms : types}
+    onExtra={(values) => {
+      if (domain === "GAMES") platforms = values;
+      else types = values as MediaType[];
+    }}
+    bind:favoritesOnly
+    switches={[
+      {
+        key: "loan-lent",
+        label: m.library_loan_lent(),
+        hint: m.library_loan_lent_hint(),
+        isNew: isFeatureNew("loans"),
+        checked: loan === "LENT",
+        onChange: (next: boolean) => (loan = next ? "LENT" : null),
+      },
+      {
+        key: "loan-borrowed",
+        label: m.library_loan_borrowed(),
+        hint: m.library_loan_borrowed_hint(),
+        isNew: isFeatureNew("loans"),
+        checked: loan === "BORROWED",
+        onChange: (next: boolean) => (loan = next ? "BORROWED" : null),
+      },
+      ...(domain === "BOOKS"
+        ? [
+            {
+              key: "free-to-read",
+              label: m.library_free_to_read(),
+              hint: m.library_free_to_read_hint(),
+              isNew: isFeatureNew("free-to-read"),
+              checked: freeToRead,
+              onChange: (next: boolean) => (freeToRead = next),
+            },
+          ]
+        : []),
+    ]}
+    {sorts}
+    bind:sort
+    bind:reversed
+    display={{
+      mode,
+      onMode: setMode,
+      posterSize,
+      onPosterSize: setPosterSize,
+    }}
+    onSelect={bulk ? () => (selecting = true) : undefined}
+    columns={columnMenu}
+    onToggleColumn={toggleColumn}
+    onResetColumns={resetColumns}
+    onReset={resetFilters} />
+{/if}
+
+{#if pressed}
+  {@const entry = pressed}
+  {@const item = itemView(entry)}
+  <LibraryEntrySheet
+    {item}
+    statusOptions={bulk && !item.trackingLocked ? bulk.statusOptions : []}
+    onFavorite={(next) => toggleFavorite(entry, next)}
+    onStatus={(status) => inlineMut.mutate({ entry, action: { status } })}
+    onReview={() => (reviewing = entry)}
+    onSelect={bulk
+      ? () => {
+          selecting = true;
+          if (!selection.has(entry)) toggle(entry, false);
+        }
+      : undefined}
+    onclose={() => (pressed = null)} />
+{/if}
+
+{#snippet pageActions()}
+  <div class="flex items-center gap-3">
+    {@render headerActions?.()}
+    {#if !layout.compact}
+      {@render searchField()}
+    {/if}
+  </div>
+{/snippet}
+
+{#snippet searchField()}
+  <LibrarySearchField
+    bind:input={searchInput}
+    value={query}
+    oninput={(value) => {
+      query = value;
+      previewCount = null;
+      debouncedQueryFilter.call();
+    }} />
+{/snippet}
+
+{#snippet statusPill(option: Option)}
+  {@const on = statuses.includes(option.value)}
+  <button
+    type="button"
+    class="chip shrink-0"
+    class:chip-on={on}
+    aria-pressed={on}
+    onclick={() => toggleStatus(option.value)}>
+    {option.label}
+  </button>
+{/snippet}
+
+{#snippet tokenList()}
+  {#each tokens as token (token.key)}
+    <button
+      type="button"
+      class="bg-accent/14 text-accent hover:bg-accent/22 inline-flex h-8 shrink-0 items-center gap-0.5 rounded-full pr-1 pl-3 text-[0.8rem] font-semibold transition-colors"
+      aria-label={m.library_remove_filter({ label: token.label })}
+      in:scale={{ duration: reduced ? 0 : 160, start: 0.9 }}
+      onclick={token.remove}>
+      {token.label}
+      <span class="grid h-6 w-6 place-items-center">
+        <Icon name="x" class="h-3.5 w-3.5" />
+      </span>
+    </button>
+  {/each}
+{/snippet}
+
+{#snippet savedViews()}
+  <SavedViewBar
+    {domain}
+    {current}
+    {defaultSort}
+    heading={m.saved_views_label()}
+    bind:activeId={activeViewId}
+    onApply={applyFilters} />
+{/snippet}
+
+{#snippet skeleton(count: number)}
+  {#if mode === "cards"}
+    <PosterGridSkeleton {count} size={posterSize} />
+  {:else}
+    <div role="status" aria-busy="true">
+      <span class="sr-only">{m.common_loading()}</span>
+      {#if mode === "wall"}
+        <div
+          aria-hidden="true"
+          class="grid grid-cols-4 gap-1.5 sm:grid-cols-6 sm:gap-2 lg:grid-cols-8">
+          {#each { length: count * 2 } as _, i (i)}
+            <div class="skeleton aspect-2/3 rounded-lg"></div>
+          {/each}
+        </div>
+      {:else}
+        <div
+          aria-hidden="true"
+          class="border-border divide-border divide-y overflow-hidden rounded-xl border">
+          {#each { length: count } as _, i (i)}
+            <div class="flex items-center gap-3 px-3 py-2.5">
+              {#if mode === "table"}
+                <div class="skeleton h-12 w-8 rounded"></div>
+              {/if}
+              <div class="flex flex-1 flex-col gap-2">
+                <div class="skeleton h-3.5 w-2/5 rounded"></div>
+                <div class="skeleton h-3 w-1/4 rounded"></div>
+              </div>
+            </div>
+          {/each}
+        </div>
+      {/if}
+    </div>
+  {/if}
+{/snippet}

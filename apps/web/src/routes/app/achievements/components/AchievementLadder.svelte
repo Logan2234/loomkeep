@@ -5,9 +5,9 @@
   } from "#lib/api/gamification.js";
   import { keys } from "#lib/api/keys.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
-  import Icon from "#lib/components/Icon.svelte";
-  import Tooltip from "#lib/components/Tooltip.svelte";
-  import { formatNumber } from "#lib/format.js";
+  import Icon from "#lib/ui/Icon.svelte";
+  import Tooltip from "#lib/ui/Tooltip.svelte";
+  import { formatNumber } from "#lib/ui/format.js";
   import { m } from "#lib/paraglide/messages.js";
   import {
     MAX_EQUIPPED_BADGES,

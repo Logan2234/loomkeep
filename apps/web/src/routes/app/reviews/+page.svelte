@@ -1,5 +1,5 @@
 <script lang="ts">
-  import Poster from "#lib/components/Poster.svelte";
+  import Poster from "#lib/work/Poster.svelte";
   import { REVIEW_TARGET_LABEL } from "#lib/constants/review-targets.js";
 
   import { DOMAINS } from "#lib/constants/domains.js";
@@ -14,29 +14,29 @@
   import { keys } from "#lib/api/keys.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
-  import { auth } from "#lib/auth.svelte.js";
-  import DomainOffMark from "#lib/components/DomainOffMark.svelte";
-  import EmptyState from "#lib/components/EmptyState.svelte";
-  import Icon from "#lib/components/Icon.svelte";
-  import PageHeader from "#lib/components/PageHeader.svelte";
-  import ReviewFormModal from "#lib/components/ReviewFormModal.svelte";
-  import SegmentedControl from "#lib/components/SegmentedControl.svelte";
-  import Tabs from "#lib/components/Tabs.svelte";
-  import { appConfig } from "#lib/config.svelte.js";
+  import { auth } from "#lib/auth/auth.svelte.js";
+  import DomainOffMark from "#lib/work/DomainOffMark.svelte";
+  import EmptyState from "#lib/ui/EmptyState.svelte";
+  import Icon from "#lib/ui/Icon.svelte";
+  import PageHeader from "#lib/ui/PageHeader.svelte";
+  import ReviewFormModal from "#lib/reviews/ReviewFormModal.svelte";
+  import SegmentedControl from "#lib/ui/SegmentedControl.svelte";
+  import Tabs from "#lib/ui/Tabs.svelte";
+  import { appConfig } from "#lib/shell/config.svelte.js";
   import {
     isDomainEnabled,
     orderedDomains,
     targetDomain,
-  } from "#lib/domain-availability.js";
+  } from "#lib/work/domain-availability.js";
   import {
     DATE_MEDIUM_OPTIONS,
     formatDate,
     formatNumber,
     formatRating,
-  } from "#lib/format.js";
-  import { prefersReducedMotion } from "#lib/motion.js";
+  } from "#lib/ui/format.js";
+  import { prefersReducedMotion } from "#lib/ui/motion.js";
   import { m } from "#lib/paraglide/messages.js";
-  import { seasonEpisodeLabel } from "#lib/review-target-label.js";
+  import { seasonEpisodeLabel } from "#lib/reviews/review-target-label.js";
   import {
     type ReviewTargetType,
     type ReviewVisibility,

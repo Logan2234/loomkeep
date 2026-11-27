@@ -1,5 +1,5 @@
 <script lang="ts">
-  import Banner from "#lib/components/Banner.svelte";
+  import Banner from "#lib/ui/Banner.svelte";
   import { m } from "#lib/paraglide/messages.js";
 
   let {

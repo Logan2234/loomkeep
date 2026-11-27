@@ -1,8 +1,8 @@
-import { auth } from "#lib/auth.svelte.js";
-import { formatDate, formatRegion } from "#lib/format.js";
+import { auth } from "#lib/auth/auth.svelte.js";
 import { m } from "#lib/paraglide/messages.js";
 import { apiUrl, server } from "#lib/test/msw.js";
 import { renderWithQuery } from "#lib/test/render.js";
+import { formatDate, formatRegion } from "#lib/ui/format.js";
 import type { PremiereDto, UserDto } from "@loomkeep/shared/contracts";
 import { screen, waitFor } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";

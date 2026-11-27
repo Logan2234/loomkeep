@@ -6,9 +6,9 @@
   import { keys } from "#lib/api/keys.js";
   import { getMfaStatus } from "#lib/api/mfa.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
-  import { auth } from "#lib/auth.svelte.js";
-  import Icon from "#lib/components/Icon.svelte";
-  import { appConfig } from "#lib/config.svelte.js";
+  import { auth } from "#lib/auth/auth.svelte.js";
+  import Icon from "#lib/ui/Icon.svelte";
+  import { appConfig } from "#lib/shell/config.svelte.js";
   import { m } from "#lib/paraglide/messages.js";
   import AdminPageShell from "./AdminPageShell.svelte";
 

@@ -1,4 +1,4 @@
-import { formatNumber } from "#lib/format.js";
+import { formatNumber } from "#lib/ui/format.js";
 
 const n = (value: number) => formatNumber(value);
 

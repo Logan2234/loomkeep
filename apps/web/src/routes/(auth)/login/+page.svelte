@@ -10,20 +10,20 @@
     verifyWebauthnMfaLogin,
   } from "#lib/api/client.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
-  import FieldError from "#lib/components/FieldError.svelte";
-  import Banner from "#lib/components/Banner.svelte";
-  import Icon from "#lib/components/Icon.svelte";
-  import OtpInput from "#lib/components/OtpInput.svelte";
-  import PasswordInput from "#lib/components/PasswordInput.svelte";
-  import { appConfig } from "#lib/config.svelte.js";
-  import { Cooldown } from "#lib/cooldown.svelte.js";
-  import { formatDateTime } from "#lib/format.js";
+  import FieldError from "#lib/ui/FieldError.svelte";
+  import Banner from "#lib/ui/Banner.svelte";
+  import Icon from "#lib/ui/Icon.svelte";
+  import OtpInput from "#lib/auth/OtpInput.svelte";
+  import PasswordInput from "#lib/auth/PasswordInput.svelte";
+  import { appConfig } from "#lib/shell/config.svelte.js";
+  import { Cooldown } from "#lib/ui/cooldown.svelte.js";
+  import { formatDateTime } from "#lib/ui/format.js";
   import {
     isInstancePickerAvailable,
     openInstancePicker,
   } from "#lib/native/instance.js";
-  import { prefersReducedMotion } from "#lib/motion.js";
-  import { formatRecoveryCode } from "#lib/one-time-code.js";
+  import { prefersReducedMotion } from "#lib/ui/motion.js";
+  import { formatRecoveryCode } from "#lib/auth/one-time-code.js";
   import { m } from "#lib/paraglide/messages.js";
   import { type MfaMethod, OTP_CODE_LENGTH } from "@loomkeep/shared/contracts";
   import { ErrorCode } from "@loomkeep/shared/catalog";

@@ -11,20 +11,20 @@
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
   import AdminQueryError from "../AdminQueryError.svelte";
-  import Banner from "#lib/components/Banner.svelte";
-  import ConfirmationModal from "#lib/components/ConfirmationModal.svelte";
-  import Icon from "#lib/components/Icon.svelte";
-  import Modal from "#lib/components/Modal.svelte";
-  import PageHeader from "#lib/components/PageHeader.svelte";
-  import { downloadBlob } from "#lib/download.js";
+  import Banner from "#lib/ui/Banner.svelte";
+  import ConfirmationModal from "#lib/ui/ConfirmationModal.svelte";
+  import Icon from "#lib/ui/Icon.svelte";
+  import Modal from "#lib/ui/Modal.svelte";
+  import PageHeader from "#lib/ui/PageHeader.svelte";
+  import { downloadBlob } from "#lib/ui/download.js";
   import {
     DATETIME_NUMERIC_OPTIONS,
     formatBytes,
     formatDateTime,
-  } from "#lib/format.js";
+  } from "#lib/ui/format.js";
   import { m } from "#lib/paraglide/messages.js";
-  import { prefersReducedMotion } from "#lib/motion.js";
-  import { toast } from "#lib/toast.svelte.js";
+  import { prefersReducedMotion } from "#lib/ui/motion.js";
+  import { toast } from "#lib/ui/toast.svelte.js";
   import type {
     AdminBackupFileDto,
     AdminOrphanBackupFileDto,

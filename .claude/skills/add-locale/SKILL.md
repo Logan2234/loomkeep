@@ -101,9 +101,9 @@ Skipping this step is valid: a shipped locale without API copy receives English.
 ## 6. Verify and hand over
 
 - Run `pnpm --filter @loomkeep/web generate:paraglide`, then the catalog and locale
-  tests: `pnpm --filter @loomkeep/web exec vitest run src/catalogs.spec.ts src/lib/locales.spec.ts`
+  tests: `pnpm --filter @loomkeep/web exec vitest run src/catalogs.spec.ts src/lib/shell/locales.spec.ts`
   and, if step 4 was done, the API `src/common src/mail src/notifications src/ee` tests.
-- Update `src/lib/locales.spec.ts` (the options list) and
+- Update `src/lib/shell/locales.spec.ts` (the options list) and
   `packages/shared/src/catalog/locale.spec.ts` / `copy-locale.util.spec.ts` for the new code.
 - A running dev server keeps a stale pre-bundle of `@loomkeep/shared`: after
   `build:package`, restart `pnpm dev` (delete `apps/web/node_modules/.vite` if the

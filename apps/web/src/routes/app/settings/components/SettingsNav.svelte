@@ -10,9 +10,9 @@
   // global sidebar's, so the two rails behave alike when they sit together.
   import { page } from "$app/state";
 
-  import NewBadge from "#lib/components/NewBadge.svelte";
-  import { isFeatureNew } from "#lib/feature-badges.js";
-  import { prefersReducedMotion } from "#lib/motion.js";
+  import NewBadge from "#lib/premium/NewBadge.svelte";
+  import { isFeatureNew } from "#lib/shell/feature-badges.js";
+  import { prefersReducedMotion } from "#lib/ui/motion.js";
   import { m } from "#lib/paraglide/messages.js";
   import { tick } from "svelte";
   import { settingsShortcutLabel } from "../keyboard-navigation";

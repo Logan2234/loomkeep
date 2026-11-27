@@ -16,7 +16,7 @@ describe("translated constants", () => {
         await import("./ownership-sources");
       const { REPORT_CATEGORY_LABELS, defaultModerationBasis } =
         await import("./report-labels");
-      const { NAV_STYLE_META } = await import("../nav-style.svelte");
+      const { NAV_STYLE_META } = await import("../shell/nav-style.svelte");
 
       expect(
         ADMIN_NAV.find((item) => item.href === "/app/admin/users")?.label,

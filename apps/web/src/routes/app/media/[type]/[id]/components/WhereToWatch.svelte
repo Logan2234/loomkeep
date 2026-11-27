@@ -1,9 +1,9 @@
 <script lang="ts">
-  import { auth } from "#lib/auth.svelte.js";
-  import Icon from "#lib/components/Icon.svelte";
-  import Modal from "#lib/components/Modal.svelte";
+  import { auth } from "#lib/auth/auth.svelte.js";
+  import Icon from "#lib/ui/Icon.svelte";
+  import Modal from "#lib/ui/Modal.svelte";
   import { m } from "#lib/paraglide/messages.js";
-  import { createWatchProviderToggle } from "#lib/watch-provider-toggle.svelte.js";
+  import { createWatchProviderToggle } from "#lib/media/watch-provider-toggle.svelte.js";
   import type {
     WatchProviderDto,
     WatchProvidersDto,

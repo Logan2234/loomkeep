@@ -1,5 +1,5 @@
 <script lang="ts">
-  import Icon from "#lib/components/Icon.svelte";
+  import Icon from "#lib/ui/Icon.svelte";
   import { m } from "#lib/paraglide/messages.js";
   import { settingsSearch } from "../search-state.svelte";
 

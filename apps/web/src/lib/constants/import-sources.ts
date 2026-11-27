@@ -1,7 +1,7 @@
 import { DOCS_URL } from "#lib/constants/external-links.js";
 import { m } from "#lib/paraglide/messages.js";
-import type { ProviderBrandKey } from "#lib/provider-brands.js";
 import type { ImportSourceDescriptor } from "#lib/types/import-descriptor.js";
+import type { ProviderBrandKey } from "#lib/work/provider-brands.js";
 import {
   IMPORT_SOURCE_NAMES,
   type ImportSource,

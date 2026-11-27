@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { labeledOptions } from "#lib/options.js";
+  import { labeledOptions } from "#lib/ui/options.js";
 
   import { type SelectOption } from "#lib/types/select-option.js";
 
@@ -15,14 +15,14 @@
   import type {
     LibraryLoadParams,
     PileLoadParams,
-  } from "#lib/components/LibraryBrowser.svelte";
-  import LibraryBrowser from "#lib/components/LibraryBrowser.svelte";
-  import PosterCard from "#lib/components/PosterCard.svelte";
-  import ReadingGoalChip from "#lib/components/ReadingGoalChip.svelte";
+  } from "#lib/library/LibraryBrowser.svelte";
+  import LibraryBrowser from "#lib/library/LibraryBrowser.svelte";
+  import PosterCard from "#lib/work/PosterCard.svelte";
+  import ReadingGoalChip from "#lib/books/ReadingGoalChip.svelte";
   import SagasModeSwitch, {
     sagasMode,
-  } from "#lib/components/saga/SagasModeSwitch.svelte";
-  import BookSearchPanel from "#lib/components/search/BookSearchPanel.svelte";
+  } from "#lib/sagas/SagasModeSwitch.svelte";
+  import BookSearchPanel from "#lib/search/BookSearchPanel.svelte";
   import BookSagasView from "./components/BookSagasView.svelte";
   import {
     BOOK_OWNERSHIP_SOURCES,
@@ -38,14 +38,14 @@
     DATE_MEDIUM_OPTIONS,
     formatDate,
     formatRating,
-  } from "#lib/format.js";
+  } from "#lib/ui/format.js";
   import {
     ownershipText,
     type LibraryBulkActions,
     type LibraryColumn,
     type LibraryItemView,
     COMMON_LIBRARY_SORTS,
-  } from "#lib/library-view.js";
+  } from "#lib/library/library-view.js";
   import { m } from "#lib/paraglide/messages.js";
   import { Domain } from "@loomkeep/shared/enums";
   import {

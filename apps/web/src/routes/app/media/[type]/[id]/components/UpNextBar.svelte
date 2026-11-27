@@ -1,6 +1,6 @@
 <script lang="ts">
-  import Icon from "#lib/components/Icon.svelte";
-  import { prefersReducedMotion } from "#lib/motion.js";
+  import Icon from "#lib/ui/Icon.svelte";
+  import { prefersReducedMotion } from "#lib/ui/motion.js";
   import { m } from "#lib/paraglide/messages.js";
   import type { MediaDetailEpisodeDto } from "@loomkeep/shared/contracts";
   import { fly } from "svelte/transition";

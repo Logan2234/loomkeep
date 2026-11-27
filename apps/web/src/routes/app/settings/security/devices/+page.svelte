@@ -8,15 +8,15 @@
   import { keys } from "#lib/api/keys.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
-  import CardRowSkeleton from "#lib/components/CardRowSkeleton.svelte";
-  import EmptyState from "#lib/components/EmptyState.svelte";
-  import Icon from "#lib/components/Icon.svelte";
-  import Modal from "#lib/components/Modal.svelte";
-  import RelativeTime from "#lib/components/RelativeTime.svelte";
+  import CardRowSkeleton from "#lib/ui/CardRowSkeleton.svelte";
+  import EmptyState from "#lib/ui/EmptyState.svelte";
+  import Icon from "#lib/ui/Icon.svelte";
+  import Modal from "#lib/ui/Modal.svelte";
+  import RelativeTime from "#lib/ui/RelativeTime.svelte";
   import { m } from "#lib/paraglide/messages.js";
   import { type SessionDto } from "@loomkeep/shared/contracts";
   import { deviceLabel } from "@loomkeep/shared/rules";
-  import { flashAnchor } from "#lib/flash-anchor.js";
+  import { flashAnchor } from "#lib/shell/flash-anchor.js";
   import SettingsSection from "../../components/SettingsSection.svelte";
 
   const sessionsQuery = createApiQuery(() => ({

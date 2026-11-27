@@ -1,7 +1,7 @@
 import { keys } from "#lib/api/keys.js";
 import { createApiQuery } from "#lib/api/query.svelte.js";
 import { searchWorks } from "#lib/api/search.js";
-import { debounce, SEARCH_DEBOUNCE_MS } from "#lib/debounce.js";
+import { debounce, SEARCH_DEBOUNCE_MS } from "#lib/ui/debounce.js";
 
 const MIN_LENGTH = 2;
 

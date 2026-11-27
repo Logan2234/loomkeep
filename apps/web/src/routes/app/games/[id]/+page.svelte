@@ -1,12 +1,12 @@
 <script lang="ts">
-  import ClampedText from "#lib/components/ClampedText.svelte";
-  import { layout } from "#lib/layout.svelte.js";
-  import StatusCorrectionModal from "#lib/components/StatusCorrectionModal.svelte";
-  import { buildGallery, galleryIndex } from "#lib/gallery.js";
+  import ClampedText from "#lib/ui/ClampedText.svelte";
+  import { layout } from "#lib/shell/layout.svelte.js";
+  import StatusCorrectionModal from "#lib/library/StatusCorrectionModal.svelte";
+  import { buildGallery, galleryIndex } from "#lib/ui/gallery.js";
 
-  import ExternalRatingChips from "#lib/components/ExternalRatingChips.svelte";
-  import DetailsCard from "#lib/components/DetailsCard.svelte";
-  import WorkSocialSection from "#lib/components/WorkSocialSection.svelte";
+  import ExternalRatingChips from "#lib/work/ExternalRatingChips.svelte";
+  import DetailsCard from "#lib/work/DetailsCard.svelte";
+  import WorkSocialSection from "#lib/social/WorkSocialSection.svelte";
   import { page } from "$app/state";
   import {
     ApiError,
@@ -20,32 +20,32 @@
   import { keys } from "#lib/api/keys.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
-  import { goBack } from "#lib/back-nav.svelte.js";
-  import { toCarouselItems } from "#lib/carousel.js";
-  import Banner from "#lib/components/Banner.svelte";
-  import WorkFriendsStrip from "#lib/components/WorkFriendsStrip.svelte";
-  import { appConfig } from "#lib/config.svelte.js";
-  import ConfirmationModal from "#lib/components/ConfirmationModal.svelte";
-  import DetailHeroSkeleton from "#lib/components/DetailHeroSkeleton.svelte";
-  import GameLanguagePill from "#lib/components/GameLanguagePill.svelte";
-  import GameSessionDock from "#lib/components/GameSessionDock.svelte";
-  import Icon from "#lib/components/Icon.svelte";
-  import Lightbox from "#lib/components/Lightbox.svelte";
+  import { goBack } from "#lib/shell/back-nav.svelte.js";
+  import { toCarouselItems } from "#lib/ui/carousel.js";
+  import Banner from "#lib/ui/Banner.svelte";
+  import WorkFriendsStrip from "#lib/social/WorkFriendsStrip.svelte";
+  import { appConfig } from "#lib/shell/config.svelte.js";
+  import ConfirmationModal from "#lib/ui/ConfirmationModal.svelte";
+  import DetailHeroSkeleton from "#lib/ui/DetailHeroSkeleton.svelte";
+  import GameLanguagePill from "#lib/games/GameLanguagePill.svelte";
+  import GameSessionDock from "#lib/games/GameSessionDock.svelte";
+  import Icon from "#lib/ui/Icon.svelte";
+  import Lightbox from "#lib/ui/Lightbox.svelte";
 
-  import MyRatingBadge from "#lib/components/MyRatingBadge.svelte";
-  import NoteField from "#lib/components/NoteField.svelte";
-  import OwnershipField from "#lib/components/OwnershipField.svelte";
-  import CommentsPanel from "#lib/components/CommentsPanel.svelte";
-  import WorkActionBar from "#lib/components/work/WorkActionBar.svelte";
-  import WorkHero from "#lib/components/work/WorkHero.svelte";
-  import WorkTrackingFold from "#lib/components/work/WorkTrackingFold.svelte";
-  import ProviderMark from "#lib/components/ProviderMark.svelte";
-  import RelatedCarousel from "#lib/components/RelatedCarousel.svelte";
+  import MyRatingBadge from "#lib/reviews/MyRatingBadge.svelte";
+  import NoteField from "#lib/library/NoteField.svelte";
+  import OwnershipField from "#lib/library/OwnershipField.svelte";
+  import CommentsPanel from "#lib/comments/CommentsPanel.svelte";
+  import WorkActionBar from "#lib/work/WorkActionBar.svelte";
+  import WorkHero from "#lib/work/WorkHero.svelte";
+  import WorkTrackingFold from "#lib/work/WorkTrackingFold.svelte";
+  import ProviderMark from "#lib/work/ProviderMark.svelte";
+  import RelatedCarousel from "#lib/work/RelatedCarousel.svelte";
 
-  import ServiceLinks from "#lib/components/ServiceLinks.svelte";
-  import ShareWorkModal from "#lib/components/ShareWorkModal.svelte";
+  import ServiceLinks from "#lib/work/ServiceLinks.svelte";
+  import ShareWorkModal from "#lib/work/ShareWorkModal.svelte";
   import { gameWork } from "#lib/chat/work-search.js";
-  import TrackingStatusBadge from "#lib/components/TrackingStatusBadge.svelte";
+  import TrackingStatusBadge from "#lib/library/TrackingStatusBadge.svelte";
 
   import { IGDB_API } from "#lib/constants/external-links.js";
   import {
@@ -58,20 +58,20 @@
     GAME_STATUS_META as STATUS_META,
     GAME_STATUS_ORDER as STATUS_ORDER,
   } from "#lib/constants/status-labels.js";
-  import NewBadge from "#lib/components/NewBadge.svelte";
-  import { createEntryTrackingMutations } from "#lib/entry-tracking-mutations.svelte.js";
-  import { isFeatureNew } from "#lib/feature-badges.js";
-  import { joinMeta } from "#lib/format.js";
-  import { gameReleaseLabel } from "#lib/game-release.js";
-  import { releaseDigestOff } from "#lib/release-alerts.js";
-  import Tooltip from "#lib/components/Tooltip.svelte";
-  import { prefersReducedMotion } from "#lib/motion.js";
+  import NewBadge from "#lib/premium/NewBadge.svelte";
+  import { createEntryTrackingMutations } from "#lib/library/entry-tracking-mutations.svelte.js";
+  import { isFeatureNew } from "#lib/shell/feature-badges.js";
+  import { joinMeta } from "#lib/ui/format.js";
+  import { gameReleaseLabel } from "#lib/games/game-release.js";
+  import { releaseDigestOff } from "#lib/work/release-alerts.js";
+  import Tooltip from "#lib/ui/Tooltip.svelte";
+  import { prefersReducedMotion } from "#lib/ui/motion.js";
   import { m } from "#lib/paraglide/messages.js";
   import {
     GAME_DIRECT_STATUS_TARGETS,
     statusCorrectionLabel,
     cycleAwareStatusCorrections,
-  } from "#lib/status-corrections.js";
+  } from "#lib/library/status-corrections.js";
   import { type GameEntryDto } from "@loomkeep/shared/contracts";
   import { isVagueGameRelease } from "@loomkeep/shared/rules";
   import { slide } from "svelte/transition";

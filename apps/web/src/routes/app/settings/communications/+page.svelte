@@ -3,19 +3,19 @@
   import { keys } from "#lib/api/keys.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
-  import { auth } from "#lib/auth.svelte.js";
-  import Combobox from "#lib/components/Combobox.svelte";
-  import Icon from "#lib/components/Icon.svelte";
-  import SegmentedControl from "#lib/components/SegmentedControl.svelte";
-  import Switch from "#lib/components/Switch.svelte";
-  import { appConfig } from "#lib/config.svelte.js";
+  import { auth } from "#lib/auth/auth.svelte.js";
+  import Combobox from "#lib/ui/Combobox.svelte";
+  import Icon from "#lib/ui/Icon.svelte";
+  import SegmentedControl from "#lib/ui/SegmentedControl.svelte";
+  import Switch from "#lib/ui/Switch.svelte";
+  import { appConfig } from "#lib/shell/config.svelte.js";
   import { m } from "#lib/paraglide/messages.js";
   import {
     disablePush,
     enablePush,
     isPushEnabledHere,
     isPushSupported,
-  } from "#lib/push.js";
+  } from "#lib/notifications/push.js";
   import { DigestCadence } from "@loomkeep/shared/enums";
   import {
     COMMENT_REACTION_NOTIFY_THRESHOLD,

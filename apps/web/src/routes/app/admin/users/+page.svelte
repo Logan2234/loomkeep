@@ -1,5 +1,5 @@
 <script lang="ts">
-  import LoadMoreButton from "#lib/components/LoadMoreButton.svelte";
+  import LoadMoreButton from "#lib/ui/LoadMoreButton.svelte";
 
   import { type SelectOption } from "#lib/types/select-option.js";
 
@@ -7,29 +7,29 @@
   import AdminQueryError from "../AdminQueryError.svelte";
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
-  import { adminFilterHref, enumParam } from "#lib/url-params.js";
+  import { adminFilterHref, enumParam } from "#lib/shell/url-params.js";
   import {
     ADMIN_USER_ADVANCED_KEYS,
     localDayBoundary,
     type AdminUserAdvancedFilters,
     type AdminUserAdvancedKey,
-  } from "#lib/admin-user-filters.js";
+  } from "#lib/admin/admin-user-filters.js";
   import { getAdminUsers } from "#lib/api/client.js";
   import { createApiInfiniteQuery } from "#lib/api/infinite-query.svelte.js";
   import { keys } from "#lib/api/keys.js";
-  import Avatar from "#lib/components/Avatar.svelte";
-  import Combobox from "#lib/components/Combobox.svelte";
-  import Icon from "#lib/components/Icon.svelte";
-  import NewBadge from "#lib/components/NewBadge.svelte";
-  import PageHeader from "#lib/components/PageHeader.svelte";
-  import TabPanels from "#lib/components/TabPanels.svelte";
-  import Tabs from "#lib/components/Tabs.svelte";
+  import Avatar from "#lib/ui/Avatar.svelte";
+  import Combobox from "#lib/ui/Combobox.svelte";
+  import Icon from "#lib/ui/Icon.svelte";
+  import NewBadge from "#lib/premium/NewBadge.svelte";
+  import PageHeader from "#lib/ui/PageHeader.svelte";
+  import TabPanels from "#lib/ui/TabPanels.svelte";
+  import Tabs from "#lib/ui/Tabs.svelte";
   import { DOMAINS } from "#lib/constants/domains.js";
-  import { debounce, SEARCH_DEBOUNCE_MS } from "#lib/debounce.js";
-  import { formatDate, formatNumber, formatRelative } from "#lib/format.js";
-  import { appConfig } from "#lib/config.svelte.js";
-  import { isFeatureNew } from "#lib/feature-badges.js";
-  import { prefersReducedMotion } from "#lib/motion.js";
+  import { debounce, SEARCH_DEBOUNCE_MS } from "#lib/ui/debounce.js";
+  import { formatDate, formatNumber, formatRelative } from "#lib/ui/format.js";
+  import { appConfig } from "#lib/shell/config.svelte.js";
+  import { isFeatureNew } from "#lib/shell/feature-badges.js";
+  import { prefersReducedMotion } from "#lib/ui/motion.js";
   import { m } from "#lib/paraglide/messages.js";
   import { Domain } from "@loomkeep/shared/enums";
   import {

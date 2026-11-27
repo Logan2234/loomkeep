@@ -205,7 +205,12 @@ wording change or a rename.
   (`lists/lists.module.ts`, a second module in it names itself:
   `lists/list-works.module.ts`), and a function turning a row into a DTO
   lives in `<subject>.mapper.ts` (`games/game-item.mapper.ts`).
-- Reuse `apps/web/src/lib/components/` before writing a new component.
+- `apps/web/src/lib/` is sorted by domain, like the API's modules
+  (`books/`, `lists/`, `reviews/`…: components, stores and helpers
+  together), plus `ui/` for generic components and helpers, `shell/` for the
+  app's frame (navigation, boot, config) and the technical layers (`api/`,
+  `native/`, `actions/`…). A new file goes in its domain's folder, never flat
+  in `lib/`; reuse `ui/` before writing a new component.
 - Check the mobile viewport on every `apps/web` UI change, and ship its
   transitions (`apps/web/DESIGN.md` › Motion; visual identity "Séance" in
   the same file).
@@ -220,4 +225,4 @@ wording change or a rename.
   drawn with `MailLayout`, an entry in `mail-gallery.ts` (Admin's preview),
   and a `send…()` on `MailService`, which keeps only transport and sending.
 - A shipped user-facing feature gets a `"Nouveau"` badge entry in
-  `apps/web/src/lib/feature-badges.ts` at its point of discovery.
+  `apps/web/src/lib/shell/feature-badges.ts` at its point of discovery.

@@ -1,0 +1,30 @@
+<script lang="ts">
+  import Icon from "#lib/ui/Icon.svelte";
+  import Tooltip from "#lib/ui/Tooltip.svelte";
+  import { DOMAINS } from "#lib/constants/domains.js";
+  import { domainOffReason } from "#lib/work/domain-availability.js";
+  import { m } from "#lib/paraglide/messages.js";
+  import type { Domain } from "@loomkeep/shared/enums";
+
+  // The warning shown in place of a link to a work whose domain the viewer
+  // can't open (see `isDomainEnabled`): chat cards, lists, reviews.
+  let { domain, class: className = "" }: { domain: Domain; class?: string } =
+    $props();
+
+  // A domain the instance doesn't offer isn't the viewer's to turn back on:
+  // don't send them to Settings.
+  const label = $derived(
+    domainOffReason(domain) === "instance"
+      ? m.common_work_domain_not_offered({ domain: DOMAINS[domain].label })
+      : m.common_work_domain_off({ domain: DOMAINS[domain].label }),
+  );
+</script>
+
+<Tooltip text={label} class={className}>
+  <span
+    class="text-warning grid h-7 w-7 place-items-center"
+    role="img"
+    aria-label={label}>
+    <Icon name="warning" class="h-4 w-4" />
+  </span>
+</Tooltip>

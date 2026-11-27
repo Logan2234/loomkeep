@@ -13,7 +13,7 @@
  * bottom, shows several at once, and carries system messages. This is a
  * different object with different rules.
  */
-import { prefersReducedMotion } from "#lib/motion.js";
+import { prefersReducedMotion } from "#lib/ui/motion.js";
 
 /** One achievement unlock the API hasn't been told we displayed yet. */
 interface AchievementUnlock {

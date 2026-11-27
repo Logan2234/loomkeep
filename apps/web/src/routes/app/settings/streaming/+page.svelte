@@ -7,19 +7,19 @@
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
   import { flipChildren } from "#lib/actions/flip-children.js";
-  import { auth } from "#lib/auth.svelte.js";
-  import Combobox from "#lib/components/Combobox.svelte";
-  import Icon from "#lib/components/Icon.svelte";
-  import { formatRegion, compareText } from "#lib/format.js";
-  import { prefersReducedMotion } from "#lib/motion.js";
+  import { auth } from "#lib/auth/auth.svelte.js";
+  import Combobox from "#lib/ui/Combobox.svelte";
+  import Icon from "#lib/ui/Icon.svelte";
+  import { formatRegion, compareText } from "#lib/ui/format.js";
+  import { prefersReducedMotion } from "#lib/ui/motion.js";
   import { m } from "#lib/paraglide/messages.js";
-  import { createListenServiceToggle } from "#lib/listen-service-toggle.svelte.js";
-  import { createWatchProviderToggle } from "#lib/watch-provider-toggle.svelte.js";
-  import NewBadge from "#lib/components/NewBadge.svelte";
-  import { isFeatureNew } from "#lib/feature-badges.js";
-  import ServiceMark from "#lib/components/ServiceMark.svelte";
-  import { SERVICE_BRANDS } from "#lib/service-brands.js";
-  import { isDomainEnabled } from "#lib/domain-availability.js";
+  import { createListenServiceToggle } from "#lib/music/listen-service-toggle.svelte.js";
+  import { createWatchProviderToggle } from "#lib/media/watch-provider-toggle.svelte.js";
+  import NewBadge from "#lib/premium/NewBadge.svelte";
+  import { isFeatureNew } from "#lib/shell/feature-badges.js";
+  import ServiceMark from "#lib/work/ServiceMark.svelte";
+  import { SERVICE_BRANDS } from "#lib/work/service-brands.js";
+  import { isDomainEnabled } from "#lib/work/domain-availability.js";
   import { Domain } from "@loomkeep/shared/enums";
   import {
     LISTEN_SERVICES,
@@ -28,7 +28,7 @@
   import { flip } from "svelte/animate";
   import { backOut } from "svelte/easing";
   import { scale, slide } from "svelte/transition";
-  import { flashAnchor } from "#lib/flash-anchor.js";
+  import { flashAnchor } from "#lib/shell/flash-anchor.js";
 
   const reduced = prefersReducedMotion();
 

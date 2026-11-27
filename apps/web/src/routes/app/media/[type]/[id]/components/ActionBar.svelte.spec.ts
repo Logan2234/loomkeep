@@ -1,4 +1,4 @@
-import { auth } from "#lib/auth.svelte.js";
+import { auth } from "#lib/auth/auth.svelte.js";
 import { m } from "#lib/paraglide/messages.js";
 import type { LibraryEntryDto, UserDto } from "@loomkeep/shared/contracts";
 import { render, screen } from "@testing-library/svelte";

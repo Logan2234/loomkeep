@@ -1,7 +1,7 @@
 import { ErrorCode } from "@loomkeep/shared/catalog";
 import type { UserDto } from "@loomkeep/shared/contracts";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { auth } from "../auth.svelte";
+import { auth } from "../auth/auth.svelte";
 import { request, tryRefresh } from "./core";
 
 const json = (status: number, body: unknown) =>

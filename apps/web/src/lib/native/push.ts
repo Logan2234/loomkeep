@@ -1,11 +1,11 @@
 import { subscribeNativePush, unsubscribeNativePush } from "#lib/api/client.js";
 import { STORAGE_KEYS } from "#lib/constants/storage-keys.js";
+import { m } from "#lib/paraglide/messages.js";
 import {
   readStorage,
   removeStorage,
   writeStorage,
-} from "#lib/local-storage.js";
-import { m } from "#lib/paraglide/messages.js";
+} from "#lib/ui/local-storage.js";
 import { goto } from "$app/navigation";
 import { Capacitor } from "@capacitor/core";
 import {

@@ -1,4 +1,4 @@
-import { THEME_COLOR, theme } from "#lib/theme.svelte.js";
+import { THEME_COLOR, theme } from "#lib/ui/theme.svelte.js";
 import { Capacitor, registerPlugin } from "@capacitor/core";
 
 /** apps/mobile's own plugin (ShellThemePlugin.java). */

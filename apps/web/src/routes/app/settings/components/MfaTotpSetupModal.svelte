@@ -1,7 +1,7 @@
 <script lang="ts">
-  import Modal from "#lib/components/Modal.svelte";
+  import Modal from "#lib/ui/Modal.svelte";
   import { m } from "#lib/paraglide/messages.js";
-  import { normalizeCodeInput } from "#lib/one-time-code.js";
+  import { normalizeCodeInput } from "#lib/auth/one-time-code.js";
   import { OTP_CODE_LENGTH } from "@loomkeep/shared/contracts";
   let {
     step = $bindable<"scan" | "confirm">("scan"),

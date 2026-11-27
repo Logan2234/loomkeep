@@ -1,0 +1,93 @@
+<script lang="ts">
+  import * as env from "$app/env/public";
+  import { appConfig } from "#lib/shell/config.svelte.js";
+  import { m } from "#lib/paraglide/messages.js";
+  import { GITHUB_REPO_URL } from "../constants/external-links";
+  import BetaBadge from "../premium/BetaBadge.svelte";
+
+  // Alignment lives in the default rather than in the base classes: Tailwind
+  // resolves conflicting utilities by stylesheet order, not by the order they
+  // appear in the attribute, so `items-center` in the base would always beat
+  // an `items-start` passed in here.
+  let {
+    class: cls = "items-center px-4 text-center",
+    version = true,
+  }: {
+    class?: string;
+    /** The app version and repository link under the legal ones. */
+    version?: boolean;
+  } = $props();
+</script>
+
+<footer class="border-border text-dim flex flex-col gap-4 py-5 text-xs {cls}">
+  <nav aria-label={m.common_legal_information()} class="flex flex-wrap gap-y-1">
+    <a
+      href="/legal/legal-notice"
+      target="_blank"
+      rel="noopener noreferrer"
+      class="btn-text font-normal">
+      {m.common_legal_notice()}
+    </a>
+
+    <span class="mx-1.5">·</span>
+
+    <a
+      href="/legal/privacy-policy"
+      target="_blank"
+      rel="noopener noreferrer"
+      class="btn-text font-normal">
+      {m.common_privacy()}
+    </a>
+
+    <span class="mx-1.5">·</span>
+
+    <a
+      href="/legal/terms-of-service"
+      target="_blank"
+      rel="noopener noreferrer"
+      class="btn-text font-normal">
+      {m.common_terms()}
+    </a>
+
+    <span class="mx-1.5">·</span>
+
+    <a
+      href="/legal/accessibility"
+      target="_blank"
+      rel="noopener noreferrer"
+      class="btn-text font-normal">
+      {m.accessibility_page_title()}
+    </a>
+
+    {#if appConfig.socialEnabled}
+      <span class="mx-1.5">·</span>
+
+      <a
+        href="/legal/transparency"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="btn-text font-normal">
+        {m.common_transparency()}
+      </a>
+    {/if}
+  </nav>
+
+  {#if version}
+    <p class="flex gap-2">
+      <!-- Held back until the version lands: the label interpolates it, so an
+         empty config rendered a bare "Loomkeep v" for as long as
+         /api/config took. `invisible` keeps the footer from shifting. -->
+      <a
+        href={GITHUB_REPO_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        class="btn-text font-normal {appConfig.version ? '' : 'invisible'}">
+        {m.app_version({ version: appConfig.version })}
+        {#if appConfig.gitSha && appConfig.gitSha !== "unknown"}
+          <span>({appConfig.gitSha})</span>
+        {/if}
+      </a>
+      {#if env.PUBLIC_IS_BETA === "true"}<BetaBadge />{/if}
+    </p>
+  {/if}
+</footer>

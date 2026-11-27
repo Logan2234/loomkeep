@@ -1,8 +1,8 @@
 <script lang="ts">
-  import Icon from "#lib/components/Icon.svelte";
-  import { formatNumber } from "#lib/format.js";
-  import { layout } from "#lib/layout.svelte.js";
-  import { prefersReducedMotion } from "#lib/motion.js";
+  import Icon from "#lib/ui/Icon.svelte";
+  import { formatNumber } from "#lib/ui/format.js";
+  import { layout } from "#lib/shell/layout.svelte.js";
+  import { prefersReducedMotion } from "#lib/ui/motion.js";
   import { m } from "#lib/paraglide/messages.js";
   import { scale } from "svelte/transition";
   import type { EpisodeTab } from "./episodes";

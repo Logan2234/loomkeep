@@ -1,6 +1,6 @@
 import { DOMAINS } from "#lib/constants/domains.js";
-import { recordFrom } from "#lib/object.js";
 import { m } from "#lib/paraglide/messages.js";
+import { recordFrom } from "#lib/ui/object.js";
 import { REVIEW_TARGET_DOMAIN } from "@loomkeep/shared/contracts";
 import { ReviewTargetType } from "@loomkeep/shared/enums";
 

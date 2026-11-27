@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { auth } from "../auth.svelte";
+import { auth } from "../auth/auth.svelte";
 import { initAuth } from "./auth";
 import { ApiError } from "./core";
 

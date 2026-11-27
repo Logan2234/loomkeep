@@ -14,23 +14,23 @@
   import { keys } from "#lib/api/keys.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
-  import { auth } from "#lib/auth.svelte.js";
-  import { Cooldown } from "#lib/cooldown.svelte.js";
-  import { debounce, SEARCH_DEBOUNCE_MS } from "#lib/debounce.js";
-  import Icon from "#lib/components/Icon.svelte";
-  import Modal from "#lib/components/Modal.svelte";
-  import PasswordInput from "#lib/components/PasswordInput.svelte";
-  import PasswordRequirements from "#lib/components/PasswordRequirements.svelte";
-  import { normalizeCodeInput } from "#lib/one-time-code.js";
+  import { auth } from "#lib/auth/auth.svelte.js";
+  import { Cooldown } from "#lib/ui/cooldown.svelte.js";
+  import { debounce, SEARCH_DEBOUNCE_MS } from "#lib/ui/debounce.js";
+  import Icon from "#lib/ui/Icon.svelte";
+  import Modal from "#lib/ui/Modal.svelte";
+  import PasswordInput from "#lib/auth/PasswordInput.svelte";
+  import PasswordRequirements from "#lib/auth/PasswordRequirements.svelte";
+  import { normalizeCodeInput } from "#lib/auth/one-time-code.js";
   import { m } from "#lib/paraglide/messages.js";
-  import { toast } from "#lib/toast.svelte.js";
+  import { toast } from "#lib/ui/toast.svelte.js";
   import { USER_LIMITS, OTP_CODE_LENGTH } from "@loomkeep/shared/contracts";
   import {
     isPasswordValid,
     PASSWORD_MIN_LENGTH,
     PASSWORD_MAX_LENGTH,
   } from "@loomkeep/shared/rules";
-  import { flashAnchor } from "#lib/flash-anchor.js";
+  import { flashAnchor } from "#lib/shell/flash-anchor.js";
   import { sectionHref } from "../nav";
 
   type SecurityModal = "username" | "email" | "password" | null;

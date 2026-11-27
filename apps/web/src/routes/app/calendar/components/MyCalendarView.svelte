@@ -2,8 +2,8 @@
   import { MEDIA_TYPE_LABEL } from "#lib/constants/media-types.js";
 
   import { type SelectOption } from "#lib/types/select-option.js";
-  import { auth } from "#lib/auth.svelte.js";
-  import { orderedDomains } from "#lib/domain-availability.js";
+  import { auth } from "#lib/auth/auth.svelte.js";
+  import { orderedDomains } from "#lib/work/domain-availability.js";
 
   import {
     getCalendar,
@@ -20,13 +20,13 @@
     calendarPoster,
     calendarTitle,
     isReleaseReminder,
-  } from "#lib/calendar-entry.js";
-  import Banner from "#lib/components/Banner.svelte";
-  import CardRowSkeleton from "#lib/components/CardRowSkeleton.svelte";
-  import EmptyState from "#lib/components/EmptyState.svelte";
-  import Poster from "#lib/components/Poster.svelte";
-  import { formatDate } from "#lib/format.js";
-  import { layout } from "#lib/layout.svelte.js";
+  } from "#lib/media/calendar-entry.js";
+  import Banner from "#lib/ui/Banner.svelte";
+  import CardRowSkeleton from "#lib/ui/CardRowSkeleton.svelte";
+  import EmptyState from "#lib/ui/EmptyState.svelte";
+  import Poster from "#lib/work/Poster.svelte";
+  import { formatDate } from "#lib/ui/format.js";
+  import { layout } from "#lib/shell/layout.svelte.js";
   import { m } from "#lib/paraglide/messages.js";
   import type { CalendarEntryDto } from "@loomkeep/shared/contracts";
   import { useQueryClient } from "@tanstack/svelte-query";

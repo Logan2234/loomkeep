@@ -3,11 +3,9 @@
 
   import { listLibrarySagas, upsertLibraryEntry } from "#lib/api/client.js";
   import { keys } from "#lib/api/keys.js";
-  import SagasView, {
-    type SagaListFilters,
-  } from "#lib/components/saga/SagasView.svelte";
+  import SagasView, { type SagaListFilters } from "#lib/sagas/SagasView.svelte";
   import { m } from "#lib/paraglide/messages.js";
-  import { librarySagasView, mediaSagaMember } from "#lib/saga.js";
+  import { librarySagasView, mediaSagaMember } from "#lib/sagas/saga.js";
   import type { MediaType } from "@loomkeep/shared/enums";
   import type { SagaMemberDto } from "@loomkeep/shared/contracts";
   import type { Snippet } from "svelte";

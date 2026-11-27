@@ -1,12 +1,12 @@
 <script lang="ts">
-  import ClampedText from "#lib/components/ClampedText.svelte";
-  import { layout } from "#lib/layout.svelte.js";
-  import { buildGallery, galleryIndex } from "#lib/gallery.js";
+  import ClampedText from "#lib/ui/ClampedText.svelte";
+  import { layout } from "#lib/shell/layout.svelte.js";
+  import { buildGallery, galleryIndex } from "#lib/ui/gallery.js";
 
-  import ExternalRatingChips from "#lib/components/ExternalRatingChips.svelte";
+  import ExternalRatingChips from "#lib/work/ExternalRatingChips.svelte";
   import { MEDIA_TYPE_LABEL } from "#lib/constants/media-types.js";
 
-  import { localDateInput } from "#lib/date.js";
+  import { localDateInput } from "#lib/ui/date.js";
   import { page } from "$app/state";
   import {
     addLibraryReplay,
@@ -21,31 +21,31 @@
   import { keys } from "#lib/api/keys.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
-  import { auth } from "#lib/auth.svelte.js";
-  import { createEntryTrackingMutations } from "#lib/entry-tracking-mutations.svelte.js";
-  import Banner from "#lib/components/Banner.svelte";
-  import CommentsPanel from "#lib/components/CommentsPanel.svelte";
-  import WorkFriendsStrip from "#lib/components/WorkFriendsStrip.svelte";
-  import ShareWorkModal from "#lib/components/ShareWorkModal.svelte";
+  import { auth } from "#lib/auth/auth.svelte.js";
+  import { createEntryTrackingMutations } from "#lib/library/entry-tracking-mutations.svelte.js";
+  import Banner from "#lib/ui/Banner.svelte";
+  import CommentsPanel from "#lib/comments/CommentsPanel.svelte";
+  import WorkFriendsStrip from "#lib/social/WorkFriendsStrip.svelte";
+  import ShareWorkModal from "#lib/work/ShareWorkModal.svelte";
   import { mediaWork } from "#lib/chat/work-search.js";
-  import ConfirmationModal from "#lib/components/ConfirmationModal.svelte";
-  import DetailHeroSkeleton from "#lib/components/DetailHeroSkeleton.svelte";
-  import Icon from "#lib/components/Icon.svelte";
-  import TrackingStatusBadge from "#lib/components/TrackingStatusBadge.svelte";
-  import Lightbox from "#lib/components/Lightbox.svelte";
-  import MyRatingBadge from "#lib/components/MyRatingBadge.svelte";
-  import NoteField from "#lib/components/NoteField.svelte";
-  import OwnershipField from "#lib/components/OwnershipField.svelte";
-  import WorkHero from "#lib/components/work/WorkHero.svelte";
-  import ProgressBar from "#lib/components/ProgressBar.svelte";
-  import { isFeatureNew } from "#lib/feature-badges.js";
-  import CreatorNames from "#lib/components/CreatorNames.svelte";
-  import { mediaCompletionEstimate } from "#lib/media-completion-estimate.js";
+  import ConfirmationModal from "#lib/ui/ConfirmationModal.svelte";
+  import DetailHeroSkeleton from "#lib/ui/DetailHeroSkeleton.svelte";
+  import Icon from "#lib/ui/Icon.svelte";
+  import TrackingStatusBadge from "#lib/library/TrackingStatusBadge.svelte";
+  import Lightbox from "#lib/ui/Lightbox.svelte";
+  import MyRatingBadge from "#lib/reviews/MyRatingBadge.svelte";
+  import NoteField from "#lib/library/NoteField.svelte";
+  import OwnershipField from "#lib/library/OwnershipField.svelte";
+  import WorkHero from "#lib/work/WorkHero.svelte";
+  import ProgressBar from "#lib/ui/ProgressBar.svelte";
+  import { isFeatureNew } from "#lib/shell/feature-badges.js";
+  import CreatorNames from "#lib/creators/CreatorNames.svelte";
+  import { mediaCompletionEstimate } from "#lib/media/media-completion-estimate.js";
   import { tapFeedback } from "#lib/native/haptics.js";
-  import ProviderMark from "#lib/components/ProviderMark.svelte";
-  import RelatedCarousel from "#lib/components/RelatedCarousel.svelte";
-  import ReviewsSection from "#lib/components/ReviewsSection.svelte";
-  import { appConfig } from "#lib/config.svelte.js";
+  import ProviderMark from "#lib/work/ProviderMark.svelte";
+  import RelatedCarousel from "#lib/work/RelatedCarousel.svelte";
+  import ReviewsSection from "#lib/reviews/ReviewsSection.svelte";
+  import { appConfig } from "#lib/shell/config.svelte.js";
   import { OMDB_API } from "#lib/constants/external-links.js";
   import {
     MEDIA_OWNERSHIP_SOURCES,
@@ -56,10 +56,10 @@
     formatRegion,
     formatRuntimeTimecode,
     joinMeta,
-  } from "#lib/format.js";
-  import { prefersReducedMotion } from "#lib/motion.js";
+  } from "#lib/ui/format.js";
+  import { prefersReducedMotion } from "#lib/ui/motion.js";
   import { m } from "#lib/paraglide/messages.js";
-  import { timeLeftToWatch } from "#lib/pile.js";
+  import { timeLeftToWatch } from "#lib/library/pile.js";
   import { type MediaType } from "@loomkeep/shared/enums";
   import {
     isDormant,

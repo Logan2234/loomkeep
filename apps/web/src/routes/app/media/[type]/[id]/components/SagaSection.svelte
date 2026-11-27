@@ -3,9 +3,9 @@
   import { keys } from "#lib/api/keys.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
-  import SagaBlock from "#lib/components/saga/SagaBlock.svelte";
+  import SagaBlock from "#lib/sagas/SagaBlock.svelte";
   import { m } from "#lib/paraglide/messages.js";
-  import { mediaSagaMember } from "#lib/saga.js";
+  import { mediaSagaMember } from "#lib/sagas/saga.js";
   import type { EntryStatus, MediaType } from "@loomkeep/shared/enums";
   import type { SagaMemberDto } from "@loomkeep/shared/contracts";
 

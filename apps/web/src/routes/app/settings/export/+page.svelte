@@ -7,12 +7,12 @@
   import { page } from "$app/state";
   import { exportMyData, exportMyDataCsv } from "#lib/api/client.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
-  import Icon from "#lib/components/Icon.svelte";
-  import { downloadBlob, datedFilename } from "#lib/download.js";
+  import Icon from "#lib/ui/Icon.svelte";
+  import { downloadBlob, datedFilename } from "#lib/ui/download.js";
   import { m } from "#lib/paraglide/messages.js";
-  import { toast } from "#lib/toast.svelte.js";
+  import { toast } from "#lib/ui/toast.svelte.js";
   import { Domain } from "@loomkeep/shared/enums";
-  import { flashAnchor } from "#lib/flash-anchor.js";
+  import { flashAnchor } from "#lib/shell/flash-anchor.js";
 
   const exportMut = createApiMutation(() => ({
     mutate: exportMyData,

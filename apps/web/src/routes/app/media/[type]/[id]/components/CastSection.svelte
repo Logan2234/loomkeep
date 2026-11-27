@@ -3,11 +3,11 @@
   import { getCastDetail } from "#lib/api/client.js";
   import { keys } from "#lib/api/keys.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
-  import Carousel from "#lib/components/Carousel.svelte";
-  import Modal from "#lib/components/Modal.svelte";
-  import Poster from "#lib/components/Poster.svelte";
-  import { creatorPeek } from "#lib/creator-peek/peek.svelte.js";
-  import { creatorHref } from "#lib/creator-href.js";
+  import Carousel from "#lib/ui/Carousel.svelte";
+  import Modal from "#lib/ui/Modal.svelte";
+  import Poster from "#lib/work/Poster.svelte";
+  import { creatorPeek } from "#lib/creators/peek/peek.svelte.js";
+  import { creatorHref } from "#lib/creators/creator-href.js";
   import type { CastMemberDto } from "@loomkeep/shared/contracts";
 
   let { cast, source }: { cast: CastMemberDto[]; source: "anilist" | "tmdb" } =

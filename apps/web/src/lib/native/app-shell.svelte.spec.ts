@@ -1,6 +1,6 @@
 import { dialogFocus } from "#lib/actions/dialog-focus.js";
-import { onBackPress } from "#lib/back-press.js";
 import { chat } from "#lib/chat/chat.svelte.js";
+import { onBackPress } from "#lib/shell/back-press.js";
 import { goto } from "#lib/test/navigation.svelte.js";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {

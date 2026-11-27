@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { appConfig } from "#lib/config.svelte.js";
+  import { appConfig } from "#lib/shell/config.svelte.js";
   import { FEEDBACK_URL } from "#lib/constants/external-links.js";
-  import { formatDate } from "#lib/format.js";
+  import { formatDate } from "#lib/ui/format.js";
   import { m } from "#lib/paraglide/messages.js";
   import AccessibilityReportForm from "./AccessibilityReportForm.svelte";
 

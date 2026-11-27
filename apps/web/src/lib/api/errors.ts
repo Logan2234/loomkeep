@@ -1,5 +1,5 @@
-import { formatRetryDelay } from "#lib/format.js";
 import { m } from "#lib/paraglide/messages.js";
+import { formatRetryDelay } from "#lib/ui/format.js";
 import { ErrorCode } from "@loomkeep/shared/catalog";
 import { SAVED_VIEW_LIMITS } from "@loomkeep/shared/contracts";
 import { ApiError } from "./core";

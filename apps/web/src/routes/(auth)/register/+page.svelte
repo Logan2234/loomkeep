@@ -6,14 +6,14 @@
   import { keys } from "#lib/api/keys.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
-  import FieldError from "#lib/components/FieldError.svelte";
-  import Banner from "#lib/components/Banner.svelte";
-  import PasswordInput from "#lib/components/PasswordInput.svelte";
-  import PasswordRequirements from "#lib/components/PasswordRequirements.svelte";
-  import Turnstile from "#lib/components/Turnstile.svelte";
-  import { appConfig } from "#lib/config.svelte.js";
-  import Icon from "#lib/components/Icon.svelte";
-  import { prefersReducedMotion } from "#lib/motion.js";
+  import FieldError from "#lib/ui/FieldError.svelte";
+  import Banner from "#lib/ui/Banner.svelte";
+  import PasswordInput from "#lib/auth/PasswordInput.svelte";
+  import PasswordRequirements from "#lib/auth/PasswordRequirements.svelte";
+  import Turnstile from "#lib/auth/Turnstile.svelte";
+  import { appConfig } from "#lib/shell/config.svelte.js";
+  import Icon from "#lib/ui/Icon.svelte";
+  import { prefersReducedMotion } from "#lib/ui/motion.js";
   import { m } from "#lib/paraglide/messages.js";
   import { USER_LIMITS } from "@loomkeep/shared/contracts";
   import {

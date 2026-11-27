@@ -10,7 +10,7 @@ import {
   startRegistration,
   type PublicKeyCredentialCreationOptionsJSON,
 } from "@simplewebauthn/browser";
-import { auth } from "../auth.svelte";
+import { auth } from "../auth/auth.svelte";
 import { request } from "./core";
 import { typedRequest } from "./generated/typed-request";
 

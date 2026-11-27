@@ -1,6 +1,6 @@
 <script lang="ts">
   import { page } from "$app/state";
-  import ChatFullscreen from "#lib/components/chat/ChatFullscreen.svelte";
+  import ChatFullscreen from "#lib/chat/ChatFullscreen.svelte";
   import { m } from "#lib/paraglide/messages.js";
 </script>
 

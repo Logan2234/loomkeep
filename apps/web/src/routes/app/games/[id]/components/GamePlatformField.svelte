@@ -1,6 +1,6 @@
 <script lang="ts">
-  import Dropdown from "#lib/components/Dropdown.svelte";
-  import Icon from "#lib/components/Icon.svelte";
+  import Dropdown from "#lib/ui/Dropdown.svelte";
+  import Icon from "#lib/ui/Icon.svelte";
   import { m } from "#lib/paraglide/messages.js";
 
   // Where the game is played: one of the platforms IGDB lists it on, or

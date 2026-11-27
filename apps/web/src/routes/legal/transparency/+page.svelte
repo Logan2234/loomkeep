@@ -7,7 +7,7 @@
     MODERATION_LEGAL_BASIS_LABELS,
     REPORT_CATEGORY_LABELS,
   } from "#lib/constants/report-labels.js";
-  import { prefersReducedMotion } from "#lib/motion.js";
+  import { prefersReducedMotion } from "#lib/ui/motion.js";
   import { m } from "#lib/paraglide/messages.js";
   import type { ModerationMeasure } from "@loomkeep/shared/enums";
   import { cubicOut } from "svelte/easing";

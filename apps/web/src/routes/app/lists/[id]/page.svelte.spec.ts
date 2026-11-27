@@ -1,9 +1,9 @@
-import { auth } from "#lib/auth.svelte.js";
-import { layout } from "#lib/layout.svelte.js";
+import { auth } from "#lib/auth/auth.svelte.js";
 import { m } from "#lib/paraglide/messages.js";
+import { layout } from "#lib/shell/layout.svelte.js";
 import { apiUrl, server } from "#lib/test/msw.js";
 import { renderWithQuery } from "#lib/test/render.js";
-import { toast } from "#lib/toast.svelte.js";
+import { toast } from "#lib/ui/toast.svelte.js";
 import { ErrorCode } from "@loomkeep/shared/catalog";
 import { type UserDto } from "@loomkeep/shared/contracts";
 import { fireEvent, screen, waitFor } from "@testing-library/svelte";

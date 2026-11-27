@@ -1,11 +1,11 @@
 <script lang="ts">
   import { page } from "$app/state";
-  import Icon from "#lib/components/Icon.svelte";
-  import { prefersReducedMotion } from "#lib/motion.js";
+  import Icon from "#lib/ui/Icon.svelte";
+  import { prefersReducedMotion } from "#lib/ui/motion.js";
   import type { IconName } from "#lib/types/icon-name.js";
   import type { Snippet } from "svelte";
   import { fly } from "svelte/transition";
-  import { flashAnchor } from "#lib/flash-anchor.js";
+  import { flashAnchor } from "#lib/shell/flash-anchor.js";
   import SavedIndicator from "./SavedIndicator.svelte";
 
   /** Just enough of createApiMutation()'s surface to drive a row. */

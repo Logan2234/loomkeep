@@ -2,23 +2,26 @@
   import { getImportAvailability, getLastImportRun } from "#lib/api/client.js";
   import { keys } from "#lib/api/keys.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
-  import { auth } from "#lib/auth.svelte.js";
+  import { auth } from "#lib/auth/auth.svelte.js";
   import { page } from "$app/state";
-  import Icon from "#lib/components/Icon.svelte";
-  import ProviderMark from "#lib/components/ProviderMark.svelte";
-  import EmptyState from "#lib/components/EmptyState.svelte";
-  import NewBadge from "#lib/components/NewBadge.svelte";
-  import RelativeTime from "#lib/components/RelativeTime.svelte";
+  import Icon from "#lib/ui/Icon.svelte";
+  import ProviderMark from "#lib/work/ProviderMark.svelte";
+  import EmptyState from "#lib/ui/EmptyState.svelte";
+  import NewBadge from "#lib/premium/NewBadge.svelte";
+  import RelativeTime from "#lib/ui/RelativeTime.svelte";
   import { DOMAINS } from "#lib/constants/domains.js";
   import {
     IMPORT_SOURCE_BRANDS,
     IMPORTS_DEFINITION,
   } from "#lib/constants/import-sources.js";
-  import { isDomainEnabled, orderedDomains } from "#lib/domain-availability.js";
-  import { isFeatureNew } from "#lib/feature-badges.js";
+  import {
+    isDomainEnabled,
+    orderedDomains,
+  } from "#lib/work/domain-availability.js";
+  import { isFeatureNew } from "#lib/shell/feature-badges.js";
   import { m } from "#lib/paraglide/messages.js";
   import SettingsSection from "../components/SettingsSection.svelte";
-  import { flashAnchor } from "#lib/flash-anchor.js";
+  import { flashAnchor } from "#lib/shell/flash-anchor.js";
   import type { ImportSourceDescriptor } from "#lib/types/import-descriptor.js";
   import { Domain } from "@loomkeep/shared/enums";
   import {

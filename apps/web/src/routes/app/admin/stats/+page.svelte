@@ -1,5 +1,5 @@
 <script lang="ts">
-  import KpiStripSkeleton from "#lib/components/stats/KpiStripSkeleton.svelte";
+  import KpiStripSkeleton from "#lib/stats/KpiStripSkeleton.svelte";
   import { type SelectOption } from "#lib/types/select-option.js";
 
   // /admin/stats — "Salle des machines": the instance's operations console.
@@ -15,15 +15,15 @@
   } from "#lib/api/client.js";
   import { keys } from "#lib/api/keys.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
-  import { auth } from "#lib/auth.svelte.js";
-  import PageHeader from "#lib/components/PageHeader.svelte";
-  import KpiStrip from "#lib/components/stats/KpiStrip.svelte";
-  import SectionLabel from "#lib/components/stats/SectionLabel.svelte";
+  import { auth } from "#lib/auth/auth.svelte.js";
+  import PageHeader from "#lib/ui/PageHeader.svelte";
+  import KpiStrip from "#lib/stats/KpiStrip.svelte";
+  import SectionLabel from "#lib/stats/SectionLabel.svelte";
   import {
     DATETIME_LONG_OPTIONS,
     formatDateTime,
     formatNumber,
-  } from "#lib/format.js";
+  } from "#lib/ui/format.js";
   import { m } from "#lib/paraglide/messages.js";
   import { useQueryClient } from "@tanstack/svelte-query";
   import AccountsSection from "./components/AccountsSection.svelte";

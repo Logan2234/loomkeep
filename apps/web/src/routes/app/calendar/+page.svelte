@@ -1,17 +1,17 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
-  import Dropdown from "#lib/components/Dropdown.svelte";
-  import Icon from "#lib/components/Icon.svelte";
-  import PageHeader from "#lib/components/PageHeader.svelte";
-  import PremiumLockBadge from "#lib/components/PremiumLockBadge.svelte";
-  import TabPanels from "#lib/components/TabPanels.svelte";
-  import Tabs from "#lib/components/Tabs.svelte";
-  import Tooltip from "#lib/components/Tooltip.svelte";
+  import Dropdown from "#lib/ui/Dropdown.svelte";
+  import Icon from "#lib/ui/Icon.svelte";
+  import PageHeader from "#lib/ui/PageHeader.svelte";
+  import PremiumLockBadge from "#lib/premium/PremiumLockBadge.svelte";
+  import TabPanels from "#lib/ui/TabPanels.svelte";
+  import Tabs from "#lib/ui/Tabs.svelte";
+  import Tooltip from "#lib/ui/Tooltip.svelte";
   import CalendarSubscribeModal from "#lib/ee/calendar/CalendarSubscribeModal.svelte";
   import { useEeLock } from "#lib/ee/license.svelte.js";
-  import { isFeatureNew } from "#lib/feature-badges.js";
-  import { layout } from "#lib/layout.svelte.js";
+  import { isFeatureNew } from "#lib/shell/feature-badges.js";
+  import { layout } from "#lib/shell/layout.svelte.js";
   import { m } from "#lib/paraglide/messages.js";
   import MyCalendarView from "./components/MyCalendarView.svelte";
   import PremieresView from "./components/PremieresView.svelte";

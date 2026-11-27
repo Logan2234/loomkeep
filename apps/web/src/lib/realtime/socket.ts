@@ -1,5 +1,5 @@
 import { API_URL, tryRefresh } from "#lib/api/core.js";
-import { auth } from "#lib/auth.svelte.js";
+import { auth } from "#lib/auth/auth.svelte.js";
 import {
   type RealtimeEvent,
   RealtimeCommand,
