@@ -41,6 +41,7 @@ function setup(
     }[];
     ownedEntries?: { bookItemId: string }[];
     existingEntry?: ({ id: string } & Record<string, unknown>) | null;
+    existingReview?: { id: string } | null;
     allowAdult?: boolean;
   } = {},
 ) {
@@ -67,6 +68,9 @@ function setup(
       deleteMany,
     },
     bookReading: { createMany },
+    review: {
+      findUnique: vi.fn().mockResolvedValue(overrides.existingReview ?? null),
+    },
     user: {
       findUnique: vi.fn().mockResolvedValue({ email: "test@example.com" }),
     },
@@ -350,6 +354,7 @@ describe("BookCsvSource (via StoryGraphImportSource)", () => {
     async function commitOver(
       existingEntry: { id: string } & Record<string, unknown>,
       readStatus: string,
+      rating = "",
     ) {
       const getStoredDetails = vi.fn().mockResolvedValue({
         summary: summary({ sourceId: "OL1W" }),
@@ -359,9 +364,10 @@ describe("BookCsvSource (via StoryGraphImportSource)", () => {
         releaseDate: null,
         externalIds: [{ source: "OPEN_LIBRARY", externalId: "OL1W" }],
       });
-      const { service, upsert } = setup({
+      const { service, upsert, reviews } = setup({
         getStoredDetails,
         existingEntry,
+        existingReview: { id: "review-1" },
         resolveByIsbns: vi.fn().mockResolvedValue({
           matches: new Map([["9782228937597", summary({ sourceId: "OL1W" })]]),
           failedIsbns: [],
@@ -369,14 +375,14 @@ describe("BookCsvSource (via StoryGraphImportSource)", () => {
       });
       const csv = [
         HEADER,
-        `Résister,Salomé Saqué,"",9782228937597,"",${readStatus},2025/07/23,2025/03/31,2025/02/01-2025/03/31,1,"",,,,,,,,their note,"","","",""`,
+        `Résister,Salomé Saqué,"",9782228937597,"",${readStatus},2025/07/23,2025/03/31,2025/02/01-2025/03/31,1,"",,,,,,,${rating},their note,"","","",""`,
       ].join("\n");
       const analyzed = await analyze(service, csv);
       const committed = service.commit("user-1", "storygraph", analyzed.id, {
         include: ["b0"],
       });
       await runToEnd(service, "user-1", committed.id);
-      return upsert.mock.calls[0][0].update;
+      return { update: upsert.mock.calls[0][0].update, reviews };
     }
 
     const READING = {
@@ -391,7 +397,7 @@ describe("BookCsvSource (via StoryGraphImportSource)", () => {
     };
 
     it("keeps its status, progress, notes and dates when the source is behind", async () => {
-      const update = await commitOver(READING, "to-read");
+      const { update } = await commitOver(READING, "to-read");
 
       expect(update.status).toBe("READING");
       expect(update.currentPage).toBeUndefined();
@@ -403,11 +409,17 @@ describe("BookCsvSource (via StoryGraphImportSource)", () => {
     });
 
     it("moves it forward to read, fully progressed, and fills only the empty dates", async () => {
-      const update = await commitOver(READING, "read");
+      const { update } = await commitOver(READING, "read");
 
       expect(update).toMatchObject({ status: "READ", currentPage: 320 });
       expect(update.startedAt).toBeUndefined();
       expect(update.finishedAt).toEqual(new Date("2025-03-31T00:00:00.000Z"));
+    });
+
+    it("keeps the rating the user already gave", async () => {
+      const { reviews } = await commitOver(READING, "read", "2.0");
+
+      expect(reviews.setRating).not.toHaveBeenCalled();
     });
   });
 
