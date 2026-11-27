@@ -302,9 +302,11 @@ describe("ListService.addItem", () => {
       position: 0,
       addedAt: new Date(),
     });
+    const listUpdate = vi.fn();
     const prisma = {
       list: {
         findUnique: vi.fn().mockResolvedValue(listRow({ userId: "u1" })),
+        update: listUpdate,
       },
       listItem: {
         findUnique: vi.fn().mockResolvedValue(dup ? { id: "existing" } : null),
@@ -330,7 +332,7 @@ describe("ListService.addItem", () => {
       events,
       stubFollow(),
     );
-    return { svc, create, activity, events };
+    return { svc, create, activity, events, listUpdate };
   }
 
   it("rejects a duplicate item", async () => {
@@ -367,6 +369,71 @@ describe("ListService.addItem", () => {
       expect.objectContaining({ type: "LIST_ITEM_ADDED", targetId: "l1" }),
     );
     expect(events.emitToList).toHaveBeenCalledWith("l1", "list-updated");
+  });
+
+  // Moves the reorder lock forward, so an editor who loaded the list before
+  // this addition gets a 409 instead of an order missing the new item.
+  it("marks the list as changed", async () => {
+    const { svc, listUpdate } = make(false);
+    await svc.addItem("u1", "l1", { targetType: "MEDIA", targetId: "m1" });
+    expect(listUpdate).toHaveBeenCalledWith({
+      where: { id: "l1" },
+      data: { updatedAt: expect.any(Date) },
+    });
+  });
+});
+
+describe("ListService.removeItem", () => {
+  function make(deleted: number) {
+    const listUpdate = vi.fn();
+    const deleteMany = vi.fn().mockResolvedValue({ count: deleted });
+    const executeRaw = vi.fn();
+    const prisma = {
+      list: {
+        findUnique: vi.fn().mockResolvedValue(listRow({ userId: "u1" })),
+        update: listUpdate,
+      },
+      listItem: { deleteMany },
+      $executeRaw: executeRaw,
+      $transaction: vi.fn((fn: (tx: unknown) => unknown) => fn(prisma)),
+    } as unknown as PrismaService;
+    const events = stubEvents();
+    const svc = new ListService(
+      prisma,
+      {} as VisibilityService,
+      {} as ActivityService,
+      fakeConfig(),
+      fakeNotifications(),
+      stubXp(),
+      stubAchievements(),
+      events,
+      stubFollow(),
+    );
+    return { svc, listUpdate, deleteMany, executeRaw, events };
+  }
+
+  it("removes the item under the list lock and marks the list as changed", async () => {
+    const { svc, listUpdate, deleteMany, executeRaw, events } = make(1);
+    await svc.removeItem("u1", "l1", "i1");
+    expect(executeRaw).toHaveBeenCalled();
+    expect(deleteMany).toHaveBeenCalledWith({
+      where: { id: "i1", listId: "l1" },
+    });
+    expect(listUpdate).toHaveBeenCalledWith({
+      where: { id: "l1" },
+      data: { updatedAt: expect.any(Date) },
+    });
+    expect(events.emitToList).toHaveBeenCalledWith("l1", "list-updated");
+  });
+
+  it("404s on an item of another list, without touching the list", async () => {
+    const { svc, listUpdate } = make(0);
+    await expect(svc.removeItem("u1", "l1", "elsewhere")).rejects.toMatchObject(
+      {
+        status: 404,
+      },
+    );
+    expect(listUpdate).not.toHaveBeenCalled();
   });
 });
 
@@ -442,6 +509,7 @@ describe("ListService.addItem notifications", () => {
     const prisma = {
       list: {
         findUnique: vi.fn().mockResolvedValue(listRow({ userId: "owner" })),
+        update: vi.fn(),
       },
       listItem: {
         findUnique: vi.fn().mockResolvedValue(null),
@@ -736,23 +804,31 @@ describe("ListService.reorder", () => {
   const UPDATED_AT = new Date("2026-01-01T00:00:00.000Z");
 
   function make(existingIds: string[], updateManyCount = 1) {
-    const listItemUpdate = vi.fn();
+    const calls: string[] = [];
+    const executeRaw = vi.fn((strings: TemplateStringsArray) => {
+      calls.push(strings.join("?").includes("pg_advisory") ? "lock" : "write");
+      return Promise.resolve(existingIds.length);
+    });
     const listUpdateMany = vi
       .fn()
       .mockResolvedValue({ count: updateManyCount });
+    const txFindMany = vi.fn(() => {
+      calls.push("read");
+      return Promise.resolve(existingIds.map((id) => ({ id })));
+    });
     const tx = {
+      $executeRaw: executeRaw,
       list: { updateMany: listUpdateMany },
-      listItem: { update: listItemUpdate },
+      listItem: { findMany: txFindMany },
     };
+    const outerFindMany = vi.fn();
     const prisma = {
       list: {
         findUnique: vi
           .fn()
           .mockResolvedValue(listRow({ userId: "u1", updatedAt: UPDATED_AT })),
       },
-      listItem: {
-        findMany: vi.fn().mockResolvedValue(existingIds.map((id) => ({ id }))),
-      },
+      listItem: { findMany: outerFindMany },
       $transaction: vi.fn((fn) => fn(tx)),
     } as unknown as PrismaService;
     const events = stubEvents();
@@ -767,7 +843,7 @@ describe("ListService.reorder", () => {
       events,
       stubFollow(),
     );
-    return { svc, listItemUpdate, listUpdateMany, events };
+    return { svc, executeRaw, listUpdateMany, outerFindMany, calls, events };
   }
 
   it("rejects an order that doesn't match the list's current items", async () => {
@@ -777,35 +853,34 @@ describe("ListService.reorder", () => {
     ).rejects.toThrow("orderedItemIds must match");
   });
 
-  it("rewrites position 0..n-1 in the given order and pushes a live update", async () => {
-    const { svc, listItemUpdate, listUpdateMany, events } = make([
-      "a",
-      "b",
-      "c",
-    ]);
+  // An editor removing or adding an item between the check and the write
+  // used to 500 (P2025 on the removed id) or leave two items on one position.
+  it("checks the item set inside the transaction, under the list's lock", async () => {
+    const { svc, outerFindMany, calls } = make(["a", "b", "c"]);
+    await svc.reorder("u1", "l1", ["c", "a", "b"], UPDATED_AT.toISOString());
+    expect(outerFindMany).not.toHaveBeenCalled();
+    expect(calls).toEqual(["lock", "read", "write"]);
+  });
+
+  it("rewrites position 0..n-1 in one statement and pushes a live update", async () => {
+    const { svc, executeRaw, listUpdateMany, events } = make(["a", "b", "c"]);
     await svc.reorder("u1", "l1", ["c", "a", "b"], UPDATED_AT.toISOString());
     expect(listUpdateMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: "l1", updatedAt: UPDATED_AT },
       }),
     );
-    expect(listItemUpdate).toHaveBeenNthCalledWith(1, {
-      where: { id: "c" },
-      data: { position: 0 },
-    });
-    expect(listItemUpdate).toHaveBeenNthCalledWith(3, {
-      where: { id: "b" },
-      data: { position: 2 },
-    });
+    const write = executeRaw.mock.calls.at(-1)!;
+    expect(write.slice(1)).toEqual([["c", "a", "b"], [0, 1, 2], "l1"]);
     expect(events.emitToList).toHaveBeenCalledWith("l1", "list-updated");
   });
 
   it("rejects with a conflict when the list changed since the client loaded it, and pushes no live update", async () => {
-    const { svc, listItemUpdate, events } = make(["a", "b", "c"], 0);
+    const { svc, calls, events } = make(["a", "b", "c"], 0);
     await expect(
       svc.reorder("u1", "l1", ["c", "a", "b"], UPDATED_AT.toISOString()),
     ).rejects.toThrow("changed since you loaded it");
-    expect(listItemUpdate).not.toHaveBeenCalled();
+    expect(calls).not.toContain("write");
     expect(events.emitToList).not.toHaveBeenCalled();
   });
 });

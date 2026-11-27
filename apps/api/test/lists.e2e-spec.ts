@@ -279,4 +279,62 @@ describe("Collaborative lists (e2e)", () => {
     });
     expect(new Set(items.map((i) => i.position)).size).toBe(works.length);
   });
+  // A reorder used to write one UPDATE per item and check the item set
+  // outside its transaction: a removal in between gave a 500 (audit
+  // 2026-11-17, BUG-36 and PRF-04).
+  it("reorders in one go, and refuses an order built before an item was removed", async () => {
+    const own = await as("alice")
+      .post("/api/lists")
+      .send({ title: "Order", kind: "RANKED", visibility: "PRIVATE" })
+      .expect(201);
+
+    for (let i = 0; i < 3; i++) {
+      const work = await prisma.mediaItem.create({
+        data: {
+          type: "MOVIE",
+          canonicalSource: "TMDB",
+          title: `Order ${i}`,
+          status: "Released",
+          externalIds: {
+            create: { source: "TMDB", externalId: `order-${i}`, type: "MOVIE" },
+          },
+        },
+      });
+      await as("alice")
+        .post(`/api/lists/${own.body.id}/items`)
+        .send({ targetType: "MEDIA", targetId: work.id })
+        .expect(201);
+    }
+
+    const loaded = await as("alice")
+      .get(`/api/lists/${own.body.id}`)
+      .expect(200);
+    const ids = (loaded.body.items as { id: string }[]).map((i) => i.id);
+    const reversed = [...ids].reverse();
+
+    await as("alice")
+      .put(`/api/lists/${own.body.id}/items/order`)
+      .send({
+        orderedItemIds: reversed,
+        expectedUpdatedAt: loaded.body.updatedAt,
+      })
+      .expect(200);
+    const after = await as("alice")
+      .get(`/api/lists/${own.body.id}`)
+      .expect(200);
+    expect((after.body.items as { id: string }[]).map((i) => i.id)).toEqual(
+      reversed,
+    );
+
+    await as("alice")
+      .delete(`/api/lists/${own.body.id}/items/${reversed[0]}`)
+      .expect(200);
+    await as("alice")
+      .put(`/api/lists/${own.body.id}/items/order`)
+      .send({
+        orderedItemIds: ids.slice(0, 2),
+        expectedUpdatedAt: after.body.updatedAt,
+      })
+      .expect(409);
+  });
 });

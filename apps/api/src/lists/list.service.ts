@@ -565,6 +565,7 @@ export class ListService {
           orderBy: { position: "desc" },
           select: { position: true },
         });
+        await this.markChanged(tx, listId);
         return tx.listItem.create({
           data: {
             listId,
@@ -725,12 +726,34 @@ export class ListService {
     itemId: string,
   ): Promise<void> {
     await this.canEdit(userId, listId);
-    const { count } = await this.prisma.listItem.deleteMany({
-      where: { id: itemId, listId },
+    await this.prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${listId}::text))`;
+      const { count } = await tx.listItem.deleteMany({
+        where: { id: itemId, listId },
+      });
+      if (count === 0)
+        throw new AppException(
+          HttpStatus.NOT_FOUND,
+          ErrorCode.ListItemNotFound,
+        );
+      await this.markChanged(tx, listId);
     });
-    if (count === 0)
-      throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.ListItemNotFound);
     this.events.emitToList(listId, "list-updated");
+  }
+
+  /**
+   * Moves `List.updatedAt` forward when its set of items changes, so a
+   * reorder built on the previous set fails its optimistic lock (409) rather
+   * than writing an order that misses or still holds an item.
+   */
+  private async markChanged(
+    tx: Prisma.TransactionClient,
+    listId: string,
+  ): Promise<void> {
+    await tx.list.update({
+      where: { id: listId },
+      data: { updatedAt: new Date() },
+    });
   }
 
   /**
@@ -748,25 +771,10 @@ export class ListService {
   ): Promise<void> {
     await this.canEdit(userId, listId);
 
-    const existing = await this.prisma.listItem.findMany({
-      where: { listId },
-      select: { id: true },
-    });
-    const existingIds = new Set(existing.map((i) => i.id));
-    const sameSet =
-      existingIds.size === orderedItemIds.length &&
-      orderedItemIds.every((id) => existingIds.has(id));
-
-    if (!sameSet) {
-      throw new AppException(
-        HttpStatus.BAD_REQUEST,
-        ErrorCode.ListReorderMismatch,
-        undefined,
-        "orderedItemIds must match the list's current items",
-      );
-    }
-
+    // Under the same per-list lock as addItem/removeItem, so the item set
+    // checked below is still the one the positions are written over.
     await this.prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${listId}::text))`;
       const { count } = await tx.list.updateMany({
         where: { id: listId, updatedAt: new Date(expectedUpdatedAt) },
         data: { updatedAt: new Date() },
@@ -781,9 +789,31 @@ export class ListService {
         );
       }
 
-      for (const [position, id] of orderedItemIds.entries()) {
-        await tx.listItem.update({ where: { id }, data: { position } });
+      const existing = await tx.listItem.findMany({
+        where: { listId },
+        select: { id: true },
+      });
+      const existingIds = new Set(existing.map((i) => i.id));
+      const sameSet =
+        existingIds.size === orderedItemIds.length &&
+        orderedItemIds.every((id) => existingIds.has(id));
+
+      if (!sameSet) {
+        throw new AppException(
+          HttpStatus.BAD_REQUEST,
+          ErrorCode.ListReorderMismatch,
+          undefined,
+          "orderedItemIds must match the list's current items",
+        );
       }
+
+      // One statement, not one UPDATE per item: a list of several hundred
+      // items outlasted the interactive transaction's 5 s timeout.
+      const positions = orderedItemIds.map((_, position) => position);
+      await tx.$executeRaw`
+        UPDATE "ListItem" AS item SET "position" = ordered.position
+        FROM unnest(${orderedItemIds}::text[], ${positions}::int[]) AS ordered(id, position)
+        WHERE item."id" = ordered.id AND item."listId" = ${listId}`;
     });
 
     this.events.emitToList(listId, "list-updated");
