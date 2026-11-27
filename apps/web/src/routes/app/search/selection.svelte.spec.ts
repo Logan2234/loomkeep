@@ -88,4 +88,55 @@ describe("Search page selection", () => {
     expect(added.sort()).toEqual(["1020", "1021"]);
     expect(screen.queryByRole("toolbar")).toBeNull();
   });
+
+  it("closes the list menu on Escape without leaving selection mode", async () => {
+    auth.user = {
+      id: "user-1",
+      enabledDomains: ["GAMES"],
+    } as unknown as typeof auth.user;
+    server.use(
+      http.get(apiUrl("/games/search"), () =>
+        HttpResponse.json({
+          results: [
+            {
+              source: "IGDB",
+              sourceId: "1020",
+              title: "Zelda",
+              year: 2017,
+              coverUrl: null,
+              isAdult: false,
+            },
+          ],
+        }),
+      ),
+      http.get(apiUrl("/games"), () =>
+        HttpResponse.json({ items: [], page: 1, limit: 50, hasMore: false }),
+      ),
+      http.get(apiUrl("/lists/editable"), () =>
+        HttpResponse.json([{ id: "list-1", title: "Coop" }]),
+      ),
+      http.get(apiUrl("/*"), () => HttpResponse.json([])),
+    );
+    visit("/app/search?type=GAMES&query=zelda");
+    const user = userEvent.setup();
+    renderWithQuery(SearchPage, {});
+
+    const link = await screen.findByRole(
+      "link",
+      { name: "Zelda" },
+      { timeout: 4000 },
+    );
+    link.focus();
+    await user.keyboard("x");
+    await user.click(
+      screen.getByRole("button", { name: m.search_selection_list() }),
+    );
+    await screen.findByRole("menuitem", { name: "Coop" });
+
+    await user.keyboard("{Escape}");
+    await new Promise((resolve) => setTimeout(resolve, 10));
+
+    expect(screen.queryByRole("menuitem")).toBeNull();
+    expect(screen.getByRole("toolbar")).toBeTruthy();
+  });
 });

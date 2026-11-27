@@ -504,7 +504,12 @@
 
 <svelte:window
   onkeydown={(event) => {
-    if (event.key === "Escape" && selection.active) selection.exit();
+    if (event.key !== "Escape" || !selection.active) return;
+    // The bar's List menu closes on the same Escape, from a listener that
+    // runs after this one: only once the event is over does it say so.
+    setTimeout(() => {
+      if (!event.defaultPrevented) selection.exit();
+    });
   }} />
 
 {#if selection.active}
