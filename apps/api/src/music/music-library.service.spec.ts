@@ -1,6 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { vi } from "vitest";
 import type { PrismaService } from "../prisma/prisma.service";
+import { entryEventBus } from "../test-utils/entry-event-bus";
 import { stubEvents, stubXp } from "../test-utils/stubs";
 import type { MusicItemService } from "./music-item.service";
 import { MusicLibraryService } from "./music-library.service";
@@ -62,10 +63,7 @@ describe("MusicLibraryService.deleteEntry", () => {
       prisma,
       {} as MusicItemService,
       {} as import("../reviews/review.service").ReviewService,
-      {
-        emit: vi.fn(),
-      } as unknown as import("../social/activity.service").ActivityService,
-      xp,
+      entryEventBus({ xp: xp }),
       stubEvents(),
       {} as import("../lists/list.service").ListService,
     );
@@ -121,10 +119,7 @@ describe("MusicLibraryService finishedAt", () => {
         getRating: vi.fn().mockResolvedValue(null),
         setRating: vi.fn(),
       } as unknown as import("../reviews/review.service").ReviewService,
-      {
-        emit: vi.fn(),
-      } as unknown as import("../social/activity.service").ActivityService,
-      stubXp(),
+      entryEventBus({ xp: stubXp() }),
       stubEvents(),
       {} as import("../lists/list.service").ListService,
     );
@@ -157,10 +152,7 @@ describe("MusicLibraryService finishedAt", () => {
         getRating: vi.fn().mockResolvedValue(null),
         setRating: vi.fn(),
       } as unknown as import("../reviews/review.service").ReviewService,
-      {
-        emit: vi.fn(),
-      } as unknown as import("../social/activity.service").ActivityService,
-      stubXp(),
+      entryEventBus({ xp: stubXp() }),
       stubEvents(),
       {} as import("../lists/list.service").ListService,
     );
@@ -202,10 +194,7 @@ describe("MusicLibraryService — XP wiring", () => {
         upsertFromSource: vi.fn().mockResolvedValue({ id: "album-1" }),
       } as unknown as MusicItemService,
       reviews,
-      {
-        emit: vi.fn(),
-      } as unknown as import("../social/activity.service").ActivityService,
-      xp,
+      entryEventBus({ xp: xp }),
       events,
       {} as import("../lists/list.service").ListService,
     );
@@ -241,10 +230,7 @@ describe("MusicLibraryService — XP wiring", () => {
         upsertFromSource: vi.fn().mockResolvedValue({ id: "album-1" }),
       } as unknown as MusicItemService,
       reviews,
-      {
-        emit: vi.fn(),
-      } as unknown as import("../social/activity.service").ActivityService,
-      xp,
+      entryEventBus({ xp: xp }),
       events,
       {} as import("../lists/list.service").ListService,
     );

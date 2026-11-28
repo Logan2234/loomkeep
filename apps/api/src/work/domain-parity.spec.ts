@@ -24,6 +24,7 @@ import { MusicItemService } from "../music/music-item.service";
 import { MusicLibraryService } from "../music/music-library.service";
 import { MusicController } from "../music/music.controller";
 import type { PrismaService } from "../prisma/prisma.service";
+import { entryEventBus } from "../test-utils/entry-event-bus";
 import { mediaServices } from "../test-utils/media-services";
 import { allDomainsConfig, stubSagas } from "../test-utils/stubs";
 import { DOMAIN_GATE, DomainGateGuard } from "../users/domain-gate.guard";
@@ -415,8 +416,7 @@ const DELETE_ENTRY: Record<
       prisma,
       unused,
       unused,
-      activity,
-      xp,
+      entryEventBus({ xp, activity }),
       unused,
       unused,
     ),
@@ -783,8 +783,7 @@ const UPSERT_ENTRY: Record<
           upsertFromSource: vi.fn().mockResolvedValue({ id: "item-1" }),
         } as never,
         anything(),
-        anything(),
-        anything(),
+        entryEventBus(),
         anything(),
         anything(),
       ).upsertEntry(USER, { source: "MUSICBRAINZ", sourceId: "42" } as never),
