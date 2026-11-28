@@ -7,6 +7,7 @@ import { ReportsModule } from "../reports/reports.module";
 import { UserGatesModule } from "../users/user-gates.module";
 import { ActivityService } from "./activity.service";
 import { BlockService } from "./block.service";
+import { EntryActivityListener } from "./entry-activity.listener";
 import { FollowService } from "./follow.service";
 import { InvitationFollowListener } from "./invitation-follow.listener";
 import { LeaderboardController } from "./leaderboard/leaderboard.controller";
@@ -49,6 +50,7 @@ import { WorkFriendsService } from "./work-friends.service";
     LeaderboardService,
     WorkFriendsService,
     InvitationFollowListener,
+    EntryActivityListener,
   ],
   exports: [
     BlockService,

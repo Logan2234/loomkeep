@@ -16,11 +16,10 @@ import {
   type MusicSource,
   MusicStatus,
   ReviewTargetType,
-  XpReason,
 } from "@loomkeep/shared/enums";
-import { revokeEntryXp } from "../work/entry-lifecycle.util";
 
 import { Injectable } from "@nestjs/common";
+import { EventEmitter2 } from "@nestjs/event-emitter";
 import type {
   MusicStatus as DbMusicStatus,
   MusicExternalId,
@@ -32,11 +31,9 @@ import { canonicalExternalId } from "../common/external-id.util";
 import { retryAfterUniqueRace } from "../common/prisma-error.util";
 import { compareTitles, timeMs } from "../common/sort.util";
 import { EventsGateway } from "../events/events.gateway";
-import { XpService } from "../gamification/xp.service";
 import { ListService } from "../lists/list.service";
 import { PrismaService } from "../prisma/prisma.service";
 import { ReviewService } from "../reviews/review.service";
-import { ActivityService } from "../social/activity.service";
 import { MUSIC_PILE_STATUSES, summarizePile } from "../stats/pile.util";
 import {
   addToList,
@@ -45,14 +42,9 @@ import {
   assertBulkTarget,
   assertBulkUpdate,
 } from "../work/bulk-entries.util";
-import type {
-  EntryStatusChange,
-  ListEntriesFilters,
-} from "../work/entry-lifecycle.util";
+import type { ListEntriesFilters } from "../work/entry-lifecycle.util";
 import {
   assertEntryOwnership,
-  awardNewEntryXp,
-  emitEntryActivity,
   listEntryPage,
   polymorphicTargetCleanup,
   RECENTLY_UPDATED_FIRST,
@@ -67,6 +59,12 @@ import {
   loanWhere,
   ownershipSourceUpdate,
 } from "../work/entry-loan.util";
+import {
+  EntryAddedEvent,
+  EntryCompletedEvent,
+  EntryRemovedEvent,
+  EntryStatusChangedEvent,
+} from "../work/entry.events";
 import type { BulkUpdateMusicEntriesBody } from "./dto/bulk-update-music-entries.dto";
 import { UpdateMusicEntryDto } from "./dto/update-music-entry.dto";
 import { UpsertMusicEntryDto } from "./dto/upsert-music-entry.dto";
@@ -151,28 +149,52 @@ export class MusicLibraryService {
     private readonly prisma: PrismaService,
     private readonly musicItemService: MusicItemService,
     private readonly reviews: ReviewService,
-    private readonly activity: ActivityService,
-    private readonly xp: XpService,
+    private readonly eventBus: EventEmitter2,
     private readonly events: EventsGateway,
     private readonly lists: ListService,
   ) {}
 
-  /** Emits the status milestone + FAVORITED events for a music entry write. */
-  private emitEntryActivity(
+  /**
+   * Tells gamification and social what a write did (docs/adr/0010): the
+   * status change always, and that the album was listened to when it just was.
+   */
+  private async publishWrite(
     userId: string,
-    musicItemId: string,
-    change: EntryStatusChange,
+    entry: {
+      id: string;
+      musicItemId: string;
+      status: string;
+      favorite: boolean;
+    },
+    before: { status: string; favorite: boolean } | null,
   ): Promise<void> {
-    return emitEntryActivity(
-      this.activity,
-      {
-        userId,
-        domain: Domain.MUSIC,
-        targetType: ReviewTargetType.MUSIC,
-        targetId: musicItemId,
-      },
-      change,
+    await this.eventBus.emitAsync(
+      EntryStatusChangedEvent.NAME,
+      new EntryStatusChangedEvent(
+        {
+          userId,
+          domain: Domain.MUSIC,
+          targetType: ReviewTargetType.MUSIC,
+          targetId: entry.musicItemId,
+        },
+        {
+          prevStatus: before?.status ?? null,
+          nextStatus: entry.status,
+          prevFavorite: before?.favorite ?? false,
+          nextFavorite: entry.favorite,
+        },
+      ),
     );
+
+    if (
+      before?.status !== MusicStatus.LISTENED &&
+      entry.status === MusicStatus.LISTENED
+    ) {
+      await this.eventBus.emitAsync(
+        EntryCompletedEvent.NAME,
+        new EntryCompletedEvent(userId, Domain.MUSIC, entry.id),
+      );
+    }
   }
 
   /** First touch of an album persists it (on-demand cache), then upserts the entry. */
@@ -209,28 +231,15 @@ export class MusicLibraryService {
       }),
     );
 
-    await this.emitEntryActivity(userId, musicItem.id, {
-      prevStatus: before?.status ?? null,
-      nextStatus: entry.status,
-      prevFavorite: before?.favorite ?? false,
-      nextFavorite: entry.favorite,
-    });
-
     if (before === null) {
-      await awardNewEntryXp(this.xp, {
-        userId,
-        entryId: entry.id,
-        domain: Domain.MUSIC,
-        countEntries: () => this.prisma.musicEntry.count({ where: { userId } }),
-      });
+      const count = await this.prisma.musicEntry.count({ where: { userId } });
+      await this.eventBus.emitAsync(
+        EntryAddedEvent.NAME,
+        new EntryAddedEvent(userId, Domain.MUSIC, entry.id, count === 1),
+      );
     }
 
-    if (
-      before?.status !== MusicStatus.LISTENED &&
-      entry.status === MusicStatus.LISTENED
-    ) {
-      await this.xp.award(userId, XpReason.ALBUM_LISTENED, entry.id);
-    }
+    await this.publishWrite(userId, entry, before);
 
     if (dto.rating !== undefined) {
       await this.reviews.setRating(
@@ -462,19 +471,7 @@ export class MusicLibraryService {
       include: ENTRY_INCLUDE,
     });
 
-    await this.emitEntryActivity(userId, entry.musicItemId, {
-      prevStatus: before?.status ?? null,
-      nextStatus: entry.status,
-      prevFavorite: before?.favorite ?? false,
-      nextFavorite: entry.favorite,
-    });
-
-    if (
-      before?.status !== MusicStatus.LISTENED &&
-      entry.status === MusicStatus.LISTENED
-    ) {
-      await this.xp.award(userId, XpReason.ALBUM_LISTENED, entry.id);
-    }
+    await this.publishWrite(userId, entry, before);
 
     if (dto.rating !== undefined) {
       await this.reviews.setRating(
@@ -525,11 +522,13 @@ export class MusicLibraryService {
       this.prisma.musicEntry.delete({ where: { id: entryId } }),
     ]);
 
-    await revokeEntryXp(this.xp, userId, [
-      { sourceType: "MusicEntry", ids: [entryId] },
-      { sourceType: "Entry", ids: [entryId] },
-      { sourceType: "Review", ids: reviews.map((r) => r.id) },
-    ]);
+    await this.eventBus.emitAsync(
+      EntryRemovedEvent.NAME,
+      new EntryRemovedEvent(userId, Domain.MUSIC, entryId, [
+        { model: "MusicEntry", ids: [entryId] },
+        { model: "Review", ids: reviews.map((r) => r.id) },
+      ]),
+    );
   }
 
   /**

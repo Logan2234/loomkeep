@@ -17,3 +17,4 @@ réécrit pas.
 | [0009](0009-capacitor-remote-shell.md)       | L'app Android est une coque qui charge l'instance                      |
 | [0010](0010-module-layers.md)                | Des couches de modules, et des événements pour remonter                |
 | [0011](0011-domain-adapter.md)               | Un adaptateur par domaine pour les modules qui les lisent tous         |
+| [0012](0012-entry-events.md)                 | Les effets de bord des bibliothèques passent par des événements        |

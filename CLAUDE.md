@@ -111,6 +111,10 @@ wording change or a rename.
   module goes there. To tell a higher layer something, publish an event:
   a class in `<module>.events.ts`, `emitAsync()` it, `@OnEvent` in a
   `*.listener.ts` of the module that reacts (`auth.events.ts`).
+  A library write publishes the shared entry events (`work/entry.events.ts`:
+  added, status changed, completed, removed); the XP and activity rules live
+  in their listeners ([ADR 0012](docs/adr/0012-entry-events.md)). Music has
+  moved to them; media, games and books still call `XpService` directly.
 - Errors are typed codes (`packages/shared/src/catalog/error-codes.ts`) thrown via
   `AppException`. The web maps each code to an i18n message in
   `apps/web/src/lib/api/errors.ts` — never display API-supplied text; a new

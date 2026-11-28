@@ -4,6 +4,7 @@ import { JobsModule } from "../jobs/jobs.module";
 import { AchievementService } from "./achievements/achievement.service";
 import { AchievementsController } from "./achievements/achievements.controller";
 import { TotpAchievementListener } from "./achievements/totp-achievement.listener";
+import { EntryXpListener } from "./entry-xp.listener";
 import { GamificationController } from "./gamification.controller";
 import { OnboardingController } from "./onboarding/onboarding.controller";
 import { OnboardingService } from "./onboarding/onboarding.service";
@@ -31,6 +32,7 @@ import { XpService } from "./xp.service";
     AchievementService,
     OnboardingService,
     TotpAchievementListener,
+    EntryXpListener,
   ],
   exports: [XpService, SessionXpService, AchievementService],
 })
