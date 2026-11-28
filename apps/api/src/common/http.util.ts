@@ -38,6 +38,8 @@ const MAX_ATTEMPTS = 3;
  * `fetchJson()` call, which would undercount a call retried on 429/5xx.
  * `beforeAttempt` waits for a provider's throttle before counting a request;
  * `isRetryable` overrides the default HTTP retry policy for that provider.
+ * `onResponse` gets each attempt's HTTP status, or null when none came back
+ * (network error, timeout): what the provider metrics count.
  */
 export async function fetchJson<T>(
   url: string | URL,
@@ -49,6 +51,7 @@ export async function fetchJson<T>(
     onAttempt?: () => void;
     beforeAttempt?: () => Promise<void>;
     isRetryable?: (status: number) => boolean;
+    onResponse?: (status: number | null) => void;
   },
 ): Promise<T> {
   let lastStatus = 0;
@@ -65,6 +68,7 @@ export async function fetchJson<T>(
       response = await fetch(url, { ...init, signal: controller.signal });
     } catch (err) {
       clearTimeout(timeout);
+      opts.onResponse?.(null);
 
       if (attempt < MAX_ATTEMPTS) {
         await sleep(retryDelayMs(null, attempt));
@@ -78,6 +82,8 @@ export async function fetchJson<T>(
         `${opts.sourceLabel} request failed: ${(err as Error).message}`,
       );
     }
+
+    opts.onResponse?.(response.status);
 
     if (response.ok) {
       // The timeout stays armed through the body: a provider that sends its

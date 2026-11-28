@@ -7,6 +7,18 @@ import {
   collectDefaultMetrics,
 } from "prom-client";
 
+/** One attempt's outcome against a catalogue provider, by status class. */
+export type ProviderOutcome =
+  "ok" | "rate_limited" | "client_error" | "server_error" | "network";
+
+export function providerOutcome(status: number | null): ProviderOutcome {
+  if (status === null) return "network";
+  if (status === 429) return "rate_limited";
+  if (status >= 500) return "server_error";
+  if (status >= 400) return "client_error";
+  return "ok";
+}
+
 export type WsRejectionReason =
   "no_cookie" | "session_revoked" | "invalid_token";
 
@@ -46,6 +58,15 @@ export class MetricsService {
     name: "ws_connection_rejections_total",
     help: "EventsGateway connections rejected at handshake, by reason",
     labelNames: ["reason"] as const,
+    registers: [this.registry],
+  });
+
+  // Labelled by provider name (a fixed set in code) and outcome class, never
+  // the URL: one series per provider and outcome.
+  private readonly providerRequests = new Counter({
+    name: "provider_requests_total",
+    help: "Catalogue provider HTTP attempts, retries included, by outcome",
+    labelNames: ["provider", "outcome"] as const,
     registers: [this.registry],
   });
 
@@ -91,5 +112,9 @@ export class MetricsService {
 
   recordWsRejection(reason: WsRejectionReason): void {
     this.wsConnectionRejections.inc({ reason });
+  }
+
+  recordProviderResponse(provider: string, status: number | null): void {
+    this.providerRequests.inc({ provider, outcome: providerOutcome(status) });
   }
 }

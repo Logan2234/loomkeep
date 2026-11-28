@@ -8,9 +8,11 @@ import { MediaSummaryDto } from "@loomkeep/shared/contracts";
 import { CatalogSource, MediaType } from "@loomkeep/shared/enums";
 import { HttpStatus, Injectable } from "@nestjs/common";
 import { AppException } from "../../common/app.exception";
-import { fetchJson, HTTP_TIMEOUT_MS } from "../../common/http.util";
-import { RequestThrottle } from "../../common/request-throttle";
-import { QuotaTrackerService } from "../../quota/quota-tracker.service";
+import { HTTP_TIMEOUT_MS } from "../../common/http.util";
+import {
+  ProviderHttpService,
+  type ProviderHttpClient,
+} from "../../quota/provider-http.service";
 import {
   MAIN_LINE_RELATIONS,
   toCastDetail,
@@ -314,9 +316,15 @@ const MAX_FRANCHISE_HOPS = 8;
 export class AnilistProvider implements CatalogProvider {
   readonly source = CatalogSource.ANILIST;
 
-  private readonly throttle = new RequestThrottle(MIN_REQUEST_INTERVAL_MS);
+  private readonly client: ProviderHttpClient;
 
-  constructor(private readonly quota: QuotaTrackerService) {}
+  constructor(http: ProviderHttpService) {
+    this.client = http.client({
+      provider: "anilist",
+      sourceLabel: "AniList",
+      minIntervalMs: MIN_REQUEST_INTERVAL_MS,
+    });
+  }
 
   // AniList only serves anime, so the `type` filter is irrelevant here.
   async search(
@@ -452,8 +460,7 @@ export class AnilistProvider implements CatalogProvider {
       | { name: string; isCustomList: boolean; entries: AnilistListEntry[] }[]
       | null;
   }> {
-    await this.throttle.wait();
-    this.quota.record("anilist");
+    await this.client.beforeAttempt();
 
     let response: Response;
 
@@ -471,11 +478,14 @@ export class AnilistProvider implements CatalogProvider {
         }),
       });
     } catch {
+      this.client.recordResponse(null);
       throw new AppException(
         HttpStatus.BAD_GATEWAY,
         ErrorCode.ImportSourceUnavailable,
       );
     }
+
+    this.client.recordResponse(response.status);
 
     const body = (await response.json().catch(() => null)) as {
       data?: {
@@ -609,7 +619,7 @@ export class AnilistProvider implements CatalogProvider {
     query: string,
     variables: Record<string, unknown>,
   ): Promise<T> {
-    const body = await fetchJson<{
+    const body = await this.client.fetchJson<{
       data?: T;
       errors?: { message: string }[];
     }>(
@@ -623,11 +633,8 @@ export class AnilistProvider implements CatalogProvider {
         body: JSON.stringify({ query, variables }),
       },
       {
-        sourceLabel: "AniList",
         notFoundMessage: "Media not found on AniList",
         maxRetryDelayMs: MAX_RETRY_DELAY_MS,
-        beforeAttempt: () => this.throttle.wait(),
-        onAttempt: () => this.quota.record("anilist"),
       },
     );
 

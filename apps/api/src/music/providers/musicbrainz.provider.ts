@@ -6,14 +6,11 @@ import {
 } from "@loomkeep/shared/contracts";
 import { MusicSource } from "@loomkeep/shared/enums";
 import { Injectable, Logger } from "@nestjs/common";
-import { ConfigService } from "@nestjs/config";
+import { HTTP_TIMEOUT_MS } from "../../common/http.util";
 import {
-  fetchJson,
-  HTTP_TIMEOUT_MS,
-  identifyingUserAgent,
-} from "../../common/http.util";
-import { RequestThrottle } from "../../common/request-throttle";
-import { QuotaTrackerService } from "../../quota/quota-tracker.service";
+  type ProviderHttpClient,
+  ProviderHttpService,
+} from "../../quota/provider-http.service";
 import type {
   MusicCatalogProvider,
   ProviderMusicDetails,
@@ -113,12 +110,16 @@ export class MusicBrainzProvider implements MusicCatalogProvider {
   private readonly logger = new Logger(MusicBrainzProvider.name);
   readonly source = MusicSource.MUSICBRAINZ;
 
-  private readonly throttle = new RequestThrottle(MIN_REQUEST_INTERVAL_MS);
+  private readonly client: ProviderHttpClient;
 
-  constructor(
-    private readonly configService: ConfigService,
-    private readonly quota: QuotaTrackerService,
-  ) {}
+  constructor(http: ProviderHttpService) {
+    this.client = http.client({
+      provider: "musicbrainz",
+      sourceLabel: "MusicBrainz",
+      identify: true,
+      minIntervalMs: MIN_REQUEST_INTERVAL_MS,
+    });
+  }
 
   async search(query: string): Promise<MusicSummaryDto[]> {
     const params = new URLSearchParams({ query, fmt: "json", limit: "20" });
@@ -301,24 +302,10 @@ export class MusicBrainzProvider implements MusicCatalogProvider {
    * on 503 (MusicBrainz's rate-limit response) with backoff.
    */
   private async get<T>(path: string, notFoundMessage?: string): Promise<T> {
-    const contact = this.configService.get<string>("API_CONTACT");
-    const url = `${MUSICBRAINZ_API_URL}${path}`;
-
-    return fetchJson<T>(
-      url,
-      {
-        headers: {
-          Accept: "application/json",
-          "User-Agent": identifyingUserAgent(contact),
-        },
-      },
-      {
-        sourceLabel: "MusicBrainz",
-        notFoundMessage,
-        onAttempt: () => this.quota.record("musicbrainz"),
-        beforeAttempt: () => this.throttle.wait(),
-        isRetryable: (status) => status === 503,
-      },
+    return this.client.fetchJson<T>(
+      `${MUSICBRAINZ_API_URL}${path}`,
+      { headers: { Accept: "application/json" } },
+      { notFoundMessage, isRetryable: (status) => status === 503 },
     );
   }
 }

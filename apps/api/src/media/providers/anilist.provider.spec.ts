@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { vi } from "vitest";
 import { RequestThrottle } from "../../common/request-throttle";
-import type { QuotaTrackerService } from "../../quota/quota-tracker.service";
+import { providerHttp } from "../../test-utils/stubs";
 import { AnilistProvider } from "./anilist.provider";
 
 const FIXTURES = join(__dirname, "..", "..", "..", "test", "fixtures");
@@ -39,7 +39,7 @@ describe("AnilistProvider", () => {
     let now = 0;
     vi.spyOn(Date, "now").mockImplementation(() => (now += 5000));
     const quota = { record: vi.fn() };
-    provider = new AnilistProvider(quota as unknown as QuotaTrackerService);
+    provider = new AnilistProvider(providerHttp(quota));
   });
 
   afterEach(() => {

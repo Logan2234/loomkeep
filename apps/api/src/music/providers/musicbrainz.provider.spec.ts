@@ -1,8 +1,7 @@
 import { Logger } from "@nestjs/common";
-import { ConfigService } from "@nestjs/config";
 import { vi, type Mock } from "vitest";
-import type { QuotaTrackerService } from "../../quota/quota-tracker.service";
 import { mockFetchByUrl } from "../../test-utils/mock-fetch";
+import { providerHttp } from "../../test-utils/stubs";
 import { MusicBrainzProvider } from "./musicbrainz.provider";
 
 // Node defines global fetch lazily, which confuses vi.spyOn on restore;
@@ -46,10 +45,7 @@ function mockFetchSequence(
 function providerWith(contact?: string): MusicBrainzProvider {
   const config = { get: vi.fn().mockReturnValue(contact) };
   const quota = { record: vi.fn() };
-  return new MusicBrainzProvider(
-    config as unknown as ConfigService,
-    quota as unknown as QuotaTrackerService,
-  );
+  return new MusicBrainzProvider(providerHttp(quota, config));
 }
 
 describe("MusicBrainzProvider", () => {

@@ -1,7 +1,7 @@
 import { ConfigService } from "@nestjs/config";
 import { vi, type Mock } from "vitest";
-import type { QuotaTrackerService } from "../../quota/quota-tracker.service";
 import { mockFetchByUrl as routedFetch } from "../../test-utils/mock-fetch";
+import { providerHttp } from "../../test-utils/stubs";
 import { IgdbProvider } from "./igdb.provider";
 
 // Node defines global fetch lazily, which confuses vi.spyOn on restore;
@@ -30,7 +30,7 @@ describe("IgdbProvider", () => {
     const quota = { record: vi.fn() };
     provider = new IgdbProvider(
       config as unknown as ConfigService,
-      quota as unknown as QuotaTrackerService,
+      providerHttp(quota),
     );
   });
 
@@ -66,8 +66,11 @@ describe("IgdbProvider", () => {
     it("goes back through the throttle before every retry", async () => {
       fetchSequence([429, 200]);
       const wait = vi.spyOn(
-        (provider as unknown as { throttle: { wait: () => Promise<void> } })
-          .throttle,
+        (
+          provider as unknown as {
+            client: { throttle: { wait: () => Promise<void> } };
+          }
+        ).client.throttle,
         "wait",
       );
 

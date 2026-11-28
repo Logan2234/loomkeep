@@ -13,8 +13,10 @@ import { ConfigService } from "@nestjs/config";
 import { AppException } from "../../common/app.exception";
 import { chunk } from "../../common/array.util";
 import { fetchJson } from "../../common/http.util";
-import { RequestThrottle } from "../../common/request-throttle";
-import { QuotaTrackerService } from "../../quota/quota-tracker.service";
+import {
+  type ProviderHttpClient,
+  ProviderHttpService,
+} from "../../quota/provider-http.service";
 import type {
   GameCatalogProvider,
   ProviderGameDetails,
@@ -192,12 +194,18 @@ export class IgdbProvider implements GameCatalogProvider {
   readonly source = GameSource.IGDB;
 
   private token: { value: string; expiresAt: number } | null = null;
-  private readonly throttle = new RequestThrottle(MIN_REQUEST_INTERVAL_MS);
+  private readonly client: ProviderHttpClient;
 
   constructor(
     private readonly configService: ConfigService,
-    private readonly quota: QuotaTrackerService,
-  ) {}
+    http: ProviderHttpService,
+  ) {
+    this.client = http.client({
+      provider: "igdb",
+      sourceLabel: "IGDB",
+      minIntervalMs: MIN_REQUEST_INTERVAL_MS,
+    });
+  }
 
   // Reuses the same "mode prefix inside the free-text query" convention as
   // OpenLibraryProvider's `author:"…"` search — no separate mode param on
@@ -555,16 +563,14 @@ export class IgdbProvider implements GameCatalogProvider {
       "Client-ID": this.configService.getOrThrow<string>("TWITCH_CLIENT_ID"),
       Accept: "application/json",
     };
-    return fetchJson<T>(
+    return this.client.fetchJson<T>(
       `${API_URL}${path}`,
       { method: "POST", headers, body },
       {
-        sourceLabel: "IGDB",
-        onAttempt: () => this.quota.record("igdb"),
-        // Per attempt, retries included: the throttle (IGDB's 4 req/s), and
-        // the token, which a 401 below has dropped if Twitch revoked it early.
+        // Per attempt, retries included, after the client's throttle (IGDB's
+        // 4 req/s): the token, which a 401 below has dropped if Twitch
+        // revoked it early.
         beforeAttempt: async () => {
-          await this.throttle.wait();
           headers.Authorization = `Bearer ${await this.accessToken()}`;
         },
         isRetryable: (status) => {

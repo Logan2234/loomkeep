@@ -8,11 +8,12 @@ import type {
 import { BookSummaryDto, CreatorSource } from "@loomkeep/shared/contracts";
 import { BookSource } from "@loomkeep/shared/enums";
 import { HttpStatus, Injectable } from "@nestjs/common";
-import { ConfigService } from "@nestjs/config";
 import { AppException } from "../../common/app.exception";
 import { chunk } from "../../common/array.util";
-import { fetchJson, identifyingUserAgent } from "../../common/http.util";
-import { QuotaTrackerService } from "../../quota/quota-tracker.service";
+import {
+  type ProviderHttpClient,
+  ProviderHttpService,
+} from "../../quota/provider-http.service";
 import type {
   BookCatalogProvider,
   ProviderBookDetails,
@@ -29,6 +30,10 @@ import {
 } from "./open-library.format";
 
 export const OPEN_LIBRARY_API_URL = "https://openlibrary.org";
+// Open Library allows 3 requests per second to a caller whose User-Agent
+// gives a contact, 1 otherwise (https://openlibrary.org/developers/api).
+const IDENTIFIED_REQUEST_INTERVAL_MS = 334;
+const ANONYMOUS_REQUEST_INTERVAL_MS = 1000;
 
 // Open Library has no "similar books" endpoint; other works by the primary
 // author is the closest equivalent. Capped so the carousel stays a quick
@@ -234,10 +239,18 @@ interface OpenLibraryEditionsResponse {
 export class OpenLibraryProvider implements BookCatalogProvider {
   readonly source = BookSource.OPEN_LIBRARY;
 
-  constructor(
-    private readonly configService: ConfigService,
-    private readonly quota: QuotaTrackerService,
-  ) {}
+  constructor(http: ProviderHttpService) {
+    this.client = http.client({
+      provider: "openLibrary",
+      sourceLabel: "Open Library",
+      identify: true,
+      minIntervalMs: http.contact
+        ? IDENTIFIED_REQUEST_INTERVAL_MS
+        : ANONYMOUS_REQUEST_INTERVAL_MS,
+    });
+  }
+
+  private readonly client: ProviderHttpClient;
 
   /** `lang` (ISO 639-1, e.g. "fr"): the signed-in user's locale, when known. */
   async search(query: string, lang?: string): Promise<BookSummaryDto[]> {
@@ -686,22 +699,10 @@ export class OpenLibraryProvider implements BookCatalogProvider {
    * calls in a burst; honours `Retry-After` when Open Library sends one.
    */
   private async get<T>(path: string, notFoundMessage?: string): Promise<T> {
-    const contact = this.configService.get<string>("API_CONTACT");
-    const url = `${OPEN_LIBRARY_API_URL}${path}`;
-
-    return fetchJson<T>(
-      url,
-      {
-        headers: {
-          Accept: "application/json",
-          "User-Agent": identifyingUserAgent(contact),
-        },
-      },
-      {
-        sourceLabel: "Open Library",
-        notFoundMessage,
-        onAttempt: () => this.quota.record("openLibrary"),
-      },
+    return this.client.fetchJson<T>(
+      `${OPEN_LIBRARY_API_URL}${path}`,
+      { headers: { Accept: "application/json" } },
+      { notFoundMessage },
     );
   }
 }
