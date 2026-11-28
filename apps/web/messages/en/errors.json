@@ -127,6 +127,7 @@
   "apierr_lists_owner_only_visibility": "Only the owner can change this list's visibility.",
   "apierr_lists_forbidden": "This list belongs to another account.",
   "apierr_lists_item_not_found": "This item could not be found in the list.",
+  "apierr_lists_item_limit_reached": "This list is full: it can hold up to {max} items.",
   "apierr_lists_item_already_exists": "This item is already in the list.",
   "apierr_lists_work_not_found": "This work could not be found in its catalogue.",
   "apierr_lists_reorder_mismatch": "The submitted order doesn't match the list's current items.",

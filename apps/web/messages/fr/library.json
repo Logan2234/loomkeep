@@ -6,6 +6,7 @@
   "import_group_list_films": "Titres de tes listes",
   "import_watchlist_count": "{count} à voir",
   "import_hour_imported": "heure importée",
+  "import_report_list_items_over_limit": "Au-delà de la limite des listes",
   "import_report_not_found": "Introuvables",
   "import_report_failed": "En échec",
   "import_hours_imported": "heures importées",

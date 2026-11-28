@@ -28,6 +28,7 @@ const LABELS = {
   episodes: () => m.media_episodes(),
   playtime: () => m.game_playtime(),
   lists: () => m.common_lists(),
+  listItemsOverLimit: () => m.import_report_list_items_over_limit(),
   notFound: () => m.import_report_not_found(),
   failed: () => m.import_report_failed(),
   seriesTracked: () => m.import_group_series_tracked(),

@@ -127,6 +127,7 @@
   "apierr_lists_owner_only_visibility": "Solo il proprietario può cambiare la visibilità di questa lista.",
   "apierr_lists_forbidden": "Questa lista appartiene a un altro account.",
   "apierr_lists_item_not_found": "Impossibile trovare questo elemento nella lista.",
+  "apierr_lists_item_limit_reached": "Questa lista è piena: può contenere fino a {max} elementi.",
   "apierr_lists_item_already_exists": "Questo elemento è già nella lista.",
   "apierr_lists_work_not_found": "Impossibile trovare quest'opera nel suo catalogo.",
   "apierr_lists_reorder_mismatch": "L'ordine inviato non corrisponde agli elementi attuali della lista.",

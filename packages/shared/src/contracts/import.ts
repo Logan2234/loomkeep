@@ -173,6 +173,8 @@ export type ImportReportTileId =
   | "episodes"
   | "playtime"
   | "lists"
+  /** Films of imported lists left out past the list limit (LIST_LIMITS.items). */
+  | "listItemsOverLimit"
   /** Selected, but the catalogue no longer knows it: nothing written. */
   | "notFound"
   /** Selected, but writing it failed: the rest of the import went on. */
