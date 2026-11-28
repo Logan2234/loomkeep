@@ -39,7 +39,12 @@ describe("userAgentFamily", () => {
 describe("groupByUserAgentFamily", () => {
   it("counts subscriptions per family, most first", () => {
     expect(
-      groupByUserAgentFamily([CHROME, CHROME, SAFARI_IOS, EDGE, null]),
+      groupByUserAgentFamily([
+        { userAgent: CHROME, count: 2 },
+        { userAgent: SAFARI_IOS, count: 1 },
+        { userAgent: EDGE, count: 1 },
+        { userAgent: null, count: 1 },
+      ]),
     ).toEqual([
       { label: "Chrome", count: 2 },
       { label: "Edge", count: 1 },

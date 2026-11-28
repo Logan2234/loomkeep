@@ -5,13 +5,22 @@ import {
   type AdminPushSendResponseDto,
   type AdminPushSummaryDto,
 } from "@loomkeep/shared/contracts";
-import { Body, Controller, Get, HttpStatus, Post, Query } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  Get,
+  HttpStatus,
+  Logger,
+  Post,
+  Query,
+} from "@nestjs/common";
 import { ApiCreatedResponse, ApiOkResponse } from "@nestjs/swagger";
 import { AppException } from "../common/app.exception";
 import {
   CANONICAL_EXTERNAL_ID_SELECT,
   canonicalExternalId,
 } from "../common/external-id.util";
+import { forEachIsolated } from "../jobs/for-each-isolated";
 import { notificationCopy } from "../notifications/notification-copy";
 import { avatarPath } from "../notifications/push-image";
 import { PushService } from "../notifications/push.service";
@@ -27,9 +36,14 @@ import { SendAdminTestPushDto } from "./dto/send-admin-test-push.dto";
 import { samplePush, type SampleContext } from "./push-samples";
 
 /** Push administration: per-account test sends and instance-wide broadcasts. */
+/** Accounts a broadcast sends to at once. */
+const BROADCAST_CONCURRENCY = 20;
+
 @AdminOnly()
 @Controller("admin")
 export class AdminPushController {
+  private readonly logger = new Logger(AdminPushController.name);
+
   constructor(
     private readonly push: PushService,
     private readonly prisma: PrismaService,
@@ -44,18 +58,23 @@ export class AdminPushController {
   @Get("push/summary")
   @ApiOkResponse({ type: AdminPushSummaryResponseDto })
   async getPushSummary(): Promise<AdminPushSummaryDto> {
-    const [rows, accounts] = await Promise.all([
-      this.prisma.pushSubscription.findMany({ select: { userAgent: true } }),
-      this.prisma.pushSubscription.findMany({
-        distinct: ["userId"],
-        select: { userId: true },
+    const [byUserAgent, accounts] = await Promise.all([
+      this.prisma.pushSubscription.groupBy({
+        by: ["userAgent"],
+        _count: { _all: true },
       }),
+      this.prisma.user.count({ where: { pushSubscriptions: { some: {} } } }),
     ]);
 
     return {
-      subscriptions: rows.length,
-      accounts: accounts.length,
-      byUserAgent: groupByUserAgentFamily(rows.map((r) => r.userAgent)),
+      subscriptions: byUserAgent.reduce((sum, row) => sum + row._count._all, 0),
+      accounts,
+      byUserAgent: groupByUserAgentFamily(
+        byUserAgent.map((row) => ({
+          userAgent: row.userAgent,
+          count: row._count._all,
+        })),
+      ),
     };
   }
 
@@ -114,25 +133,37 @@ export class AdminPushController {
       select: { userId: true, user: { select: { locale: true } } },
     });
 
-    const perAccount = await Promise.all(
-      subscribed.map(({ userId, user }) =>
-        this.push.sendToUserDetailed(userId, {
-          title: dto.title?.trim() || "Loomkeep (admin)",
-          body:
-            dto.body?.trim() ||
-            notificationCopy(user.locale).adminBroadcastPush,
-          url: "/app",
-          group: AlertGroup.ANNOUNCEMENTS,
-        }),
-      ),
+    // Bounded: each send reads the account's devices and badge counts and
+    // calls every push service, so thousands at once saturated the database
+    // pool for the whole instance.
+    const results: { ok: boolean }[] = [];
+    const { failed } = await forEachIsolated(
+      subscribed,
+      async ({ userId, user }) => {
+        results.push(
+          ...(await this.push.sendToUserDetailed(userId, {
+            title: dto.title?.trim() || "Loomkeep (admin)",
+            body:
+              dto.body?.trim() ||
+              notificationCopy(user.locale).adminBroadcastPush,
+            url: "/app",
+            group: AlertGroup.ANNOUNCEMENTS,
+          })),
+        );
+      },
+      {
+        logger: this.logger,
+        label: ({ userId }) => `Broadcast push to ${userId}`,
+        concurrency: BROADCAST_CONCURRENCY,
+      },
     );
 
-    const results = perAccount.flat();
+    // An account whose send threw counts once: its devices are unknown.
     return {
       accountCount: subscribed.length,
-      deviceCount: results.length,
+      deviceCount: results.length + failed,
       successCount: results.filter((r) => r.ok).length,
-      failureCount: results.filter((r) => !r.ok).length,
+      failureCount: results.filter((r) => !r.ok).length + failed,
     };
   }
 
