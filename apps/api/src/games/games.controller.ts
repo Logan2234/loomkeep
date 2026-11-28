@@ -40,7 +40,7 @@ import { toQueryArray } from "../common/query-array.util";
 import { PileSummaryResponseDto } from "../stats/dto/pile-summary-response.dto";
 import { AgeGateService } from "../users/age-gate.service";
 import { filterAdultContent } from "../users/age.util";
-import { DomainGateService } from "../users/domain-gate.service";
+import { DomainGated } from "../users/domain-gate.guard";
 import {
   BulkEntriesResultResponseDto,
   BulkEntriesTargetBody,
@@ -70,6 +70,7 @@ import { GameLibraryService } from "./game-library.service";
 import { GameSagaService } from "./game-saga.service";
 import { GameSessionService } from "./game-session.service";
 
+@DomainGated(Domain.GAMES)
 @Controller("games")
 export class GamesController {
   constructor(
@@ -77,7 +78,6 @@ export class GamesController {
     private readonly gameLibraryService: GameLibraryService,
     private readonly gameSessionService: GameSessionService,
     private readonly ageGate: AgeGateService,
-    private readonly domainGate: DomainGateService,
     private readonly gameSagaService: GameSagaService,
   ) {}
 
@@ -99,8 +99,6 @@ export class GamesController {
         ErrorCode.CatalogSearchQueryRequired,
       );
     }
-
-    await this.domainGate.assertEnabled(user.sub, Domain.GAMES);
 
     const [results, allowAdult] = await Promise.all([
       this.gameItemService.providerFor().search(query),
@@ -167,7 +165,6 @@ export class GamesController {
     @Query("platform") platform?: string | string[],
     @Query("loan") loan?: string,
   ): Promise<PagedResult<GameEntryDto>> {
-    await this.domainGate.assertEnabled(user.sub, Domain.GAMES);
     return this.gameLibraryService.listEntries(user.sub, {
       platforms: toQueryArray(platform),
       ...parseListEntriesQuery({
@@ -193,7 +190,6 @@ export class GamesController {
     @Query("sort") sort?: string,
     @Query("order") order?: string,
   ): Promise<LibraryGameSagasDto> {
-    await this.domainGate.assertEnabled(user.sub, Domain.GAMES);
     return this.gameSagaService.listSagas(user.sub, {
       q,
       sort: LIBRARY_SAGA_SORTS.find((s) => s === sort),
@@ -213,7 +209,6 @@ export class GamesController {
     @Query("platform") platform?: string | string[],
     @Query("loan") loan?: string,
   ): Promise<PileSummaryDto> {
-    await this.domainGate.assertEnabled(user.sub, Domain.GAMES);
     return this.gameLibraryService.getPile(user.sub, {
       platforms: toQueryArray(platform),
       ...parseListEntriesQuery({ q, favorite, status, lang, loan }),
@@ -224,7 +219,6 @@ export class GamesController {
   @Get("platforms")
   @ApiOkResponse({ type: [String] })
   async listPlatforms(@CurrentUser() user: JwtPayload): Promise<string[]> {
-    await this.domainGate.assertEnabled(user.sub, Domain.GAMES);
     return this.gameLibraryService.listPlatforms(user.sub);
   }
 
@@ -264,7 +258,6 @@ export class GamesController {
     @CurrentUser() user: JwtPayload,
     @Body() dto: BulkUpdateGameEntriesBody,
   ): Promise<BulkEntriesResultDto> {
-    await this.domainGate.assertEnabled(user.sub, Domain.GAMES);
     return this.gameLibraryService.bulkUpdate(user.sub, dto);
   }
 
@@ -275,7 +268,6 @@ export class GamesController {
     @CurrentUser() user: JwtPayload,
     @Body() dto: BulkEntriesTargetBody,
   ): Promise<BulkEntriesResultDto> {
-    await this.domainGate.assertEnabled(user.sub, Domain.GAMES);
     return this.gameLibraryService.bulkDelete(user.sub, dto);
   }
 
@@ -297,7 +289,6 @@ export class GamesController {
     @Param("sourceId") sourceId: string,
   ): Promise<GameSagaResponse> {
     parseGameSource(sourceParam);
-    await this.domainGate.assertEnabled(user.sub, Domain.GAMES);
     return { saga: await this.gameSagaService.getSaga(user.sub, sourceId) };
   }
 

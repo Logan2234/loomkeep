@@ -232,6 +232,23 @@ export abstract class BookCsvSource<
     return { overwrite: decisions.overwrite, tiles };
   }
 
+  private async hasRating(
+    userId: string,
+    bookItemId: string,
+  ): Promise<boolean> {
+    const existing = await this.prisma.review.findUnique({
+      where: {
+        userId_targetType_targetId: {
+          userId,
+          targetType: ReviewTargetType.BOOK,
+          targetId: bookItemId,
+        },
+      },
+      select: { id: true },
+    });
+    return existing !== null;
+  }
+
   /**
    * Fetch details, persist the book, and upsert the entry: its book id, or
    * null if skipped. Under overwrite its previous entry (and reading cycles)
@@ -296,8 +313,9 @@ export abstract class BookCsvSource<
       data,
     );
 
-    // The rating now lives in Review (the single source of truth).
-    if (row.rating !== null) {
+    // The rating now lives in Review (the single source of truth). One the
+    // user already gave stays, as for media.
+    if (row.rating !== null && !(await this.hasRating(userId, bookItem.id))) {
       await this.reviews.setRating(
         userId,
         ReviewTargetType.BOOK,

@@ -42,7 +42,7 @@ import { parseEnumParam } from "../common/parse-enum-param.util";
 import { PileSummaryResponseDto } from "../stats/dto/pile-summary-response.dto";
 import { AgeGateService } from "../users/age-gate.service";
 import { filterAdultContent } from "../users/age.util";
-import { DomainGateService } from "../users/domain-gate.service";
+import { DomainGated } from "../users/domain-gate.guard";
 import {
   BulkEntriesResultResponseDto,
   BulkEntriesTargetBody,
@@ -75,6 +75,7 @@ import { UpdateBookSessionDto } from "./dto/update-book-session.dto";
 import { UpsertBookEntryDto } from "./dto/upsert-book-entry.dto";
 import { UpsertReadingGoalDto } from "./dto/upsert-reading-goal.dto";
 
+@DomainGated(Domain.BOOKS)
 @Controller("books")
 export class BooksController {
   constructor(
@@ -82,7 +83,6 @@ export class BooksController {
     private readonly bookLibraryService: BookLibraryService,
     private readonly bookSagaService: BookSagaService,
     private readonly bookSessionService: BookSessionService,
-    private readonly domainGate: DomainGateService,
     private readonly ageGate: AgeGateService,
   ) {}
 
@@ -106,8 +106,6 @@ export class BooksController {
         ErrorCode.CatalogSearchQueryRequired,
       );
     }
-
-    await this.domainGate.assertEnabled(user.sub, Domain.BOOKS);
 
     const [results, allowAdult] = await Promise.all([
       this.bookItemService.search(query, safeLang(lang)),
@@ -174,7 +172,6 @@ export class BooksController {
     @Query("free") free?: string,
     @Query("loan") loan?: string,
   ): Promise<PagedResult<BookEntryDto>> {
-    await this.domainGate.assertEnabled(user.sub, Domain.BOOKS);
     return this.bookLibraryService.listEntries(user.sub, {
       ...parseListEntriesQuery({
         q,
@@ -202,7 +199,6 @@ export class BooksController {
     @Query("order") order?: string,
     @Query("lang") lang?: string,
   ): Promise<LibraryBookSagasDto> {
-    await this.domainGate.assertEnabled(user.sub, Domain.BOOKS);
     return this.bookSagaService.listSagas(user.sub, {
       q,
       sort: LIBRARY_SAGA_SORTS.find((s) => s === sort),
@@ -219,7 +215,6 @@ export class BooksController {
     @Param("seriesKey") seriesKey: string,
     @Query("lang") lang?: string,
   ): Promise<BookSagaResponse> {
-    await this.domainGate.assertEnabled(user.sub, Domain.BOOKS);
     return {
       saga: await this.bookSagaService.getSaga(
         user.sub,
@@ -240,7 +235,6 @@ export class BooksController {
     @Query("free") free?: string,
     @Query("loan") loan?: string,
   ): Promise<PileSummaryDto> {
-    await this.domainGate.assertEnabled(user.sub, Domain.BOOKS);
     return this.bookLibraryService.getPile(user.sub, {
       ...parseListEntriesQuery({ q, favorite, status, lang, loan }),
       freeToRead: free === "true",
@@ -283,7 +277,6 @@ export class BooksController {
     @CurrentUser() user: JwtPayload,
     @Body() dto: BulkUpdateBookEntriesBody,
   ): Promise<BulkEntriesResultDto> {
-    await this.domainGate.assertEnabled(user.sub, Domain.BOOKS);
     return this.bookLibraryService.bulkUpdate(user.sub, dto);
   }
 
@@ -294,7 +287,6 @@ export class BooksController {
     @CurrentUser() user: JwtPayload,
     @Body() dto: BulkEntriesTargetBody,
   ): Promise<BulkEntriesResultDto> {
-    await this.domainGate.assertEnabled(user.sub, Domain.BOOKS);
     return this.bookLibraryService.bulkDelete(user.sub, dto);
   }
 
@@ -342,7 +334,6 @@ export class BooksController {
     @Param("sourceId") sourceId: string,
     @Query("lang") lang?: string,
   ): Promise<BookEditionDto[]> {
-    await this.domainGate.assertEnabled(user.sub, Domain.BOOKS);
     return this.bookItemService.getEditions(
       parseBookSource(sourceParam),
       sourceId,

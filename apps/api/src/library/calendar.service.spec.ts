@@ -26,6 +26,7 @@ describe("local movie release calendar", () => {
     };
     const prisma = {
       episode: { findMany: vi.fn().mockResolvedValue([]) },
+      $queryRaw: vi.fn().mockResolvedValue([{ id: "e1" }]),
       mediaEntry: { findMany: vi.fn().mockResolvedValue([row]) },
       gameEntry: { findMany: vi.fn().mockResolvedValue([]) },
       user: {
@@ -71,6 +72,7 @@ describe("local movie release calendar", () => {
     const gameEntryFindMany = vi.fn().mockResolvedValue([game]);
     const prisma = {
       episode: { findMany: vi.fn().mockResolvedValue([]) },
+      $queryRaw: vi.fn().mockResolvedValue([]),
       mediaEntry: { findMany: vi.fn().mockResolvedValue([]) },
       gameEntry: { findMany: gameEntryFindMany },
       user: {
@@ -115,6 +117,7 @@ describe("local movie release calendar", () => {
     const episodeFindMany = vi.fn().mockResolvedValue([]);
     const prisma = {
       episode: { findMany: episodeFindMany },
+      $queryRaw: vi.fn().mockResolvedValue([]),
       mediaEntry: { findMany: vi.fn().mockResolvedValue([]) },
       gameEntry: { findMany: vi.fn().mockResolvedValue([]) },
       user: {
@@ -175,5 +178,24 @@ describe("local movie release calendar", () => {
     expect(standard.seasonFinale).toBeUndefined();
     expect(finale).toMatchObject({ episodeNumber: 2, seasonFinale: true });
     vi.useRealTimers();
+  });
+
+  // Every tracked film was loaded, release dates and all, to list the few
+  // still to come (audit 2026-11-17, PRF-13).
+  it("loads no film when none has a release still to come", async () => {
+    const findMany = vi.fn();
+    const prisma = {
+      episode: { findMany: vi.fn().mockResolvedValue([]) },
+      $queryRaw: vi.fn().mockResolvedValue([]),
+      mediaEntry: { findMany },
+      gameEntry: { findMany: vi.fn().mockResolvedValue([]) },
+      user: {
+        findUniqueOrThrow: vi.fn().mockResolvedValue({ preferences: null }),
+      },
+    };
+    const service = new CalendarService(prisma as never);
+
+    await expect(service.getCalendar("u1")).resolves.toEqual([]);
+    expect(findMany).not.toHaveBeenCalled();
   });
 });

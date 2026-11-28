@@ -158,6 +158,10 @@ export class AuthService {
       where: { email: dto.email },
     });
 
+    // A known trade-off: unlike login and reset, sign-up says the address is
+    // taken, as most sites do, rather than answer "check your inbox" for an
+    // account that already exists. Turnstile and the per-IP throttle are what
+    // keep it from being used to test a list of addresses.
     if (existing) {
       throw new AppException(
         HttpStatus.CONFLICT,

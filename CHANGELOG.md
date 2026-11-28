@@ -28,6 +28,9 @@ history from before it was started.
   own copy to go on running them).
   Grafana's single sign-on is now off unless `GRAFANA_OIDC_ENABLED=true`,
   with your provider's URLs in the `GRAFANA_OIDC_*` variables.
+- **Self-hosting: each container now has a memory ceiling** (API 1 GB, web
+  512 MB, PostgreSQL 1 GB). On a large instance, raise them with
+  `API_MEM_LIMIT`, `WEB_MEM_LIMIT` and `DB_MEM_LIMIT` in `.env`.
 
 ### Added
 
@@ -101,6 +104,17 @@ history from before it was started.
 
 ### Fixed
 
+- Reordering a list while someone else adds or removes an item now asks you
+  to refresh, instead of failing or leaving two items on the same rank. Long
+  lists reorder without timing out.
+- A domain you turned off, or one an admin closed, can no longer be written
+  to through the API: adding, editing, sessions and detail pages included,
+  and reviews or list items of its works.
+- Re-importing books you already track no longer sends them back to the
+  export's status: progress, rating, notes and dates you have stay, and a book only
+  moves forward.
+- An import analysis stays ready to confirm for 15 minutes; after that, the
+  app asks you to analyze the file again.
 - An import keeps going when one title can't be written, and the report
   counts it as failed.
 - Import reviews, reports and history read in your own language: the

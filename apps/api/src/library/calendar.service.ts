@@ -110,14 +110,7 @@ export class CalendarService {
       // airDate is guaranteed non-null by the `gte` filter above.
       airDate: episode.airDate!.toISOString(),
     }));
-    const movies = await this.prisma.mediaEntry.findMany({
-      where: {
-        userId,
-        status: { not: "DROPPED" },
-        mediaItem: { type: "MOVIE" },
-      },
-      include: { mediaItem: { include: { externalIds: true } } },
-    });
+    const movies = await this.moviesStillToRelease(userId, today);
     const gameEntries = await this.calendarGames(userId, today);
     const movieEntries: CalendarEntryDto[] = movies.flatMap((entry) => {
       const region = resolveWatchRegion(
@@ -150,6 +143,37 @@ export class CalendarService {
     return [...episodeEntries, ...movieEntries, ...gameEntries].sort((a, b) =>
       a.airDate.localeCompare(b.airDate),
     );
+  }
+
+  /**
+   * The tracked films with a cinema or digital release on or after `today`
+   * in some country: a superset of those the calendar lists, since a film's
+   * local date is the earliest of its region's. Filtered in SQL, so the
+   * release dates of a whole film library aren't loaded on every call.
+   */
+  private async moviesStillToRelease(userId: string, today: string) {
+    const candidates = await this.prisma.$queryRaw<{ id: string }[]>`
+      SELECT e.id
+      FROM "MediaEntry" e
+      JOIN "MediaItem" m ON m.id = e."mediaItemId"
+      WHERE e."userId" = ${userId}
+        AND e.status <> 'DROPPED'
+        AND m.type = 'MOVIE'
+        AND EXISTS (
+          -- Postgres doesn't promise to test the type before expanding.
+          SELECT 1 FROM jsonb_array_elements(
+            CASE WHEN jsonb_typeof(m."movieReleaseDates") = 'array'
+              THEN m."movieReleaseDates" ELSE '[]'::jsonb END
+          ) r
+          WHERE r->>'date' >= ${today} AND r->>'type' IN ('2', '3', '4')
+        )
+    `;
+    if (candidates.length === 0) return [];
+
+    return this.prisma.mediaEntry.findMany({
+      where: { id: { in: candidates.map((c) => c.id) } },
+      include: { mediaItem: { include: { externalIds: true } } },
+    });
   }
 
   /**

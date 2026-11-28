@@ -1,6 +1,7 @@
 import { ErrorCode } from "@loomkeep/shared/catalog";
 import {
   type MyReviewDto,
+  REVIEW_TARGET_DOMAIN,
   type ReviewBatchResultDto,
   type ReviewDto,
   type ReviewRevisionDto,
@@ -29,6 +30,7 @@ import { REPORT_THROTTLE } from "../common/throttle.constants";
 import { CreateReportBody } from "../reports/dto/create-report.dto";
 import { ReportService } from "../reports/report.service";
 import { SocialFeatureGuard } from "../social/social-feature.guard";
+import { DomainGateService } from "../users/domain-gate.service";
 import {
   BatchDeleteReviewsBody,
   BatchVisibilityBody,
@@ -57,6 +59,7 @@ export class ReviewController {
   constructor(
     private readonly reviews: ReviewService,
     private readonly reports: ReportService,
+    private readonly domainGate: DomainGateService,
   ) {}
 
   // Own reviews remain available when social features are disabled.
@@ -103,13 +106,15 @@ export class ReviewController {
 
   @Put("me/:type/:id")
   @ApiOkResponse({ type: ReviewResponseDto })
-  upsert(
+  async upsert(
     @CurrentUser() user: JwtPayload,
     @Param("type") type: string,
     @Param("id") id: string,
     @Body() body: UpsertReviewBody,
   ): Promise<ReviewDto> {
-    return this.reviews.upsert(user.sub, parseTarget(type), id, body);
+    const target = parseTarget(type);
+    await this.domainGate.assertEnabled(user.sub, REVIEW_TARGET_DOMAIN[target]);
+    return this.reviews.upsert(user.sub, target, id, body);
   }
 
   @Delete("me/:type/:id")

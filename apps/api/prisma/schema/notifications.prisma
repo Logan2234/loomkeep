@@ -71,4 +71,7 @@ model Notification {
   // written in SQL in the migration 20261124170000_indexes_and_closed_values.
   // The hourly scan's de-duplication looks keys up across every account.
   @@index([dedupeKey])
+  // The daily purge of release rows past their retention, across every
+  // account.
+  @@index([createdAt])
 }

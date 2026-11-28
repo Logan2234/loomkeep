@@ -51,7 +51,11 @@ model XpEntry {
 
   @@index([userId, createdAt])
   @@index([userId, revokedAt])
-  @@index([reason, id])
+  // The nightly sweep reads live rows only, through two partial indexes
+  // written in SQL (migration 20261127100000_xp_and_notification_indexes):
+  // (reason, id) WHERE "revokedAt" IS NULL for the reconciliation, and
+  // (sourceType, id) WHERE "revokedAt" IS NULL AND "title" IS NULL for the
+  // subject backfill, empty once it has caught up.
   // XpService.revokeBySource: one user's live rows of a few sources, on
   // every unwatch, deletion or vote change. The partial unique index has
   // `reason` between `userId` and the source, so it can't serve this.

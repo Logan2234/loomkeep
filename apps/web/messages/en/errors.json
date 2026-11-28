@@ -63,7 +63,7 @@
   "apierr_import_interrupted": "The server restarted during this import. What it had written is kept: run it again to finish.",
   "apierr_import_job_forbidden": "This import belongs to another account.",
   "apierr_import_job_source_mismatch": "The import source doesn't match.",
-  "apierr_import_job_no_analysis": "This import hasn't been analyzed yet.",
+  "apierr_import_job_no_analysis": "This analysis has expired. Analyze the file again.",
   "apierr_import_job_already_running": "Another import is already running. Wait for it to finish before starting a new one.",
   "apierr_import_unknown_source": "Unknown import source.",
   "apierr_import_source_unavailable": "The import source is temporarily unavailable, try again in a moment.",

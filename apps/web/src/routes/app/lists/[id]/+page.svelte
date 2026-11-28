@@ -231,6 +231,9 @@
     onSuccess: (_: void, itemId: string) => {
       if (list)
         patchList({ items: list.items.filter((item) => item.id !== itemId) });
+      // A removal moves the list's updatedAt, the reorder's optimistic lock:
+      // without the fresh one, the next drag would be refused as stale.
+      void queryClient.invalidateQueries({ queryKey: detailKey });
     },
     errorToast: true,
   }));

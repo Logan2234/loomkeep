@@ -19,23 +19,9 @@ describe("library pagination boundaries", () => {
     return {
       service,
       controllers: [
-        new BooksController(
-          null!,
-          service as never,
-          null!,
-          null!,
-          gate as never,
-          null!,
-        ),
-        new GamesController(
-          null!,
-          service as never,
-          null!,
-          null!,
-          gate as never,
-          null!,
-        ),
-        new MusicController(null!, service as never, gate as never),
+        new BooksController(null!, service as never, null!, null!, null!),
+        new GamesController(null!, service as never, null!, null!, null!),
+        new MusicController(null!, service as never),
       ],
       media: new MediaLibraryController(
         service as never,
@@ -99,7 +85,6 @@ describe("library pagination boundaries", () => {
       null!,
       null!,
       sessions as never,
-      gate as never,
       null!,
     );
     const games = new GamesController(
@@ -107,7 +92,6 @@ describe("library pagination boundaries", () => {
       null!,
       sessions as never,
       null!,
-      gate as never,
       null!,
     );
     await books.listSessions(viewer, "entry", "abc");

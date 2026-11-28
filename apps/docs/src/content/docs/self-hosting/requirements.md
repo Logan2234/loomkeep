@@ -16,6 +16,22 @@ Each [optional service](/self-hosting/optional-services/) adds its own
 containers on top; monitoring, with Grafana, Loki and Prometheus, is by far
 the heaviest.
 
+### Memory limits
+
+Each container has a memory ceiling, so a leak in one service, or in another
+stack on the same host, stops at its own limit instead of waking the kernel's
+OOM killer, which may pick PostgreSQL. The defaults suit a 4 GB host: 1 GB for
+the API, 512 MB for the web, 1 GB for PostgreSQL. Set `API_MEM_LIMIT`,
+`WEB_MEM_LIMIT` or `DB_MEM_LIMIT` in `.env` to change them; give the API
+more on a large instance, since an import holds the parsed export in its
+memory.
+
+### Database connections
+
+The API keeps a pool of at most 10 connections to PostgreSQL, which accepts 100. The optional Unleash, GlitchTip and Umami services use the same
+PostgreSQL: with them on, add up their pools and keep the total under
+`max_connections`.
+
 ## Architecture
 
 The images are built for **x86-64** (`amd64`) and **64-bit ARM** (`arm64`);

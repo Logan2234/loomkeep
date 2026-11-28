@@ -1,6 +1,8 @@
 import { ErrorCode } from "@loomkeep/shared/catalog";
-import { type ListItemDto } from "@loomkeep/shared/contracts";
-import { Domain } from "@loomkeep/shared/enums";
+import {
+  type ListItemDto,
+  REVIEW_TARGET_DOMAIN,
+} from "@loomkeep/shared/contracts";
 import { Body, Controller, HttpStatus, Param, Post } from "@nestjs/common";
 import { ApiCreatedResponse } from "@nestjs/swagger";
 import {
@@ -14,13 +16,6 @@ import { DomainGateService } from "../users/domain-gate.service";
 import { AddListWorkBody } from "./dto/add-list-work.dto";
 import { ListItemResponseDto } from "./dto/list-item-response.dto";
 import { ListService } from "./list.service";
-
-const DOMAIN_OF = {
-  MEDIA: Domain.MEDIA,
-  GAME: Domain.GAMES,
-  BOOK: Domain.BOOKS,
-  MUSIC: Domain.MUSIC,
-} as const;
 
 // Its own controller: the catalogue modules import ListsModule, so
 // ListService can't reach back to them for the cache.
@@ -52,7 +47,10 @@ export class ListWorksController {
       throw new AppException(HttpStatus.NOT_FOUND, ErrorCode.ListWorkNotFound);
     }
 
-    await this.domainGate.assertEnabled(user.sub, DOMAIN_OF[work.targetType]);
+    await this.domainGate.assertEnabled(
+      user.sub,
+      REVIEW_TARGET_DOMAIN[work.targetType],
+    );
 
     return this.lists.addItem(user.sub, id, {
       targetType: work.targetType,
