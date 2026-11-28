@@ -7,7 +7,7 @@ import {
   type BookEntryDto,
   type GameEntryDto,
 } from "@loomkeep/shared/contracts";
-import { screen, waitFor } from "@testing-library/svelte";
+import { screen, waitFor, within } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 import { describe, expect, it } from "vitest";
@@ -203,4 +203,51 @@ describe("session timer confirmation", () => {
       );
     },
   );
+});
+
+describe("adding a book session", () => {
+  it("sends the pages read with the shared fields", async () => {
+    const user = userEvent.setup();
+    let body: unknown = null;
+    server.use(
+      http.get(apiUrl("/session-timer"), () => HttpResponse.json(null)),
+      http.get(apiUrl("/books/entries/entry/sessions"), () =>
+        HttpResponse.json({
+          items: [],
+          hasMore: false,
+          totalSessions: 0,
+          totalTrackedMinutes: 0,
+          weekMinutes: 0,
+          weekSessions: 0,
+          weekDays: [],
+          activeReading: null,
+          estimatedCompletionDate: null,
+        }),
+      ),
+      http.post(
+        apiUrl("/books/entries/entry/sessions"),
+        async ({ request }) => {
+          body = await request.json();
+          return HttpResponse.json({});
+        },
+      ),
+    );
+    renderWithQuery(BookSessionDock, {
+      entry: { ...book, referencePageCount: 300 },
+      detailKey: ["detail"],
+    });
+
+    await user.click(
+      await screen.findByRole("button", { name: m.book_session_add_short() }),
+    );
+    await user.click(
+      within(
+        await screen.findByRole("dialog", { name: m.book_session_add_title() }),
+      ).getByRole("button", { name: m.session_save() }),
+    );
+
+    await waitFor(() =>
+      expect(body).toMatchObject({ durationMinutes: 0, pagesRead: 10 }),
+    );
+  });
 });
