@@ -18,7 +18,7 @@ export const OWNERSHIP_SOURCE_MAX_LENGTH = 100;
 export type LibraryDomainCountsDto = Partial<Record<Domain, number>>;
 
 /**
- * `GET /library/tracked`: every work of the media library, reduced to what
+ * `GET /media/tracked`: every work of the media library, reduced to what
  * flags a catalogue search result as already tracked — its identity and its
  * effective status (derived from watch progress, as in the library list).
  */

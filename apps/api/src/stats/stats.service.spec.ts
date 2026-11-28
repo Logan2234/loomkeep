@@ -1,6 +1,7 @@
 import { vi } from "vitest";
 import type { PrismaService } from "../prisma/prisma.service";
 import type { ReviewService } from "../reviews/review.service";
+import { domainRegistry } from "../test-utils/domain-registry";
 import type { DomainGateService } from "../users/domain-gate.service";
 import type { AdvancedStatsSource } from "./advanced-stats.source";
 import { StatsService } from "./stats.service";
@@ -10,6 +11,7 @@ function makeServiceWith(prisma: unknown): StatsService {
     prisma as PrismaService,
     {} as unknown as ReviewService,
     {} as unknown as DomainGateService,
+    domainRegistry(prisma as PrismaService),
   );
 }
 

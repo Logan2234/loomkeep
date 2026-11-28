@@ -7,6 +7,7 @@ import type {
 import { vi, type Mock } from "vitest";
 import { AppException } from "../common/app.exception";
 import type { PrismaService } from "../prisma/prisma.service";
+import { domainRegistry } from "../test-utils/domain-registry";
 import { DataExportService } from "./data-export.service";
 
 function makeUser(
@@ -99,7 +100,10 @@ function makeService() {
     getRatings: vi.fn(() => Promise.resolve(new Map())),
   } as unknown as import("../reviews/review.service").ReviewService;
 
-  return { service: new DataExportService(prisma, reviews), prisma };
+  return {
+    service: new DataExportService(prisma, domainRegistry(prisma, reviews)),
+    prisma,
+  };
 }
 
 describe("DataExportService.buildExport", () => {

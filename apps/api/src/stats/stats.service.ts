@@ -7,20 +7,16 @@ import {
   type SocialStatsDto,
   type StatsDomain,
   type StatsOverviewDto,
-  type StatsStatusBucket,
   type StatsWindow,
   type StatsWorkDto,
   type VideoStatsDto,
   type VideoTemporalDto,
   type WatchStaleness,
 } from "@loomkeep/shared/contracts";
-import { type ReviewTargetType } from "@loomkeep/shared/enums";
 import { episodeRuntimeFor, runtimeFor } from "@loomkeep/shared/rules";
 import { Injectable } from "@nestjs/common";
-import {
-  CANONICAL_EXTERNAL_ID_SELECT,
-  canonicalExternalId,
-} from "../common/external-id.util";
+import { CANONICAL_EXTERNAL_ID_SELECT } from "../common/external-id.util";
+import { DomainRegistry } from "../library/domain-registry";
 import {
   materializedStatus,
   withEpisodeLeftToWatch,
@@ -28,6 +24,8 @@ import {
 import { PrismaService } from "../prisma/prisma.service";
 import { ReviewService } from "../reviews/review.service";
 import { DomainGateService } from "../users/domain-gate.service";
+import type { LibraryRow } from "../work/domain-adapter";
+import { itemHref } from "../work/entry-export.util";
 import {
   type AdvancedStatsSource,
   EMPTY_BOOK_ADVANCED,
@@ -42,13 +40,7 @@ import { sumStatusBreakdowns } from "./cross-domain-totals.util";
 import { decadeOf } from "./decade.util";
 import { filterEnabledDomains } from "./enabled-domains.util";
 import { computeAverageRating } from "./rating-distribution.util";
-import {
-  bucketizeBookStatus,
-  bucketizeEntryStatus,
-  bucketizeGameStatus,
-  bucketizeMusicStatus,
-  countByBucket,
-} from "./status-bucket.util";
+import { countByBucket } from "./status-bucket.util";
 import {
   classifyStaleness,
   computeTypeSplit,
@@ -56,25 +48,6 @@ import {
   lastWatchedPerMediaItem,
   type TypeSplitInput,
 } from "./video-stats.util";
-
-/** One library entry, domain-agnostic, for the cross-domain aggregators below. */
-interface DomainRow {
-  bucket: StatsStatusBucket;
-  favorite: boolean;
-  ownershipStatus: string;
-  releaseDate: Date | null;
-  itemId: string;
-  title: string;
-  imageUrl: string | null;
-  href: string;
-}
-
-const TARGET_TYPE: Record<StatsDomain, ReviewTargetType> = {
-  MEDIA: "MEDIA",
-  GAMES: "GAME",
-  BOOKS: "BOOK",
-  MUSIC: "MUSIC",
-};
 
 /**
  * Whether a work belongs to the clicked bar. Exactly one of `rating`/`decade`
@@ -104,6 +77,7 @@ export class StatsService {
     private readonly prisma: PrismaService,
     private readonly reviewService: ReviewService,
     private readonly domainGate: DomainGateService,
+    private readonly registry: DomainRegistry,
   ) {}
 
   /** Called by ee/stats at startup — see advanced-stats.source.ts. */
@@ -168,7 +142,7 @@ export class StatsService {
       const domainRows = rows.get(domain) ?? [];
       const ratingMap = await this.reviewService.getRatings(
         userId,
-        TARGET_TYPE[domain],
+        this.registry.get(domain).reviewTargetType,
         domainRows.map((r) => r.itemId),
       );
 
@@ -202,14 +176,14 @@ export class StatsService {
   private async ratingsFor(
     userId: string,
     domains: StatsDomain[],
-    rows: Map<StatsDomain, DomainRow[]>,
+    rows: Map<StatsDomain, LibraryRow[]>,
   ): Promise<number[]> {
     const perDomain = await Promise.all(
       domains.map(async (domain) => {
         const domainRows = rows.get(domain) ?? [];
         const map = await this.reviewService.getRatings(
           userId,
-          TARGET_TYPE[domain],
+          this.registry.get(domain).reviewTargetType,
           domainRows.map((r) => r.itemId),
         );
         return [...map.values()];
@@ -221,72 +195,14 @@ export class StatsService {
   private async fetchRows(
     userId: string,
     domains: StatsDomain[],
-  ): Promise<Map<StatsDomain, DomainRow[]>> {
-    const result = new Map<StatsDomain, DomainRow[]>();
-
-    await Promise.all(
-      domains.map(async (domain) => {
-        switch (domain) {
-          case "MEDIA":
-            result.set("MEDIA", await this.fetchMediaRows(userId));
-            break;
-          case "GAMES":
-            result.set("GAMES", await this.fetchGameRows(userId));
-            break;
-          case "BOOKS":
-            result.set("BOOKS", await this.fetchBookRows(userId));
-            break;
-          case "MUSIC":
-            result.set("MUSIC", await this.fetchMusicRows(userId));
-            break;
-        }
-      }),
+  ): Promise<Map<StatsDomain, LibraryRow[]>> {
+    const rows = await Promise.all(
+      domains.map(async (domain): Promise<[StatsDomain, LibraryRow[]]> => [
+        domain,
+        await this.registry.get(domain).libraryRows(userId),
+      ]),
     );
-
-    return result;
-  }
-
-  private async fetchMediaRows(userId: string): Promise<DomainRow[]> {
-    const entries = await this.prisma.mediaEntry.findMany({
-      where: { userId },
-      select: {
-        status: true,
-        favorite: true,
-        ownershipStatus: true,
-        mediaItem: {
-          select: {
-            id: true,
-            title: true,
-            posterUrl: true,
-            releaseDate: true,
-            type: true,
-            ...CANONICAL_EXTERNAL_ID_SELECT,
-          },
-        },
-      },
-    });
-
-    return entries.map((e) => ({
-      bucket: bucketizeEntryStatus(e.status),
-      favorite: e.favorite,
-      ownershipStatus: e.ownershipStatus,
-      releaseDate: e.mediaItem.releaseDate,
-      itemId: e.mediaItem.id,
-      title: e.mediaItem.title,
-      imageUrl: e.mediaItem.posterUrl,
-      href: this.mediaHref(e.mediaItem),
-    }));
-  }
-
-  /** Web route of a cached item, under the domain's own path prefix. */
-  private itemHref(
-    prefix: string,
-    item: {
-      canonicalSource: string;
-      externalIds: { source: string; externalId: string }[];
-    },
-  ): string {
-    return `/${prefix}/${canonicalExternalId(item, item.externalIds)}`;
+    return new Map(rows);
   }
 
   // Video is the one domain whose route carries the media type as well.
@@ -295,100 +211,7 @@ export class StatsService {
     canonicalSource: string;
     externalIds: { source: string; externalId: string }[];
   }): string {
-    return this.itemHref(`media/${item.type.toLowerCase()}`, item);
-  }
-
-  private async fetchGameRows(userId: string): Promise<DomainRow[]> {
-    const entries = await this.prisma.gameEntry.findMany({
-      where: { userId },
-      select: {
-        status: true,
-        favorite: true,
-        ownershipStatus: true,
-        gameItem: {
-          select: {
-            id: true,
-            title: true,
-            coverUrl: true,
-            releaseDate: true,
-            ...CANONICAL_EXTERNAL_ID_SELECT,
-          },
-        },
-      },
-    });
-
-    return entries.map((e) => ({
-      bucket: bucketizeGameStatus(e.status),
-      favorite: e.favorite,
-      ownershipStatus: e.ownershipStatus,
-      releaseDate: e.gameItem.releaseDate,
-      itemId: e.gameItem.id,
-      title: e.gameItem.title,
-      imageUrl: e.gameItem.coverUrl,
-      href: this.itemHref("games", e.gameItem),
-    }));
-  }
-
-  private async fetchBookRows(userId: string): Promise<DomainRow[]> {
-    const entries = await this.prisma.bookEntry.findMany({
-      where: { userId },
-      select: {
-        status: true,
-        favorite: true,
-        ownershipStatus: true,
-        bookItem: {
-          select: {
-            id: true,
-            title: true,
-            coverUrl: true,
-            releaseDate: true,
-            ...CANONICAL_EXTERNAL_ID_SELECT,
-          },
-        },
-      },
-    });
-
-    return entries.map((e) => ({
-      bucket: bucketizeBookStatus(e.status),
-      favorite: e.favorite,
-      ownershipStatus: e.ownershipStatus,
-      releaseDate: e.bookItem.releaseDate,
-      itemId: e.bookItem.id,
-      title: e.bookItem.title,
-      imageUrl: e.bookItem.coverUrl,
-      href: this.itemHref("books", e.bookItem),
-    }));
-  }
-
-  private async fetchMusicRows(userId: string): Promise<DomainRow[]> {
-    const entries = await this.prisma.musicEntry.findMany({
-      where: { userId },
-      select: {
-        status: true,
-        favorite: true,
-        ownershipStatus: true,
-        musicItem: {
-          select: {
-            id: true,
-            title: true,
-            coverUrl: true,
-            releaseDate: true,
-            ...CANONICAL_EXTERNAL_ID_SELECT,
-          },
-        },
-      },
-    });
-
-    return entries.map((e) => ({
-      bucket: bucketizeMusicStatus(e.status),
-      favorite: e.favorite,
-      ownershipStatus: e.ownershipStatus,
-      releaseDate: e.musicItem.releaseDate,
-      itemId: e.musicItem.id,
-      title: e.musicItem.title,
-      imageUrl: e.musicItem.coverUrl,
-      href: this.itemHref("music", e.musicItem),
-    }));
+    return itemHref(`media/${item.type.toLowerCase()}`, item);
   }
 
   async getVideoStats(
@@ -723,7 +546,7 @@ export class StatsService {
           entries: entries.map((e) => ({
             itemId: e.gameItem.id,
             title: e.gameItem.title,
-            href: this.itemHref("games", e.gameItem),
+            href: itemHref("games", e.gameItem),
             playtimeMinutes: e.playtimeMinutes,
             genres: e.gameItem.genres,
             // Where it's played, once the player says; until then, every
@@ -818,7 +641,7 @@ export class StatsService {
           entries: entries.map((e) => ({
             status: e.status,
             title: e.bookItem.title,
-            href: this.itemHref("books", e.bookItem),
+            href: itemHref("books", e.bookItem),
             pageCount: e.bookItem.pageCount,
             authors: e.bookItem.authors,
           })),

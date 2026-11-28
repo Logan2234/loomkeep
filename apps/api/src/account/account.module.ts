@@ -2,6 +2,7 @@ import { Module } from "@nestjs/common";
 import { AuthModule } from "../auth/auth.module";
 import { ChatModule } from "../chat/chat.module";
 import { JobsModule } from "../jobs/jobs.module";
+import { LibraryModule } from "../library/library.module";
 import { ListsModule } from "../lists/lists.module";
 import { MailModule } from "../mail/mail.module";
 import { ReviewsModule } from "../reviews/reviews.module";
@@ -22,6 +23,7 @@ import { ScheduledDeletionService } from "./scheduled-deletion.service";
     AuthModule,
     ChatModule,
     JobsModule,
+    LibraryModule,
     ListsModule,
     MailModule,
     ReviewsModule,

@@ -9,6 +9,7 @@ import { GameItemService } from "./game-item.service";
 import { GameLibraryService } from "./game-library.service";
 import { GameSagaService } from "./game-saga.service";
 import { GameSessionService } from "./game-session.service";
+import { GamesDomainAdapter } from "./games-domain.adapter";
 import { GamesController } from "./games.controller";
 import { IgdbProvider } from "./providers/igdb.provider";
 
@@ -25,6 +26,7 @@ import { IgdbProvider } from "./providers/igdb.provider";
   ],
   controllers: [GamesController],
   providers: [
+    GamesDomainAdapter,
     GameItemService,
     GameLibraryService,
     GameSagaService,
@@ -32,6 +34,7 @@ import { IgdbProvider } from "./providers/igdb.provider";
     IgdbProvider,
   ],
   exports: [
+    GamesDomainAdapter,
     GameItemService,
     GameLibraryService,
     GameSessionService,

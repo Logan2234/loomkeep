@@ -15,7 +15,7 @@ import {
   bucketizeEntryStatus,
   bucketizeGameStatus,
   bucketizeMusicStatus,
-} from "../../stats/status-bucket.util";
+} from "../../work/status-bucket.util";
 import type {
   ApiV1LibraryEntryDto,
   ApiV1TargetDto,

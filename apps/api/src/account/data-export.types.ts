@@ -1,26 +1,14 @@
 import type { SavedViewDto } from "@loomkeep/shared/contracts";
 import { UserDto } from "@loomkeep/shared/contracts";
 import type {
-  BookOwnershipStatus,
-  BookSource,
-  BookStatus,
-  CatalogSource,
   CommentTargetType,
   Domain,
   Emote,
-  EntryStatus,
   FollowStatus,
-  GameOwnershipStatus,
-  GameSource,
-  GameStatus,
   ListKind,
   ListVisibility,
-  MediaType,
   ModerationLegalBasis,
   ModerationMeasure,
-  MusicOwnershipStatus,
-  MusicSource,
-  MusicStatus,
   Plan,
   ReportCategory,
   ReportMotif,
@@ -30,156 +18,17 @@ import type {
   ReviewVisibility,
   ReviewVoteValue,
   SecurityEventType,
-  SessionSource,
-  TrackingCycleStatus,
   VisibilityAudience,
   VisibilityFacet,
 } from "@loomkeep/shared/enums";
 
-export interface DataExportEntry {
-  media: {
-    type: MediaType;
-    title: string;
-    canonicalSource: CatalogSource;
-    /** ID in `canonicalSource` — forms the catalogue identity with `type`. */
-    sourceId: string;
-    /** All known cross-source identifiers (TMDB, ANILIST, TVDB, IMDB). */
-    externalIds: { source: string; externalId: string }[];
-  };
-  status: EntryStatus;
-  rating: number | null;
-  notes: string | null;
-  favorite: boolean;
-  startedAt: string | null;
-  finishedAt: string | null;
-  createdAt: string;
-  /** When each rewatch of a film ended. */
-  replays: string[];
-}
-
-export interface DataExportWatch {
-  media: { type: MediaType; title: string; sourceId: string };
-  seasonNumber: number;
-  episodeNumber: number;
-  episodeTitle: string | null;
-  watchedAt: string | null;
-}
-
-export interface DataExportGameEntry {
-  game: {
-    title: string;
-    canonicalSource: GameSource;
-    sourceId: string;
-    externalIds: { source: string; externalId: string }[];
-  };
-  status: GameStatus;
-  rating: number | null;
-  notes: string | null;
-  favorite: boolean;
-  playtimeMinutes: number;
-  trackedPlaytimeMinutes: number;
-  steamPlaytimeMinutes: number | null;
-  steamSyncedAt: string | null;
-  ownershipStatus: GameOwnershipStatus;
-  ownershipSource: string | null;
-  lentOut: boolean;
-  loanPerson: string | null;
-  loanSince: string | null;
-  startedAt: string | null;
-  finishedAt: string | null;
-  createdAt: string;
-  /** Completed replays beyond the first, oldest first. */
-  replays: string[];
-  /** Every playthrough, the first and the unfinished ones included. */
-  playthroughs: {
-    number: number;
-    status: TrackingCycleStatus;
-    startedAt: string | null;
-    finishedAt: string | null;
-    trackedMinutes: number;
-  }[];
-  sessions: {
-    playthroughNumber: number | null;
-    durationMinutes: number;
-    notes: string | null;
-    occurredAt: string;
-    source: SessionSource;
-    createdAt: string;
-  }[];
-}
-
-export interface DataExportBookEntry {
-  book: {
-    title: string;
-    authors: string[];
-    canonicalSource: BookSource;
-    sourceId: string;
-    externalIds: { source: string; externalId: string }[];
-  };
-  status: BookStatus;
-  rating: number | null;
-  notes: string | null;
-  favorite: boolean;
-  currentPage: number;
-  editionKey: string | null;
-  referencePageCount: number | null;
-  trackedReadingMinutes: number;
-  ownershipStatus: BookOwnershipStatus;
-  ownershipSource: string | null;
-  lentOut: boolean;
-  loanPerson: string | null;
-  loanSince: string | null;
-  startedAt: string | null;
-  finishedAt: string | null;
-  createdAt: string;
-  /** Completed rereads beyond the first, oldest first. */
-  replays: string[];
-  /** Every reading, the first and the unfinished ones included. */
-  readings: {
-    number: number;
-    status: TrackingCycleStatus;
-    editionKey: string | null;
-    referencePageCount: number | null;
-    currentPage: number;
-    pagesRead: number;
-    trackedMinutes: number;
-    startedAt: string | null;
-    finishedAt: string | null;
-  }[];
-  sessions: {
-    readingNumber: number | null;
-    durationMinutes: number;
-    pagesRead: number;
-    startPage: number | null;
-    endPage: number | null;
-    notes: string | null;
-    occurredAt: string;
-    source: SessionSource;
-    createdAt: string;
-  }[];
-}
-
-export interface DataExportMusicEntry {
-  album: {
-    title: string;
-    artists: string[];
-    canonicalSource: MusicSource;
-    sourceId: string;
-    externalIds: { source: string; externalId: string }[];
-  };
-  status: MusicStatus;
-  rating: number | null;
-  notes: string | null;
-  favorite: boolean;
-  ownershipStatus: MusicOwnershipStatus;
-  ownershipSource: string | null;
-  lentOut: boolean;
-  loanPerson: string | null;
-  loanSince: string | null;
-  startedAt: string | null;
-  finishedAt: string | null;
-  createdAt: string;
-}
+import type { DataExportBookEntry } from "../books/book-export.types";
+import type { DataExportGameEntry } from "../games/game-export.types";
+import type {
+  DataExportEntry,
+  DataExportWatch,
+} from "../media/media-export.types";
+import type { DataExportMusicEntry } from "../music/music-export.types";
 
 export interface DataExportNotification {
   type: string;

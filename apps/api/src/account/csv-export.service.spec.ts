@@ -2,6 +2,7 @@ import { Domain } from "@loomkeep/shared/enums";
 import { vi } from "vitest";
 import type { PrismaService } from "../prisma/prisma.service";
 import type { ReviewService } from "../reviews/review.service";
+import { domainRegistry } from "../test-utils/domain-registry";
 import { CsvExportService } from "./csv-export.service";
 
 const ITEM_ID_FIELD: Record<string, string> = {
@@ -27,7 +28,7 @@ function makeService(model: string, rows: Record<string, unknown>[]) {
   const reviews = {
     getRatings: vi.fn(() => Promise.resolve(ratings)),
   } as unknown as ReviewService;
-  return new CsvExportService(prisma, reviews);
+  return new CsvExportService(domainRegistry(prisma, reviews));
 }
 
 describe("CsvExportService.buildCsv", () => {
