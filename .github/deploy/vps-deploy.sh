@@ -135,7 +135,8 @@ if [ -z "$previous_tag" ]; then
   echo "No previous images to return to." >&2
 elif [ "$(applied_migrations)" != "$migrations_before" ]; then
   echo "A migration ran, so the previous images stay stopped: old code on the" >&2
-  echo "new schema could corrupt data. Restore $dump or fix forward." >&2
+  echo "new schema could corrupt data. Restore $dump or fix forward: see" >&2
+  echo "https://docs.loomkeep.app/self-hosting/upgrades-and-backups/#without-the-admin-panel" >&2
 else
   echo "No migration ran: returning to the previous images ($previous_tag)." >&2
   export IMAGE_TAG="$previous_tag"
