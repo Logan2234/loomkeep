@@ -1,7 +1,6 @@
 import { Logger } from "@nestjs/common";
 import { vi, type Mock } from "vitest";
 import type { AgeGateService } from "../users/age-gate.service";
-import type { DomainGateService } from "../users/domain-gate.service";
 import { MediaCatalogController } from "./media-catalog.controller";
 import type { MediaItemService } from "./media-item.service";
 
@@ -23,16 +22,8 @@ describe("MediaCatalogController.search", () => {
     const ageGate = {
       allowsAdultContent: vi.fn().mockResolvedValue(opts.allowAdult ?? true),
     } as unknown as AgeGateService;
-    const domainGate = {
-      assertEnabled: vi.fn().mockResolvedValue(undefined),
-    } as unknown as DomainGateService;
 
-    return new MediaCatalogController(
-      mediaItemService,
-      ageGate,
-      domainGate,
-      {} as never,
-    );
+    return new MediaCatalogController(mediaItemService, ageGate, {} as never);
   }
 
   it("degrades to the other source's results when one provider rejects", async () => {

@@ -16,7 +16,10 @@ import { GameLibraryService } from "../games/game-library.service";
 import { GamesController } from "../games/games.controller";
 import { XP_RULES } from "../gamification/xp-rules";
 import { JOB_KEYS } from "../jobs/job-keys";
+import { MediaCatalogController } from "../media/media-catalog.controller";
 import { MediaItemService } from "../media/media-item.service";
+import { MediaLibraryController } from "../media/media-library.controller";
+import { MediaController } from "../media/media.controller";
 import { MusicItemService } from "../music/music-item.service";
 import { MusicLibraryService } from "../music/music-library.service";
 import { MusicController } from "../music/music.controller";
@@ -813,26 +816,30 @@ describe.each(Object.keys(UPSERT_ENTRY) as CacheDomain[])(
 
 // Games and books used to check the gate on search and lists only: writes,
 // sessions and the detail page stayed open on a domain the user turned off
-// or the instance withdrew (audit 2026-11-17, PRM-02). Media is left out:
-// its LibraryController also serves cross-domain routes (calendar, counts).
-const GATED_CONTROLLER: Record<
-  Exclude<CacheDomain, "MEDIA">,
-  [Type, Domain]
-> = {
-  GAMES: [GamesController, Domain.GAMES],
-  BOOKS: [BooksController, Domain.BOOKS],
-  MUSIC: [MusicController, Domain.MUSIC],
+// or the instance withdrew (audit 2026-11-17, PRM-02). Media's controllers
+// are gated since the cross-domain routes (calendar, counts) left them.
+const GATED_CONTROLLER: Record<CacheDomain, [Type[], Domain]> = {
+  MEDIA: [
+    [MediaLibraryController, MediaCatalogController, MediaController],
+    Domain.MEDIA,
+  ],
+  GAMES: [[GamesController], Domain.GAMES],
+  BOOKS: [[BooksController], Domain.BOOKS],
+  MUSIC: [[MusicController], Domain.MUSIC],
 };
 
-describe.each(Object.keys(GATED_CONTROLLER) as Exclude<CacheDomain, "MEDIA">[])(
-  "%s controller",
+describe.each(Object.keys(GATED_CONTROLLER) as CacheDomain[])(
+  "%s controllers",
   (domain) => {
-    it("gates every route on the user's domain", () => {
-      const [controller, gatedDomain] = GATED_CONTROLLER[domain];
-      expect(Reflect.getMetadata(DOMAIN_GATE, controller)).toBe(gatedDomain);
-      expect(Reflect.getMetadata(GUARDS_METADATA, controller)).toContain(
-        DomainGateGuard,
-      );
+    it("gate every route on the user's domain", () => {
+      const [controllers, gatedDomain] = GATED_CONTROLLER[domain];
+
+      for (const controller of controllers) {
+        expect(Reflect.getMetadata(DOMAIN_GATE, controller)).toBe(gatedDomain);
+        expect(Reflect.getMetadata(GUARDS_METADATA, controller)).toContain(
+          DomainGateGuard,
+        );
+      }
     });
   },
 );

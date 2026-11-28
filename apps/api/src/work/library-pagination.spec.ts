@@ -23,12 +23,7 @@ describe("library pagination boundaries", () => {
         new GamesController(null!, service as never, null!, null!, null!),
         new MusicController(null!, service as never),
       ],
-      media: new MediaLibraryController(
-        service as never,
-        null!,
-        gate as never,
-        null!,
-      ),
+      media: new MediaLibraryController(service as never, null!, null!),
     };
   };
 

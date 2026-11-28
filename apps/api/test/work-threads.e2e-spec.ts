@@ -34,6 +34,12 @@ describe("Work threads (e2e)", () => {
       .send(user)
       .expect(201);
     session[key] = authCookies(registered);
+    // A new account turns its domains on in onboarding; the list only keeps
+    // the discussions of a domain that's on.
+    await prisma.user.updateMany({
+      where: { email: user.email },
+      data: { enabledDomains: ["MEDIA"] },
+    });
 
     const entry = await request(http)
       .put("/api/media")
@@ -68,9 +74,6 @@ describe("Work threads (e2e)", () => {
     ({ app, http, prisma } = await createE2eApp());
     await signUpAndTrack(alice, "alice");
     await signUpAndTrack(bob, "bob");
-    // A new account turns its domains on in onboarding; the list only keeps
-    // the discussions of a domain that's on.
-    await prisma.user.updateMany({ data: { enabledDomains: ["MEDIA"] } });
   });
 
   afterAll(async () => {
