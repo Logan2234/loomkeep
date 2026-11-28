@@ -66,19 +66,34 @@ start() {
   return 1
 }
 
+# A migration Prisma started and hasn't finished. A failed one has no
+# finished_at either, but Prisma writes its error to `logs`: only a migration
+# still running has neither.
+migration_running() {
+  local running
+  running=$(docker compose exec -T db psql -U "$DB_USER" -d "$DB_NAME" -tAc     "SELECT count(*) FROM _prisma_migrations WHERE finished_at IS NULL AND rolled_back_at IS NULL AND logs IS NULL"     2>/dev/null) || return 1
+  [ "${running:-0}" -gt 0 ]
+}
+
 # `up -d` returns as soon as containers start: an api stuck on a failed
 # migration would hide behind it. Waits for docker-compose.yml's
-# healthchecks, up to 5 minutes per service.
+# healthchecks, up to 5 minutes per service. The api only answers once
+# `prisma migrate deploy` is done, so while a migration is still running its
+# wait goes on, up to an hour: cutting a long backfill short used to restart
+# the previous images over a half-applied migration.
 healthy() {
   for service in api web; do
     container=$(docker compose ps -q "$service")
-    for attempt in $(seq 1 60); do
+    for attempt in $(seq 1 720); do
       status=$(docker inspect -f '{{.State.Health.Status}}' "$container")
       [ "$status" = healthy ] && break
-      if [ "$attempt" = 60 ]; then
-        echo "$service is still $status after 5 minutes" >&2
+      if [ "$attempt" -ge 60 ] && { [ "$service" != api ] || [ "$attempt" = 720 ] || ! migration_running; }; then
+        echo "$service is still $status after $((attempt * 5 / 60)) minutes" >&2
         docker compose logs --tail=80 "$service" >&2
         return 1
+      fi
+      if [ "$attempt" = 60 ]; then
+        echo "A migration is still running: waiting for it (up to an hour)."
       fi
       sleep 5
     done
