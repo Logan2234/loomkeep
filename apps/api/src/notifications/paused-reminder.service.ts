@@ -161,6 +161,8 @@ export class PausedReminderService {
             group: AlertGroup.RELEASES,
           });
         }
+
+        return true;
       },
       {
         logger: this.logger,

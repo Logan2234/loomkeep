@@ -103,6 +103,7 @@ export class InactiveAccountService {
           where: { id: user.id },
           data: { inactivityWarningSentAt: new Date() },
         });
+        return true;
       },
       {
         logger: this.logger,

@@ -424,7 +424,6 @@ describe("AchievementService nightly sweep", () => {
       .spyOn(service, "evaluate")
       .mockImplementation(async (userId) => {
         if (userId === "broken") throw new Error("boom");
-        return [];
       });
 
     await service.runAchievementsSweepJob();
