@@ -26,14 +26,17 @@ export function entryEventBus(
       ({ emit: () => Promise.resolve() } as unknown as ActivityService),
   );
 
-  bus.on(EntryAddedEvent.NAME, (e: EntryAddedEvent) => xp.onEntryAdded(e));
-  bus.on(EntryCompletedEvent.NAME, (e: EntryCompletedEvent) =>
+  // emitAsync awaits what a listener returns, as Nest's @OnEvent does; the
+  // emitter's own type only declares void-returning listeners.
+  const on = <E>(name: string, handle: (event: E) => Promise<void>) =>
+    bus.on(name, handle as (event: E) => void);
+
+  on(EntryAddedEvent.NAME, (e: EntryAddedEvent) => xp.onEntryAdded(e));
+  on(EntryCompletedEvent.NAME, (e: EntryCompletedEvent) =>
     xp.onEntryCompleted(e),
   );
-  bus.on(EntryRemovedEvent.NAME, (e: EntryRemovedEvent) =>
-    xp.onEntryRemoved(e),
-  );
-  bus.on(EntryStatusChangedEvent.NAME, (e: EntryStatusChangedEvent) =>
+  on(EntryRemovedEvent.NAME, (e: EntryRemovedEvent) => xp.onEntryRemoved(e));
+  on(EntryStatusChangedEvent.NAME, (e: EntryStatusChangedEvent) =>
     activity.onEntryStatusChanged(e),
   );
   return bus;
