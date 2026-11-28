@@ -165,6 +165,7 @@ export const keys = {
       ["reviews", "revisions", targetType, targetId] as const,
   },
   home: {
+    all: () => ["home"] as const,
     favorites: (domain: string) => ["home", "favorites", domain] as const,
     onThisDay: (date: string) => ["home", "on-this-day", date] as const,
     myYear: (year: number) => ["home", "my-year", year] as const,

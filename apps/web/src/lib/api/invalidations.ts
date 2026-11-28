@@ -35,7 +35,18 @@ export const invalidate = {
   shown: (...queryKeys: QueryKey[]) => of(...queryKeys),
 
   // Library
-  libraryEntry: (detailKey: QueryKey) => of(detailKey, keys.library.all()),
+  /**
+   * A work tracked, changed or removed: its page, and every screen showing
+   * the library (lists, counts, home widgets, stats, calendar).
+   */
+  libraryEntry: (detailKey: QueryKey) =>
+    of(
+      detailKey,
+      keys.library.all(),
+      keys.home.all(),
+      keys.stats.all(),
+      keys.calendar.upcoming(),
+    ),
   library: () => of(keys.library.all()),
   /** A release reminder on a work: its page and the calendar. */
   releaseReminder: (detailKey: QueryKey) =>

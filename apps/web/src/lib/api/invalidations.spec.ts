@@ -9,10 +9,21 @@ describe("invalidate.libraryEntry", () => {
   it("refreshes the library alongside the page, as quick add does", () => {
     const detail = ["books", "detail", "OL1W"] as const;
 
-    expect(invalidate.libraryEntry(detail)).toEqual([
-      detail,
-      keys.library.all(),
-    ]);
+    expect(invalidate.libraryEntry(detail)).toEqual(
+      expect.arrayContaining([detail, keys.library.all()]),
+    );
+  });
+
+  // The home widgets, the stats and the calendar showed the entry's old
+  // state until their own refetch (audit 2026-11-17, REF-07).
+  it("refreshes every screen that shows the entry", () => {
+    expect(invalidate.libraryEntry(keys.media.detail("MOVIE", "1"))).toEqual(
+      expect.arrayContaining([
+        keys.home.all(),
+        keys.stats.all(),
+        keys.calendar.upcoming(),
+      ]),
+    );
   });
 });
 
