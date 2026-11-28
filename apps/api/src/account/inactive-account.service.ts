@@ -1,5 +1,6 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { Cron, CronExpression } from "@nestjs/schedule";
+import { forEachIsolated } from "../jobs/for-each-isolated";
 import { JOB_KEYS } from "../jobs/job-keys";
 import { JobRunService, type JobSkipped } from "../jobs/job-run.service";
 import { MailService } from "../mail/mail.service";
@@ -79,33 +80,37 @@ export class InactiveAccountService {
       select: { id: true, email: true, locale: true, lastActiveAt: true },
     });
 
-    let warned = 0;
+    const { succeeded } = await forEachIsolated(
+      candidates,
+      async (user) => {
+        // lastActiveAt can't be null here — it's filtered by `lte` above.
+        const deletionDate = new Date(
+          Math.max(
+            addMonths(user.lastActiveAt!, DELETE_AFTER_MONTHS).getTime(),
+            Date.now() + NOTICE_DAYS * DAY_MS,
+          ),
+        );
+        const sent = await this.mail.sendInactivityWarning(
+          { email: user.email, locale: user.locale },
+          deletionDate,
+        );
+        // Deletion requires a recorded warning: one that never reached the
+        // person (no SMTP, or a failed send) must not count, so the account
+        // stays until a warning actually goes out.
+        if (!sent) return false;
 
-    for (const user of candidates) {
-      // lastActiveAt can't be null here — it's filtered by `lte` above.
-      const deletionDate = new Date(
-        Math.max(
-          addMonths(user.lastActiveAt!, DELETE_AFTER_MONTHS).getTime(),
-          Date.now() + NOTICE_DAYS * DAY_MS,
-        ),
-      );
-      const sent = await this.mail.sendInactivityWarning(
-        { email: user.email, locale: user.locale },
-        deletionDate,
-      );
-      // Deletion requires a recorded warning: one that never reached the
-      // person (no SMTP, or a failed send) must not count, so the account
-      // stays until a warning actually goes out.
-      if (!sent) continue;
+        await this.prisma.user.update({
+          where: { id: user.id },
+          data: { inactivityWarningSentAt: new Date() },
+        });
+      },
+      {
+        logger: this.logger,
+        label: (user) => `Inactivity warning to ${user.id}`,
+      },
+    );
 
-      await this.prisma.user.update({
-        where: { id: user.id },
-        data: { inactivityWarningSentAt: new Date() },
-      });
-      warned++;
-    }
-
-    return warned;
+    return succeeded;
   }
 
   private async deleteInactiveAccounts(): Promise<number> {
@@ -119,23 +124,23 @@ export class InactiveAccountService {
       select: { id: true },
     });
 
-    // Same isolation as scheduled deletions: a failure is retried next run.
-    let deleted = 0;
-
-    for (const user of candidates) {
-      try {
+    // A failure is retried on the next run.
+    const { succeeded } = await forEachIsolated(
+      candidates,
+      async (user) => {
         await this.accountDeletion.deleteAccount(
           user.id,
           "inactive",
           `Suppression automatique pour inactivité (>${DELETE_AFTER_MONTHS} mois)`,
         );
-        deleted++;
         this.logger.log(`Compte ${user.id} supprimé pour inactivité`);
-      } catch (err) {
-        this.logger.error(`Inactivity deletion of ${user.id} failed`, err);
-      }
-    }
+      },
+      {
+        logger: this.logger,
+        label: (user) => `Inactivity deletion of ${user.id}`,
+      },
+    );
 
-    return deleted;
+    return succeeded;
   }
 }

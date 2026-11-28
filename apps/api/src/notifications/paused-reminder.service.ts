@@ -10,6 +10,7 @@ import {
   canonicalExternalId,
 } from "../common/external-id.util";
 import { localDay, localParts } from "../common/local-day.util";
+import { forEachIsolated } from "../jobs/for-each-isolated";
 import { JOB_KEYS } from "../jobs/job-keys";
 import { JobRunService, type JobSkipped } from "../jobs/job-run.service";
 import { MailService } from "../mail/mail.service";
@@ -120,16 +121,16 @@ export class PausedReminderService {
       },
     });
 
-    let sent = 0;
-
     // Each account and each channel fails on its own: the reminder is monthly,
     // so one SMTP or push error used to cost every later account its month.
-    for (const user of optedIn) {
-      if (!isPausedReminderDue(user.timezone, now)) continue;
-
-      try {
+    const due = optedIn.filter((user) =>
+      isPausedReminderDue(user.timezone, now),
+    );
+    const { succeeded } = await forEachIsolated(
+      due,
+      async (user) => {
         const works = await this.pausedWorks(user.id, now);
-        if (works.length === 0) continue;
+        if (works.length === 0) return false;
 
         const prefs = readAlertPrefs(user.preferences?.alertPrefs ?? {});
         const items = works.slice(0, MAX_ITEMS);
@@ -160,14 +161,14 @@ export class PausedReminderService {
             group: AlertGroup.RELEASES,
           });
         }
+      },
+      {
+        logger: this.logger,
+        label: (user) => `Paused reminder for ${user.id}`,
+      },
+    );
 
-        sent++;
-      } catch (err) {
-        this.logger.error(`Paused reminder failed for ${user.id}`, err);
-      }
-    }
-
-    return sent;
+    return succeeded;
   }
 
   /** Every paused work, nearest its end first; only the first ones get their aired episodes counted. */
