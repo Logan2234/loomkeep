@@ -33,7 +33,7 @@ import { CurrentUser } from "../auth/decorators/current-user.decorator";
 import { PagedResponseDto } from "../common/dto/paged-response.dto";
 import { toQueryArray } from "../common/query-array.util";
 import { PileSummaryResponseDto } from "../stats/dto/pile-summary-response.dto";
-import { DomainGateService } from "../users/domain-gate.service";
+import { DomainGated } from "../users/domain-gate.guard";
 import {
   BulkEntriesResultResponseDto,
   BulkEntriesTargetBody,
@@ -58,12 +58,12 @@ import { MediaEpisodesService } from "./media-episodes.service";
 import { MediaLibraryService } from "./media-library.service";
 import { MediaSagaService } from "./media-saga.service";
 
+@DomainGated(Domain.MEDIA)
 @Controller("media")
 export class MediaLibraryController {
   constructor(
     private readonly libraryService: MediaLibraryService,
     private readonly episodes: MediaEpisodesService,
-    private readonly domainGate: DomainGateService,
     private readonly sagas: MediaSagaService,
   ) {}
 
@@ -82,7 +82,6 @@ export class MediaLibraryController {
     @Query("lang") lang?: string,
     @Query("loan") loan?: string,
   ): Promise<PagedResult<LibraryEntryDto>> {
-    await this.domainGate.assertEnabled(user.sub, Domain.MEDIA);
     return this.libraryService.listEntries(user.sub, {
       ...parseListEntriesQuery({
         q,
@@ -111,7 +110,6 @@ export class MediaLibraryController {
     @Query("lang") lang?: string,
     @Query("loan") loan?: string,
   ): Promise<PileSummaryDto> {
-    await this.domainGate.assertEnabled(user.sub, Domain.MEDIA);
     return this.libraryService.getPile(user.sub, {
       ...parseListEntriesQuery({ q, favorite, status, lang, loan }),
       types: toQueryArray(type) as MediaType[],
@@ -129,7 +127,6 @@ export class MediaLibraryController {
     @Query("order") order?: string,
     @Query("lang") lang?: string,
   ): Promise<LibrarySagasDto> {
-    await this.domainGate.assertEnabled(user.sub, Domain.MEDIA);
     return this.sagas.listSagas(user.sub, {
       q,
       types: (toQueryArray(type) as MediaType[]).filter(
@@ -160,7 +157,6 @@ export class MediaLibraryController {
   async listTracked(
     @CurrentUser() user: JwtPayload,
   ): Promise<TrackedMediaDto[]> {
-    await this.domainGate.assertEnabled(user.sub, Domain.MEDIA);
     return this.libraryService.trackedStatuses(user.sub);
   }
 
@@ -197,7 +193,6 @@ export class MediaLibraryController {
     @CurrentUser() user: JwtPayload,
     @Body() dto: BulkUpdateEntriesBody,
   ): Promise<BulkEntriesResultDto> {
-    await this.domainGate.assertEnabled(user.sub, Domain.MEDIA);
     return this.libraryService.bulkUpdate(user.sub, dto);
   }
 
@@ -208,7 +203,6 @@ export class MediaLibraryController {
     @CurrentUser() user: JwtPayload,
     @Body() dto: BulkEntriesTargetBody,
   ): Promise<BulkEntriesResultDto> {
-    await this.domainGate.assertEnabled(user.sub, Domain.MEDIA);
     return this.libraryService.bulkDelete(user.sub, dto);
   }
 

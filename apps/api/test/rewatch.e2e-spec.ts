@@ -71,6 +71,11 @@ describe("Rewatch (e2e)", () => {
       .expect(201);
     cookie = authCookies(registered);
     userId = (await get("/api/users/me").expect(200)).body.id;
+    // A new account picks its domains at onboarding.
+    await prisma.user.update({
+      where: { id: userId },
+      data: { enabledDomains: ["MEDIA"] },
+    });
   });
 
   afterAll(() => app.close());

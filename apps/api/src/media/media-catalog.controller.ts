@@ -28,7 +28,7 @@ import { safeLang } from "../common/locale.util";
 import { parseEnumParam } from "../common/parse-enum-param.util";
 import { AgeGateService } from "../users/age-gate.service";
 import { filterAdultContent } from "../users/age.util";
-import { DomainGateService } from "../users/domain-gate.service";
+import { DomainGated } from "../users/domain-gate.guard";
 import { CastDetailResponseDto } from "./dto/cast-detail-response.dto";
 import { EpisodeMediaResponseDto } from "./dto/episode-media-response.dto";
 import { MediaExtrasResponseDto } from "./dto/media-extras-response.dto";
@@ -42,6 +42,7 @@ import { TmdbProvider } from "./providers/tmdb.provider";
 import { rankBySearchRelevance } from "./search-ranking";
 import { resolveWatchRegion } from "./watch-region.util";
 
+@DomainGated(Domain.MEDIA)
 @Controller("media")
 export class MediaCatalogController {
   private readonly logger = new Logger(MediaCatalogController.name);
@@ -49,7 +50,6 @@ export class MediaCatalogController {
   constructor(
     private readonly mediaItemService: MediaItemService,
     private readonly ageGate: AgeGateService,
-    private readonly domainGate: DomainGateService,
     private readonly tmdb: TmdbProvider,
   ) {}
 
@@ -83,7 +83,6 @@ export class MediaCatalogController {
     @CurrentUser() user: JwtPayload,
     @Query("lang") lang?: string,
   ): Promise<PremiereDto[]> {
-    await this.domainGate.assertEnabled(user.sub, Domain.MEDIA);
     return this.tmdb.listPremieres(safeLang(lang));
   }
 
@@ -98,8 +97,6 @@ export class MediaCatalogController {
     @CurrentUser() user: JwtPayload,
     @Query() query: SearchQueryDto,
   ): Promise<SearchResponseDto> {
-    await this.domainGate.assertEnabled(user.sub, Domain.MEDIA);
-
     const wantTmdb = query.type === undefined || query.type !== MediaType.ANIME;
     const wantAnilist =
       query.type === undefined || query.type === MediaType.ANIME;

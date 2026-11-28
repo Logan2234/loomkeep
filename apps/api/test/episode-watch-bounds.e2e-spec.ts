@@ -29,6 +29,11 @@ describe("Episode watch bounds (e2e)", () => {
     const userId = (
       await request(http).get("/api/users/me").set("Cookie", cookie).expect(200)
     ).body.id;
+    // A new account picks its domains at onboarding.
+    await prisma.user.update({
+      where: { id: userId },
+      data: { enabledDomains: ["MEDIA"] },
+    });
 
     const item = await prisma.mediaItem.create({
       data: {

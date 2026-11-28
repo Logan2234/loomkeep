@@ -52,6 +52,11 @@ describe("XP isolation between users (e2e)", () => {
           .set("Cookie", viewer.cookie)
           .expect(200)
       ).body.id;
+      // A new account picks its domains at onboarding.
+      await prisma.user.update({
+        where: { id: viewer.id },
+        data: { enabledDomains: ["MEDIA"] },
+      });
     }
 
     const item = await prisma.mediaItem.create({
