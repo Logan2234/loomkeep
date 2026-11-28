@@ -28,8 +28,10 @@ import { ConfigService } from "@nestjs/config";
 import { AppException } from "../../common/app.exception";
 import { mapWithConcurrency } from "../../common/concurrency.util";
 import { utcDateKey } from "../../common/date.util";
-import { fetchJson } from "../../common/http.util";
-import { QuotaTrackerService } from "../../quota/quota-tracker.service";
+import {
+  ProviderHttpService,
+  type ProviderHttpClient,
+} from "../../quota/provider-http.service";
 import { OmdbService } from "../omdb.service";
 import type {
   CatalogProvider,
@@ -71,6 +73,9 @@ import {
 } from "./tmdb.mapper";
 
 export const TMDB_API_URL = "https://api.themoviedb.org/3";
+// TMDB answers 429 past roughly 40 to 50 requests per second per IP; the
+// instance stays under it, imports included.
+const MIN_REQUEST_INTERVAL_MS = 25;
 
 // Discover's "popularity" follows this week's trend: an A24 page would open
 // on its latest releases. The vote count reads as how known a title is.
@@ -130,8 +135,16 @@ export class TmdbProvider implements CatalogProvider {
   constructor(
     private readonly configService: ConfigService,
     private readonly omdb: OmdbService,
-    private readonly quota: QuotaTrackerService,
-  ) {}
+    http: ProviderHttpService,
+  ) {
+    this.client = http.client({
+      provider: "tmdb",
+      sourceLabel: "TMDB",
+      minIntervalMs: MIN_REQUEST_INTERVAL_MS,
+    });
+  }
+
+  private readonly client: ProviderHttpClient;
 
   /** Every provider JustWatch lists in a region, the most used there first. */
   async listWatchProviders(region: string): Promise<WatchProviderDto[]> {
@@ -784,7 +797,7 @@ export class TmdbProvider implements CatalogProvider {
       url.searchParams.set(key, value);
     }
 
-    return fetchJson<T>(
+    return this.client.fetchJson<T>(
       url,
       {
         headers: {
@@ -792,11 +805,7 @@ export class TmdbProvider implements CatalogProvider {
           Accept: "application/json",
         },
       },
-      {
-        sourceLabel: "TMDB",
-        notFoundMessage: "Media not found on TMDB",
-        onAttempt: () => this.quota.record("tmdb"),
-      },
+      { notFoundMessage: "Media not found on TMDB" },
     );
   }
 }

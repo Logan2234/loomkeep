@@ -3,6 +3,7 @@
   // a handful of search results can share, adding them to the library or to
   // a list. A floating bar in the page's own theme.
   import { getEditableLists } from "#lib/api/client.js";
+  import { invalidate } from "#lib/api/invalidations.js";
   import { keys } from "#lib/api/keys.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
@@ -40,17 +41,9 @@
   }
 
   // Every panel's "already added" flags: the selection may span domains.
-  const shown = [
-    keys.search.all(),
-    keys.library.tracked(),
-    keys.games.tracked(),
-    keys.books.tracked(),
-    keys.music.tracked(),
-  ];
-
   const addMut = createApiMutation(() => ({
     mutate: () => addWorksToLibrary([...selection.works]),
-    invalidates: shown,
+    invalidates: invalidate.searchResults(),
     onSuccess: (outcome) => {
       report(
         outcome,
@@ -66,7 +59,7 @@
   const listMut = createApiMutation(() => ({
     mutate: (list: { id: string; title: string }) =>
       addWorksToList(list.id, [...selection.works]),
-    invalidates: shown,
+    invalidates: invalidate.searchResults(),
     onSuccess: (outcome, list) => {
       report(
         outcome,

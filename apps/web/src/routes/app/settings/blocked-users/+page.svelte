@@ -2,6 +2,7 @@
   import LoadMoreButton from "#lib/ui/LoadMoreButton.svelte";
 
   import { getBlockedUsers, unblockUser } from "#lib/api/client.js";
+  import { invalidate } from "#lib/api/invalidations.js";
   import { createApiInfiniteQuery } from "#lib/api/infinite-query.svelte.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import { keys } from "#lib/api/keys.js";
@@ -29,7 +30,7 @@
 
   const unblockMutation = createApiMutation<string, unknown>(() => ({
     mutate: unblockUser,
-    invalidates: [keys.social.blockedUsers()],
+    invalidates: invalidate.blockedUsers(),
   }));
 </script>
 

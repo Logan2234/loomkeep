@@ -1,5 +1,6 @@
 <script lang="ts">
   import { keys } from "#lib/api/keys.js";
+  import { invalidate } from "#lib/api/invalidations.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
   import {
@@ -46,7 +47,7 @@
   let confirmingRenew = $state(false);
   const renewMut = createApiMutation(() => ({
     mutate: renewPersonalInvitation,
-    invalidates: [keys.social.invitation()],
+    invalidates: invalidate.personalInvitation(),
     onSuccess: async (result) => {
       confirmingRenew = false;
       if (await copyFeedback.copy(result.url, true))

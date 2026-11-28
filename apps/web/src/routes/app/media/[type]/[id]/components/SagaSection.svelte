@@ -1,5 +1,6 @@
 <script lang="ts">
   import { getMediaSaga, upsertLibraryEntry } from "#lib/api/client.js";
+  import { invalidate } from "#lib/api/invalidations.js";
   import { keys } from "#lib/api/keys.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
@@ -49,7 +50,7 @@
         type: x.type,
         status: "PLANNED",
       }),
-    invalidates: [sagaKey],
+    invalidates: invalidate.shown(sagaKey),
     errorToast: true,
   }));
 </script>

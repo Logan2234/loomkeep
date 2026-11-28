@@ -6,6 +6,7 @@
     getAdminUpgradeNotes,
     runAdminJob,
   } from "#lib/api/client.js";
+  import { invalidate } from "#lib/api/invalidations.js";
   import { keys } from "#lib/api/keys.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
@@ -69,7 +70,7 @@
 
   const backupMut = createApiMutation(() => ({
     mutate: () => runAdminJob("backup.run"),
-    invalidates: [keys.admin.backups()],
+    invalidates: invalidate.adminBackups(),
     successToast: m.admin_update_backup_done(),
     errorToast: true,
   }));

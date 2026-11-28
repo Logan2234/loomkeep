@@ -5,6 +5,7 @@
     getListMembers,
     removeListMember,
   } from "#lib/api/client.js";
+  import { invalidate } from "#lib/api/invalidations.js";
   import { keys } from "#lib/api/keys.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
@@ -72,20 +73,14 @@
 
   // The list page underneath shows whether the list has editors (its mute
   // toggle and the per-item authors), so it refetches too.
-  const touched = $derived([
-    keys.lists.members(listId),
-    keys.lists.memberCandidates(listId),
-    keys.lists.detail(listId),
-  ]);
-
   const addMut = createApiMutation(() => ({
     mutate: (username: string) => addListMember(listId, { username }),
-    invalidates: touched,
+    invalidates: invalidate.listMembers(listId),
   }));
 
   const removeMut = createApiMutation(() => ({
     mutate: (userId: string) => removeListMember(listId, userId),
-    invalidates: touched,
+    invalidates: invalidate.listMembers(listId),
     onSuccess: () => (confirmingRemove = null),
   }));
 

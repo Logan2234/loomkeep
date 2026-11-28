@@ -31,6 +31,10 @@ history from before it was started.
 - **Self-hosting: each container now has a memory ceiling** (API 1 GB, web
   512 MB, PostgreSQL 1 GB). On a large instance, raise them with
   `API_MEM_LIMIT`, `WEB_MEM_LIMIT` and `DB_MEM_LIMIT` in `.env`.
+- **Self-hosting: set `API_CONTACT`.** Without it, Open Library is now called
+  at one request per second instead of three (its own rule for anonymous
+  callers), which slows book searches and imports, and the API warns at
+  startup.
 
 ### Added
 
@@ -88,6 +92,13 @@ history from before it was started.
 
 ### Changed
 
+- A list holds up to 2000 items. An imported list keeps its first 2000 films,
+  and the import report says how many were left out.
+- The film sagas view opens at once in your language's saved titles; new
+  translations arrive on the next visit instead of holding the page.
+- Self-hosting: the docs explain how to restore a backup from the command
+  line, for when the app itself won't start.
+
 - Imports are free and unlimited: no more "one import per domain" on the
   free plan, so a second source or a fresh re-import is never refused.
 - Scheduled jobs take a lock in the database: a job runs once at a time, even
@@ -103,6 +114,18 @@ history from before it was started.
 - The stats rankings unfold and fold smoothly on « See all ».
 
 ### Fixed
+
+- After an action made of several steps fails half-way (creating a list and
+  adding to it, saving from a shared link), the screen now shows what was
+  saved instead of the old state, and trying again creates no duplicate.
+- Turning the app lock on or off no longer fails silently when the phone
+  refuses.
+- A failed manual search in the import review shows an error instead of « no
+  results », and a slow answer can no longer replace a later search.
+- Admin: a push broadcast to every account no longer slows the whole instance
+  or stops at the first account that fails.
+- One failing account no longer stops the nightly achievement sweep or the
+  inactivity warnings for every account after it.
 
 - Reordering a list while someone else adds or removes an item now asks you
   to refresh, instead of failing or leaving two items on the same rank. Long

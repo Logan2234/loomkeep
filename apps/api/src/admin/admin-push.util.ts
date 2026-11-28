@@ -31,13 +31,13 @@ export function userAgentFamily(userAgent: string | null): string {
  * label so the ranking doesn't reshuffle between two refreshes of the same data.
  */
 export function groupByUserAgentFamily(
-  userAgents: (string | null)[],
+  rows: { userAgent: string | null; count: number }[],
 ): AdminPushUserAgentStatDto[] {
   const counts = new Map<string, number>();
 
-  for (const userAgent of userAgents) {
+  for (const { userAgent, count } of rows) {
     const label = userAgentFamily(userAgent);
-    counts.set(label, (counts.get(label) ?? 0) + 1);
+    counts.set(label, (counts.get(label) ?? 0) + count);
   }
 
   return [...counts.entries()]

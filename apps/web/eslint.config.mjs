@@ -57,7 +57,7 @@ const NO_NATIVE_CONFIRM = [
 // data, and the invalidation then misses it.
 const QUERY_KEYS_FROM_KEYS_TS = {
   selector:
-    "CallExpression[callee.name=/^createApi(Query|Mutation|InfiniteQuery)$/] Property[key.name=/^(key|invalidates)$/] ArrayExpression > Literal",
+    "CallExpression[callee.name=/^createApi(Query|Mutation|InfiniteQuery)$/] Property[key.name='key'] ArrayExpression > Literal, CallExpression[callee.object.name='invalidate'] ArrayExpression > Literal",
   message:
     "Take query keys from keys.ts (#lib/api/keys.js), and add one there if it is missing.",
 };

@@ -4,8 +4,8 @@ import { ConfigService } from "@nestjs/config";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { vi } from "vitest";
-import type { QuotaTrackerService } from "../../quota/quota-tracker.service";
 import { mockFetchByUrl } from "../../test-utils/mock-fetch";
+import { providerHttp } from "../../test-utils/stubs";
 import { OmdbService } from "../omdb.service";
 import { TmdbProvider } from "./tmdb.provider";
 
@@ -29,7 +29,7 @@ describe("TmdbProvider", () => {
     provider = new TmdbProvider(
       config as unknown as ConfigService,
       omdb as unknown as OmdbService,
-      quota as unknown as QuotaTrackerService,
+      providerHttp(quota),
     );
   });
 
@@ -46,7 +46,7 @@ describe("TmdbProvider", () => {
         getOrThrow: vi.fn().mockReturnValue("test-token"),
       } as unknown as ConfigService,
       { getRatings: vi.fn() } as unknown as OmdbService,
-      quota as unknown as QuotaTrackerService,
+      providerHttp(quota),
     );
     let calls = 0;
     global.fetch = vi.fn(() =>

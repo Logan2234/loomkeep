@@ -151,10 +151,18 @@ wording change or a rename.
 - API calls go through `createApiQuery`/`createApiMutation`/
   `createApiInfiniteQuery` (TanStack, `src/lib/api/`), which take a getter
   and return a translated `error` — never a hand-rolled `try/catch` +
-  `loading` state. `CommentThread.svelte` is the one deliberate exception.
-- Query keys come from `src/lib/api/keys.ts` (ESLint flags a literal key or
-  `invalidates` entry). `invalidates` lists only what is displayed alongside
-  the mutation.
+  `loading` state. Deliberate exceptions: `CommentThread.svelte`; in
+  `LibraryBrowser.svelte`, the favourite toggle (rows toggled one after
+  another, which `createApiMutation` would drop while one is pending) and
+  the bulk delete held back for its undo; the notification actions, as
+  optimistic; the list page's `getMyList` → `getList` fallback.
+- Query keys come from `src/lib/api/keys.ts` (ESLint flags a literal key).
+  A mutation's `invalidates` takes only what `invalidate`
+  (`src/lib/api/invalidations.ts`) builds: one entry per thing touched (a
+  library entry, a list, a conversation…), which names every query showing
+  it, so a new screen showing an entity is added there once. It refetches
+  once the mutation settles, failure included. `invalidate.shown()` is for
+  the screen's own queries only.
 - Paginated `GET` lists share one contract: `page`/`limit` params
   (`parsePageQuery`), `PagedResult<T>` response. The reading/play
   sessions of an entry (`GET /books|games/entries/:id/sessions`) are the

@@ -143,6 +143,54 @@ its header explains how to adapt it.
   not a backup.
 </Aside>
 
+### Without the admin panel
+
+Restoring from **Admin › Backup** needs an API that starts and an
+administrator who can sign in. When that's exactly what's broken (a failed
+upgrade, a lost database, a new server), restore from the command line.
+
+<Steps>
+
+1. Get a dump out of the server, if it's still reachable. The nightly ones
+   live in the `api` container:
+
+   ```sh
+   docker compose exec api ls /data/backups
+   docker compose cp api:/data/backups/loomkeep-….sql.age .
+   ```
+
+2. Decrypt it on your machine, as above.
+3. On a new server, clone the repository and put back your **whole** `.env`,
+   not a fresh one: `MFA_ENCRYPTION_KEY` decrypts the authenticator-app
+   secrets stored in the database, `POSTGRES_PASSWORD` and the JWT secrets
+   must stay the same, and `BACKUP_ENCRYPTION_PUBLIC_KEY` keeps the next
+   backups readable with your key.
+4. Start the database alone, on an empty volume:
+
+   ```sh
+   docker compose up -d db
+   ```
+
+5. Load the dump in one transaction, so a truncated file leaves the database
+   empty rather than half restored (replace `loomkeep` if you changed
+   `POSTGRES_USER` or `POSTGRES_DB`):
+
+   ```sh
+   docker compose exec -T db psql -U loomkeep -d loomkeep      --set ON_ERROR_STOP=1 --single-transaction < dump.sql
+   ```
+
+6. Start everything with an image **at least as recent** as the version the
+   dump came from: the API applies the migrations the dump lacks when it
+   starts, but an older image doesn't know the newer tables.
+
+   ```sh
+   docker compose up -d
+   ```
+
+7. Delete `dump.sql`: it holds every account in clear.
+
+</Steps>
+
 ## Users' own exports
 
 Each person can also take a full copy of their own data at any time: see

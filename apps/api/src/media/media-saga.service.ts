@@ -12,7 +12,7 @@ import type {
 } from "@loomkeep/shared/enums";
 import { Injectable, Logger } from "@nestjs/common";
 import type { SagaMember } from "@prisma/client";
-import { mapWithConcurrency } from "../common/concurrency.util";
+import { forEachIsolated } from "../jobs/for-each-isolated";
 import { PrismaService } from "../prisma/prisma.service";
 import { AgeGateService } from "../users/age-gate.service";
 import { MediaProgressService } from "./media-progress.service";
@@ -37,6 +37,9 @@ export interface LibrarySagaFilters {
  * Sagas as the viewer sees them: the one on a work's page, and the ones in
  * progress across their library.
  */
+/** TMDB collections asked at once while translating sagas. */
+const TRANSLATION_CONCURRENCY = 4;
+
 @Injectable()
 export class MediaSagaService {
   private readonly logger = new Logger(MediaSagaService.name);
@@ -225,11 +228,11 @@ export class MediaSagaService {
   /**
    * Film sagas are saved in TMDB's base language; anime titles don't change
    * with it. A saga is translated once per language and kept, then asked
-   * again only when a work joined it — a failed request just keeps the saved
-   * titles.
+   * again only when a work joined it. The asking happens in the background:
+   * this answer carries the saved titles, the next one the translation.
    */
   private async translations(
-    sagas: { key: string; members: SagaMember[] }[],
+    sagas: { key: string; title: string; members: SagaMember[] }[],
     lang: string | undefined,
   ): Promise<Map<string, SagaTitles>> {
     const films = sagas.filter((saga) => saga.key.startsWith("TMDB:"));
@@ -252,44 +255,58 @@ export class MediaSagaService {
       return !titles || saga.members.some((m) => !(m.sourceId in titles));
     });
 
-    const read = await mapWithConcurrency(missing, 4, (saga) =>
-      this.sagas
-        .readCollection(
+    if (missing.length > 0) void this.translateInBackground(missing, lang);
+    return translated;
+  }
+
+  /**
+   * Saves each saga's titles in `lang`. A saga TMDB has no collection for,
+   * or a work it no longer lists, keeps its saved title, so it isn't asked
+   * again on every call. A failed request saves nothing: the next call tries
+   * again.
+   */
+  private async translateInBackground(
+    sagas: { key: string; title: string; members: SagaMember[] }[],
+    lang: string,
+  ): Promise<void> {
+    await forEachIsolated(
+      sagas,
+      async (saga) => {
+        const collection = await this.sagas.readCollection(
           saga.key,
           saga.members.map((m) => m.sourceId),
           lang,
-        )
-        .catch(() => null),
-    );
-    await Promise.all(
-      missing.map(async (saga, i) => {
-        const collection = read[i];
-        if (!collection) return;
+        );
+        const read = new Map(
+          (collection?.members ?? []).map((m) => [m.sourceId, m.title]),
+        );
         const titles: SagaTitles = {
-          title: collection.title,
+          title: collection?.title ?? saga.title,
           members: Object.fromEntries(
-            collection.members.map((m) => [m.sourceId, m.title]),
+            saga.members.map((m) => [
+              m.sourceId,
+              read.get(m.sourceId) ?? m.title,
+            ]),
           ),
         };
-        translated.set(saga.key, titles);
         // Two requests can translate the same saga at once: one save is enough.
-        await this.prisma.sagaTranslation
-          .upsert({
-            where: { sagaKey_locale: { sagaKey: saga.key, locale: lang } },
-            create: {
-              sagaKey: saga.key,
-              locale: lang,
-              title: titles.title,
-              memberTitles: titles.members,
-            },
-            update: { title: titles.title, memberTitles: titles.members },
-          })
-          .catch((err) =>
-            this.logger.warn(`Saga translation not saved: ${saga.key}`, err),
-          );
-      }),
+        await this.prisma.sagaTranslation.upsert({
+          where: { sagaKey_locale: { sagaKey: saga.key, locale: lang } },
+          create: {
+            sagaKey: saga.key,
+            locale: lang,
+            title: titles.title,
+            memberTitles: titles.members,
+          },
+          update: { title: titles.title, memberTitles: titles.members },
+        });
+      },
+      {
+        logger: this.logger,
+        label: (saga) => `Saga translation of ${saga.key} in ${lang}`,
+        concurrency: TRANSLATION_CONCURRENCY,
+      },
     );
-    return translated;
   }
 
   private async statusesOf(

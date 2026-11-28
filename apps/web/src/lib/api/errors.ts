@@ -1,7 +1,7 @@
 import { m } from "#lib/paraglide/messages.js";
 import { formatRetryDelay } from "#lib/ui/format.js";
 import { ErrorCode } from "@loomkeep/shared/catalog";
-import { SAVED_VIEW_LIMITS } from "@loomkeep/shared/contracts";
+import { LIST_LIMITS, SAVED_VIEW_LIMITS } from "@loomkeep/shared/contracts";
 import { ApiError } from "./core";
 
 /**
@@ -201,6 +201,8 @@ const MESSAGES = {
   [ErrorCode.ListForbidden]: () => m.apierr_lists_forbidden(),
   [ErrorCode.ListItemNotFound]: () => m.apierr_lists_item_not_found(),
   [ErrorCode.ListItemAlreadyExists]: () => m.apierr_lists_item_already_exists(),
+  [ErrorCode.ListItemLimitReached]: () =>
+    m.apierr_lists_item_limit_reached({ max: LIST_LIMITS.items }),
   [ErrorCode.ListWorkNotFound]: () => m.apierr_lists_work_not_found(),
   [ErrorCode.ListReorderMismatch]: () => m.apierr_lists_reorder_mismatch(),
   [ErrorCode.ListStale]: () => m.apierr_lists_stale(),

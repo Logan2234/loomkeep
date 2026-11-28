@@ -8,6 +8,7 @@
     removeListItem,
   } from "#lib/api/client.js";
   import { keys } from "#lib/api/keys.js";
+  import { invalidate } from "#lib/api/invalidations.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
   import { m } from "#lib/paraglide/messages.js";
@@ -97,11 +98,7 @@
   }
   let saved = $state<Saved | null>(null);
 
-  const invalidates = $derived([
-    [domain.key[0]],
-    keys.library.all(),
-    keys.lists.all(),
-  ]);
+  const invalidates = $derived(invalidate.quickAdd([domain.key[0]]));
 
   const saveMut = createApiMutation(() => ({
     mutate: async (): Promise<Saved> => {

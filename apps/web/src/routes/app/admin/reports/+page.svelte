@@ -30,6 +30,7 @@
     takeAdminProfileMeasures,
     takeDownAdminReport,
   } from "#lib/api/client.js";
+  import { invalidate } from "#lib/api/invalidations.js";
   import { createApiInfiniteQuery } from "#lib/api/infinite-query.svelte.js";
   import { keys } from "#lib/api/keys.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
@@ -146,11 +147,7 @@
   const resolveMut = createApiMutation(() => ({
     mutate: (args: { id: string; status: ReportResolution }) =>
       resolveAdminReport(args.id, args.status),
-    invalidates: [
-      reportsKey,
-      keys.admin.reportsSummary(),
-      keys.admin.reportsPendingCount(),
-    ],
+    invalidates: invalidate.adminReports(reportsKey),
     errorToast: true,
   }));
 
@@ -232,11 +229,7 @@
     onSuccess: () => {
       takeDownTarget = null;
     },
-    invalidates: [
-      reportsKey,
-      keys.admin.reportsSummary(),
-      keys.admin.reportsPendingCount(),
-    ],
+    invalidates: invalidate.adminReports(reportsKey),
     coveredFields: ["reasonText", "legalBasis", "tosClause"],
   }));
 

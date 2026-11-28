@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import Switch from "#lib/ui/Switch.svelte";
   import {
     appLockStatus,
@@ -10,20 +11,18 @@
 
   const supported = isAppLockSupported();
   let status = $state<AppLockStatus | null>(null);
-  let changing = $state(false);
 
   $effect(() => {
     if (supported) void appLockStatus().then((current) => (status = current));
   });
 
-  async function toggle(enabled: boolean) {
-    changing = true;
-    try {
-      status = await setAppLock(enabled);
-    } finally {
-      changing = false;
-    }
-  }
+  // A refused change (no biometrics enrolled, the prompt dismissed) used to
+  // end as an unhandled rejection, with no message.
+  const toggleMut = createApiMutation(() => ({
+    mutate: (enabled: boolean) => setAppLock(enabled),
+    onSuccess: (next) => (status = next),
+    errorToast: true,
+  }));
 </script>
 
 {#if supported && status}
@@ -41,7 +40,7 @@
     <Switch
       label={m.settings_app_lock_label()}
       checked={status.enabled && status.available}
-      disabled={!status.available || changing}
-      onChange={toggle} />
+      disabled={!status.available || toggleMut.loading}
+      onChange={(enabled) => toggleMut.mutate(enabled)} />
   </section>
 {/if}

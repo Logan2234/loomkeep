@@ -41,7 +41,9 @@ application (any name; OAuth redirect `http://localhost`), then copy its
 
 Both ask callers to identify themselves. Set `API_CONTACT` to an email
 address or a URL where they can reach you: it goes in the `User-Agent` of
-every call.
+every call. Without it, Open Library allows one request per second instead
+of three, which slows book searches and imports, and the API warns about it
+at startup.
 
 ## OMDb
 

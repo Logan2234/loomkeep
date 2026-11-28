@@ -16,7 +16,7 @@
   import type { Snippet } from "svelte";
   import { fly } from "svelte/transition";
 
-  import { keys } from "#lib/api/keys.js";
+  import { invalidate } from "#lib/api/invalidations.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
   import { finishSessionTimer } from "#lib/api/session-timer.js";
@@ -148,14 +148,15 @@
   );
 
   // Everything a session changes, besides the timer.
-  const changed = (withProgression = true) => [
-    domain.keys.root(entry.id),
-    detailKey,
-    domain.keys.stats(),
-    keys.stats.social(),
-    ...(withProgression ? [keys.gamification.progression()] : []),
-    keys.feed.all(),
-  ];
+  const changed = (withProgression = true) =>
+    invalidate.session(
+      domain.keys.root(entry.id),
+      detailKey,
+      domain.keys.stats(),
+      {
+        progression: withProgression,
+      },
+    );
 
   const createMut = createApiMutation<Create, unknown>(() => ({
     mutate: (body) => domain.api.create(entry.id, body),
@@ -171,7 +172,7 @@
 
   const finishTimerMut = createApiMutation<FinishSessionTimerDto, void>(() => ({
     mutate: finishSessionTimer,
-    invalidates: [keys.sessionTimer.current(), ...changed()],
+    invalidates: invalidate.all(invalidate.sessionTimer(), changed()),
     onSuccess: () => {
       page = 1;
       notes = "";

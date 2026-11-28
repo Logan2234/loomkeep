@@ -128,6 +128,7 @@ export const ErrorCode = {
   ListForbidden: "lists.forbidden",
   ListItemNotFound: "lists.item_not_found",
   ListItemAlreadyExists: "lists.item_already_exists",
+  ListItemLimitReached: "lists.item_limit_reached",
   ListWorkNotFound: "lists.work_not_found",
   ListReorderMismatch: "lists.reorder_mismatch",
   ListStale: "lists.stale",

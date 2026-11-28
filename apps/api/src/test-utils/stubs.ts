@@ -6,6 +6,9 @@ import type { GameSagaService } from "../games/game-saga.service";
 import type { AchievementService } from "../gamification/achievements/achievement.service";
 import type { SessionXpService } from "../gamification/session-xp.service";
 import type { XpService } from "../gamification/xp.service";
+import { MetricsService } from "../metrics/metrics.service";
+import { ProviderHttpService } from "../quota/provider-http.service";
+import type { QuotaTrackerService } from "../quota/quota-tracker.service";
 
 export function stubXp(): XpService {
   return {
@@ -53,4 +56,26 @@ export function allDomainsConfig(): ConfigService {
     TWITCH_CLIENT_ID: "id",
     TWITCH_CLIENT_SECRET: "secret",
   });
+}
+
+/**
+ * A real ProviderHttpService over a quota double, for provider specs.
+ * `throttle: false` drops the provider's interval, for a spec making many
+ * calls against a slow-paced provider (Open Library's 1 request/s).
+ */
+export function providerHttp(
+  quota: { record: (provider: string) => void } = { record: () => undefined },
+  config: { get: (key: string) => unknown } = { get: () => undefined },
+  { throttle = true }: { throttle?: boolean } = {},
+): ProviderHttpService {
+  const service = new ProviderHttpService(
+    config as unknown as ConfigService,
+    quota as unknown as QuotaTrackerService,
+    new MetricsService(),
+  );
+  if (throttle) return service;
+  const client = service.client.bind(service);
+  service.client = (options) =>
+    client({ ...options, minIntervalMs: undefined });
+  return service;
 }

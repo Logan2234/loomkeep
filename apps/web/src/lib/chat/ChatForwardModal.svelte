@@ -2,6 +2,7 @@
   // "Transférer": a copy of the message to each friend picked, in their own
   // conversation, marked forwarded.
   import { forwardMessage } from "#lib/api/chat.js";
+  import { invalidate } from "#lib/api/invalidations.js";
   import { keys } from "#lib/api/keys.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import { chatPreview } from "#lib/chat/chat-markdown.js";
@@ -46,7 +47,7 @@
       );
       onclose();
     },
-    invalidates: [keys.chat.conversations()],
+    invalidates: invalidate.chatConversations(),
     errorToast: true,
   }));
 </script>

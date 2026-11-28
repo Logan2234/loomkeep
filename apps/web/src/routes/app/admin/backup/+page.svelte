@@ -7,6 +7,7 @@
     restoreAdminBackup,
     runAdminJob,
   } from "#lib/api/client.js";
+  import { invalidate } from "#lib/api/invalidations.js";
   import { keys } from "#lib/api/keys.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
@@ -59,7 +60,7 @@
 
   const runNowMut = createApiMutation(() => ({
     mutate: () => runAdminJob(BACKUP_JOB_KEY),
-    invalidates: [keys.admin.backups()],
+    invalidates: invalidate.adminBackups(),
     successToast: m.admin_backup_created(),
     errorToast: true,
   }));
@@ -82,7 +83,7 @@
 
   const deleteMut = createApiMutation(() => ({
     mutate: (file: AdminBackupFileDto) => deleteAdminBackupFile(file.id),
-    invalidates: [keys.admin.backups()],
+    invalidates: invalidate.adminBackups(),
     successToast: m.admin_backup_deleted(),
     errorToast: true,
     onSuccess: () => (pendingDelete = null),
@@ -96,7 +97,7 @@
   const deleteOrphanMut = createApiMutation(() => ({
     mutate: (file: AdminOrphanBackupFileDto) =>
       deleteAdminOrphanBackupFile(file.filename),
-    invalidates: [keys.admin.backups()],
+    invalidates: invalidate.adminBackups(),
     successToast: m.admin_backup_orphan_deleted(),
     errorToast: true,
     onSuccess: () => (pendingOrphanDelete = null),

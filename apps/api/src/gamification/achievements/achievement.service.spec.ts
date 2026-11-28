@@ -412,6 +412,24 @@ describe("AchievementService nightly sweep", () => {
     const [[{ where }]] = (prisma.user.findMany as Mock).mock.calls;
     expect(where).toEqual({});
   });
+  // One member whose evaluation threw stopped the sweep for every member
+  // after them (audit 2026-11-17, PRF-28 and REF-02).
+  it("goes on to the next member when one evaluation fails", async () => {
+    const { service, prisma } = makeService();
+    (prisma.user.findMany as Mock).mockResolvedValue([
+      { id: "broken" },
+      { id: "fine" },
+    ]);
+    const evaluate = vi
+      .spyOn(service, "evaluate")
+      .mockImplementation(async (userId) => {
+        if (userId === "broken") throw new Error("boom");
+      });
+
+    await service.runAchievementsSweepJob();
+
+    expect(evaluate).toHaveBeenCalledWith("fine");
+  });
 });
 
 describe("AchievementService rarity snapshot", () => {

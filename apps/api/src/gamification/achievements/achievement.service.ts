@@ -15,6 +15,7 @@ import { AppException } from "../../common/app.exception";
 import { sinceDaysAgo } from "../../common/date.util";
 import { isUniqueViolation } from "../../common/prisma-error.util";
 import { EventsGateway } from "../../events/events.gateway";
+import { forEachIsolated } from "../../jobs/for-each-isolated";
 import { JOB_KEYS } from "../../jobs/job-keys";
 import { JobRunService, type JobSkipped } from "../../jobs/job-run.service";
 import { PrismaService } from "../../prisma/prisma.service";
@@ -422,12 +423,19 @@ export class AchievementService {
       select: { id: true },
     });
 
-    for (const user of users) {
-      await this.evaluate(user.id);
-    }
+    const { failed } = await forEachIsolated(
+      users,
+      async (user) => {
+        await this.evaluate(user.id);
+      },
+      {
+        logger: this.logger,
+        label: (user) => `Achievement sweep of ${user.id}`,
+      },
+    );
 
     const eligible = await this.recomputeRarity();
-    return `Swept ${users.length} user(s), rarity over ${eligible} member(s)`;
+    return `Swept ${users.length} user(s)${failed ? ` (${failed} failed)` : ""}, rarity over ${eligible} member(s)`;
   }
 
   /**

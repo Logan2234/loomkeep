@@ -77,6 +77,8 @@ interface CommitTally {
   moviesImported: number;
   moviesWatchlist: number;
   listsCreated: number;
+  /** Films a list left out past LIST_LIMITS.items. */
+  listItemsOverLimit: number;
 }
 
 /**
@@ -343,6 +345,7 @@ export abstract class MediaImportSource<
       moviesImported: 0,
       moviesWatchlist: 0,
       listsCreated: 0,
+      listItemsOverLimit: 0,
     };
 
     // Overwrite replaces the library title by title: a title's old entry and
@@ -438,6 +441,14 @@ export abstract class MediaImportSource<
         },
         ...(tally.listsCreated > 0
           ? [{ id: "lists" as const, value: tally.listsCreated }]
+          : []),
+        ...(tally.listItemsOverLimit > 0
+          ? [
+              {
+                id: "listItemsOverLimit" as const,
+                value: tally.listItemsOverLimit,
+              },
+            ]
           : []),
         ...(failed > 0 ? [{ id: "failed" as const, value: failed }] : []),
       ],
@@ -780,7 +791,7 @@ export abstract class MediaImportSource<
           list.description?.trim().slice(0, LIST_LIMITS.description) || null,
         kind: ListKind.COLLECTION,
       });
-      await this.lists.addImportedItems(
+      tally.listItemsOverLimit += await this.lists.addImportedItems(
         userId,
         created.id,
         items.map((item) => ({ ...item, targetType: ReviewTargetType.MEDIA })),

@@ -6,7 +6,7 @@
     muteConversation,
     pinConversation,
   } from "#lib/api/chat.js";
-  import { keys } from "#lib/api/keys.js";
+  import { invalidate } from "#lib/api/invalidations.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import { chat } from "#lib/chat/chat.svelte.js";
   import Avatar from "#lib/ui/Avatar.svelte";
@@ -51,29 +51,25 @@
 
   const readMut = createApiMutation(() => ({
     mutate: () => markConversationRead(conversation.id),
-    invalidates: [keys.chat.conversations(), keys.chat.unread()],
+    invalidates: invalidate.chatInbox(),
     errorToast: true,
   }));
 
   const muteMut = createApiMutation(() => ({
     mutate: (muted: boolean) => muteConversation(conversation.id, muted),
-    invalidates: [
-      keys.chat.conversations(),
-      keys.chat.conversation(conversation.id),
-      keys.chat.unread(),
-    ],
+    invalidates: invalidate.chatConversation(conversation.id),
     errorToast: true,
   }));
 
   const pinMut = createApiMutation(() => ({
     mutate: (pinned: boolean) => pinConversation(conversation.id, pinned),
-    invalidates: [keys.chat.conversations()],
+    invalidates: invalidate.chatConversations(),
     errorToast: true,
   }));
 
   const hideMut = createApiMutation(() => ({
     mutate: () => hideConversation(conversation.id),
-    invalidates: [keys.chat.conversations(), keys.chat.unread()],
+    invalidates: invalidate.chatInbox(),
     onSuccess: () => close(),
     errorToast: true,
   }));

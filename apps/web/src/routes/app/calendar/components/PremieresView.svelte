@@ -1,5 +1,6 @@
 <script lang="ts">
   import { getPremieres, upsertLibraryEntry } from "#lib/api/client.js";
+  import { invalidate } from "#lib/api/invalidations.js";
   import { keys } from "#lib/api/keys.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
@@ -46,7 +47,7 @@
         type: "SERIES",
         status: "PLANNED",
       }),
-    invalidates: [keys.library.tracked(), keys.calendar.upcoming()],
+    invalidates: invalidate.premiereFollow(),
     successToast: (_, p) =>
       m.calendar_premieres_added_toast({ title: p.title }),
     errorToast: true,

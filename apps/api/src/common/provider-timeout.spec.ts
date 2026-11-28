@@ -1,9 +1,8 @@
 import { ErrorCode } from "@loomkeep/shared/catalog";
-import type { ConfigService } from "@nestjs/config";
 import { vi } from "vitest";
 import { OpenLibraryProvider } from "../books/providers/open-library.provider";
 import { MusicBrainzProvider } from "../music/providers/musicbrainz.provider";
-import type { QuotaTrackerService } from "../quota/quota-tracker.service";
+import { providerHttp } from "../test-utils/stubs";
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -14,11 +13,7 @@ describe.each([
   ["Open Library", OpenLibraryProvider],
   ["MusicBrainz", MusicBrainzProvider],
 ] as const)("%s HTTP failures", (_name, Provider) => {
-  const make = () =>
-    new Provider(
-      { get: vi.fn() } as unknown as ConfigService,
-      { record: vi.fn() } as unknown as QuotaTrackerService,
-    );
+  const make = () => new Provider(providerHttp({ record: vi.fn() }));
 
   it("maps network failures to a provider-unavailable error", async () => {
     vi.useFakeTimers();
@@ -70,10 +65,7 @@ describe.each([
 it("throttles and counts every MusicBrainz retry while only retrying HTTP 503", async () => {
   vi.useFakeTimers();
   const record = vi.fn();
-  const provider = new MusicBrainzProvider(
-    { get: vi.fn() } as unknown as ConfigService,
-    { record } as unknown as QuotaTrackerService,
-  );
+  const provider = new MusicBrainzProvider(providerHttp({ record }));
   const times: number[] = [];
   const fetchMock = vi.fn(() => {
     times.push(Date.now());

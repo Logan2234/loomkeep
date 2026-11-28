@@ -1,5 +1,6 @@
 import { ErrorCode } from "@loomkeep/shared/catalog";
 import {
+  LIST_LIMITS,
   type ListDetailDto,
   type ListDto,
   type ListItemDto,
@@ -560,6 +561,17 @@ export class ListService {
       // and a ranked list's order became arbitrary.
       row = await this.prisma.$transaction(async (tx) => {
         await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${listId}::text))`;
+
+        if (
+          (await tx.listItem.count({ where: { listId } })) >= LIST_LIMITS.items
+        ) {
+          throw new AppException(
+            HttpStatus.CONFLICT,
+            ErrorCode.ListItemLimitReached,
+            { max: LIST_LIMITS.items },
+          );
+        }
+
         const last = await tx.listItem.findFirst({
           where: { listId },
           orderBy: { position: "desc" },
@@ -607,7 +619,8 @@ export class ListService {
    * Fills a list an import has just created for `userId`, in the source's
    * order, in one write. None of {@link addItem}'s per-item activity or
    * notifications: the list is brand new, and hundreds of "added" events
-   * would only flood the activity log.
+   * would only flood the activity log. Keeps the first `LIST_LIMITS.items`
+   * and returns how many it left out.
    */
   async addImportedItems(
     userId: string,
@@ -617,9 +630,10 @@ export class ListService {
       targetId: string;
       note: string | null;
     }[],
-  ): Promise<void> {
+  ): Promise<number> {
+    const kept = items.slice(0, LIST_LIMITS.items);
     await this.prisma.listItem.createMany({
-      data: items.map((item, position) => ({
+      data: kept.map((item, position) => ({
         listId,
         targetType: item.targetType,
         targetId: item.targetId,
@@ -629,6 +643,7 @@ export class ListService {
       })),
       skipDuplicates: true,
     });
+    return items.length - kept.length;
   }
 
   /**

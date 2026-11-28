@@ -1,5 +1,6 @@
 import { m } from "#lib/paraglide/messages.js";
-import { render, screen } from "@testing-library/svelte";
+import { renderWithQuery } from "#lib/test/render.js";
+import { screen, waitFor } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import AppLockSetting from "./AppLockSetting.svelte";
@@ -25,14 +26,14 @@ describe("AppLockSetting", () => {
 
   it("shows nothing outside an app that has the lock", () => {
     lock.supported = false;
-    render(AppLockSetting);
+    renderWithQuery(AppLockSetting, {});
 
     expect(screen.queryByRole("switch")).toBeNull();
   });
 
   it("follows what the phone answers, not the tap", async () => {
     lock.set.mockResolvedValue({ available: true, enabled: false });
-    render(AppLockSetting);
+    renderWithQuery(AppLockSetting, {});
 
     const toggle = await screen.findByRole("switch", {
       name: m.settings_app_lock_label(),
@@ -49,10 +50,27 @@ describe("AppLockSetting", () => {
 
   it("explains why it can't be turned on without a screen lock", async () => {
     lock.status = { available: false, enabled: false };
-    render(AppLockSetting);
+    renderWithQuery(AppLockSetting, {});
 
     const toggle = await screen.findByRole("switch");
     expect((toggle as HTMLButtonElement).disabled).toBe(true);
     expect(screen.getByText(m.settings_app_lock_unavailable())).toBeTruthy();
+  });
+
+  // A refused change (no biometrics enrolled, the prompt dismissed) ended as
+  // an unhandled rejection, with no message (audit 2026-11-17, DET-02).
+  it("keeps working after the phone refuses the change", async () => {
+    lock.set.mockRejectedValueOnce(new Error("Biometry not enrolled"));
+    renderWithQuery(AppLockSetting, {});
+
+    const toggle = await screen.findByRole("switch", {
+      name: m.settings_app_lock_label(),
+    });
+    await userEvent.click(toggle);
+
+    await waitFor(() =>
+      expect((toggle as HTMLButtonElement).disabled).toBe(false),
+    );
+    expect(toggle.getAttribute("aria-checked")).toBe("false");
   });
 });

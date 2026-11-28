@@ -1,5 +1,6 @@
 <script lang="ts">
   import { getAdminJobs, runAdminJob } from "#lib/api/client.js";
+  import { invalidate } from "#lib/api/invalidations.js";
   import { keys } from "#lib/api/keys.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
@@ -90,7 +91,7 @@
 
   const runJobMut = createApiMutation(() => ({
     mutate: (key: string) => runAdminJob(key),
-    invalidates: [keys.admin.jobs()],
+    invalidates: invalidate.adminJobs(),
     errorToast: true,
   }));
 

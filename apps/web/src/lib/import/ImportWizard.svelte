@@ -171,8 +171,9 @@
 
   let searchKey = $state<string | null>(null);
   let searchQuery = $state("");
-  let searchResults = $state<ImportMatch[]>([]);
-  let searching = $state(false);
+  // What was last submitted: the query's key, so a slow answer to an
+  // earlier search can't replace the latest one.
+  let submittedQuery = $state("");
 
   // Shows only items still needing a manual match; toggled from the recap bar.
   let filterUnresolved = $state(false);
@@ -343,7 +344,7 @@
       (item.context?.kind === "game" && item.context.unknownTitle
         ? ""
         : item.sourceTitle);
-    searchResults = [];
+    submittedQuery = "";
   }
 
   const mediaToMatch = (m: MediaSummaryDto): ImportMatch => ({
@@ -371,29 +372,33 @@
     coverUrl: g.coverUrl,
   });
 
-  async function runSearch() {
-    if (!searchQuery.trim()) {
-      searchResults = [];
-      return;
-    }
-    searching = true;
-    try {
-      const q = searchQuery.trim();
-      const domain = plan?.searchDomain ?? Domain.MEDIA;
-      if (domain === Domain.BOOKS) {
-        searchResults = (await searchBooks(q)).results.map(bookToMatch);
-      } else if (domain === Domain.GAMES) {
-        searchResults = (await searchGames(q)).results.map(gameToMatch);
-      } else {
-        searchResults = (
-          await searchCatalog(q, plan?.searchMediaType)
-        ).items.map(mediaToMatch);
-      }
-    } catch {
-      searchResults = [];
-    } finally {
-      searching = false;
-    }
+  const matchSearch = createApiQuery(() => {
+    const q = submittedQuery.trim();
+    const domain = plan?.searchDomain ?? Domain.MEDIA;
+    const mediaType = plan?.searchMediaType;
+    return {
+      key: keys.import.matchSearch(domain, mediaType ?? null, q),
+      fetch: async (): Promise<ImportMatch[]> => {
+        if (domain === Domain.BOOKS) {
+          return (await searchBooks(q)).results.map(bookToMatch);
+        }
+        if (domain === Domain.GAMES) {
+          return (await searchGames(q)).results.map(gameToMatch);
+        }
+        return (await searchCatalog(q, mediaType)).items.map(mediaToMatch);
+      },
+      enabled: searchKey !== null && q !== "",
+    };
+  });
+  const searching = $derived(
+    submittedQuery.trim() !== "" && matchSearch.loading,
+  );
+  const searchResults = $derived(
+    submittedQuery.trim() === "" ? [] : (matchSearch.data ?? []),
+  );
+
+  function runSearch() {
+    submittedQuery = searchQuery;
   }
 
   function chooseMatch(key: string, match: ImportMatch) {
@@ -401,7 +406,7 @@
     included.add(key);
     searchKey = null;
     searchQuery = "";
-    searchResults = [];
+    submittedQuery = "";
   }
 
   function commit() {
@@ -467,7 +472,7 @@
     overwrite = false;
     searchKey = null;
     searchQuery = "";
-    searchResults = [];
+    submittedQuery = "";
     filterUnresolved = false;
   }
 </script>
@@ -812,7 +817,7 @@
             <form
               onsubmit={(e) => {
                 e.preventDefault();
-                void runSearch();
+                runSearch();
               }}
               class="mb-2 flex gap-2">
               <input
@@ -827,7 +832,11 @@
                 {searching ? "…" : m.common_search_action()}
               </button>
             </form>
-            {#if searchResults.length > 0}
+            {#if matchSearch.error}
+              <p role="alert" class="text-danger text-xs">
+                {matchSearch.error}
+              </p>
+            {:else if searchResults.length > 0}
               <ul class="flex max-h-56 flex-col gap-1 overflow-y-auto">
                 {#each searchResults as r (`${r.source}:${r.sourceId}`)}
                   <li>

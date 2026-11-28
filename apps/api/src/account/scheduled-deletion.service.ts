@@ -8,6 +8,7 @@ import { HttpStatus, Injectable, Logger } from "@nestjs/common";
 import { Cron } from "@nestjs/schedule";
 import { AppException } from "../common/app.exception";
 import { randomToken, sha256Hex } from "../common/crypto.util";
+import { forEachIsolated } from "../jobs/for-each-isolated";
 import { JOB_KEYS } from "../jobs/job-keys";
 import { JobRunService, type JobSkipped } from "../jobs/job-run.service";
 import { MailService } from "../mail/mail.service";
@@ -164,19 +165,16 @@ export class ScheduledDeletionService {
       select: { email: true, locale: true, deletionScheduledFor: true },
     });
 
-    let reminded = 0;
-
-    for (const user of toRemind) {
-      try {
+    const { succeeded: reminded } = await forEachIsolated(
+      toRemind,
+      async (user) => {
         await this.mail.sendAccountDeletionReminder(
           { email: user.email, locale: user.locale },
           user.deletionScheduledFor!,
         );
-        reminded++;
-      } catch (err) {
-        this.logger.error("Account deletion reminder failed", err);
-      }
-    }
+      },
+      { logger: this.logger, label: () => "Account deletion reminder" },
+    );
 
     const due = await this.prisma.user.findMany({
       where: { deletionScheduledFor: { lte: new Date(now) } },
@@ -185,21 +183,21 @@ export class ScheduledDeletionService {
 
     // One account that can't be deleted mustn't hold back every other due
     // deletion: it stays scheduled and is retried on the next run.
-    let deleted = 0;
-
-    for (const user of due) {
-      try {
+    const { succeeded: deleted } = await forEachIsolated(
+      due,
+      async (user) => {
         await this.accountDeletion.deleteAccount(
           user.id,
           "self",
           "Suppression demandée par l'utilisateur",
         );
-        deleted++;
         this.logger.log(`Compte ${user.id} supprimé à sa demande`);
-      } catch (err) {
-        this.logger.error(`Scheduled deletion of ${user.id} failed`, err);
-      }
-    }
+      },
+      {
+        logger: this.logger,
+        label: (user) => `Scheduled deletion of ${user.id}`,
+      },
+    );
 
     return { reminded, deleted };
   }

@@ -7,6 +7,7 @@
     resumeSessionTimer,
     startSessionTimer,
   } from "#lib/api/session-timer.js";
+  import { invalidate } from "#lib/api/invalidations.js";
   import { keys } from "#lib/api/keys.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
@@ -58,23 +59,23 @@
 
   const startMut = createApiMutation<void, SessionTimerDto>(() => ({
     mutate: () => startSessionTimer({ domain, entryId }),
-    invalidates: [timerKey],
+    invalidates: invalidate.sessionTimer(),
     errorToast: true,
   }));
   const pauseMut = createApiMutation<void, SessionTimerDto>(() => ({
     mutate: pauseSessionTimer,
-    invalidates: [timerKey],
+    invalidates: invalidate.sessionTimer(),
     onSuccess: (paused) => onFinish(paused.elapsedSeconds),
     errorToast: true,
   }));
   const togglePauseMut = createApiMutation<boolean, SessionTimerDto>(() => ({
     mutate: (paused) => (paused ? resumeSessionTimer() : pauseSessionTimer()),
-    invalidates: [timerKey],
+    invalidates: invalidate.sessionTimer(),
     errorToast: true,
   }));
   const cancelMut = createApiMutation<void, void>(() => ({
     mutate: cancelSessionTimer,
-    invalidates: [timerKey],
+    invalidates: invalidate.sessionTimer(),
     onSuccess: () => (confirmCancel = false),
     errorToast: true,
   }));

@@ -80,12 +80,12 @@ function makeSource(existingList: { id: string } | null = null) {
           lists: ImportList[],
           decisions: CommitDecisions,
           matchByKey: ReturnType<typeof matches>,
-          tally: { listsCreated: number },
+          tally: { listsCreated: number; listItemsOverLimit: number },
         ) => Promise<void>;
       }
     ).writeLists("u1", lists, decisions(included), matches(), tally);
 
-  const tally = { listsCreated: 0 };
+  const tally = { listsCreated: 0, listItemsOverLimit: 0 };
   const itemsAdded = () => lists.addImportedItems.mock.calls[0]?.[2];
   return { lists, mediaItemService, writeLists, tally, itemsAdded };
 }
@@ -115,6 +115,17 @@ describe("LetterboxdImportSource — list writing", () => {
       { targetType: "MEDIA", targetId: "media-829", note: "Le scénario" },
       { targetType: "MEDIA", targetId: "media-949", note: null },
     ]);
+  });
+
+  // A list had no bound (audit 2026-11-17, PRF-04): the films past the
+  // limit are left out, and the report says how many.
+  it("counts the films a list left out past its limit", async () => {
+    const { lists, writeLists, tally } = makeSource();
+    lists.addImportedItems.mockResolvedValue(5);
+
+    await writeLists([LIST], BOTH);
+
+    expect(tally.listItemsOverLimit).toBe(5);
   });
 
   it("caches each film without adding it to the library", async () => {

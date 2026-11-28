@@ -848,12 +848,16 @@ describe("ReportService.listAgainstUser", () => {
     );
   });
 
-  it("matches reports targeting the user directly or content of theirs", async () => {
+  // It read every comment, review, list and message id of the user to build
+  // an IN (…) list, while targetOwnerId (filled since its migration, and at
+  // every report) already covers their content (audit 2026-11-17, PRF-20).
+  it("matches reports on the user or on content of theirs, without reading their content", async () => {
+    const content = { findMany: vi.fn() };
     const { svc, prisma } = make({
-      comment: { findMany: vi.fn().mockResolvedValue([{ id: "c1" }]) },
-      review: { findMany: vi.fn().mockResolvedValue([{ id: "rev1" }]) },
-      list: { findMany: vi.fn().mockResolvedValue([{ id: "l1" }]) },
-      message: { findMany: vi.fn().mockResolvedValue([{ id: "m1" }]) },
+      comment: content,
+      review: content,
+      list: content,
+      message: content,
     });
     await svc.listAgainstUser("user1");
     expect(prisma.report.findMany).toHaveBeenCalledWith(
@@ -862,14 +866,11 @@ describe("ReportService.listAgainstUser", () => {
           OR: [
             { targetOwnerId: "user1" },
             { targetType: "USER", targetId: "user1" },
-            { targetType: "COMMENT", targetId: { in: ["c1"] } },
-            { targetType: "REVIEW", targetId: { in: ["rev1"] } },
-            { targetType: "LIST", targetId: { in: ["l1"] } },
-            { targetType: "MESSAGE", targetId: { in: ["m1"] } },
           ],
         },
       }),
     );
+    expect(content.findMany).not.toHaveBeenCalled();
   });
 });
 

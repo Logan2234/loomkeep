@@ -1,5 +1,6 @@
 <script lang="ts">
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
+  import { invalidate } from "#lib/api/invalidations.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
   import Modal from "#lib/ui/Modal.svelte";
   import { m } from "#lib/paraglide/messages.js";
@@ -39,7 +40,7 @@
   let confirming = $state(false);
   const regenerateMut = createApiMutation(() => ({
     mutate: regenerateToken,
-    invalidates: [tokenKey],
+    invalidates: invalidate.shown(tokenKey),
     onSuccess: () => {
       confirming = false;
       toast.success(m.subscription_link_regenerated());

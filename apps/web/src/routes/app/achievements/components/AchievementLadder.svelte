@@ -3,7 +3,7 @@
     equipAchievement,
     unequipAchievement,
   } from "#lib/api/gamification.js";
-  import { keys } from "#lib/api/keys.js";
+  import { invalidate } from "#lib/api/invalidations.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import Icon from "#lib/ui/Icon.svelte";
   import Tooltip from "#lib/ui/Tooltip.svelte";
@@ -37,13 +37,13 @@
 
   const equipMut = createApiMutation<string, string[]>(() => ({
     mutate: (key) => equipAchievement(key),
-    invalidates: [keys.gamification.achievements()],
+    invalidates: invalidate.achievements(),
     errorToast: true,
   }));
 
   const unequipMut = createApiMutation<string, string[]>(() => ({
     mutate: (key) => unequipAchievement(key),
-    invalidates: [keys.gamification.achievements()],
+    invalidates: invalidate.achievements(),
     errorToast: true,
   }));
 

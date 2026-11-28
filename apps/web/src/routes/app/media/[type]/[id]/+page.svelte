@@ -18,6 +18,7 @@
     updateLibraryEntry,
     upsertLibraryEntry,
   } from "#lib/api/client.js";
+  import { invalidate } from "#lib/api/invalidations.js";
   import { keys } from "#lib/api/keys.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
@@ -320,7 +321,7 @@
   const episodeAlertsMut = createApiMutation(() => ({
     mutate: (muted: boolean) =>
       updateLibraryEntry(entry!.id, { episodeAlertsMuted: muted }),
-    invalidates: [detailKey],
+    invalidates: invalidate.shown(detailKey),
     successToast: (_, muted) =>
       muted
         ? m.media_episode_alerts_muted_toast({ title: detail?.title ?? "" })
@@ -330,7 +331,7 @@
   const movieAlertsMut = createApiMutation(() => ({
     mutate: (enabled: boolean) =>
       updateLibraryEntry(entry!.id, { movieReleaseAlertsEnabled: enabled }),
-    invalidates: [detailKey, keys.calendar.upcoming()],
+    invalidates: invalidate.releaseReminder(detailKey),
     successToast: (_, enabled) =>
       enabled
         ? m.media_movie_reminder_enabled_toast()

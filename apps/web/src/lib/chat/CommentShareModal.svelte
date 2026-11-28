@@ -3,7 +3,7 @@
   // each friend picked, with the work's card and a link back to the comment
   // in its discussion — a comment's "Transférer".
   import { recommendWork } from "#lib/api/chat.js";
-  import { keys } from "#lib/api/keys.js";
+  import { invalidate } from "#lib/api/invalidations.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import { chatPreview, mentionToken } from "#lib/chat/chat-markdown.js";
   import Icon from "#lib/ui/Icon.svelte";
@@ -60,7 +60,7 @@
       );
       onclose();
     },
-    invalidates: [keys.chat.conversations()],
+    invalidates: invalidate.chatConversations(),
     errorToast: true,
   }));
 </script>

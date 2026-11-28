@@ -17,6 +17,7 @@
     updateGameEntry,
     upsertGameEntry,
   } from "#lib/api/client.js";
+  import { invalidate } from "#lib/api/invalidations.js";
   import { keys } from "#lib/api/keys.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
@@ -202,7 +203,7 @@
   const releaseAlertsMut = createApiMutation(() => ({
     mutate: (enabled: boolean) =>
       updateGameEntry(entry!.id, { releaseAlertsEnabled: enabled }),
-    invalidates: [detailKey, keys.calendar.upcoming()],
+    invalidates: invalidate.releaseReminder(detailKey),
     successToast: (_, enabled) =>
       enabled
         ? m.game_release_reminder_enabled_toast()

@@ -148,4 +148,45 @@ describe("AdminPushController.broadcastAdminPush", () => {
       );
     }
   });
+
+  // Every subscribed account was sent to at once, saturating the database
+  // pool and the event loop of the whole instance, and one account whose
+  // send threw failed the whole broadcast (audit 2026-11-17, PRF-07).
+  it("sends to at most 20 accounts at a time", async () => {
+    const { controller, prisma, push } = makeController();
+    (prisma.pushSubscription.findMany as Mock).mockResolvedValue(
+      Array.from({ length: 50 }, (_, i) => ({
+        userId: `user-${i}`,
+        user: { locale: "en" },
+      })),
+    );
+    let inFlight = 0;
+    let peak = 0;
+    (push.sendToUserDetailed as Mock).mockImplementation(async () => {
+      peak = Math.max(peak, ++inFlight);
+      await new Promise((resolve) => setImmediate(resolve));
+      inFlight--;
+      return [{ userAgent: "a", ok: true }];
+    });
+
+    const result = await controller.broadcastAdminPush({});
+
+    expect(peak).toBe(20);
+    expect(result.successCount).toBe(50);
+  });
+
+  it("counts an account whose send threw as a failure and goes on", async () => {
+    const { controller, prisma, push } = makeController();
+    (prisma.pushSubscription.findMany as Mock).mockResolvedValue([
+      { userId: "user-1", user: { locale: "en" } },
+      { userId: "user-2", user: { locale: "en" } },
+    ]);
+    (push.sendToUserDetailed as Mock)
+      .mockRejectedValueOnce(new Error("db down"))
+      .mockResolvedValueOnce([{ userAgent: "a", ok: true }]);
+
+    const result = await controller.broadcastAdminPush({});
+
+    expect(result).toMatchObject({ successCount: 1, failureCount: 1 });
+  });
 });

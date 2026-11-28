@@ -139,6 +139,28 @@ describe("fetchJson", () => {
     expect(onAttempt).toHaveBeenCalledTimes(2);
   });
 
+  it("reports each attempt's status, or null when the request never got one", async () => {
+    vi.spyOn(global, "setTimeout").mockImplementation(((fn: () => void) => {
+      fn();
+      return 0;
+    }) as unknown as typeof setTimeout);
+    const fetchMock = vi
+      .fn()
+      .mockRejectedValueOnce(new Error("ECONNRESET"))
+      .mockResolvedValueOnce(jsonResponse(429))
+      .mockResolvedValueOnce(jsonResponse(200, { ok: true }));
+    global.fetch = fetchMock as unknown as typeof fetch;
+    const onResponse = vi.fn();
+
+    await fetchJson(
+      "https://example.test",
+      {},
+      { sourceLabel: "Test", onResponse },
+    );
+
+    expect(onResponse.mock.calls).toEqual([[null], [429], [200]]);
+  });
+
   it("aborts a hung request via the timeout signal", async () => {
     vi.useFakeTimers();
     global.fetch = vi.fn(

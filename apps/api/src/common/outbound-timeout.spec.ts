@@ -7,6 +7,7 @@ import { JobRunService } from "../jobs/job-run.service";
 import { OmdbService } from "../media/omdb.service";
 import { MusicBrainzProvider } from "../music/providers/musicbrainz.provider";
 import { NewsletterService } from "../newsletter/newsletter.service";
+import { providerHttp } from "../test-utils/stubs";
 import { RequestThrottle } from "./request-throttle";
 
 const config = {
@@ -159,8 +160,7 @@ describe("outbound request deadlines", () => {
 
         default:
           request = new MusicBrainzProvider(
-            config as never,
-            quota as never,
+            providerHttp(quota, config),
           ).getDetails("album");
           break;
       }

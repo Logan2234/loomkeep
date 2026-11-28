@@ -6,6 +6,7 @@
   "import_group_list_films": "Titles from your lists",
   "import_watchlist_count": "{count} on the watchlist",
   "import_hour_imported": "hour imported",
+  "import_report_list_items_over_limit": "Beyond the list limit",
   "import_report_not_found": "Not found",
   "import_report_failed": "Failed",
   "import_hours_imported": "hours imported",

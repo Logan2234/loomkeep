@@ -18,6 +18,7 @@
     resyncAdminCacheItem,
     resyncAdminCacheStale,
   } from "#lib/api/client.js";
+  import { invalidate } from "#lib/api/invalidations.js";
   import { createApiInfiniteQuery } from "#lib/api/infinite-query.svelte.js";
   import { keys } from "#lib/api/keys.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
@@ -183,10 +184,10 @@
       resyncAdminCacheItem(item.domain, item.id),
     successToast: (_data, item) =>
       m.admin_cache_resynced_item({ title: item.title }),
-    invalidates: [
+    invalidates: invalidate.shown(
       cacheKey,
       ...(selected ? [keys.admin.cacheItem(selected.domain, selected.id)] : []),
-    ],
+    ),
     errorToast: true,
   }));
 
@@ -199,7 +200,7 @@
             failed: res.failed,
           })
         : m.admin_cache_resynced_count({ count: res.resynced }),
-    invalidates: [cacheKey],
+    invalidates: invalidate.shown(cacheKey),
     errorToast: true,
   }));
 
@@ -218,7 +219,7 @@
     onError: () => {
       showDeleteOrphansConfirm = false;
     },
-    invalidates: [cacheKey],
+    invalidates: invalidate.shown(cacheKey),
     errorToast: true,
   }));
 
@@ -233,7 +234,7 @@
     onError: () => {
       showDeleteConfirm = false;
     },
-    invalidates: [cacheKey],
+    invalidates: invalidate.shown(cacheKey),
     errorToast: true,
   }));
 </script>

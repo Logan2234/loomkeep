@@ -1,7 +1,6 @@
-import { ConfigService } from "@nestjs/config";
 import { vi, type Mock } from "vitest";
-import type { QuotaTrackerService } from "../../quota/quota-tracker.service";
 import { mockFetchByUrl } from "../../test-utils/mock-fetch";
+import { providerHttp } from "../../test-utils/stubs";
 import { OpenLibraryProvider } from "./open-library.provider";
 
 // Node defines global fetch lazily, which confuses vi.spyOn on restore;
@@ -46,8 +45,7 @@ function providerWith(contact?: string): OpenLibraryProvider {
   const config = { get: vi.fn().mockReturnValue(contact) };
   const quota = { record: vi.fn() };
   return new OpenLibraryProvider(
-    config as unknown as ConfigService,
-    quota as unknown as QuotaTrackerService,
+    providerHttp(quota, config, { throttle: false }),
   );
 }
 

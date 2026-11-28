@@ -1,3 +1,5 @@
+import { ErrorCode } from "@loomkeep/shared/catalog";
+import { LIST_LIMITS } from "@loomkeep/shared/contracts";
 import type { ConfigService } from "@nestjs/config";
 import { Prisma } from "@prisma/client";
 import { vi } from "vitest";
@@ -294,7 +296,7 @@ describe("ListService.listForUser — editor lists on a profile", () => {
 });
 
 describe("ListService.addItem", () => {
-  function make(dup: boolean) {
+  function make(dup: boolean, itemCount = 0) {
     const create = vi.fn().mockResolvedValue({
       id: "i1",
       targetType: "MEDIA",
@@ -311,6 +313,7 @@ describe("ListService.addItem", () => {
       listItem: {
         findUnique: vi.fn().mockResolvedValue(dup ? { id: "existing" } : null),
         findFirst: vi.fn().mockResolvedValue(null),
+        count: vi.fn().mockResolvedValue(itemCount),
         create,
       },
       // addItem's per-list lock, then the callback against the same double.
@@ -369,6 +372,16 @@ describe("ListService.addItem", () => {
       expect.objectContaining({ type: "LIST_ITEM_ADDED", targetId: "l1" }),
     );
     expect(events.emitToList).toHaveBeenCalledWith("l1", "list-updated");
+  });
+
+  // A list had no bound: imports and additions grew it to sizes the list
+  // screen loads in one go (audit 2026-11-17, PRF-04).
+  it("refuses an item past the list's limit", async () => {
+    const { svc, create } = make(false, LIST_LIMITS.items);
+    await expect(
+      svc.addItem("u1", "l1", { targetType: "MEDIA", targetId: "m1" }),
+    ).rejects.toMatchObject({ code: ErrorCode.ListItemLimitReached });
+    expect(create).not.toHaveBeenCalled();
   });
 
   // Moves the reorder lock forward, so an editor who loaded the list before
@@ -514,6 +527,7 @@ describe("ListService.addItem notifications", () => {
       listItem: {
         findUnique: vi.fn().mockResolvedValue(null),
         findFirst: vi.fn().mockResolvedValue(null),
+        count: vi.fn().mockResolvedValue(0),
         create: vi.fn().mockResolvedValue({
           id: "i1",
           targetType: "MEDIA",
@@ -1386,5 +1400,34 @@ describe("ListService.update by a moderating admin", () => {
       svc.update("admin", "l1", { visibility: "PUBLIC", title: "Mine now" }),
     ).rejects.toMatchObject({ code: "lists.forbidden" });
     expect(update).not.toHaveBeenCalled();
+  });
+});
+
+describe("ListService.addImportedItems", () => {
+  it("keeps the first items up to the list's limit and says how many it left out", async () => {
+    const createMany = vi.fn();
+    const prisma = { listItem: { createMany } } as unknown as PrismaService;
+    const svc = new ListService(
+      prisma,
+      {} as VisibilityService,
+      {} as ActivityService,
+      fakeConfig(),
+      fakeNotifications(),
+      stubXp(),
+      stubAchievements(),
+      stubEvents(),
+      stubFollow(),
+    );
+    const items = Array.from({ length: LIST_LIMITS.items + 3 }, (_, i) => ({
+      targetType: "MEDIA" as const,
+      targetId: `m${i}`,
+      note: null,
+    }));
+
+    await expect(svc.addImportedItems("u1", "l1", items)).resolves.toBe(3);
+    expect(createMany.mock.calls[0][0].data).toHaveLength(LIST_LIMITS.items);
+    expect(createMany.mock.calls[0][0].data.at(-1).targetId).toBe(
+      `m${LIST_LIMITS.items - 1}`,
+    );
   });
 });

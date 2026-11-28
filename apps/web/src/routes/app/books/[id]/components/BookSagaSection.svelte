@@ -1,5 +1,6 @@
 <script lang="ts">
   import { upsertBookEntry } from "#lib/api/client.js";
+  import { invalidate } from "#lib/api/invalidations.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import SagaBlock from "#lib/sagas/SagaBlock.svelte";
   import { m } from "#lib/paraglide/messages.js";
@@ -39,7 +40,7 @@
         sourceId: x.sourceId,
         status: "TO_READ",
       }),
-    invalidates: [sagaKey],
+    invalidates: invalidate.shown(sagaKey),
     errorToast: true,
   }));
 </script>

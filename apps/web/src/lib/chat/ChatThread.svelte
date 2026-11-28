@@ -9,6 +9,7 @@
     muteConversation,
     reportMessage,
   } from "#lib/api/chat.js";
+  import { invalidate } from "#lib/api/invalidations.js";
   import { createApiInfiniteQuery } from "#lib/api/infinite-query.svelte.js";
   import { keys } from "#lib/api/keys.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
@@ -83,7 +84,7 @@
 
   const unpinMut = createApiMutation(() => ({
     mutate: (messageId: string) => pinMessage(messageId, false),
-    invalidates: [keys.chat.pins(conversationId)],
+    invalidates: invalidate.chatPins(conversationId),
     errorToast: true,
   }));
 
@@ -356,11 +357,7 @@
 
   const muteMut = createApiMutation(() => ({
     mutate: (muted: boolean) => muteConversation(conversationId, muted),
-    invalidates: [
-      keys.chat.conversation(conversationId),
-      keys.chat.conversations(),
-      keys.chat.unread(),
-    ],
+    invalidates: invalidate.chatConversation(conversationId),
     errorToast: true,
   }));
 

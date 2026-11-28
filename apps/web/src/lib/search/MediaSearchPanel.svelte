@@ -11,6 +11,7 @@
   import { MEDIA_TYPE_LABEL } from "#lib/constants/media-types.js";
 
   import { searchCatalog, upsertLibraryEntry } from "#lib/api/client.js";
+  import { invalidate } from "#lib/api/invalidations.js";
   import { createApiInfiniteQuery } from "#lib/api/infinite-query.svelte.js";
   import { keys } from "#lib/api/keys.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
@@ -127,7 +128,7 @@
         type: media.type,
         status: "PLANNED",
       }),
-    invalidates: [keys.library.tracked()],
+    invalidates: invalidate.tracked("media"),
     errorToast: true,
   }));
 

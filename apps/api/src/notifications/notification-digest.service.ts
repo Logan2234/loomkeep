@@ -5,6 +5,7 @@ import { Cron, CronExpression } from "@nestjs/schedule";
 import { jsonObject } from "../common/json.util";
 import { localParts } from "../common/local-day.util";
 import { EntitlementService } from "../entitlements/entitlement.service";
+import { forEachIsolated } from "../jobs/for-each-isolated";
 import { JOB_KEYS } from "../jobs/job-keys";
 import { JobRunService, type JobSkipped } from "../jobs/job-run.service";
 import { MailService } from "../mail/mail.service";
@@ -107,23 +108,23 @@ export class NotificationDigestService {
 
     // Each user and each channel fails on its own: a failed email used to
     // skip the same user's push digest too.
-    for (const user of users) {
+    const channels = users.flatMap((user) => {
       const prefs = preferencesOf(user.preferences);
-
-      for (const [channel, cadence] of [
-        ["email", prefs.notifyEmail],
-        ["push", prefs.notifyPush],
-      ] as const) {
-        try {
-          sent += await this.deliverChannel(user, channel, cadence);
-        } catch (err) {
-          this.logger.error(
-            `${channel} digest failed for user ${user.id}`,
-            err,
-          );
-        }
-      }
-    }
+      return [
+        { user, channel: "email" as const, cadence: prefs.notifyEmail },
+        { user, channel: "push" as const, cadence: prefs.notifyPush },
+      ];
+    });
+    await forEachIsolated(
+      channels,
+      async ({ user, channel, cadence }) => {
+        sent += await this.deliverChannel(user, channel, cadence);
+      },
+      {
+        logger: this.logger,
+        label: ({ user, channel }) => `${channel} digest for user ${user.id}`,
+      },
+    );
 
     return sent;
   }

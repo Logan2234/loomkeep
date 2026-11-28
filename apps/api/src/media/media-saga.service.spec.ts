@@ -187,7 +187,9 @@ describe("MediaSagaService", () => {
     ]);
   });
 
-  it("shows film sagas in the viewer's language, keeping the saved titles when that fails", async () => {
+  // The translation used to be asked of TMDB inside the GET, one request
+  // per saga, with failures swallowed silently (audit 2026-11-17, PRF-15).
+  it("answers with the saved titles at once and translates film sagas in the background", async () => {
     const { service, prisma, library, sagas } = makeService(true);
     const row = (sagaKey: string, sourceId: string, type = "MOVIE") => ({
       sagaKey,
@@ -246,9 +248,12 @@ describe("MediaSagaService", () => {
     const result = await service.listSagas("user-1", { lang: "fr" });
 
     expect(result.inProgress.map((s) => [s.title, s.next?.title])).toEqual([
-      ["Dune - Saga", "Dune : Deuxième partie"],
+      ["Dune Collection", "Saved 2"],
       ["Attack on Titan", "Saved 11"],
     ]);
+    await vi.waitFor(() =>
+      expect(prisma.sagaTranslation.upsert).toHaveBeenCalled(),
+    );
     expect(sagas.readCollection).toHaveBeenCalledOnce();
     expect(sagas.readCollection).toHaveBeenCalledWith(
       "TMDB:726871",
@@ -330,7 +335,40 @@ describe("MediaSagaService", () => {
 
       await service.listSagas("user-1", { lang: "fr" });
 
-      expect(sagas.readCollection).toHaveBeenCalledOnce();
+      await vi.waitFor(() =>
+        expect(sagas.readCollection).toHaveBeenCalledOnce(),
+      );
+    });
+
+    // A saga TMDB has no collection for (fewer than two films) was asked
+    // again on every call, never saved.
+    it("keeps the saved titles of a saga TMDB has no collection for, so it isn't asked again", async () => {
+      const { service, sagas, prisma } = withDuneSaga({ "1": "Dune" });
+      sagas.readCollection.mockResolvedValue(null);
+
+      await service.listSagas("user-1", { lang: "fr" });
+
+      await vi.waitFor(() =>
+        expect(prisma.sagaTranslation.upsert).toHaveBeenCalledWith(
+          expect.objectContaining({
+            update: {
+              title: "Dune Collection",
+              memberTitles: { "1": "Saved 1", "2": "Saved 2" },
+            },
+          }),
+        ),
+      );
+    });
+
+    it("saves nothing when TMDB fails, so the next call tries again", async () => {
+      const { service, sagas, prisma } = withDuneSaga({ "1": "Dune" });
+      sagas.readCollection.mockRejectedValue(new Error("TMDB down"));
+
+      await service.listSagas("user-1", { lang: "fr" });
+
+      await vi.waitFor(() => expect(sagas.readCollection).toHaveBeenCalled());
+      await new Promise((resolve) => setImmediate(resolve));
+      expect(prisma.sagaTranslation.upsert).not.toHaveBeenCalled();
     });
   });
 

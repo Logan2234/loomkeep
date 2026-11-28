@@ -2,7 +2,7 @@
   // The compact shell's checklist, at the head of the home page.
   import { afterNavigate } from "$app/navigation";
   import { skipOnboardingStep } from "#lib/api/gamification.js";
-  import { keys } from "#lib/api/keys.js";
+  import { invalidate } from "#lib/api/invalidations.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import Drawer from "#lib/ui/Drawer.svelte";
   import Icon from "#lib/ui/Icon.svelte";
@@ -32,7 +32,7 @@
 
   const skipMut = createApiMutation(() => ({
     mutate: (key: OnboardingStepKey) => skipOnboardingStep(key),
-    invalidates: [keys.gamification.onboarding()],
+    invalidates: invalidate.onboarding(),
   }));
 
   function skip(key: OnboardingStepKey) {

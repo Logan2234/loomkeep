@@ -91,6 +91,9 @@ export const keys = {
     lastRun: () => ["import", "last-run"] as const,
     job: (source: string, jobId: string) =>
       ["import", "job", source, jobId] as const,
+    // A manual match search in the review step.
+    matchSearch: (domain: string, mediaType: string | null, query: string) =>
+      ["import", "match-search", domain, mediaType, query] as const,
   },
   comments: {
     thread: (type: string, id: string) => ["comments", type, id] as const,
@@ -162,6 +165,7 @@ export const keys = {
       ["reviews", "revisions", targetType, targetId] as const,
   },
   home: {
+    all: () => ["home"] as const,
     favorites: (domain: string) => ["home", "favorites", domain] as const,
     onThisDay: (date: string) => ["home", "on-this-day", date] as const,
     myYear: (year: number) => ["home", "my-year", year] as const,

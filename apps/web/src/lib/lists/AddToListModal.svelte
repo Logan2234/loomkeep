@@ -11,6 +11,7 @@
     getListMembership,
     removeListItem,
   } from "#lib/api/client.js";
+  import { invalidate } from "#lib/api/invalidations.js";
   import { keys } from "#lib/api/keys.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
@@ -94,7 +95,7 @@
 
       await addListItem(list.id, targetType, targetId);
     },
-    invalidates: [keys.lists.editable(), membershipKey],
+    invalidates: invalidate.listMembership(membershipKey),
     errorToast: true,
   }));
 
@@ -108,7 +109,7 @@
       const list = await createList({ title, kind: "COLLECTION" });
       await addListItem(list.id, targetType, targetId);
     },
-    invalidates: [keys.lists.editable(), membershipKey],
+    invalidates: invalidate.listMembership(membershipKey),
     errorToast: true,
     onSuccess: () => (query = ""),
   }));

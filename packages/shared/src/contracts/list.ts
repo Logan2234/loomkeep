@@ -6,6 +6,8 @@ export const LIST_LIMITS = {
   title: 100,
   description: 500,
   itemNote: 280,
+  /** Items in one list: the list screen loads them all at once. */
+  items: 2000,
 } as const;
 
 /** Work-level target types a list item may reference — no SEASON/EPISODE. */
