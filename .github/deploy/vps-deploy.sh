@@ -133,8 +133,8 @@ fi
 echo "::error::The ${IMAGE_TAG} images didn't come up healthy." >&2
 if [ -z "$previous_tag" ]; then
   echo "No previous images to return to." >&2
-elif [ "$(applied_migrations)" != "$migrations_before" ]; then
-  echo "A migration ran, so the previous images stay stopped: old code on the" >&2
+elif [ "$(applied_migrations)" != "$migrations_before" ] || migration_running; then
+  echo "A migration ran (or is still running), so the previous images stay stopped: old code on the" >&2
   echo "new schema could corrupt data. Restore $dump or fix forward: see" >&2
   echo "https://docs.loomkeep.app/self-hosting/upgrades-and-backups/#without-the-admin-panel" >&2
 else

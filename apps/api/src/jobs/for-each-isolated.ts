@@ -1,6 +1,6 @@
 import type { Logger } from "@nestjs/common";
 
-export interface IsolatedRun {
+interface IsolatedRun {
   /** Items whose `fn` resolved, minus those it answered `false` for (skipped). */
   succeeded: number;
   failed: number;

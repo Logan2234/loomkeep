@@ -8,10 +8,10 @@ import {
 } from "prom-client";
 
 /** One attempt's outcome against a catalogue provider, by status class. */
-export type ProviderOutcome =
+type ProviderOutcome =
   "ok" | "rate_limited" | "client_error" | "server_error" | "network";
 
-export function providerOutcome(status: number | null): ProviderOutcome {
+function providerOutcome(status: number | null): ProviderOutcome {
   if (status === null) return "network";
   if (status === 429) return "rate_limited";
   if (status >= 500) return "server_error";
