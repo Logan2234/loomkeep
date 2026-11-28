@@ -1,11 +1,8 @@
-// Resolves mutation errors before they reach templates and invalidates the
-// declared query keys after success.
+// Resolves mutation errors before they reach templates and invalidates what
+// the mutation touched once it settles, failed or not.
 import { toast } from "#lib/ui/toast-store.svelte.js";
-import {
-  createMutation,
-  useQueryClient,
-  type QueryKey,
-} from "@tanstack/svelte-query";
+import { createMutation, useQueryClient } from "@tanstack/svelte-query";
+import type { Invalidation } from "./invalidations";
 import { bannerMessage, fieldError } from "./validation-messages";
 
 interface ApiMutationOptions<TArgs, TData> {
@@ -13,8 +10,12 @@ interface ApiMutationOptions<TArgs, TData> {
   // Local update, close a modal, navigate. `args` is what `mutate()` was
   // called with — useful for a message the response body doesn't carry.
   onSuccess?: (data: TData, args: TArgs) => void;
-  /** Factory keys to refetch after success. Default `[]`. */
-  invalidates?: QueryKey[];
+  /**
+   * What the mutation touched, from `invalidate` (invalidations.ts): refetched
+   * once it settles, failure included, since a mutation of several calls can
+   * fail after an earlier one went through.
+   */
+  invalidates?: Invalidation;
   /**
    * Success message, via m() — never a hardcoded literal. A function reads
    * the response/args for a message the fixed string can't express.
@@ -43,15 +44,16 @@ export function createApiMutation<TArgs = void, TData = unknown>(
       onSuccess: (data: TData, args: TArgs) => {
         opts.onSuccess?.(data, args);
 
-        for (const key of opts.invalidates ?? []) {
-          void queryClient.invalidateQueries({ queryKey: key });
-        }
-
         const message =
           typeof opts.successToast === "function"
             ? opts.successToast(data, args)
             : opts.successToast;
         if (message) toast.success(message);
+      },
+      onSettled: () => {
+        for (const key of opts.invalidates ?? []) {
+          void queryClient.invalidateQueries({ queryKey: key });
+        }
       },
       onError: (err: unknown) => {
         opts.onError?.(err);

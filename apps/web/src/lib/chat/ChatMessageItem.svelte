@@ -8,7 +8,7 @@
     reactToMessage,
     unreactToMessage,
   } from "#lib/api/chat.js";
-  import { keys } from "#lib/api/keys.js";
+  import { invalidate } from "#lib/api/invalidations.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import Drawer from "#lib/ui/Drawer.svelte";
   import Dropdown from "#lib/ui/Dropdown.svelte";
@@ -80,13 +80,13 @@
 
   const pinMut = createApiMutation(() => ({
     mutate: () => pinMessage(message.id, !message.pinned),
-    invalidates: [keys.chat.pins(message.conversationId)],
+    invalidates: invalidate.chatPins(message.conversationId),
     errorToast: true,
   }));
 
   const unreadMut = createApiMutation(() => ({
     mutate: () => markUnreadFrom(message.id),
-    invalidates: [keys.chat.conversations(), keys.chat.unread()],
+    invalidates: invalidate.chatInbox(),
     onSuccess: () => onmarkedunread?.(message),
     errorToast: true,
   }));

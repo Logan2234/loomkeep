@@ -2,7 +2,7 @@
   // The mobile checklist uses a separate shell in OnboardingCard.
   import { afterNavigate } from "$app/navigation";
   import { skipOnboardingStep } from "#lib/api/gamification.js";
-  import { keys } from "#lib/api/keys.js";
+  import { invalidate } from "#lib/api/invalidations.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import Icon from "#lib/ui/Icon.svelte";
   import { useOnboardingChecklist } from "#lib/gamification/onboarding-checklist.svelte.js";
@@ -41,7 +41,7 @@
 
   const skipMut = createApiMutation(() => ({
     mutate: (key: OnboardingStepKey) => skipOnboardingStep(key),
-    invalidates: [keys.gamification.onboarding()],
+    invalidates: invalidate.onboarding(),
   }));
 
   function skip(key: OnboardingStepKey) {

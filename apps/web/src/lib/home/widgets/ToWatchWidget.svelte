@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { invalidate } from "#lib/api/invalidations.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
 
   import {
@@ -89,12 +90,9 @@
   }
 
   const movieSeenMut = createApiMutation(() => ({
-    mutate: async (entry: LibraryEntryDto) => {
-      await updateLibraryEntry(entry.id, { status: "COMPLETED" });
-      await queryClient.invalidateQueries({
-        queryKey: keys.library.plannedMovies(),
-      });
-    },
+    mutate: (entry: LibraryEntryDto) =>
+      updateLibraryEntry(entry.id, { status: "COMPLETED" }),
+    invalidates: invalidate.shown(keys.library.plannedMovies()),
     onSuccess: tapFeedback,
     errorToast: true,
   }));

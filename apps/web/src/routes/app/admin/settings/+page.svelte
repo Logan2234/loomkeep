@@ -4,6 +4,7 @@
     getAdminInstanceSettings,
     updateAdminInstanceSettings,
   } from "#lib/api/client.js";
+  import { invalidate } from "#lib/api/invalidations.js";
   import { keys } from "#lib/api/keys.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
@@ -65,7 +66,7 @@
   const saveMut = createApiMutation(() => ({
     mutate: (patch: UpdateInstanceSettingsDto) =>
       updateAdminInstanceSettings(patch),
-    invalidates: [keys.admin.instanceSettings()],
+    invalidates: invalidate.adminInstanceSettings(),
     onSuccess: () => {
       toast.success(m.admin_settings_saved());
       // The app read these at startup: what they show or hide changes now.

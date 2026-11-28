@@ -5,6 +5,7 @@
     revokeOtherSessions,
     revokeSession,
   } from "#lib/api/client.js";
+  import { invalidate } from "#lib/api/invalidations.js";
   import { keys } from "#lib/api/keys.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
@@ -46,7 +47,7 @@
       confirmTarget?.kind === "one"
         ? revokeSession(confirmTarget.session.id)
         : revokeOtherSessions(),
-    invalidates: [keys.sessions.all()],
+    invalidates: invalidate.sessions(),
     onSuccess: () => (confirmTarget = null),
   }));
 

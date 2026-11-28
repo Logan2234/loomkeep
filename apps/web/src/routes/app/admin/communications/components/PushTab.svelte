@@ -10,6 +10,7 @@
     sendAdminBroadcastPush,
     sendAdminTestPush,
   } from "#lib/api/client.js";
+  import { invalidate } from "#lib/api/invalidations.js";
   import { keys } from "#lib/api/keys.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
@@ -60,7 +61,7 @@
             },
       ),
     coveredFields: ["email", "title", "body"],
-    invalidates: [keys.admin.pushDevices(email), keys.admin.pushSummary()],
+    invalidates: invalidate.adminPush(email),
   }));
 
   function sendPush() {
@@ -120,7 +121,7 @@
         body: broadcastBody.trim() || undefined,
       }),
     coveredFields: ["title", "body"],
-    invalidates: [keys.admin.pushSummary()],
+    invalidates: invalidate.adminPush(),
     // Closes either way — a failure's banner shows on the page, not the modal.
     onSuccess: () => (showBroadcastConfirm = false),
     onError: () => (showBroadcastConfirm = false),

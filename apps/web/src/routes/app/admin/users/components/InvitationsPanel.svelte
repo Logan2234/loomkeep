@@ -11,6 +11,7 @@
     renewAdminInvitation,
     revokeAdminInvitation,
   } from "#lib/api/client.js";
+  import { invalidate } from "#lib/api/invalidations.js";
   import { createApiInfiniteQuery } from "#lib/api/infinite-query.svelte.js";
   import { keys } from "#lib/api/keys.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
@@ -79,7 +80,7 @@
 
   const renewMut = createApiMutation(() => ({
     mutate: renewAdminInvitation,
-    invalidates: [keys.admin.invitations()],
+    invalidates: invalidate.adminInvitations(),
     errorToast: true,
     onSuccess: (link) => {
       renewing = null;
@@ -89,7 +90,7 @@
 
   const revokeMut = createApiMutation(() => ({
     mutate: revokeAdminInvitation,
-    invalidates: [keys.admin.invitations()],
+    invalidates: invalidate.adminInvitations(),
     errorToast: true,
     successToast: m.admin_invitations_revoked_toast(),
     onSuccess: () => (revoking = null),

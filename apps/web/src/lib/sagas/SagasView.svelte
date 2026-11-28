@@ -15,6 +15,7 @@
 
 <script lang="ts">
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
+  import { invalidate } from "#lib/api/invalidations.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
   import Banner from "#lib/ui/Banner.svelte";
   import EmptyState from "#lib/ui/EmptyState.svelte";
@@ -170,7 +171,7 @@
 
   const addMut = createApiMutation(() => ({
     mutate: onAdd,
-    invalidates: [addKey],
+    invalidates: invalidate.shown(addKey),
     errorToast: true,
   }));
 

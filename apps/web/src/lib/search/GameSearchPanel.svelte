@@ -12,6 +12,7 @@
     searchGames,
     upsertGameEntry,
   } from "#lib/api/client.js";
+  import { invalidate } from "#lib/api/invalidations.js";
   import { keys } from "#lib/api/keys.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
@@ -106,7 +107,7 @@
         sourceId: game.sourceId,
         status: "BACKLOG",
       }),
-    invalidates: [keys.games.tracked()],
+    invalidates: invalidate.tracked("games"),
     errorToast: true,
   }));
 

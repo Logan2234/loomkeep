@@ -8,6 +8,7 @@
     getSavedViews,
     updateSavedView,
   } from "#lib/api/client.js";
+  import { invalidate } from "#lib/api/invalidations.js";
   import { keys } from "#lib/api/keys.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
@@ -74,7 +75,7 @@
   const createMut = createApiMutation(() => ({
     mutate: (viewName: string) =>
       createSavedView({ name: viewName, domain, filters: current }),
-    invalidates: [keys.savedViews.all()],
+    invalidates: invalidate.savedViews(),
     successToast: m.saved_view_created(),
     onSuccess: (view) => {
       // Into the cached list before it's marked in use: the stale-view
@@ -92,7 +93,7 @@
   const updateMut = createApiMutation(() => ({
     mutate: (args: { id: string; body: UpdateSavedViewDto }) =>
       updateSavedView(args.id, args.body),
-    invalidates: [keys.savedViews.all()],
+    invalidates: invalidate.savedViews(),
     successToast: m.saved_view_updated(),
     errorToast: true,
     onSuccess: () => (naming = null),
@@ -100,7 +101,7 @@
 
   const deleteMut = createApiMutation(() => ({
     mutate: (id: string) => deleteSavedView(id),
-    invalidates: [keys.savedViews.all()],
+    invalidates: invalidate.savedViews(),
     successToast: m.saved_view_deleted(),
     errorToast: true,
     onSuccess: (_, id) => {

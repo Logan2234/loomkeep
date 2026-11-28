@@ -6,7 +6,7 @@
     pinWorkThread,
     unfollowWorkThread,
   } from "#lib/api/chat.js";
-  import { keys } from "#lib/api/keys.js";
+  import { invalidate } from "#lib/api/invalidations.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import { chat } from "#lib/chat/chat.svelte.js";
   import Drawer from "#lib/ui/Drawer.svelte";
@@ -38,35 +38,29 @@
   // without opening it.
   let sheetOpen = $state(false);
 
-  const threadKeys = () => [
-    keys.chat.workThreads(),
-    keys.chat.workThread(thread.targetType, thread.targetId),
-    keys.chat.unread(),
-  ];
-
   const readMut = createApiMutation(() => ({
     mutate: () => markWorkThreadRead(thread.targetType, thread.targetId),
-    invalidates: threadKeys(),
+    invalidates: invalidate.chatWorkThread(thread.targetType, thread.targetId),
     errorToast: true,
   }));
 
   const muteMut = createApiMutation(() => ({
     mutate: (muted: boolean) =>
       muteWorkThread(thread.targetType, thread.targetId, muted),
-    invalidates: threadKeys(),
+    invalidates: invalidate.chatWorkThread(thread.targetType, thread.targetId),
     errorToast: true,
   }));
 
   const pinMut = createApiMutation(() => ({
     mutate: (pinned: boolean) =>
       pinWorkThread(thread.targetType, thread.targetId, pinned),
-    invalidates: [keys.chat.workThreads()],
+    invalidates: invalidate.chatWorkThreads(),
     errorToast: true,
   }));
 
   const unfollowMut = createApiMutation(() => ({
     mutate: () => unfollowWorkThread(thread.targetType, thread.targetId),
-    invalidates: threadKeys(),
+    invalidates: invalidate.chatWorkThread(thread.targetType, thread.targetId),
     onSuccess: () => toast.success(m.chat_work_unfollowed()),
     errorToast: true,
   }));

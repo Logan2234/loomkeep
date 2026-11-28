@@ -24,6 +24,7 @@
     updateAdminUserPlan,
     updateAdminUserRole,
   } from "#lib/api/client.js";
+  import { invalidate } from "#lib/api/invalidations.js";
   import { keys } from "#lib/api/keys.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
@@ -78,11 +79,6 @@
   const preferences = $derived(detail.preferences);
   const moderation = $derived(detail.moderation);
   // Role, plan, XP and status show here and in the accounts list alike.
-  const accountKeys = $derived([
-    keys.admin.user(user.id),
-    keys.admin.allUsers(),
-  ]);
-
   const libraryTotal = $derived(
     Object.values(user.libraryCounts).reduce((sum, n) => sum + n, 0),
   );
@@ -281,7 +277,7 @@
   const reportsAgainst = $derived(reportsAgainstQuery.data ?? []);
   const revokeMut = createApiMutation(() => ({
     mutate: (sessionId: string) => revokeAdminUserSession(user.id, sessionId),
-    invalidates: [keys.admin.userSessions(user.id)],
+    invalidates: invalidate.adminUserSessions(user.id),
   }));
 
   const revokeAllMut = createApiMutation(() => ({
@@ -289,12 +285,12 @@
     onSuccess: () => {
       showRevokeAllConfirm = false;
     },
-    invalidates: [keys.admin.userSessions(user.id)],
+    invalidates: invalidate.adminUserSessions(user.id),
   }));
 
   const roleMut = createApiMutation(() => ({
     mutate: (role: "ADMIN" | "USER") => updateAdminUserRole(user.id, role),
-    invalidates: accountKeys,
+    invalidates: invalidate.adminUser(user.id),
   }));
 
   const planMut = createApiMutation(() => ({
@@ -305,7 +301,7 @@
       plan: "FREE" | "PREMIUM";
       expiresAt?: string | null;
     }) => updateAdminUserPlan(user.id, plan, expiresAt),
-    invalidates: accountKeys,
+    invalidates: invalidate.adminUser(user.id),
   }));
 
   // A grant ends at the close of the chosen day; empty means no end.
@@ -320,7 +316,7 @@
 
   const xpMut = createApiMutation(() => ({
     mutate: (amount: number) => adjustAdminUserXp(user.id, amount),
-    invalidates: accountKeys,
+    invalidates: invalidate.adminUser(user.id),
     onSuccess: (result) => {
       xpAmount = null;
       toast.success(m.admin_users_xp_done({ xp: formatNumber(result.xp) }));
@@ -351,13 +347,13 @@
 
   const reactivateMut = createApiMutation(() => ({
     mutate: () => reactivateAdminUser(user.id),
-    invalidates: accountKeys,
+    invalidates: invalidate.adminUser(user.id),
     errorToast: true,
   }));
 
   const cancelDeletionMut = createApiMutation(() => ({
     mutate: () => cancelAdminUserDeletion(user.id),
-    invalidates: accountKeys,
+    invalidates: invalidate.adminUser(user.id),
     successToast: m.admin_users_deletion_cancelled(),
     errorToast: true,
     onSuccess: () => (showCancelDeletionConfirm = false),
@@ -386,7 +382,7 @@
       toast.success(m.admin_users_deleted({ name: args.displayName }));
       void goto("/app/admin/users");
     },
-    invalidates: [keys.admin.allUsers()],
+    invalidates: invalidate.adminUsers(),
     coveredFields: ["reasonText", "legalBasis", "tosClause"],
   }));
 

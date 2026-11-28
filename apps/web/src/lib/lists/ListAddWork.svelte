@@ -1,6 +1,6 @@
 <script lang="ts">
   import { addWorkToList } from "#lib/api/lists.js";
-  import { keys } from "#lib/api/keys.js";
+  import { invalidate } from "#lib/api/invalidations.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import { auth } from "#lib/auth/auth.svelte.js";
   import { workKindLabel } from "#lib/chat/conversation-presentation.js";
@@ -67,7 +67,7 @@
   const addMut = createApiMutation(() => ({
     mutate: (hit: WorkSearchHitDto) => addWorkToList(listId, hit.href),
     onSuccess: (_item, hit) => (added = [...added, hit.href]),
-    invalidates: [keys.lists.detail(listId)],
+    invalidates: invalidate.list(listId),
     errorToast: true,
   }));
 

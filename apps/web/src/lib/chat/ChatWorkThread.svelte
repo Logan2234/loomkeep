@@ -7,6 +7,7 @@
     markWorkThreadUnread,
     muteWorkThread,
   } from "#lib/api/chat.js";
+  import { invalidate } from "#lib/api/invalidations.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import { searchComments } from "#lib/api/comments.js";
   import { keys } from "#lib/api/keys.js";
@@ -63,11 +64,7 @@
   const muteMut = createApiMutation(() => ({
     mutate: (muted: boolean) =>
       muteWorkThread(work.targetType, work.targetId, muted),
-    invalidates: [
-      keys.chat.workThread(work.targetType, work.targetId),
-      keys.chat.workThreads(),
-      keys.chat.unread(),
-    ],
+    invalidates: invalidate.chatWorkThread(work.targetType, work.targetId),
     errorToast: true,
   }));
   const context = $derived(thread ? workThreadContext(thread) : null);

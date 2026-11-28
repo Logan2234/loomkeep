@@ -7,6 +7,7 @@
   } from "#lib/search/search-selection.svelte.js";
   import SearchSelectMark from "./SearchSelectMark.svelte";
   import { keys } from "#lib/api/keys.js";
+  import { invalidate } from "#lib/api/invalidations.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import { addWorkToLibrary } from "#lib/chat/work-library.js";
   import Banner from "#lib/ui/Banner.svelte";
@@ -45,7 +46,10 @@
 
   const addMut = createApiMutation(() => ({
     mutate: (hit: WorkSearchHitDto) => addWorkToLibrary(hit),
-    invalidates: [keys.search.all(), keys.library.all()],
+    invalidates: invalidate.all(
+      invalidate.shown(keys.search.all()),
+      invalidate.library(),
+    ),
     errorToast: true,
   }));
 </script>

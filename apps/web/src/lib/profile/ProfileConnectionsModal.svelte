@@ -6,6 +6,7 @@
     removeFollower,
     unfollowUser,
   } from "#lib/api/client.js";
+  import { invalidate } from "#lib/api/invalidations.js";
   import { keys } from "#lib/api/keys.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import { createApiQuery } from "#lib/api/query.svelte.js";
@@ -126,15 +127,13 @@
     patch("following", update);
   }
 
-  const profileKey = $derived(keys.profile.detail(username));
-
   const followMut = createApiMutation(() => ({
     mutate: (user: ConnectionDto) =>
       user.following || user.requested
         ? unfollowUser(user.username)
         : followUser(user.username),
     onSuccess: (relationship, user) => applyRelationship(user.id, relationship),
-    invalidates: [profileKey],
+    invalidates: invalidate.profile(username),
     errorToast: true,
   }));
 
@@ -144,7 +143,7 @@
       confirmingRemove = null;
       patch("followers", (list) => list.filter((u) => u.id !== user.id));
     },
-    invalidates: [profileKey],
+    invalidates: invalidate.profile(username),
     errorToast: true,
   }));
 

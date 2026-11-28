@@ -4,7 +4,7 @@
   import { CopyFeedback } from "#lib/ui/clipboard.svelte.js";
 
   import { API_URL, createApiKey } from "#lib/api/client.js";
-  import { keys } from "#lib/api/keys.js";
+  import { invalidate } from "#lib/api/invalidations.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import AnimatedHeight from "#lib/ui/AnimatedHeight.svelte";
   import Banner from "#lib/ui/Banner.svelte";
@@ -61,7 +61,7 @@
   const createMut = createApiMutation(() => ({
     mutate: createApiKey,
     coveredFields: ["name", "expiresAt"],
-    invalidates: [keys.apiKeys.all()],
+    invalidates: invalidate.apiKeys(),
     onSuccess: (data) => (created = data),
   }));
 

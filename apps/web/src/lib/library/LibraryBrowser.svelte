@@ -52,6 +52,7 @@
   import { goto } from "$app/navigation";
   import { page } from "$app/state";
   import { resolveApiError } from "#lib/api/errors.js";
+  import { invalidate } from "#lib/api/invalidations.js";
   import { createApiInfiniteQuery } from "#lib/api/infinite-query.svelte.js";
   import { keys } from "#lib/api/keys.js";
   import { getSavedViews } from "#lib/api/client.js";
@@ -606,7 +607,7 @@
         ownershipSource?: string | null;
       };
     }) => bulk!.update({ ids: [keyOf(entry)], ...action }),
-    invalidates: [keys.library.all()],
+    invalidates: invalidate.library(),
     errorToast: true,
     onSuccess: (_result, { entry, action }) => {
       clearTimeout(savedTimer);
@@ -631,7 +632,7 @@
 
   const bulkMut = createApiMutation(() => ({
     mutate: (dto: BulkUpdateEntriesDto) => bulk!.update(dto),
-    invalidates: [keys.library.all()],
+    invalidates: invalidate.library(),
     successToast: resultMessage,
     errorToast: true,
   }));

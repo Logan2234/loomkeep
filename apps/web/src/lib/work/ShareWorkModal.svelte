@@ -3,7 +3,7 @@
   // first (sent into their conversation), then the system share sheet, the
   // link and the QR code.
   import { recommendWork } from "#lib/api/chat.js";
-  import { keys } from "#lib/api/keys.js";
+  import { invalidate } from "#lib/api/invalidations.js";
   import { createApiMutation } from "#lib/api/mutation.svelte.js";
   import ChatFriendPicker from "#lib/chat/ChatFriendPicker.svelte";
   import { workKindLabel } from "#lib/chat/conversation-presentation.js";
@@ -60,7 +60,7 @@
       );
       onclose();
     },
-    invalidates: [keys.chat.conversations()],
+    invalidates: invalidate.chatConversations(),
     errorToast: true,
   }));
 
