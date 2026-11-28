@@ -394,52 +394,14 @@ export class ReportService {
    * shortcut, not the moderation queue itself.
    */
   async listAgainstUser(userId: string): Promise<ReportDto[]> {
-    const [
-      authoredCommentIds,
-      authoredReviewIds,
-      ownedListIds,
-      authoredMessageIds,
-    ] = await Promise.all([
-      this.prisma.comment.findMany({
-        where: { authorId: userId },
-        select: { id: true },
-      }),
-      this.prisma.review.findMany({
-        where: { userId },
-        select: { id: true },
-      }),
-      this.prisma.list.findMany({
-        where: { userId },
-        select: { id: true },
-      }),
-      this.prisma.message.findMany({
-        where: { authorId: userId },
-        select: { id: true },
-      }),
-    ]);
-
     const rows = await this.prisma.report.findMany({
       where: {
         OR: [
-          // Also reaches reports whose content its author since deleted.
+          // Set on every report since its migration, which filled in the
+          // older ones: it reaches the user's comments, reviews, lists and
+          // messages, even once they deleted them.
           { targetOwnerId: userId },
           { targetType: "USER", targetId: userId },
-          {
-            targetType: "COMMENT",
-            targetId: { in: authoredCommentIds.map((c) => c.id) },
-          },
-          {
-            targetType: "REVIEW",
-            targetId: { in: authoredReviewIds.map((r) => r.id) },
-          },
-          {
-            targetType: "LIST",
-            targetId: { in: ownedListIds.map((l) => l.id) },
-          },
-          {
-            targetType: "MESSAGE",
-            targetId: { in: authoredMessageIds.map((m) => m.id) },
-          },
         ],
       },
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],
